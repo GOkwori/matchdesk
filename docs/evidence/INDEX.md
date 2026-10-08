@@ -3,19 +3,20 @@
 Results are tied to source commits and execution environments. A passing build is not
 an approval to deploy, and evidence from one source is not relabelled as another.
 
-## Current native image qualification
+## Phase 0 closure
 
-- [Native scans and first runtime remediation](native-image-remediation-20261008.md):
-  source `c0e8f5c731e8688ceed37145e0f17c07b768df89`; 109 Python tests, nine runtime
-  groups and 24 browser cases passed. Image security remains failed on remaining
-  findings and overdue advisory metadata. Unused runtime installers were removed;
-  four downloaded evidence archives were source-bound and hash-verified.
-- [First native scan and retained failures](native-images-first-run-20261008.md):
-  source `e8c76d093c4312c2ce74e1413cc77a36a5303b1c`; real reports exposed the native
-  security gap despite passing application lock audits. Formatting failure retained.
+- [Phase 0 closure evidence](phase0-closure-20261008.md) records the protected
+  foundation merge, the post-squash history-secret remediation, final main commit
+  `773ba7cc2da60d14e5a1e3106b61fa202c93624b`, active repository controls and the
+  final passing post-merge qualification across all eight required checks.
+- [Native scans and first runtime remediation](native-image-remediation-20261008.md)
+  remains historical evidence for the earlier image-security blocker and remediation path.
+- [First native scan and retained failures](native-images-first-run-20261008.md)
+  preserves the first native scan failure.
 
-No blanket vulnerability exemptions were added. Repository controls are prepared,
-not applied, and there has been no foundation merge or production approval.
+No blanket vulnerability exemptions were added. The final Phase 0 main commit passed
+the native-image gate, and repository protections are active. Phase 0 closure is not
+a production deployment approval.
 
 ## Earlier dependency and source-security qualification
 
