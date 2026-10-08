@@ -367,6 +367,7 @@ def test_verification_gate_requires_boolean_and_nonblank_reason() -> None:
     with pytest.raises(ValueError, match="cannot be blank"):
         apply_verification_gate(state, passed=True, reason="   ")
 
+
 def test_attempt_contract_and_controller_reject_blank_or_invalid_inputs() -> None:
     """Attempt records and controller inputs reject blank reasons and invalid durations."""
     from matchdesk.domain.orchestration import SpecialistAttempt
@@ -518,4 +519,3 @@ def test_verification_and_recovery_require_their_exact_gate_and_reason() -> None
 
     with pytest.raises(ValueError, match="cannot be blank"):
         recover_workflow(state, "   ")
-
