@@ -1,0 +1,142 @@
+# Source security is independent of dependency and native-image vulnerability scans.
+# No source-writing token, deployment secret or Azure identity is available here.
+name: Source security
+on:
+  push:
+    branches: [development, main]
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: source-security-${{ github.ref }}
+  cancel-in-progress: true
+defaults:
+  run:
+    shell: bash
+jobs:
+  codeql:
+    name: codeql-${{ matrix.language }}
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [python, javascript-typescript]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      security-events: write # Upload analysis, not repository contents or approvals.
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Record the exact analyzed source
+        run: |
+          mkdir -p artifacts/codeql
+          git rev-parse HEAD > artifacts/codeql/source-commit.txt
+      - name: Initialize the pinned security-extended query suite
+        uses: github/codeql-action/init@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # inspected v4
+        with:
+          tools: linked
+          languages: ${{ matrix.language }}
+          build-mode: none
+          queries: security-extended
+      - name: Analyze and upload exact-head code scanning results
+        id: analyze
+        uses: github/codeql-action/analyze@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2
+        with:
+          output: artifacts/codeql/sarif
+          category: /language:${{ matrix.language }}
+          ref: ${{ github.event_name == 'pull_request' && format('refs/pull/{0}/head', github.event.number) || github.ref }}
+          sha: ${{ github.event.pull_request.head.sha || github.sha }}
+          upload: always
+          upload-database: false
+          wait-for-processing: true
+      - name: Fail on reported source findings, not just scanner execution errors
+        # A successful CodeQL upload alone does not mean the analysis has no alerts.
+        if: ${{ !cancelled() && steps.analyze.outcome == 'success' }}
+        run: |
+          python - <<'PY'
+          """Require real SARIF output and report unsuppressed results as a failed gate."""
+          import json
+          from pathlib import Path
+
+          root = Path('artifacts/codeql')
+          files = sorted((root / 'sarif').glob('*.sarif'))
+          if not files:
+              raise SystemExit('No SARIF analysis was produced')
+          findings = []
+          analyses = []
+          for path in files:
+              document = json.loads(path.read_text())
+              if document.get('version') != '2.1.0' or not document.get('runs'):
+                  raise SystemExit('Invalid or empty SARIF analysis')
+              for run in document['runs']:
+                  driver = run.get('tool', {}).get('driver', {})
+                  if driver.get('name') != 'CodeQL' or not isinstance(run.get('results'), list):
+                      raise SystemExit('Unexpected analysis producer or missing result set')
+                  if any(item.get('executionSuccessful') is False for item in run.get('invocations', [])):
+                      raise SystemExit('The SARIF producer reported failed execution')
+                  # No suppressed findings are silently dropped. Any exception must
+                  # receive a specific review rather than being hidden by this parser.
+                  findings.extend({'rule_id': item.get('ruleId'), 'level': item.get('level')} for item in run['results'])
+                  analyses.append({'file': path.name, 'version': driver.get('version'), 'results': len(run['results'])})
+          report = {'source_commit': (root / 'source-commit.txt').read_text().strip(),
+                    'status': 'FAIL' if findings else 'PASS', 'analyses': analyses,
+                    'findings': findings, 'limitations': 'The configured static query suite is not a proof of absence of vulnerabilities.'}
+          (root / 'gate-summary.json').write_text(json.dumps(report, indent=2) + '\n')
+          print(json.dumps(report, indent=2))
+          if findings:
+              raise SystemExit('CodeQL findings require review before merge')
+          PY
+      - name: Preserve source analysis and gate results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: codeql-${{ matrix.language }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/codeql/
+          if-no-files-found: error
+          retention-days: 60
+  secrets:
+    name: history-secrets
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+          fetch-depth: 0 # Inspect reachable history, not only the latest source tree.
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Record source and verify the pinned scanner download
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/secrets "$RUNNER_TEMP/matchdesk-gitleaks" "$RUNNER_TEMP/matchdesk-no-ignores"
+          git rev-parse HEAD > artifacts/secrets/source-commit.txt
+          git rev-list --all --count > artifacts/secrets/reachable-commits.txt
+          curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 \
+            https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz \
+            --output "$RUNNER_TEMP/matchdesk-gitleaks/scanner.tar.gz"
+          echo '551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  scanner.tar.gz' \
+            | (cd "$RUNNER_TEMP/matchdesk-gitleaks" && sha256sum --check -)
+          tar -xzf "$RUNNER_TEMP/matchdesk-gitleaks/scanner.tar.gz" -C "$RUNNER_TEMP/matchdesk-gitleaks" gitleaks
+          "$RUNNER_TEMP/matchdesk-gitleaks/gitleaks" version > artifacts/secrets/scanner-version.txt
+      - name: Scan reachable Git history with redacted output and no project exceptions
+        run: |
+          set -euo pipefail
+          # Explicitly reject new exception files until a separate policy review.
+          test ! -e .gitleaks.toml
+          test ! -e .gitleaksignore
+          "$RUNNER_TEMP/matchdesk-gitleaks/gitleaks" git . \
+            --log-opts='--all' --redact=100 --no-banner --no-color \
+            --ignore-gitleaks-allow --gitleaks-ignore-path "$RUNNER_TEMP/matchdesk-no-ignores" \
+            --exit-code 1 --report-format json --report-path artifacts/secrets/findings.json \
+            2>&1 | tee artifacts/secrets/scan.log
+      - name: Preserve redacted security evidence even after a finding
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: history-secrets-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/secrets/
+          if-no-files-found: error
+          retention-days: 60
