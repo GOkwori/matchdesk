@@ -10,8 +10,11 @@ an approval to deploy, and evidence from one source is not relabelled as another
   main/development tree equivalence, technical acceptance result and remaining scope
   boundaries.
 - Technical review result: **PASS** for the deterministic-engine scope.
-- P1-06 remains **READY FOR OWNER APPROVAL** until the exact closure documentation
-  head passes hosted qualification and the owner explicitly approves that head/base pair.
+- Exact closure head `a0642e265aa90d81dfc094c4e75b1f42d64440dc` passed all required
+  hosted workflows, was explicitly owner-approved against base
+  `9dd644376148397a73e27b1508372cc7d6bd83c0`, and was squash-merged through
+  protected main as `e3693da3edf54a155478bc9d38fc279e4051c3ab`.
+- P1-06 is **COMPLETE** and Phase 1 is **VERIFIED / COMPLETED** for the deterministic-engine scope.
 
 ## Phase 1E deterministic moment detection
 
