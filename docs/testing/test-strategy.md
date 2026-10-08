@@ -1,6 +1,6 @@
 # Test strategy and regression gates
 
-## Implemented foundation coverage
+## Implemented regression coverage
 
 The test suite covers strict primitive handling, event-specific fields, frozen records,
 canonical identities, half-open windows, stoppage-time clock semantics, evidence
@@ -18,13 +18,14 @@ and test docstrings explain the intended invariant rather than restate assertion
 
 ## Gates still required
 
-Python 3.12, Ruff, mypy, dependency resolution and audits, generated TypeScript contracts,
-Next.js production build, frontend unit tests, Playwright end-to-end/visual/accessibility,
-real PostgreSQL integration, Docker builds, hosted CI, live AI evaluations, load tests,
-restore/rollback and cloud security must run before their phases can pass.
+Hosted Python 3.12, Ruff, mypy, dependency audits, Next.js production build, real
+PostgreSQL/runtime checks, Chromium regressions, source security and native-image security
+now run as recurring protected gates. Phase 2A additionally tests the orchestration
+control plane through retry, timeout, recovery and verification-hand-off edge paths.
 
-No unavailable check is replaced by a green badge. The complete Phase 0 gate remains
-blocked while its required tooling and remote CI have not executed.
+Frontend unit coverage, reviewed visual/accessibility baselines, live AI evaluations,
+load tests, durable application persistence, restore/rollback and cloud security remain
+later-phase work. No unavailable check is replaced by a green badge.
 
 ## Regression updates
 
