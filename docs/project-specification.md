@@ -1,6 +1,6 @@
 # MatchDesk project specification
 
-Owner: George Okwori. Baseline: 8 October 2026. Status: IN_PROGRESS, Phase 0.
+Owner: George Okwori. Baseline: 8 October 2026. Status: IN_PROGRESS; Phase 0 VERIFIED / COMPLETED, Phase 1 next.
 
 ## Purpose and users
 
@@ -46,7 +46,10 @@ quota and resource costs require discovery before provisioning.
 
 ## Delivery and gates
 
-Phase 0 establishes contracts, local services, comments, documentation and checks.
+Phase 0 established contracts, local services, documentation, hosted qualification,
+runtime/browser/security gates and protected repository promotion. It is complete on
+main commit `773ba7cc2da60d14e5a1e3106b61fa202c93624b`.
+
 Phase 1 builds the deterministic engine. Phase 2 adds agent orchestration and verification.
 Phase 3 completes producer and audience flows. Phase 4 qualifies reliability and security.
 Phase 5 packages the demonstration and submission. Work stops at each owner review gate.
@@ -66,12 +69,14 @@ with zero additional approving reviews and no last-push approval. The owner must
 still explicitly approve the exact proposed head and base after reviewing evidence.
 Development retains history safeguards and ordinary development commits. This policy
 supersedes the additional-reviewer requirement, not security gates or phase approval.
-Ruleset activation, final merge approval and production deployment remain separate.
+Ruleset activation and the Phase 0 protected merges are complete. Production deployment,
+release tagging and later phase approvals remain separate.
 
 ## Open design decisions
 
 Only main and development are authorised. Environment isolation, optional
 auto-publication and the final inference-review policy require explicit decisions
 before those capabilities are implemented. The [decision log](decisions/ADR-0005-baseline-conflicts.md)
-records the boundaries. The local foundation adds no remote branches, publication
-or deployment authority.
+records the boundaries. The qualified foundation adds no publication or deployment authority. Phase 1 begins
+with the deterministic synthetic match engine; live model and Azure work remain later
+controlled decisions.
