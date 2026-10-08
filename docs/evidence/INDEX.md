@@ -3,6 +3,20 @@
 Results are tied to source commits and execution environments. A passing build is not
 an approval to deploy, and evidence from one source is not relabelled as another.
 
+## Phase 1A synthetic engine
+
+- [Phase 1A synthetic engine qualification](phase1a-synthetic-engine-20261008.md)
+  records the four seeded normal scenarios, one fault stream, deterministic byte
+  generation and hosted qualification on source
+  `3c8bd0299eb80a2553337a0d472d036e4114545a`.
+- Foundation CI run 37809719421 passed 146 Python tests with 100% package statement
+  and branch coverage, Ruff, formatter checks and strict mypy.
+- Dependency audit 37809719414, Source security 37809719549 and Foundation integration
+  37809719410 also passed, including runtime-browser and native-images.
+
+P1-01 is TESTED only. Ingestion, reducers, metrics and moment detection remain later
+Phase 1 work.
+
 ## Phase 0 closure
 
 - [Phase 0 closure evidence](phase0-closure-20261008.md) records the protected
