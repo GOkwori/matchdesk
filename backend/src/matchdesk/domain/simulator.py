@@ -7,10 +7,10 @@ structurally valid while introducing stream-level defects for later ingestion te
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 import hashlib
 import json
 import random
-from dataclasses import dataclass
 from typing import Literal
 
 from matchdesk.domain.models import Location, MatchEvent
@@ -104,7 +104,9 @@ def _event(
     )
 
 
-def _marker(event_id: str, match_id: str, sequence: int, period: int, clock_ms: int, kind: str) -> MatchEvent:
+def _marker(
+    event_id: str, match_id: str, sequence: int, period: int, clock_ms: int, kind: str
+) -> MatchEvent:
     """Create a period lifecycle marker without player or ball-action fields."""
     return MatchEvent.model_validate(
         {
