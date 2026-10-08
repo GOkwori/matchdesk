@@ -1,6 +1,6 @@
 # Current progress
 
-Date: 8 October 2026. Stage: Phase 1 in progress; P1-01 through P1-05 TESTED.
+Date: 8 October 2026. Stage: Phase 1 technical review PASS; owner approval pending.
 Phase 0 gate: **VERIFIED / COMPLETED**.
 
 The engineering foundation was merged through the protected `main` path and the
@@ -82,7 +82,17 @@ its tests, repository checks, Ruff lint and mypy had passed; the exact formatter
 was then qualified successfully. See the
 [Phase 1E qualification record](evidence/phase1e-moment-detection-20261008.md).
 
-P1-06, Phase 1 review with source-bound evidence and explicit owner decision, is next.
+P1-06 technical review is PASS and the Phase 1 closure candidate is READY FOR OWNER APPROVAL.
+The review proves the final reviewed PR heads for P1-01 through P1-05 passed the hosted
+workflow matrix and that every reviewed PR head has an identical Git tree to its squash
+commit on main. Current main is `9dd644376148397a73e27b1508372cc7d6bd83c0`;
+reconciled development is `3d82276647488c8ba4b9d47eef8ca2aa8a89f8d3`,
+and the two branches have identical source trees. See the
+[Phase 1 closure review](evidence/phase1-closure-review-20261008.md).
+
+Phase 1 is not VERIFIED / COMPLETED until the exact closure documentation head passes
+hosted qualification and the owner explicitly approves that head/base pair. Phase 2
+must not begin before that decision gate.
 
 ## Historical native-image remediation before final qualification
 
