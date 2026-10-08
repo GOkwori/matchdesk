@@ -102,7 +102,7 @@ def test_inactive_player_is_rejected() -> None:
     scenario = generate_scenario("counter_attack_goal", 7)
     reducer = MatchReducer(scenario.match_id, _rosters())
     reducer.apply(scenario.events[0])
-    event = scenario.events[1].model_copy(update={"player_id": "away-12"})
+    event = scenario.events[1].model_copy(update={"player_id": "away-13"})
 
     with pytest.raises(ValueError, match="not active"):
         reducer.apply(event)
@@ -324,7 +324,11 @@ def test_goal_and_linked_shot_must_share_team() -> None:
         reducer.apply(event)
 
     goal = scenario.events[6].model_copy(
-        update={"team_id": "away", "player_id": "away-10"}
+        update={
+            "team_id": "away",
+            "player_id": "away-10",
+            "possession_id": scenario.events[1].possession_id,
+        }
     )
 
     with pytest.raises(ValueError, match="same team"):
@@ -342,3 +346,12 @@ def test_goal_and_linked_shot_must_share_possession() -> None:
 
     with pytest.raises(ValueError, match="same possession"):
         reducer.apply(goal)
+
+
+def test_event_from_different_match_is_rejected_by_reducer() -> None:
+    """Reducer state cannot mix accepted events from another match identity."""
+    scenario = generate_scenario("counter_attack_goal", 7)
+    reducer = MatchReducer("other-match", _rosters())
+
+    with pytest.raises(ValueError, match="match_id"):
+        reducer.apply(scenario.events[0])
