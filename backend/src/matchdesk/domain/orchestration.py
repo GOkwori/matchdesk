@@ -221,9 +221,7 @@ def record_specialist_attempt(
                 "status": "fallback",
                 "current_role": None,
                 "attempts": attempts,
-                "terminal_reason": (
-                    f"{role} exhausted its {policy.max_attempts}-attempt budget"
-                ),
+                "terminal_reason": (f"{role} exhausted its {policy.max_attempts}-attempt budget"),
             }
         )
 
