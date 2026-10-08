@@ -10,7 +10,7 @@ permissions:
 jobs:
   resolve:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -27,6 +27,9 @@ jobs:
               "python:3.12.15-slim-trixie",
               "node:22.23.3-trixie-slim",
               "postgres:16.15-trixie",
+              "python:3.12.15-alpine",
+              "node:22.23.3-alpine",
+              "postgres:16.15-alpine",
           ]
           rows = []
           for tag in tags:
@@ -55,6 +58,9 @@ jobs:
             docker run --rm python:3.12.15-slim-trixie python --version
             docker run --rm node:22.23.3-trixie-slim node --version
             docker run --rm postgres:16.15-trixie postgres --version
+            docker run --rm python:3.12.15-alpine python --version
+            docker run --rm node:22.23.3-alpine node --version
+            docker run --rm postgres:16.15-alpine postgres --version
           } | tee artifacts/runtime-base-candidates/versions.txt
       - name: Install checksum-verified Trivy and database
         run: |
@@ -73,9 +79,12 @@ jobs:
         run: |
           set -euo pipefail
           for spec in \
-            "python python:3.12.15-slim-trixie" \
-            "node node:22.23.3-trixie-slim" \
-            "postgres postgres:16.15-trixie"
+            "python_trixie python:3.12.15-slim-trixie" \
+            "node_trixie node:22.23.3-trixie-slim" \
+            "postgres_trixie postgres:16.15-trixie" \
+            "python_alpine python:3.12.15-alpine" \
+            "node_alpine node:22.23.3-alpine" \
+            "postgres_alpine postgres:16.15-alpine"
           do
             set -- $spec
             name="$1"
@@ -93,7 +102,10 @@ jobs:
           from pathlib import Path
           summary = {}
           root = Path("artifacts/runtime-base-candidates")
-          for name in ("python", "node", "postgres"):
+          for name in (
+              "python_trixie", "node_trixie", "postgres_trixie",
+              "python_alpine", "node_alpine", "postgres_alpine",
+          ):
               report = json.loads((root / f"{name}.json").read_text())
               findings = [
                   vuln
