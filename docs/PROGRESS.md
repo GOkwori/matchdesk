@@ -1,6 +1,6 @@
 # Current progress
 
-Date: 8 October 2026. Stage: Phase 1 in progress; Phase 1A synthetic engine TESTED.
+Date: 8 October 2026. Stage: Phase 1 in progress; P1-01 and P1-02 TESTED.
 Phase 0 gate: **VERIFIED / COMPLETED**.
 
 The engineering foundation was merged through the protected `main` path and the
@@ -20,12 +20,25 @@ content while preserving scenario rules. The fault stream keeps individual event
 structurally valid while injecting duplicate, out-of-order, sequence-gap and reset
 signals for later ingestion testing.
 
-Hosted qualification passed Foundation CI, Dependency audit, Source security and
+Hosted P1-01 qualification passed Foundation CI, Dependency audit, Source security and
 Foundation integration. Foundation CI ran 146 tests on Python 3.12.15 with 100% package
 statement and branch coverage. See the
 [Phase 1A qualification record](evidence/phase1a-synthetic-engine-20261008.md).
 
-P1-02, ordered/idempotent ingestion and replay revision handling, is next.
+P1-02, ordered/idempotent ingestion and replay revision handling, is TESTED on
+development source `d7567779580d731e61feb02302627975887bf616`. The in-memory
+`ReplayIngestor` separates arrival order from football sequence, treats exact
+duplicates as idempotent no-ops, buffers future sequences, exposes gaps, flushes
+contiguous buffered events when a gap closes, rejects stale/colliding identities and
+advances a deterministic replay revision on a distinct late sequence-zero reset.
+
+Hosted P1-02 qualification passed Foundation CI, Dependency audit, Source security and
+Foundation integration. Foundation CI ran 161 tests on Python 3.12.15 with 100% package
+statement and branch coverage. See the
+[Phase 1B qualification record](evidence/phase1b-temporal-ingestion-20261008.md).
+
+P1-03, the roster/score/possession reducer with exactly-once scoring and event-reference
+truth, is next.
 
 ## Historical native-image remediation before final qualification
 
