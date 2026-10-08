@@ -46,8 +46,7 @@ def _events_in_window(
     return tuple(
         event
         for event in events
-        if event.period == window.period
-        and window.from_ms <= event.match_clock_ms < window.to_ms
+        if event.period == window.period and window.from_ms <= event.match_clock_ms < window.to_ms
     )
 
 
