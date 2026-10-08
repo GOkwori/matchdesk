@@ -121,15 +121,90 @@ jobs:
             | (cd "$RUNNER_TEMP/matchdesk-gitleaks" && sha256sum --check -)
           tar -xzf "$RUNNER_TEMP/matchdesk-gitleaks/scanner.tar.gz" -C "$RUNNER_TEMP/matchdesk-gitleaks" gitleaks
           "$RUNNER_TEMP/matchdesk-gitleaks/gitleaks" version > artifacts/secrets/scanner-version.txt
-      - name: Scan reachable Git history with redacted output and no project exceptions
+      - name: Recompute the exact historical digest false positives before excluding them
+        # Only 13 reviewed historical fingerprints qualify, never whole paths or rules.
+        run: |
+          python - <<'PY'
+          """Prove each flagged historical value is its documented source-file SHA-256."""
+          import hashlib
+          import json
+          import os
+          import re
+          import subprocess
+          from pathlib import Path
+
+          records = json.loads(Path('docs/evidence/secret-scan-reviewed-digests-20261008.json').read_text())
+          if len(records) != 13 or len({r['fingerprint'] for r in records}) != 13:
+              raise SystemExit('Unexpected historical review scope')
+          allowed_commits = {'964fb8c5caae8cb9fc0955c3bf12bd3768b28040', '211d3676e03b70304404558818de4e175b345ef3'}
+          for record in records:
+              commit, path, rule, number = record['fingerprint'].split(':')
+              if commit not in allowed_commits or rule != 'generic-api-key':
+                  raise SystemExit('Unreviewed secret-scan fingerprint')
+              document = subprocess.check_output(['git', 'show', f'{commit}:{path}']).decode('utf-8')
+              line = document.splitlines()[int(number) - 1]
+              match = re.fullmatch(r'\s*"([^"]+)": "([0-9a-f]{64})",?', line)
+              if not match or match[2] != record['sha256']:
+                  raise SystemExit('Historical finding is not the reviewed digest field')
+              target = record['digest_of']
+              if match[1] != target and not (path == 'contracts/manifest.json' and 'contracts/' + match[1] == target):
+                  raise SystemExit('Digest field refers to a different source file')
+              # Formatting manifests describe a later reviewed blob, while original
+              # manifests describe files at the immutable import commit itself.
+              if 'git_blob' in record:
+                  if not re.fullmatch(r'[0-9a-f]{40}', record['git_blob']):
+                      raise SystemExit('Invalid source object identity')
+                  data = subprocess.check_output(['git', 'cat-file', 'blob', record['git_blob']])
+              else:
+                  data = subprocess.check_output(['git', 'show', f'{commit}:{target}'])
+              if hashlib.sha256(data).hexdigest() != record['sha256']:
+                  raise SystemExit('Source bytes do not reproduce the reviewed digest')
+          output = Path(os.environ['RUNNER_TEMP']) / 'matchdesk-no-ignores' / 'reviewed.ignore'
+          output.write_text('\n'.join(r['fingerprint'] for r in records) + '\n')
+          Path('artifacts/secrets/classification.json').write_text(json.dumps({
+              'status': 'VERIFIED_NON_SECRET_DIGESTS', 'count': len(records),
+              'scope': 'Exact historical commit/path/rule/line fingerprints only',
+              'records': records}, indent=2) + '\n')
+          print('Recomputed 13 published source/schema digests; no path or rule-wide exclusions.')
+          PY
+      - name: Confirm the scanner still detects a new synthetic key with the same exceptions
         run: |
           set -euo pipefail
-          # Explicitly reject new exception files until a separate policy review.
+          python - <<'PY'
+          """Generate a non-working detection control outside the repository and never print it."""
+          import os
+          import secrets
+          from pathlib import Path
+          root = Path(os.environ['RUNNER_TEMP']) / 'matchdesk-secret-control'
+          root.mkdir()
+          (root / 'control.txt').write_text('api_key = "' + secrets.token_hex(32) + '"\n')
+          PY
+          set +e
+          "$RUNNER_TEMP/matchdesk-gitleaks/gitleaks" dir "$RUNNER_TEMP/matchdesk-secret-control" \
+            --redact=100 --no-banner --no-color --ignore-gitleaks-allow \
+            --gitleaks-ignore-path "$RUNNER_TEMP/matchdesk-no-ignores/reviewed.ignore" \
+            --exit-code 1 --report-format json --report-path artifacts/secrets/control-findings.json \
+            > artifacts/secrets/control.log 2>&1
+          result=$?
+          set -e
+          test "$result" -eq 1
+          python - <<'PY'
+          """Distinguish a real detected control from an unrelated scanner failure."""
+          import json
+          from pathlib import Path
+          findings = json.loads(Path('artifacts/secrets/control-findings.json').read_text())
+          if not findings or not any(item.get('RuleID') == 'generic-api-key' for item in findings):
+              raise SystemExit('The synthetic detection control was not identified')
+          print('Synthetic detection control passed; no working credential was used.')
+          PY
+      - name: Scan reachable history with exact reviewed fingerprints only
+        run: |
+          set -euo pipefail
           test ! -e .gitleaks.toml
           test ! -e .gitleaksignore
           "$RUNNER_TEMP/matchdesk-gitleaks/gitleaks" git . \
             --log-opts='--all' --redact=100 --no-banner --no-color \
-            --ignore-gitleaks-allow --gitleaks-ignore-path "$RUNNER_TEMP/matchdesk-no-ignores" \
+            --ignore-gitleaks-allow --gitleaks-ignore-path "$RUNNER_TEMP/matchdesk-no-ignores/reviewed.ignore" \
             --exit-code 1 --report-format json --report-path artifacts/secrets/findings.json \
             2>&1 | tee artifacts/secrets/scan.log
       - name: Preserve redacted security evidence even after a finding
