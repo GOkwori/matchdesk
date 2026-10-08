@@ -13,7 +13,6 @@ from typing import Literal
 from matchdesk.domain.hashing import content_digest
 from matchdesk.domain.models import MatchEvent
 
-
 DecisionStatus = Literal["accepted", "buffered", "duplicate", "reset"]
 
 
@@ -48,7 +47,7 @@ class ReplayIngestor:
 
     def __init__(self, match_id: str) -> None:
         """Create an empty first replay revision for one match identifier."""
-        if not match_id:
+        if not match_id.strip():
             raise ValueError("match_id must not be blank")
         self._match_id = match_id
         self._revision = 1
@@ -71,8 +70,7 @@ class ReplayIngestor:
             revision=self._revision,
             expected_sequence=self._expected_sequence,
             accepted_events=tuple(
-                self._accepted_by_sequence[index]
-                for index in sorted(self._accepted_by_sequence)
+                self._accepted_by_sequence[index] for index in sorted(self._accepted_by_sequence)
             ),
             buffered_sequences=tuple(sorted(self._buffered_by_sequence)),
             missing_sequences=self._missing_sequences(),
@@ -98,9 +96,7 @@ class ReplayIngestor:
                 accepted_event_ids=(),
             )
 
-        if event.sequence == 0 and (
-            self._accepted_by_sequence or self._buffered_by_sequence
-        ):
+        if event.sequence == 0 and (self._accepted_by_sequence or self._buffered_by_sequence):
             self._start_new_revision()
             accepted_ids = self._accept_and_flush(event, digest)
             return self._decision(
@@ -113,21 +109,8 @@ class ReplayIngestor:
         if event.sequence < self._expected_sequence:
             raise ValueError("sequence is behind the accepted replay position")
 
-        accepted = self._accepted_by_sequence.get(event.sequence)
-        if accepted is not None:
-            raise ValueError("sequence is already occupied by another event")
-
-        buffered = self._buffered_by_sequence.get(event.sequence)
-        if buffered is not None:
-            if content_digest(buffered) != digest:
-                raise ValueError("sequence collision has different content")
-            self._known_by_event_id[event.event_id] = digest
-            return self._decision(
-                status="duplicate",
-                arrival_index=arrival_index,
-                event=event,
-                accepted_event_ids=(),
-            )
+        if event.sequence in self._buffered_by_sequence:
+            raise ValueError("sequence collision has different event identity")
 
         if event.sequence > self._expected_sequence:
             self._buffered_by_sequence[event.sequence] = event
