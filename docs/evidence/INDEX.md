@@ -3,6 +3,22 @@
 Results are tied to source commits and execution environments. A passing build is not
 an approval to deploy, and evidence from one source is not relabelled as another.
 
+## Phase 2B deterministic claim verification
+
+- [Phase 2B claim-verification qualification](phase2b-claim-verification-20261008.md)
+  records deterministic measured-claim recomputation, exact EvidenceRecord binding,
+  supported tactical inference, fail-closed event-fact semantics and evidence-digest
+  binding on source `6bff563d0d2b66eb9538513d0b77829872edccd1`.
+- Foundation CI 37833033850 passed 235 Python tests with 98.56% measured total package
+  coverage; the new verification module measured 87% coverage.
+- Dependency audit 37833033906, Source security 37833035687 and Foundation integration
+  37833034000 also passed, including runtime/browser and the independent native-image
+  verdict.
+- P2-02 does not parse arbitrary prose into facts or grant approval/publication authority.
+
+P2-02 is TESTED. P2-03 specialist execution interfaces and scoped read tools is next.
+Live Agent Framework / Foundry integration remains separately gated at P2-04.
+
 ## Phase 2A bounded orchestration control plane
 
 - [Phase 2A orchestration control-plane qualification](phase2a-orchestration-control-plane-20261008.md)

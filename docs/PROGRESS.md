@@ -1,6 +1,6 @@
 # Current progress
 
-Date: 8 October 2026. Stage: Phase 2 in progress; P2-01 TESTED.
+Date: 8 October 2026. Stage: Phase 2 in progress; P2-01 and P2-02 TESTED.
 Phase 0 gate: **VERIFIED / COMPLETED**.
 
 The engineering foundation was merged through the protected `main` path and the
@@ -119,8 +119,25 @@ See the
 [Phase 2A qualification record](evidence/phase2a-orchestration-control-plane-20261008.md).
 
 No Agent Framework or Foundry runtime, live model, Azure resource, publication authority
-or durable workflow persistence is claimed by P2-01. P2-02 deterministic claim
-verification against Phase 1 evidence is next.
+or durable workflow persistence is claimed by P2-01.
+
+P2-02, deterministic claim verification, is TESTED on development source
+`6bff563d0d2b66eb9538513d0b77829872edccd1`. Measured claims are recomputed through
+the registered Phase 1 metric engine; claim evidence must be bound by the exact
+EvidenceRecord and present in accepted event input. Tactical prose can become only
+`supported_inference`; event-fact prose without a registered semantic assertion returns
+`needs_revision` rather than false verification. Verification results bind to the exact
+EvidenceRecord content digest.
+
+Hosted P2-02 qualification passed Foundation CI 37833033850, Dependency audit
+37833033906, Source security 37833035687 and Foundation integration 37833034000.
+Foundation CI ran 235 tests on Python 3.12.15 with 98.56% measured total package
+coverage; the verifier module measured 87%. Ruff, formatting and strict mypy passed,
+and runtime/browser plus independent native-image qualification passed. See the
+[Phase 2B qualification record](evidence/phase2b-claim-verification-20261008.md).
+
+P2-03 specialist execution interfaces and scoped read tools is next. Live Agent
+Framework / Foundry integration remains P2-04 and separately gated.
 
 ## Historical native-image remediation before final qualification
 
