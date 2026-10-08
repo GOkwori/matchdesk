@@ -1,6 +1,6 @@
 # Foundation merge checklist
 
-Status: proposed merge procedure; not an approval or evidence of a completed merge.
+Status: solo-maintainer review policy approved; no final merge approval or merge.
 
 ## Scope of this milestone
 
@@ -27,21 +27,22 @@ deployment, public launch or production-readiness claim.
 
 ## Repository settings to verify
 
-On `main`, require a pull request and the uniquely named checks: `foundation`, `web`,
-`runtime-browser`, `dependencies`, `codeql-python`, `codeql-javascript-typescript` and
-`history-secrets`. Add the native-image check once it exists and has been qualified.
-Require up-to-date checks and resolved conversations. Disable force pushes and branch
-deletion, and apply the policy to administrators rather than relying on a bypass.
+On `main`, require a pull request and all eight uniquely named checks: `foundation`,
+`web`, `runtime-browser`, `native-images`, `dependencies`, `codeql-python`,
+`codeql-javascript-typescript` and `history-secrets`. Require up-to-date checks and
+resolved conversations. Disable force pushes and branch deletion, and apply the
+policy to administrators rather than relying on a bypass.
 
-The build brief calls for a required approving review. A PR author cannot approve
-their own PR. An independent authorized reviewer is therefore needed for that policy;
-do not count an assistant message or a self-authored comment as a GitHub review. Any
-alternative solo-maintainer policy must be explicitly decided and documented, not
-silently weakened during this merge.
+George approved the [solo-maintainer policy](../decisions/ADR-0010-solo-maintainer-approval.md)
+on 8 October 2026. Set additional approving reviews to zero and last-push approval
+to false. This explicitly replaces the brief's independent-review requirement but
+not the owner's final exact-commit sign-off. The latter is a procedural control,
+not a GitHub approving review, and is not inferred from a passing workflow.
 
-Keep `development` as the working branch and prevent forced updates/deletion. Do not
-add a PR-only update policy that makes the agreed two-branch development workflow
-impossible without first agreeing a revised branch strategy.
+Keep `development` as the working branch and prevent forced updates/deletion. Its
+approved history safeguards allow ordinary development commits and post-push tests;
+promotion remains a protected PR into main. Do not add a third branch, automatic
+merge or deployment as part of this policy change.
 
 These are settings to apply/verify, not a claim that they are enabled. The protected
 branch administration read returned 403. Do not provide access tokens or passwords
@@ -49,17 +50,20 @@ in chat to work around that permission boundary.
 
 ## Merge and follow-up
 
-Keep PR #1 in draft until the remaining gates are met. Then record the reviewed head,
-mark it ready, obtain the required review and merge through the protected GitHub PR
-path. Do not force-update `main`, bypass failing checks or delete `development`.
+Keep PR #1 in draft until the remaining gates are met. Record the PR number, full
+head SHA, base SHA, qualification runs, limitations and explicit owner decision with
+a recorded time. Mark it ready and merge through the protected GitHub PR path only
+after that sign-off. A later head or base change invalidates this approval and needs
+fresh qualification and renewed owner sign-off. Do not force-update `main`, bypass
+failing checks or delete `development`.
 
 After the merge, inspect the resulting commit and run the same relevant checks on
 `main`. Record the merge and qualification evidence separately. A release tag or
 Azure deployment requires its own explicit decision; neither is implied by this
-foundation merge.
+foundation merge or by approval of the solo-maintainer policy.
 
 ## References
 
 - [GitHub protected branches](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)
-- [GitHub required reviews](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/reviewing-changes-in-pull-requests/approving-a-pull-request-with-required-reviews)
-- [Current qualification evidence](../evidence/security-remediation-20261008.md)
+- [GitHub ruleset controls](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets)
+- [Current qualification evidence](../evidence/native-image-remediation-20261008.md)

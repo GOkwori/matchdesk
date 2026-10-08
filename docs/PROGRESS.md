@@ -27,8 +27,8 @@ error. See the [native image report](evidence/native-image-remediation-20261008.
 These numbers are occurrences, not distinct vulnerabilities or demonstrated exploits.
 The all-severity policy remains strict, including unfixed and low-severity findings.
 Any risk-policy change needs an explicit decision and evidence-backed dispositions.
-[Repository-control files](operations/repository-controls.md) are prepared but not
-activated; the two-branch policy and independent-review requirement need owner review.
+[Repository-control files](operations/repository-controls.md) now reflect the approved
+solo-maintainer policy; activation remains outstanding and the image gate is unchanged.
 
 ## Earlier foundation qualification
 
@@ -83,6 +83,24 @@ non-working key control. No paths or rules are broadly excluded. See the
 [qualification report](evidence/security-remediation-20261008.md) for measured scope,
 artifact identities and retained failures; clean scans do not prove absence of risk.
 
+## Approved solo-maintainer policy
+
+George approved the solo-maintainer policy on 8 October 2026. The
+[decision](decisions/ADR-0010-solo-maintainer-approval.md) removes the additional
+approving-review requirement and last-push approval from the main import file.
+It retains PR-only promotion, all eight checks, resolved conversations, no bypass
+actors and history safeguards. Development remains the working branch.
+
+Six new regression cases in `backend/tests/test_repository_policy.py` check the
+versioned rule files. Their isolated local run passed on Python 3.13.5; that is not
+hosted Python 3.12 qualification or live GitHub enforcement. The next hosted run
+must execute these cases alongside the existing suite. No previous results above
+are attributed to this policy change.
+
+Final owner sign-off remains required for the exact proposed head and base commits.
+It is a procedural approval, not an independent GitHub review. Policy approval does
+not waive image findings, approve PR #1 or authorize automatic merging or deployment.
+
 ## Repository and release boundary
 
 [PR #1](https://github.com/GOkwori/matchdesk/pull/1) remains a draft. `main` remains the
@@ -95,11 +113,11 @@ production database was reset.
 ## Remaining Phase 0 work
 
 Remediate and disposition the remaining native-image findings, refresh advisory data,
-activate reviewed repository protections and complete the final foundation review
+activate the approved repository protections and complete the final foundation review
 using the [merge checklist](operations/foundation-merge-checklist.md). Recheck
 all required workflows on the proposed merge head; a documentation follow-up is not
-automatically the tested source above. A required independent approving review must
-not be replaced by an author's self-approval or an assistant status message.
+automatically the tested source above. Obtain explicit owner sign-off for the final
+head and base under ADR-0010; a policy decision or status report is not that sign-off.
 
 Screenshots are inspection evidence, not approved visual regression baselines;
 three Chromium viewports are not cross-browser or full accessibility qualification.

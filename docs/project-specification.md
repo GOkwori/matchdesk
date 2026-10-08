@@ -58,6 +58,16 @@ Statuses distinguish PLANNED, IN_PROGRESS, IMPLEMENTED, TESTED, DEPLOYED, VERIFI
 and BLOCKED. A missing tool is not a pass. A stub is not a live model. A declaration
 of source validity is not a claim verification. Owner approval requires an explicit record.
 
+## Approved repository policy
+
+[ADR-0010](decisions/ADR-0010-solo-maintainer-approval.md) records George's approved
+solo-maintainer workflow. Main retains PR-only promotion and all required checks,
+with zero additional approving reviews and no last-push approval. The owner must
+still explicitly approve the exact proposed head and base after reviewing evidence.
+Development retains history safeguards and ordinary development commits. This policy
+supersedes the additional-reviewer requirement, not security gates or phase approval.
+Ruleset activation, final merge approval and production deployment remain separate.
+
 ## Open design decisions
 
 Only main and development are authorised. Environment isolation, optional
