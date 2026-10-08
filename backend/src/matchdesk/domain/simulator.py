@@ -15,7 +15,6 @@ from typing import Literal
 
 from matchdesk.domain.models import Location, MatchEvent
 
-
 ScenarioName = Literal[
     "late_winner",
     "momentum_swing",
