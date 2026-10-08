@@ -15,6 +15,11 @@ function input(page) {
   return page.getByLabel('Edit the JSON and validate its structure');
 }
 
+/** Scope to the product panel: Next also provides a separate route-announcer alert. */
+function errorAlert(page) {
+  return page.getByRole('complementary', { name: 'Validation result' }).getByRole('alert');
+}
+
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
   await expect(input(page)).toBeVisible();
@@ -37,7 +42,7 @@ test('invalid synthetic flag is rejected by the real HTTP boundary', async ({ pa
   const event = JSON.parse(await input(page).inputValue());
   await input(page).fill(JSON.stringify({ ...event, synthetic: 1 }));
   await submit(page, 422);
-  await expect(page.getByRole('alert')).toContainText('HTTP 422');
+  await expect(errorAlert(page)).toContainText('HTTP 422');
   await expect(page.getByRole('heading', { name: 'Structure accepted' })).toHaveCount(0);
 });
 
@@ -48,7 +53,7 @@ test('malformed JSON is rejected locally without an HTTP mutation', async ({ pag
   });
   await input(page).fill('{malformed');
   await page.getByRole('button', { name: 'Validate event', exact: true }).click();
-  await expect(page.getByRole('alert')).toBeVisible();
+  await expect(errorAlert(page)).toBeVisible();
   expect(posts).toBe(0);
 });
 
@@ -56,18 +61,18 @@ test('oversized JSON is rejected through the standalone proxy', async ({ page })
   const event = JSON.parse(await input(page).inputValue());
   await input(page).fill(JSON.stringify({ ...event, unexpected: 'x'.repeat(70000) }));
   await submit(page, 413);
-  await expect(page.getByRole('alert')).toContainText('HTTP 413');
+  await expect(errorAlert(page)).toContainText('HTTP 413');
 });
 
 test('controlled network fault clears after retry against the real API', async ({ page }) => {
   // Deliberately abort this one transport request; this is not an observed backend outage.
   await page.route(endpoint, (route) => route.abort('failed'));
   await page.getByRole('button', { name: 'Validate event', exact: true }).click();
-  await expect(page.getByRole('alert')).toBeVisible();
+  await expect(errorAlert(page)).toBeVisible();
   await page.unroute(endpoint);
   await submit(page);
   await expect(page.getByRole('heading', { name: 'Structure accepted' })).toBeVisible();
-  await expect(page.getByRole('alert')).toHaveCount(0);
+  await expect(errorAlert(page)).toHaveCount(0);
 });
 
 test('controlled untrusted response cannot claim evidence verification', async ({ page }) => {
@@ -75,7 +80,7 @@ test('controlled untrusted response cannot claim evidence verification', async (
   await page.route(endpoint, (route) => route.fulfill({ status: 200, contentType: 'application/json',
     body: JSON.stringify({ event_id: 'fixture', structurally_valid: true, evidence_verified: true, content_digest: 'a'.repeat(64) }) }));
   await submit(page);
-  await expect(page.getByRole('alert')).toContainText('unexpected response contract');
+  await expect(errorAlert(page)).toContainText('unexpected response contract');
   await expect(page.getByRole('heading', { name: 'Structure accepted' })).toHaveCount(0);
 });
 
@@ -106,7 +111,7 @@ test('an edited input cannot inherit acceptance from an older in-flight request'
   await expect(page.getByText('m001-newer-input', { exact: true })).toBeVisible();
 });
 
-test('keyboard submission reaches the same verified structural boundary', async ({ page }) => {
+test('keyboard submission reaches the actual structural boundary', async ({ page }) => {
   await input(page).focus();
   await page.keyboard.press('Tab');
   const button = page.getByRole('button', { name: 'Validate event', exact: true });
