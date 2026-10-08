@@ -1,14 +1,13 @@
 """Phase 2A tests for the deterministic specialist orchestration control plane."""
 
 import pytest
-
 from matchdesk.domain.orchestration import (
     DEFAULT_ROLE_POLICIES,
     RolePolicy,
     WorkflowState,
     apply_verification_gate,
-    recover_workflow,
     record_specialist_attempt,
+    recover_workflow,
     start_workflow,
 )
 
