@@ -1,10 +1,7 @@
 """Phase 1B temporal-ingestion tests using deterministic simulator streams."""
 
-from dataclasses import replace
-
 import pytest
 from matchdesk.domain.ingestion import ReplayIngestor
-from matchdesk.domain.models import MatchEvent
 from matchdesk.domain.simulator import NORMAL_SCENARIOS, generate_scenario
 
 
@@ -133,6 +130,19 @@ def test_sequence_collision_with_different_event_fails_closed() -> None:
         ingestor.ingest(collision)
 
 
+def test_stale_unseen_sequence_fails_closed() -> None:
+    """A new event cannot claim a sequence that is already behind accepted position."""
+    scenario = generate_scenario("counter_attack_goal", 3)
+    ingestor = ReplayIngestor(scenario.match_id)
+    ingestor.ingest(scenario.events[0])
+    ingestor.ingest(scenario.events[1])
+
+    stale = scenario.events[1].model_copy(update={"event_id": "stale-sequence"})
+
+    with pytest.raises(ValueError, match="behind"):
+        ingestor.ingest(stale)
+
+
 def test_event_from_different_match_is_rejected() -> None:
     """A replay ingestor must never mix events belonging to different matches."""
     scenario = generate_scenario("counter_attack_goal", 3)
@@ -145,7 +155,5 @@ def test_event_from_different_match_is_rejected() -> None:
 @pytest.mark.parametrize("match_id", ["", "   "])
 def test_blank_match_identifier_is_rejected(match_id: str) -> None:
     """An ingestor must have a meaningful match scope before accepting arrivals."""
-    if match_id.strip():
-        pytest.fail("fixture must be blank")
     with pytest.raises(ValueError):
-        ReplayIngestor(match_id.strip())
+        ReplayIngestor(match_id)
