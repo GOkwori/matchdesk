@@ -3,6 +3,21 @@
 Results are tied to source commits and execution environments. A passing build is not
 an approval to deploy, and evidence from one source is not relabelled as another.
 
+## Phase 1E deterministic moment detection
+
+- [Phase 1E moment detection qualification](phase1e-moment-detection-20261008.md)
+  records five explicit deterministic moment types and their positive/negative scenario
+  regressions on source `ad51a072b71d360839e031cbf8cd905634c2428a`.
+- Foundation CI run 37823057928 passed 207 Python tests with 99.19% measured total
+  package coverage, Ruff, formatter checks and strict mypy.
+- Dependency audit 37823057957, Source security 37823057917 and Foundation integration
+  37823057960 also passed, including runtime-browser and native-images.
+- Foundation CI run 37822980154 is retained as the first formatting-only failure:
+  tests, repository/document checks, Ruff lint and mypy passed before the formatter
+  correctly rejected one source file.
+
+P1-05 is TESTED only. P1-06 Phase 1 review remains the next controlled work item.
+
 ## Phase 1D registered football metrics
 
 - [Phase 1D registered metrics qualification](phase1d-registered-metrics-20261008.md)
