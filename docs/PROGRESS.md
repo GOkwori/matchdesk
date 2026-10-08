@@ -1,6 +1,6 @@
 # Current progress
 
-Date: 8 October 2026. Stage: Phase 1 in progress; P1-01, P1-02 and P1-03 TESTED.
+Date: 8 October 2026. Stage: Phase 1 in progress; P1-01 through P1-04 TESTED.
 Phase 0 gate: **VERIFIED / COMPLETED**.
 
 The engineering foundation was merged through the protected `main` path and the
@@ -47,8 +47,24 @@ Foundation integration. Foundation CI ran 184 tests on Python 3.12.15 with 100% 
 statement and branch coverage. See the
 [Phase 1C qualification record](evidence/phase1c-football-state-reducer-20261008.md).
 
-P1-04, registered football metrics with explicit formula IDs and independent
-expected-value tests, is next.
+P1-04, registered football metrics, is TESTED on development source
+`829f92033ffb4a8713a42711f8c383151f670d6a`. The registry exposes exactly six
+versioned deterministic formulas: `shots.v1`, `goals.v1`, `pass_accuracy.v1`,
+`synthetic_xg.v1`, `final_third_entries.v1` and `possession_time.v1`.
+Independent hand-calculated tests establish count, ratio, xG, final-third and clipped
+possession-window expectations. Unknown formulas, mixed-match inputs and unordered
+input fail closed. The MetricAssertion contract now accepts versioned metric IDs.
+
+Hosted P1-04 qualification passed Foundation CI, Dependency audit, Source security and
+Foundation integration. Foundation CI ran 195 tests on Python 3.12.15. The implemented
+package measured 99.26% total coverage across 625 statements and 186 branches; Ruff,
+formatter checks and strict mypy passed, and the frontend build remained green. The
+first candidate run retained a formatting-only failure after its tests, Ruff lint and
+mypy had already passed; the exact formatter output was then qualified successfully.
+See the [Phase 1D qualification record](evidence/phase1d-registered-metrics-20261008.md).
+
+P1-05, deterministic moment detectors for goal, big chance, momentum swing, pressing
+spell and counter-attack goal, is next.
 
 ## Historical native-image remediation before final qualification
 
