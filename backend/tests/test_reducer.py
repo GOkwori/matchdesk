@@ -11,13 +11,13 @@ def _rosters() -> tuple[TeamRoster, TeamRoster]:
     return (
         TeamRoster(
             team_id="home",
-            starters=tuple(f"home-{number:02d}" for number in range(1, 12)),
-            substitutes=("home-12", "home-13"),
+            starters=tuple(f"home-{number:02d}" for number in range(1, 13)),
+            substitutes=("home-13", "home-14"),
         ),
         TeamRoster(
             team_id="away",
-            starters=tuple(f"away-{number:02d}" for number in range(1, 12)),
-            substitutes=("away-12", "away-13"),
+            starters=tuple(f"away-{number:02d}" for number in range(1, 13)),
+            substitutes=("away-13", "away-14"),
         ),
     )
 
@@ -116,11 +116,7 @@ def test_possession_cannot_switch_teams() -> None:
     reducer.apply(scenario.events[1])
 
     conflicting = scenario.events[2].model_copy(
-        update={
-            "team_id": "away",
-            "player_id": "away-06",
-            "possession_id": scenario.events[1].possession_id,
-        }
+        update={"possession_id": scenario.events[1].possession_id}
     )
 
     with pytest.raises(ValueError, match="possession_id"):
@@ -210,7 +206,7 @@ def test_substitution_updates_current_roster() -> None:
             "type": "substitution",
             "team_id": "home",
             "player_id": "home-09",
-            "related_player_id": "home-12",
+            "related_player_id": "home-13",
             "outcome": "complete",
         }
     )
@@ -223,7 +219,7 @@ def test_substitution_updates_current_roster() -> None:
             "match_clock_ms": 1_801_000,
             "type": "pass",
             "team_id": "home",
-            "player_id": "home-12",
+            "player_id": "home-13",
             "possession_id": 60,
             "location": Location(x=50.0, y=50.0),
             "end_location": Location(x=55.0, y=50.0),
@@ -236,7 +232,7 @@ def test_substitution_updates_current_roster() -> None:
     reducer.apply(next_touch)
 
     assert "home-09" not in state.active_players["home"]
-    assert "home-12" in state.active_players["home"]
+    assert "home-13" in state.active_players["home"]
 
 
 def test_substitution_rejects_unregistered_or_already_active_incoming_player() -> None:
@@ -256,6 +252,7 @@ def test_substitution_rejects_unregistered_or_already_active_incoming_player() -
     reducer.apply(start)
 
     def substitution(event_id: str, incoming: str) -> MatchEvent:
+        """Build one substitution event for negative roster tests."""
         return MatchEvent.model_validate(
             {
                 "event_id": event_id,
@@ -289,3 +286,59 @@ def test_roster_configuration_is_strict() -> None:
     away = TeamRoster(team_id="away", starters=("shared-player",))
     with pytest.raises(ValueError, match="both teams"):
         MatchReducer("match", (home, away))
+
+
+def test_reducer_configuration_rejects_blank_match_and_duplicate_team_ids() -> None:
+    """Reducer scope must identify one match and two distinct teams."""
+    home = TeamRoster(team_id="home", starters=("home-01",))
+    with pytest.raises(ValueError, match="match_id"):
+        MatchReducer("   ", (home, TeamRoster(team_id="away", starters=("away-01",))))
+    with pytest.raises(ValueError, match="distinct"):
+        MatchReducer("match", (home, TeamRoster(team_id="home", starters=("home-02",))))
+
+
+def test_roster_rejects_blank_team_or_player_identifier() -> None:
+    """Roster identities must be nonblank before football-state reduction begins."""
+    with pytest.raises(ValueError, match="team_id"):
+        TeamRoster(team_id="   ", starters=("home-01",))
+    with pytest.raises(ValueError, match="player identifiers"):
+        TeamRoster(team_id="home", starters=("   ",))
+
+
+def test_player_event_missing_identity_fails_closed() -> None:
+    """Reducer truth validation does not trust structurally bypassed player identity."""
+    scenario = generate_scenario("counter_attack_goal", 7)
+    reducer = MatchReducer(scenario.match_id, _rosters())
+    reducer.apply(scenario.events[0])
+    malformed = scenario.events[1].model_copy(update={"player_id": None})
+
+    with pytest.raises(ValueError, match="missing team or player"):
+        reducer.apply(malformed)
+
+
+def test_goal_and_linked_shot_must_share_team() -> None:
+    """A goal marker cannot score from the opponent's accepted shot."""
+    scenario = generate_scenario("counter_attack_goal", 7)
+    reducer = MatchReducer(scenario.match_id, _rosters())
+    for event in scenario.events[:6]:
+        reducer.apply(event)
+
+    goal = scenario.events[6].model_copy(
+        update={"team_id": "away", "player_id": "away-10"}
+    )
+
+    with pytest.raises(ValueError, match="same team"):
+        reducer.apply(goal)
+
+
+def test_goal_and_linked_shot_must_share_possession() -> None:
+    """A goal marker cannot detach scoring from the shot's accepted possession."""
+    scenario = generate_scenario("counter_attack_goal", 7)
+    reducer = MatchReducer(scenario.match_id, _rosters())
+    for event in scenario.events[:6]:
+        reducer.apply(event)
+
+    goal = scenario.events[6].model_copy(update={"possession_id": 999})
+
+    with pytest.raises(ValueError, match="same possession"):
+        reducer.apply(goal)
