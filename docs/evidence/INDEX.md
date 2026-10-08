@@ -3,14 +3,31 @@
 Results are tied to source commits and execution environments. A passing build is not
 an approval to deploy, and evidence from one source is not relabelled as another.
 
-## Built runtime, browser and security
+## Current dependency and source-security qualification
+
+- [Patched dependencies, runtime and source-security results](security-remediation-20261008.md):
+  source `e2ee20385f2d0da521dd9553eb5f9058d7b4b7e2`; four workflows passed. The report
+  contains exact runs, artifact identities, 78 Python tests, nine runtime groups,
+  24 Chromium cases and the scope of the passing scans.
+- [First ASGI upgrade failure and supported-client correction](asgi-upgrade-first-run-20261008.md)
+  preserves the test collection failure without suppressing the warning.
+- [Patched ASGI candidates](patched-python-candidates-20261008.json) and
+  [supported-client candidates](test-client-candidate-20261008.json) retain resolver provenance.
+- [Secret-scan classification](secret-scan-classification-20261008.md) and its
+  [exact reviewed digest record](secret-scan-reviewed-digests-20261008.json) preserve
+  the initial 13 findings and narrow, recomputed non-secret classifications.
+
+Native container/OS scans, repository protections and final foundation review remain
+outstanding. There has been no main merge or production approval.
+
+## Earlier built runtime, browser and security
 
 - [Passing hosted runtime and browser qualification](hosted-integration-20261008.md):
   source `15996afa3219020c44dc1ff8f353e87d93e921e6`, integration run 37755579408;
   nine runtime groups and 24 Chromium cases passed.
 - [Dependency advisory failure](dependency-audit-20261008.md): the same source,
   run 37755579414; eight distinct Python advisory IDs across three packages.
-  This failure continues to block phase completion and release.
+  This historical failure is resolved only for the later scanned graph above.
 - [First failed integration attempt](integration-first-run-20261008.md): source
   `3b0ae4ae9569ebe97c0bae286720515ea50731ed`, run 37755125431; original assertions
   and failed evidence retained through the authentication/locator corrections.
