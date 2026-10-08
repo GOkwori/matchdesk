@@ -92,7 +92,7 @@ jobs:
           PY
       - name: Preserve source analysis and gate results
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: codeql-${{ matrix.language }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: artifacts/codeql/
@@ -232,7 +232,7 @@ jobs:
             2>&1 | tee artifacts/secrets/scan.log
       - name: Preserve redacted security evidence even after a finding
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: history-secrets-${{ github.run_id }}-${{ github.run_attempt }}
           path: artifacts/secrets/
