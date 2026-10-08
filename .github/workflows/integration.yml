@@ -93,7 +93,7 @@ jobs:
             --cache "$RUNNER_TEMP/matchdesk-trivy-cache"
       - name: Retain image inventories and scan failures for the independent gate
         if: ${{ always() }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: image-security-${{ github.run_id }}-${{ github.run_attempt }}
           path: artifacts/image-security/
@@ -116,7 +116,7 @@ jobs:
           docker compose --project-name "$COMPOSE_PROJECT_NAME" down --volumes --remove-orphans
       - name: Retain results, screenshots and failed traces
         if: ${{ always() }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: integration-${{ github.run_id }}-${{ github.run_attempt }}
           path: artifacts/integration/
@@ -143,7 +143,7 @@ jobs:
             --source "$(git rev-parse HEAD)" --run-id "$GITHUB_RUN_ID"
       - name: Retain the independent image-security verdict
         if: ${{ always() }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: image-security-verdict-${{ github.run_id }}-${{ github.run_attempt }}
           path: artifacts/image-security/verdict.json
