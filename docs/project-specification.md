@@ -1,6 +1,6 @@
 # MatchDesk project specification
 
-Owner: George Okwori. Baseline: 8 October 2026. Status: IN_PROGRESS; Phase 0 VERIFIED / COMPLETED, Phase 1 next.
+Owner: George Okwori. Baseline: 8 October 2026. Status: IN_PROGRESS; Phase 0 VERIFIED / COMPLETED, Phase 1A TESTED.
 
 ## Purpose and users
 
@@ -50,7 +50,7 @@ Phase 0 established contracts, local services, documentation, hosted qualificati
 runtime/browser/security gates and protected repository promotion. It is complete on
 main commit `773ba7cc2da60d14e5a1e3106b61fa202c93624b`.
 
-Phase 1 builds the deterministic engine. Phase 2 adds agent orchestration and verification.
+Phase 1 builds the deterministic engine. P1-01, the seeded synthetic match engine, is TESTED; P1-02 ingestion/replay handling is next. Phase 2 adds agent orchestration and verification.
 Phase 3 completes producer and audience flows. Phase 4 qualifies reliability and security.
 Phase 5 packages the demonstration and submission. Work stops at each owner review gate.
 The internal submission target is 26 October 2026.
