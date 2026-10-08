@@ -7,10 +7,10 @@ structurally valid while introducing stream-level defects for later ingestion te
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import hashlib
 import json
 import random
+from dataclasses import dataclass
 from typing import Literal
 
 from matchdesk.domain.models import Location, MatchEvent
