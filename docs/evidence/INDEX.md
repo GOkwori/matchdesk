@@ -3,7 +3,21 @@
 Results are tied to source commits and execution environments. A passing build is not
 an approval to deploy, and evidence from one source is not relabelled as another.
 
-## Current dependency and source-security qualification
+## Current native image qualification
+
+- [Native scans and first runtime remediation](native-image-remediation-20261008.md):
+  source `c0e8f5c731e8688ceed37145e0f17c07b768df89`; 109 Python tests, nine runtime
+  groups and 24 browser cases passed. Image security remains failed on remaining
+  findings and overdue advisory metadata. Unused runtime installers were removed;
+  four downloaded evidence archives were source-bound and hash-verified.
+- [First native scan and retained failures](native-images-first-run-20261008.md):
+  source `e8c76d093c4312c2ce74e1413cc77a36a5303b1c`; real reports exposed the native
+  security gap despite passing application lock audits. Formatting failure retained.
+
+No blanket vulnerability exemptions were added. Repository controls are prepared,
+not applied, and there has been no foundation merge or production approval.
+
+## Earlier dependency and source-security qualification
 
 - [Patched dependencies, runtime and source-security results](security-remediation-20261008.md):
   source `e2ee20385f2d0da521dd9553eb5f9058d7b4b7e2`; four workflows passed. The report
@@ -17,8 +31,8 @@ an approval to deploy, and evidence from one source is not relabelled as another
   [exact reviewed digest record](secret-scan-reviewed-digests-20261008.json) preserve
   the initial 13 findings and narrow, recomputed non-secret classifications.
 
-Native container/OS scans, repository protections and final foundation review remain
-outstanding. There has been no main merge or production approval.
+The native gate was not part of these earlier runs; they remain genuine for their
+measured scope and do not override the later image findings above.
 
 ## Earlier built runtime, browser and security
 

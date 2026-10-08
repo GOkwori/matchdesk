@@ -8,10 +8,11 @@ My priority is the path from a synthetic match event to a publishable explanatio
 The design keeps statistics in deterministic code, uses specialist AI agents to
 interpret and present evidence, and gives the producer control over publication.
 
-**Owner: George Okwori. Current stage: Phase 0 foundation; final merge gates open.**
+**Owner: George Okwori. Current stage: Phase 0 foundation; merge blocked.**
 The recorded build, runtime/browser, dependency and source-security checks pass.
-Native image scanning, repository protections and final review remain outstanding.
-There is no deployed product or live Foundry integration.
+The native image gate runs but fails on remaining findings and overdue advisory data.
+Repository protections and final review remain open. There is no deployed product or
+live Foundry integration.
 
 ## What is implemented
 
@@ -21,15 +22,17 @@ Immutable domain models cover events, windows, claims, evidence, verification
 results and approval bindings. Structural validation is not factual verification.
 
 The Next.js workbench builds and runs as a standalone container against the real API.
-The recorded source passed 78 Python tests, strict static checks, schema/documentation
-checks, nine runtime groups and 24 Chromium browser cases at three viewport sizes.
-An input revision guard prevents an old in-flight response from accepting edited text.
+The latest recorded source passed 109 Python tests, strict static checks,
+schema/documentation checks, nine runtime groups and 24 Chromium browser cases at
+three viewport sizes. An input revision guard prevents an old in-flight response
+from accepting edited text.
 
 The isolated PostgreSQL topology passes transaction, uniqueness, password and restart
 probes. These are not application persistence or migration tests. The simulator,
 match statistics, agents, producer queue, translations and publication pipeline are
-not implemented yet. The [security remediation report](docs/evidence/security-remediation-20261008.md)
-records the patched dependencies, passing audits and precise limits of the result.
+not implemented yet. The [native image report](docs/evidence/native-image-remediation-20261008.md)
+records actual scan findings, the removal of unused runtime package managers and the
+remaining merge blockers. Passing application lock audits did not prove clean images.
 
 Read [current progress](docs/PROGRESS.md) and the [evidence index](docs/evidence/INDEX.md)
 before treating any capability as tested or available.
@@ -99,8 +102,12 @@ initialise TCP authentication with SCRAM. Existing volumes need a separately rev
 authentication migration; do not delete a database merely to apply these settings.
 
 The standalone web image compiles its non-secret API upstream during the build.
-The [integration method](docs/testing/integration-foundation.md) explains browser
-setup, isolated probes, measured scope and limitations. No public demo is hosted yet.
+Unused pip/npm/Yarn/Corepack are excluded from the final service images, not the
+build stages. Image inventories and actual runtime/browser tests check the result;
+OS and PostgreSQL/gosu findings remain open. The
+[integration method](docs/testing/integration-foundation.md) and
+[image-security method](docs/testing/runtime-image-security.md) explain the scope.
+No public demo is hosted yet.
 
 ## Tests, comments and documentation
 
@@ -108,8 +115,8 @@ setup, isolated probes, measured scope and limitations. No public demo is hosted
 and Python docstring-presence checks. `make lint` runs Ruff, formatting, strict mypy
 and frontend type checks. Independent integration, advisory and source-security workflows
 retain failures, source IDs, hashes, JUnit, screenshots, SARIF and redacted scan reports.
-The [current qualification report](docs/evidence/security-remediation-20261008.md) preserves
-the earlier failures and distinguishes passing checks from foundation merge approval.
+The [latest image qualification report](docs/evidence/native-image-remediation-20261008.md)
+separates passing application checks from the failed native-image security gate.
 
 Every authored Python module, class and function has a docstring. Non-obvious
 validation, concurrency and security decisions have explanatory comments. Browser
@@ -123,6 +130,7 @@ used by Next.js. See the [coding standard](docs/engineering/coding-standard.md).
 · [Testing strategy](docs/testing/test-strategy.md) · [Operations](docs/operations/runbook.md)
 · [Requirements traceability](docs/competition/traceability-matrix.md)
 · [Foundation merge checklist](docs/operations/foundation-merge-checklist.md)
+· [Repository controls for review](docs/operations/repository-controls.md)
 
 ## Data, AI and licence
 

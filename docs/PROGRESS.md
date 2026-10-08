@@ -1,18 +1,43 @@
 # Current progress
 
 Date: 8 October 2026. Stage: Phase 0. Overall gate: **BLOCKED, not certified**.
-Foundation build, runtime/browser, dependency audit and source-security checks:
-**PASS for the recorded scope**. Native image scans, repository controls and final
-review remain open; the foundation has not been merged.
+Foundation build, runtime/browser, dependency audit and source-security checks pass
+for the recorded source. **Native image security fails** on remaining findings and
+an overdue advisory-database refresh. The foundation has not been merged.
 
-## Implemented and tested
+## Latest native-image and regression qualification
+
+Tested source: `c0e8f5c731e8688ceed37145e0f17c07b768df89`.
+[Foundation CI 37765164071](https://github.com/GOkwori/matchdesk/actions/runs/37765164071)
+passed 109 Python tests, unchanged schemas, static checks, 136 Python documentation
+points and 59 document checks. TypeScript and the optimized web build passed.
+The [integration run](https://github.com/GOkwori/matchdesk/actions/runs/37765163994)
+passed nine real runtime groups and 24 Chromium cases, but failed the separate
+native-images job. Dependency audit and source security passed on the same source.
+
+The new gate scans the exact tested images with verified scanner bytes and retains
+source/image/database identities, inventories and findings. Thirty-one regression
+cases test its rejection paths. Removing unused pip/npm/Yarn/Corepack from final
+service images reduced reported package/advisory occurrences from 1,078 to 1,010
+using identical advisory data. OS and PostgreSQL/gosu findings remain; no exemption
+has been applied. The database's next-update time was already overdue at download.
+The verdict now exposes both causes rather than hiding findings behind the freshness
+error. See the [native image report](evidence/native-image-remediation-20261008.md).
+
+These numbers are occurrences, not distinct vulnerabilities or demonstrated exploits.
+The all-severity policy remains strict, including unfixed and low-severity findings.
+Any risk-policy change needs an explicit decision and evidence-backed dispositions.
+[Repository-control files](operations/repository-controls.md) are prepared but not
+activated; the two-branch policy and independent-review requirement need owner review.
+
+## Earlier foundation qualification
 
 The foundation includes immutable version-1 contracts, strict synthetic-event
 validation, content hashing, schema/health APIs, bounded request bodies, documented
 boundary tests and a Next.js contract workbench. It is not the complete football
 intelligence or editorial production application.
 
-Tested source: `e2ee20385f2d0da521dd9553eb5f9058d7b4b7e2`.
+Earlier tested source: `e2ee20385f2d0da521dd9553eb5f9058d7b4b7e2`.
 [Foundation CI 37758971639](https://github.com/GOkwori/matchdesk/actions/runs/37758971639)
 passed 78 Python 3.12.15 tests, Ruff, formatting, strict mypy, schema snapshots,
 117 Python documentation checks and 52 document checks. The implemented Python
@@ -69,8 +94,9 @@ production database was reset.
 
 ## Remaining Phase 0 work
 
-Complete native image/OS scanning, repository protections and the final foundation
-review using the [merge checklist](operations/foundation-merge-checklist.md). Recheck
+Remediate and disposition the remaining native-image findings, refresh advisory data,
+activate reviewed repository protections and complete the final foundation review
+using the [merge checklist](operations/foundation-merge-checklist.md). Recheck
 all required workflows on the proposed merge head; a documentation follow-up is not
 automatically the tested source above. A required independent approving review must
 not be replaced by an author's self-approval or an assistant status message.
