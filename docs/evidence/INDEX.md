@@ -3,6 +3,16 @@
 Results are tied to source commits and execution environments. A passing build is not
 an approval to deploy, and evidence from one source is not relabelled as another.
 
+## Phase 1 closure review
+
+- [Phase 1 closure review](phase1-closure-review-20261008.md) records the P1-01 through
+  P1-05 hosted qualification matrix, squash-promotion tree-integrity checks, current
+  main/development tree equivalence, technical acceptance result and remaining scope
+  boundaries.
+- Technical review result: **PASS** for the deterministic-engine scope.
+- P1-06 remains **READY FOR OWNER APPROVAL** until the exact closure documentation
+  head passes hosted qualification and the owner explicitly approves that head/base pair.
+
 ## Phase 1E deterministic moment detection
 
 - [Phase 1E moment detection qualification](phase1e-moment-detection-20261008.md)
