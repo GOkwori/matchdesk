@@ -1,7 +1,7 @@
 # Current progress
 
-Date: 8 October 2026. Stage: Phase 0 closure complete; Phase 1 is next.
-Overall Phase 0 gate: **VERIFIED / COMPLETED**.
+Date: 8 October 2026. Stage: Phase 1 in progress; Phase 1A synthetic engine TESTED.
+Phase 0 gate: **VERIFIED / COMPLETED**.
 
 The engineering foundation was merged through the protected `main` path and the
 final post-merge source `773ba7cc2da60d14e5a1e3106b61fa202c93624b` passed all eight
@@ -9,6 +9,23 @@ required checks: foundation, web, runtime-browser, native-images, dependencies,
 history-secrets, codeql-python and codeql-javascript-typescript. The dedicated
 [Phase 0 closure record](evidence/phase0-closure-20261008.md) contains the exact
 merge SHAs, workflow run IDs, controls and remaining boundaries.
+
+## Phase 1 progress
+
+P1-01, the deterministic synthetic match engine, is TESTED on development source
+`3c8bd0299eb80a2553337a0d472d036e4114545a`. Four seeded normal scenarios and one
+fault stream are implemented over the existing immutable `MatchEvent` contract.
+The same scenario and seed produce identical bytes; different seeds change generated
+content while preserving scenario rules. The fault stream keeps individual events
+structurally valid while injecting duplicate, out-of-order, sequence-gap and reset
+signals for later ingestion testing.
+
+Hosted qualification passed Foundation CI, Dependency audit, Source security and
+Foundation integration. Foundation CI ran 146 tests on Python 3.12.15 with 100% package
+statement and branch coverage. See the
+[Phase 1A qualification record](evidence/phase1a-synthetic-engine-20261008.md).
+
+P1-02, ordered/idempotent ingestion and replay revision handling, is next.
 
 ## Historical native-image remediation before final qualification
 
@@ -21,13 +38,15 @@ passed nine real runtime groups and 24 Chromium cases, but failed the separate
 native-images job. Dependency audit and source security passed on the same source.
 
 This historical run introduced the gate that scans exact tested images with verified
-scanner bytes and retains source/image/database identities, inventories and findings. Thirty-one regression
-cases test its rejection paths. Removing unused pip/npm/Yarn/Corepack from final
-service images reduced reported package/advisory occurrences from 1,078 to 1,010
-using identical advisory data. At that point OS and PostgreSQL/gosu findings remained and no exemption was applied.
-The database's next-update time was already overdue at download. That failed verdict
-is retained as evidence; later remediation and fresh qualification resolved the Phase 0
-native-image blocker without weakening the configured gate. See the [native image report](evidence/native-image-remediation-20261008.md).
+scanner bytes and retains source/image/database identities, inventories and findings.
+Thirty-one regression cases test its rejection paths. Removing unused pip/npm/Yarn/
+Corepack from final service images reduced reported package/advisory occurrences from
+1,078 to 1,010 using identical advisory data. At that point OS and PostgreSQL/gosu
+findings remained and no exemption was applied. The database's next-update time was
+already overdue at download. That failed verdict is retained as evidence; later
+remediation and fresh qualification resolved the Phase 0 native-image blocker without
+weakening the configured gate. See the
+[native image report](evidence/native-image-remediation-20261008.md).
 
 These numbers are occurrences, not distinct vulnerabilities or demonstrated exploits.
 The all-severity policy remains strict, including unfixed and low-severity findings.
@@ -119,12 +138,6 @@ are active and independently read back through the repository ruleset API.
 No release tag, live model execution, Azure resource provisioning or production
 deployment is implied by Phase 0 closure. The isolated CI database and containers are
 removed after testing; no ordinary local or production database was reset.
-
-## Next phase
-
-Phase 0 has no remaining implementation blocker. Phase 1 starts with the deterministic
-synthetic match engine required by R1, followed by ordered/idempotent ingestion,
-football state reduction, registered metrics and deterministic moment detection.
 
 Screenshots remain inspection evidence rather than approved visual regression
 baselines; three Chromium viewports are not cross-browser or full accessibility
