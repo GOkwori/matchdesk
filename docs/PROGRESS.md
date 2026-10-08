@@ -10,7 +10,7 @@ history-secrets, codeql-python and codeql-javascript-typescript. The dedicated
 [Phase 0 closure record](evidence/phase0-closure-20261008.md) contains the exact
 merge SHAs, workflow run IDs, controls and remaining boundaries.
 
-## Latest native-image and regression qualification
+## Historical native-image remediation before final qualification
 
 Tested source: `c0e8f5c731e8688ceed37145e0f17c07b768df89`.
 [Foundation CI 37765164071](https://github.com/GOkwori/matchdesk/actions/runs/37765164071)
@@ -20,14 +20,14 @@ The [integration run](https://github.com/GOkwori/matchdesk/actions/runs/37765163
 passed nine real runtime groups and 24 Chromium cases, but failed the separate
 native-images job. Dependency audit and source security passed on the same source.
 
-The new gate scans the exact tested images with verified scanner bytes and retains
-source/image/database identities, inventories and findings. Thirty-one regression
+This historical run introduced the gate that scans exact tested images with verified
+scanner bytes and retains source/image/database identities, inventories and findings. Thirty-one regression
 cases test its rejection paths. Removing unused pip/npm/Yarn/Corepack from final
 service images reduced reported package/advisory occurrences from 1,078 to 1,010
-using identical advisory data. OS and PostgreSQL/gosu findings remain; no exemption
-has been applied. The database's next-update time was already overdue at download.
-The verdict now exposes both causes rather than hiding findings behind the freshness
-error. See the [native image report](evidence/native-image-remediation-20261008.md).
+using identical advisory data. At that point OS and PostgreSQL/gosu findings remained and no exemption was applied.
+The database's next-update time was already overdue at download. That failed verdict
+is retained as evidence; later remediation and fresh qualification resolved the Phase 0
+native-image blocker without weakening the configured gate. See the [native image report](evidence/native-image-remediation-20261008.md).
 
 These numbers are occurrences, not distinct vulnerabilities or demonstrated exploits.
 The all-severity policy remains strict, including unfixed and low-severity findings.
