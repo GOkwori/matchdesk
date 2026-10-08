@@ -1,16 +1,25 @@
 """Boundary, regression and deterministic sample tests; no LLM or database is used."""
+
 import json
 import math
 import random
 
 import pytest
 from jsonschema import Draft202012Validator
-from pydantic import ValidationError
 from matchdesk.domain.hashing import canonical_bytes, content_digest
 from matchdesk.domain.models import (
-    ApprovalBinding, Claim, EvidenceRecord, Location, MatchEvent, MatchWindow,
-    MetricAssertion, Subject, VerificationResult,
+    ApprovalBinding,
+    Claim,
+    EvidenceRecord,
+    Location,
+    MatchEvent,
+    MatchWindow,
+    MetricAssertion,
+    Subject,
+    VerificationResult,
 )
+from pydantic import ValidationError
+
 from scripts.export_contracts import check_exports
 
 
@@ -22,12 +31,16 @@ def event_from(data: dict[str, object]) -> MatchEvent:
 def measured_claim() -> dict[str, object]:
     """Create a numerical assertion without claiming that its evidence is truthful."""
     return {
-        "claim_id": "claim-1", "text": "The team took seven shots.",
-        "kind": "measured_stat", "evidence_event_ids": ["event-1"],
+        "claim_id": "claim-1",
+        "text": "The team took seven shots.",
+        "kind": "measured_stat",
+        "evidence_event_ids": ["event-1"],
         "assertion": {
-            "metric": "shots", "subject": {"team_id": "demo-a"},
+            "metric": "shots",
+            "subject": {"team_id": "demo-a"},
             "window": {"period": 1, "from_ms": 0, "to_ms": 60_000},
-            "value": 7.0, "unit": "count",
+            "value": 7.0,
+            "unit": "count",
         },
     }
 
@@ -39,17 +52,35 @@ def test_valid_pass_round_trips(event_data: dict[str, object]) -> None:
     assert len(content_digest(event)) == 64
 
 
-@pytest.mark.parametrize("field,value", [
-    ("sequence", -1), ("sequence", "1"), ("sequence", True),
-    ("period", 3), ("period", True), ("period", "1"),
-    ("match_clock_ms", -1), ("synthetic", False), ("synthetic", 1),
-    ("synthetic", "true"), ("event_id", "../secret"), ("event_id", ""),
-    ("type", "unknown"), ("under_pressure", "false"), ("unexpected", "secret"),
-    ("outcome", "goal"), ("xg", 0.2), ("player_id", None), ("team_id", None),
-    ("end_location", None), ("location", None),
-    ("tags", ["same", "same"]), ("linked_event_id", "other"),
-    ("related_player_id", "other"),
-])
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("sequence", -1),
+        ("sequence", "1"),
+        ("sequence", True),
+        ("period", 3),
+        ("period", True),
+        ("period", "1"),
+        ("match_clock_ms", -1),
+        ("synthetic", False),
+        ("synthetic", 1),
+        ("synthetic", "true"),
+        ("event_id", "../secret"),
+        ("event_id", ""),
+        ("type", "unknown"),
+        ("under_pressure", "false"),
+        ("unexpected", "secret"),
+        ("outcome", "goal"),
+        ("xg", 0.2),
+        ("player_id", None),
+        ("team_id", None),
+        ("end_location", None),
+        ("location", None),
+        ("tags", ["same", "same"]),
+        ("linked_event_id", "other"),
+        ("related_player_id", "other"),
+    ],
+)
 def test_invalid_event_rejected(event_data: dict[str, object], field: str, value: object) -> None:
     """Invalid data must fail explicitly rather than be coerced or silently ignored."""
     event_data[field] = value
@@ -116,8 +147,14 @@ def test_period_clock_handles_stoppage_time(event_data: dict[str, object]) -> No
 @pytest.mark.parametrize("kind", ["period_start", "period_end"])
 def test_period_markers_have_no_player(kind: str) -> None:
     """Lifecycle events must not accidentally count as a player's ball action."""
-    data = {"event_id": "period-1", "match_id": "match-1", "sequence": 0,
-            "period": 1, "match_clock_ms": 0, "type": kind}
+    data = {
+        "event_id": "period-1",
+        "match_id": "match-1",
+        "sequence": 0,
+        "period": 1,
+        "match_clock_ms": 0,
+        "type": kind,
+    }
     assert event_from(data).player_id is None
     data["player_id"] = "a-08"
     with pytest.raises(ValidationError):
@@ -178,10 +215,16 @@ def test_metric_units(unit: str, value: float) -> None:
         MetricAssertion.model_validate_json(json.dumps(data))
 
 
-@pytest.mark.parametrize("patch", [
-    {"assertion": None}, {"kind": "event_fact"}, {"evidence_event_ids": []},
-    {"evidence_event_ids": ["event-1", "event-1"]}, {"text": "   "},
-])
+@pytest.mark.parametrize(
+    "patch",
+    [
+        {"assertion": None},
+        {"kind": "event_fact"},
+        {"evidence_event_ids": []},
+        {"evidence_event_ids": ["event-1", "event-1"]},
+        {"text": "   "},
+    ],
+)
 def test_incomplete_claim_rejected(patch: dict[str, object]) -> None:
     """A claim cannot omit its assertion, evidence or meaningful text."""
     data = measured_claim()
@@ -200,9 +243,16 @@ def test_valid_claim_is_not_a_verification() -> None:
 
 def test_evidence_uniqueness() -> None:
     """Repeating an event cannot inflate the evidence set."""
-    data = {"evidence_id": "ev-1", "match_id": "match-1", "replay_id": "r-1",
-            "revision": 1, "window": {"period": 1, "from_ms": 0, "to_ms": 100},
-            "event_ids": ["e-1"], "engine_version": "v1", "source_digest": "a" * 64}
+    data = {
+        "evidence_id": "ev-1",
+        "match_id": "match-1",
+        "replay_id": "r-1",
+        "revision": 1,
+        "window": {"period": 1, "from_ms": 0, "to_ms": 100},
+        "event_ids": ["e-1"],
+        "engine_version": "v1",
+        "source_digest": "a" * 64,
+    }
     assert EvidenceRecord.model_validate_json(json.dumps(data)).revision == 1
     data["event_ids"] = ["e-1", "e-1"]
     with pytest.raises(ValidationError):
@@ -211,15 +261,28 @@ def test_evidence_uniqueness() -> None:
 
 def test_verification_and_approval_are_distinct() -> None:
     """Checker status is not human approval, and translations have distinct identities."""
-    result = VerificationResult(claim_id="c-1", status="blocked", query_id="q-1",
-                                reason="The event does not exist", evidence_digest="b" * 64)
+    result = VerificationResult(
+        claim_id="c-1",
+        status="blocked",
+        query_id="q-1",
+        reason="The event does not exist",
+        evidence_digest="b" * 64,
+    )
     assert "approved" not in result.model_dump()
-    data = {"item_id": "i-1", "item_version": 1, "replay_id": "r-1",
-            "content_digest": "a" * 64, "evidence_digest": "b" * 64,
-            "language": "en", "persona": "analyst"}
+    data = {
+        "item_id": "i-1",
+        "item_version": 1,
+        "replay_id": "r-1",
+        "content_digest": "a" * 64,
+        "evidence_digest": "b" * 64,
+        "language": "en",
+        "persona": "analyst",
+    }
     first = ApprovalBinding.model_validate_json(json.dumps(data))
     data["language"] = "es"
-    assert content_digest(first) != content_digest(ApprovalBinding.model_validate_json(json.dumps(data)))
+    assert content_digest(first) != content_digest(
+        ApprovalBinding.model_validate_json(json.dumps(data))
+    )
 
 
 def test_json_schema_accepts_fixture(event_data: dict[str, object]) -> None:

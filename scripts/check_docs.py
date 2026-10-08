@@ -1,5 +1,7 @@
 """Validate authored documentation paths, UTF-8 encoding and public/private boundaries."""
+
 from __future__ import annotations
+
 import json
 import re
 from pathlib import Path
@@ -30,7 +32,9 @@ def markdown_errors(path: Path, root: Path) -> list[str]:
 def main() -> int:
     """Fail when required documents or relative targets are absent."""
     required = json.loads((ROOT / "docs/required-docs.json").read_text(encoding="utf-8"))
-    errors = [f"Missing required document: {name}" for name in required if not (ROOT / name).is_file()]
+    errors = [
+        f"Missing required document: {name}" for name in required if not (ROOT / name).is_file()
+    ]
     paths = [ROOT / "README.md", *sorted((ROOT / "docs").rglob("*.md"))]
     for path in paths:
         if path.is_file():

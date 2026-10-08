@@ -3,6 +3,7 @@
 There is deliberately no mocked match feed or production-ready health assertion.
 The workbench validates contracts; it cannot establish that supplied events exist.
 """
+
 from __future__ import annotations
 
 from typing import Literal
@@ -38,9 +39,11 @@ class ValidationResponse(BaseModel):
 def create_app() -> FastAPI:
     """Construct an isolated app for the local workbench and integration tests."""
     app = FastAPI(
-        title="MatchDesk foundation API", version="0.0.1",
+        title="MatchDesk foundation API",
+        version="0.0.1",
         description="Local contract workbench. Match ingestion and publishing are not implemented.",
-        docs_url=None, redoc_url=None,
+        docs_url=None,
+        redoc_url=None,
     )
     app.add_middleware(BodyLimitMiddleware)
 
@@ -48,10 +51,15 @@ def create_app() -> FastAPI:
     async def invalid_request(request: Request, exc: RequestValidationError) -> JSONResponse:
         """Return validation locations without echoing possibly private submitted values."""
         del request
-        return JSONResponse(status_code=422, content={"detail": [
-            {"loc": list(error["loc"]), "type": error["type"], "msg": error["msg"]}
-            for error in exc.errors()
-        ]})
+        return JSONResponse(
+            status_code=422,
+            content={
+                "detail": [
+                    {"loc": list(error["loc"]), "type": error["type"], "msg": error["msg"]}
+                    for error in exc.errors()
+                ]
+            },
+        )
 
     @app.get("/api/health", response_model=HealthResponse)
     def health() -> HealthResponse:
@@ -61,11 +69,18 @@ def create_app() -> FastAPI:
     @app.get("/api/ready", status_code=503)
     def ready() -> JSONResponse:
         """Fail closed until persistence, model integration and product gates exist."""
-        return JSONResponse(status_code=503, content={
-            "status": "not_ready", "phase": "foundation",
-            "checks": {"persistence": "not_implemented", "models": "not_connected",
-                       "publication": "not_implemented"},
-        })
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "not_ready",
+                "phase": "foundation",
+                "checks": {
+                    "persistence": "not_implemented",
+                    "models": "not_connected",
+                    "publication": "not_implemented",
+                },
+            },
+        )
 
     @app.get("/api/contracts/event")
     def event_schema() -> dict[str, object]:

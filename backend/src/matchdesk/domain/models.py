@@ -4,11 +4,13 @@ These models validate shape and local invariants, not the truth of a story.
 Roster validity, temporal ingestion, metric computation and publication authority
 are separate responsibilities. A validated Claim is never a verified Claim.
 """
+
 from __future__ import annotations
 
 from typing import Annotated, Literal, Self
 
 from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, model_validator
+
 
 def plain_integer(value: object) -> object:
     """Reject bool before Literal matching: Python otherwise considers True equal to 1."""
@@ -41,8 +43,22 @@ EventIds = Annotated[tuple[Identifier, ...], BeforeValidator(immutable_array)]
 Digest = Annotated[str, Field(pattern=r"^[a-f0-9]{64}$")]
 FiniteNumber = Annotated[float, Field(allow_inf_nan=False)]
 EventType = Literal[
-    "kickoff", "pass", "carry", "dribble", "shot", "save", "tackle", "interception",
-    "recovery", "clearance", "foul", "card", "substitution", "goal", "period_start", "period_end",
+    "kickoff",
+    "pass",
+    "carry",
+    "dribble",
+    "shot",
+    "save",
+    "tackle",
+    "interception",
+    "recovery",
+    "clearance",
+    "foul",
+    "card",
+    "substitution",
+    "goal",
+    "period_start",
+    "period_end",
 ]
 # Centralising valid outcomes prevents a goal from being accepted as an incomplete pass.
 OUTCOMES: dict[str, frozenset[str]] = {
@@ -117,11 +133,20 @@ class MatchEvent(Contract):
         if len(set(self.tags)) != len(self.tags):
             raise ValueError("Event tags must be unique")
         if self.type in ("period_start", "period_end"):
-            if any(value is not None for value in (
-                self.team_id, self.player_id, self.possession_id, self.location,
-                self.end_location, self.outcome, self.xg, self.linked_event_id,
-                self.related_player_id,
-            )):
+            if any(
+                value is not None
+                for value in (
+                    self.team_id,
+                    self.player_id,
+                    self.possession_id,
+                    self.location,
+                    self.end_location,
+                    self.outcome,
+                    self.xg,
+                    self.linked_event_id,
+                    self.related_player_id,
+                )
+            ):
                 raise ValueError("Period markers cannot carry player or on-ball fields")
             return self
         if self.team_id is None or self.player_id is None:
@@ -204,7 +229,11 @@ class Claim(Contract):
     text: Annotated[str, Field(min_length=1, max_length=2000)]
     kind: Literal["measured_stat", "event_fact", "tactical_inference"]
     assertion: MetricAssertion | None = None
-    evidence_event_ids: Annotated[tuple[Identifier, ...], Field(min_length=1, max_length=4096), BeforeValidator(immutable_array)]
+    evidence_event_ids: Annotated[
+        tuple[Identifier, ...],
+        Field(min_length=1, max_length=4096),
+        BeforeValidator(immutable_array),
+    ]
 
     @model_validator(mode="after")
     def validate_claim(self) -> Self:
@@ -226,7 +255,11 @@ class EvidenceRecord(Contract):
     replay_id: Identifier
     revision: Annotated[int, Field(ge=1)]
     window: MatchWindow
-    event_ids: Annotated[tuple[Identifier, ...], Field(min_length=1, max_length=4096), BeforeValidator(immutable_array)]
+    event_ids: Annotated[
+        tuple[Identifier, ...],
+        Field(min_length=1, max_length=4096),
+        BeforeValidator(immutable_array),
+    ]
     engine_version: Identifier
     source_digest: Digest
 

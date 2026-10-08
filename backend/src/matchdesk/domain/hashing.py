@@ -1,4 +1,5 @@
 """Stable content identity for immutable, serialisable contract records."""
+
 from __future__ import annotations
 
 import hashlib
@@ -15,8 +16,11 @@ def canonical_bytes(record: Contract) -> bytes:
     Any future change to encoding rules needs a format version and migration.
     """
     return json.dumps(
-        record.model_dump(mode="json"), sort_keys=True, separators=(",", ":"),
-        ensure_ascii=False, allow_nan=False,
+        record.model_dump(mode="json"),
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        allow_nan=False,
     ).encode("utf-8")
 
 

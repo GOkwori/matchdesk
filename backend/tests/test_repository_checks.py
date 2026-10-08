@@ -1,5 +1,7 @@
 """Check that documentation and source-identity gates detect actual mistakes."""
+
 from pathlib import Path
+
 from scripts.check_comments import inspect_python
 from scripts.check_docs import markdown_errors
 from scripts.collect_evidence import source_inventory
@@ -17,8 +19,11 @@ def test_missing_docstrings_are_reported(tmp_path: Path) -> None:
 def test_documented_callable_is_accepted(tmp_path: Path) -> None:
     """A module and callable with useful explanations satisfy the presence gate."""
     file = tmp_path / "sample.py"
-    file.write_text('"""Convert a fixture for a boundary test."""\n'
-                    'def example():\n    """Return the expected fixture identity."""\n    return 1\n', encoding="utf-8")
+    file.write_text(
+        '"""Convert a fixture for a boundary test."""\n'
+        'def example():\n    """Return the expected fixture identity."""\n    return 1\n',
+        encoding="utf-8",
+    )
     assert inspect_python(file) == (2, [])
 
 

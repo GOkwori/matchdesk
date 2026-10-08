@@ -1,7 +1,8 @@
 """Create local-only database credentials without displaying or overwriting secrets."""
-from pathlib import Path
+
 import os
 import secrets
+from pathlib import Path
 
 
 def main() -> int:

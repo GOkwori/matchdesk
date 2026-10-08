@@ -3,7 +3,9 @@
 This gate checks presence, not the truth or usefulness of an explanation. Review
 must still examine intent, assumptions, security boundaries and stale comments.
 """
+
 from __future__ import annotations
+
 import ast
 import json
 from pathlib import Path
@@ -39,8 +41,17 @@ def main() -> int:
     for path in sorted((ROOT / "apps/web/src").rglob("*.tsx")):
         if not path.read_text(encoding="utf-8").lstrip().startswith("/**"):
             errors.append(f"{path}: missing file-level JSDoc")
-    print(json.dumps({"python_files": len(files), "definitions_checked": checked,
-                      "missing": errors, "human_comment_review": "required"}, indent=2))
+    print(
+        json.dumps(
+            {
+                "python_files": len(files),
+                "definitions_checked": checked,
+                "missing": errors,
+                "human_comment_review": "required",
+            },
+            indent=2,
+        )
+    )
     return int(bool(errors))
 
 

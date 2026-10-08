@@ -1,4 +1,5 @@
 """Bound incoming request bodies before JSON parsing allocates unbounded memory."""
+
 from __future__ import annotations
 
 from starlette.responses import JSONResponse
@@ -32,12 +33,16 @@ class BodyLimitMiddleware:
                     raise ValueError("negative length")
             except ValueError:
                 await JSONResponse({"detail": "Invalid content length"}, status_code=400)(
-                    scope, receive, send,
+                    scope,
+                    receive,
+                    send,
                 )
                 return
             if length > self.max_bytes:
                 await JSONResponse({"detail": "Request body too large"}, status_code=413)(
-                    scope, receive, send,
+                    scope,
+                    receive,
+                    send,
                 )
                 return
         chunks: list[bytes] = []
@@ -50,7 +55,9 @@ class BodyLimitMiddleware:
             size += len(chunk)
             if size > self.max_bytes:
                 await JSONResponse({"detail": "Request body too large"}, status_code=413)(
-                    scope, receive, send,
+                    scope,
+                    receive,
+                    send,
                 )
                 return
             chunks.append(chunk)
