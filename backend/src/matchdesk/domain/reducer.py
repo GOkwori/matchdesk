@@ -67,9 +67,7 @@ class MatchReducer:
 
         self._match_id = match_id
         self._rosters = {roster.team_id: roster for roster in rosters}
-        self._active_players = {
-            roster.team_id: set(roster.starters) for roster in rosters
-        }
+        self._active_players = {roster.team_id: set(roster.starters) for roster in rosters}
         self._scores = {roster.team_id: 0 for roster in rosters}
         self._possession_owners: dict[int, str] = {}
         self._events_by_id: dict[str, MatchEvent] = {}
@@ -84,8 +82,7 @@ class MatchReducer:
             last_sequence=self._last_sequence,
             scores=dict(self._scores),
             active_players={
-                team_id: frozenset(players)
-                for team_id, players in self._active_players.items()
+                team_id: frozenset(players) for team_id, players in self._active_players.items()
             },
             possession_owners=dict(self._possession_owners),
             scored_shot_ids=frozenset(self._scored_shot_ids),
