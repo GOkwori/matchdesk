@@ -38,6 +38,10 @@ def immutable_array(value: object) -> object:
 
 
 Identifier = Annotated[str, Field(min_length=1, max_length=96, pattern=r"^[A-Za-z0-9_-]+$")]
+MetricIdentifier = Annotated[
+    str,
+    Field(min_length=1, max_length=96, pattern=r"^[a-z][a-z0-9_]*\.v[1-9][0-9]*$"),
+]
 Period = Annotated[Literal[1, 2], BeforeValidator(plain_integer)]
 EventIds = Annotated[tuple[Identifier, ...], BeforeValidator(immutable_array)]
 Digest = Annotated[str, Field(pattern=r"^[a-f0-9]{64}$")]
@@ -205,7 +209,7 @@ class Subject(Contract):
 class MetricAssertion(Contract):
     """A requested metric comparison; truth is established by a registered query."""
 
-    metric: Identifier
+    metric: MetricIdentifier
     subject: Subject
     window: MatchWindow
     comparator: Literal["eq", "gte", "lte"] = "eq"

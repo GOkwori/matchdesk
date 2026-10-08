@@ -3,6 +3,21 @@
 Results are tied to source commits and execution environments. A passing build is not
 an approval to deploy, and evidence from one source is not relabelled as another.
 
+## Phase 1D registered football metrics
+
+- [Phase 1D registered metrics qualification](phase1d-registered-metrics-20261008.md)
+  records the six versioned deterministic formula IDs, their explicit semantics and
+  independent hand-calculated expected-value tests on source
+  `829f92033ffb4a8713a42711f8c383151f670d6a`.
+- Foundation CI run 37820755767 passed 195 Python tests with 99.26% total package
+  coverage, Ruff, formatter checks and strict mypy.
+- Dependency audit 37820755749, Source security 37820755700 and Foundation integration
+  37820755710 also passed, including runtime-browser and native-images.
+- Foundation CI run 37820637200 is retained as the first formatting-only failure:
+  its tests, Ruff lint and mypy passed before the formatter correctly rejected two files.
+
+P1-04 is TESTED only. Deterministic moment detection remains the next Phase 1 work.
+
 ## Phase 1C football-state reducer
 
 - [Phase 1C football-state reducer qualification](phase1c-football-state-reducer-20261008.md)

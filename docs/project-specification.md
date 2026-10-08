@@ -1,6 +1,6 @@
 # MatchDesk project specification
 
-Owner: George Okwori. Baseline: 8 October 2026. Status: IN_PROGRESS; Phase 0 VERIFIED / COMPLETED, P1-01 through P1-03 TESTED.
+Owner: George Okwori. Baseline: 8 October 2026. Status: IN_PROGRESS; Phase 0 VERIFIED / COMPLETED, P1-01 through P1-04 TESTED.
 
 ## Purpose and users
 
@@ -51,8 +51,9 @@ runtime/browser/security gates and protected repository promotion. It is complet
 main commit `773ba7cc2da60d14e5a1e3106b61fa202c93624b`.
 
 Phase 1 builds the deterministic engine. P1-01 synthetic generation, P1-02 temporal
-ingestion and P1-03 roster/score/possession reduction are TESTED. P1-04 registered
-football metrics is next. Phase 2 adds agent orchestration and verification.
+ingestion, P1-03 roster/score/possession reduction and P1-04 registered football
+metrics are TESTED. P1-05 deterministic moment detection is next. Phase 2 adds agent
+orchestration and verification.
 Phase 3 completes producer and audience flows. Phase 4 qualifies reliability and security.
 Phase 5 packages the demonstration and submission. Work stops at each owner review gate.
 The internal submission target is 26 October 2026.
@@ -80,5 +81,6 @@ Only main and development are authorised. Environment isolation, optional
 auto-publication and the final inference-review policy require explicit decisions
 before those capabilities are implemented. The [decision log](decisions/ADR-0005-baseline-conflicts.md)
 records the boundaries. The deterministic Phase 1 path currently includes the tested
-synthetic engine, temporal ingestor and football-state reducer; live model and Azure work
-remain later controlled decisions.
+synthetic engine, temporal ingestor, football-state reducer and registered metric engine;
+P1-05 deterministic moment detection is next. Live model and Azure work remain later
+controlled decisions.
