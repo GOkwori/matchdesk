@@ -1,11 +1,16 @@
 # Current progress
 
-Date: 8 October 2026. Stage: Phase 0. Overall gate: **BLOCKED, not certified**.
-Foundation build, runtime/browser, dependency audit and source-security checks pass
-for the recorded source. **Native image security fails** on remaining findings and
-an overdue advisory-database refresh. The foundation has not been merged.
+Date: 8 October 2026. Stage: Phase 0 closure complete; Phase 1 is next.
+Overall Phase 0 gate: **VERIFIED / COMPLETED**.
 
-## Latest native-image and regression qualification
+The engineering foundation was merged through the protected `main` path and the
+final post-merge source `773ba7cc2da60d14e5a1e3106b61fa202c93624b` passed all eight
+required checks: foundation, web, runtime-browser, native-images, dependencies,
+history-secrets, codeql-python and codeql-javascript-typescript. The dedicated
+[Phase 0 closure record](evidence/phase0-closure-20261008.md) contains the exact
+merge SHAs, workflow run IDs, controls and remaining boundaries.
+
+## Historical native-image remediation before final qualification
 
 Tested source: `c0e8f5c731e8688ceed37145e0f17c07b768df89`.
 [Foundation CI 37765164071](https://github.com/GOkwori/matchdesk/actions/runs/37765164071)
@@ -15,20 +20,22 @@ The [integration run](https://github.com/GOkwori/matchdesk/actions/runs/37765163
 passed nine real runtime groups and 24 Chromium cases, but failed the separate
 native-images job. Dependency audit and source security passed on the same source.
 
-The new gate scans the exact tested images with verified scanner bytes and retains
-source/image/database identities, inventories and findings. Thirty-one regression
+This historical run introduced the gate that scans exact tested images with verified
+scanner bytes and retains source/image/database identities, inventories and findings. Thirty-one regression
 cases test its rejection paths. Removing unused pip/npm/Yarn/Corepack from final
 service images reduced reported package/advisory occurrences from 1,078 to 1,010
-using identical advisory data. OS and PostgreSQL/gosu findings remain; no exemption
-has been applied. The database's next-update time was already overdue at download.
-The verdict now exposes both causes rather than hiding findings behind the freshness
-error. See the [native image report](evidence/native-image-remediation-20261008.md).
+using identical advisory data. At that point OS and PostgreSQL/gosu findings remained and no exemption was applied.
+The database's next-update time was already overdue at download. That failed verdict
+is retained as evidence; later remediation and fresh qualification resolved the Phase 0
+native-image blocker without weakening the configured gate. See the [native image report](evidence/native-image-remediation-20261008.md).
 
 These numbers are occurrences, not distinct vulnerabilities or demonstrated exploits.
 The all-severity policy remains strict, including unfixed and low-severity findings.
 Any risk-policy change needs an explicit decision and evidence-backed dispositions.
-[Repository-control files](operations/repository-controls.md) now reflect the approved
-solo-maintainer policy; activation remains outstanding and the image gate is unchanged.
+[Repository controls](operations/repository-controls.md) reflect the approved
+solo-maintainer policy. The live main ruleset is active with PR-only promotion,
+strict required checks, resolved conversations, no bypass actors and history
+safeguards. The final native-image gate is green on the Phase 0 main commit.
 
 ## Earlier foundation qualification
 
@@ -97,30 +104,30 @@ hosted Python 3.12 qualification or live GitHub enforcement. The next hosted run
 must execute these cases alongside the existing suite. No previous results above
 are attributed to this policy change.
 
-Final owner sign-off remains required for the exact proposed head and base commits.
-It is a procedural approval, not an independent GitHub review. Policy approval does
-not waive image findings, approve PR #1 or authorize automatic merging or deployment.
+Exact-commit owner sign-off was obtained before the protected Phase 0 foundation
+merge and again before the post-squash security remediation merge. The procedural
+owner approval remains distinct from an additional GitHub approving review and does
+not authorize automatic merging or deployment.
 
 ## Repository and release boundary
 
-[PR #1](https://github.com/GOkwori/matchdesk/pull/1) remains a draft. `main` remains the
-licence-only bootstrap `d8e8d7eb0473f24399e3771e0bea36449c4d4502`. Both branches were
-last observed unprotected and the administration read returned 403. No merge, release
-tag, live model use, Azure resource or owner release approval has occurred. The
-isolated CI database and containers are removed after testing; no ordinary local or
-production database was reset.
+[PR #1](https://github.com/GOkwori/matchdesk/pull/1) is merged. The final Phase 0
+`main` commit is `773ba7cc2da60d14e5a1e3106b61fa202c93624b`, after the narrowly
+scoped post-squash history-secret repair in PR #14. Main and development protections
+are active and independently read back through the repository ruleset API.
 
-## Remaining Phase 0 work
+No release tag, live model execution, Azure resource provisioning or production
+deployment is implied by Phase 0 closure. The isolated CI database and containers are
+removed after testing; no ordinary local or production database was reset.
 
-Remediate and disposition the remaining native-image findings, refresh advisory data,
-activate the approved repository protections and complete the final foundation review
-using the [merge checklist](operations/foundation-merge-checklist.md). Recheck
-all required workflows on the proposed merge head; a documentation follow-up is not
-automatically the tested source above. Obtain explicit owner sign-off for the final
-head and base under ADR-0010; a policy decision or status report is not that sign-off.
+## Next phase
 
-Screenshots are inspection evidence, not approved visual regression baselines;
-three Chromium viewports are not cross-browser or full accessibility qualification.
-The simulator, football analytics, Foundry agents, editorial publication and audience
-adaptation remain future implementation. Their completion belongs to later milestones,
-not to the foundation merge. No next-phase certification is recorded.
+Phase 0 has no remaining implementation blocker. Phase 1 starts with the deterministic
+synthetic match engine required by R1, followed by ordered/idempotent ingestion,
+football state reduction, registered metrics and deterministic moment detection.
+
+Screenshots remain inspection evidence rather than approved visual regression
+baselines; three Chromium viewports are not cross-browser or full accessibility
+qualification. Foundry agents, editorial publication, audience adaptation, Azure
+deployment and live model evaluation remain later-phase work and must not be described
+as operational before they are separately implemented and qualified.

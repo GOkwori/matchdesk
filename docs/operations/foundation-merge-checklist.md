@@ -1,6 +1,6 @@
 # Foundation merge checklist
 
-Status: solo-maintainer review policy approved; no final merge approval or merge.
+Status: **COMPLETE**. Phase 0 foundation merged, remediated and post-merge qualified on 8 October 2026.
 
 ## Scope of this milestone
 
@@ -44,23 +44,30 @@ approved history safeguards allow ordinary development commits and post-push tes
 promotion remains a protected PR into main. Do not add a third branch, automatic
 merge or deployment as part of this policy change.
 
-These are settings to apply/verify, not a claim that they are enabled. The protected
-branch administration read returned 403. Do not provide access tokens or passwords
-in chat to work around that permission boundary.
+These settings are now active and were read back through the repository ruleset API.
+The main ruleset has no bypass actors and requires the eight named checks with strict
+up-to-date status checks. Development prevents non-fast-forward updates and deletion.
 
 ## Merge and follow-up
 
-Keep PR #1 in draft until the remaining gates are met. Record the PR number, full
-head SHA, base SHA, qualification runs, limitations and explicit owner decision with
-a recorded time. Mark it ready and merge through the protected GitHub PR path only
-after that sign-off. A later head or base change invalidates this approval and needs
-fresh qualification and renewed owner sign-off. Do not force-update `main`, bypass
-failing checks or delete `development`.
+PR #1 was explicitly approved for exact head
+`ed3ec4a84deca06d4530866e051b8deeeae05f0e` against base
+`d8e8d7eb0473f24399e3771e0bea36449c4d4502`, then squash-merged through the
+protected path. The resulting main commit was
+`f62d8ccc2c02f36a707a6e24c6640c449048d941`.
 
-After the merge, inspect the resulting commit and run the same relevant checks on
-`main`. Record the merge and qualification evidence separately. A release tag or
-Azure deployment requires its own explicit decision; neither is implied by this
-foundation merge or by approval of the solo-maintainer policy.
+The squash exposed a commit-fingerprint lineage issue in the exact secret-scan
+classification. PR #14 repaired only that workflow logic, retained the synthetic key
+control and broad-exclusion prohibition, and was explicitly approved for exact head
+`e53d1b12b778b18f78b1eff2b0dc862b85ef6f67` against base
+`f62d8ccc2c02f36a707a6e24c6640c449048d941`. Its protected squash merge produced
+the final Phase 0 main commit `773ba7cc2da60d14e5a1e3106b61fa202c93624b`.
+
+The final main commit then passed all eight required checks. Full closure evidence is
+recorded in [Phase 0 closure evidence](../evidence/phase0-closure-20261008.md).
+
+A release tag or Azure deployment still requires its own explicit decision; neither
+is implied by this foundation closure.
 
 ## References
 
