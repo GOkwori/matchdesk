@@ -8,8 +8,8 @@ My priority is the path from a synthetic match event to a publishable explanatio
 The design keeps statistics in deterministic code, uses specialist AI agents to
 interpret and present evidence, and gives the producer control over publication.
 
-**Owner: George Okwori. Current stage: Phase 0 foundation, local work only.**
-There is no deployed product or live Foundry integration in this snapshot.
+**Owner: George Okwori. Current stage: Phase 0 foundation; hosted build checks passing.**
+The full Phase 0 gate remains open. There is no deployed product or live Foundry integration.
 
 ## What is implemented
 
@@ -18,10 +18,14 @@ exposes its schema and differentiates process liveness from product readiness.
 Immutable domain models cover events, windows, claims, evidence, verification
 results and approval bindings. Structural validation is not factual verification.
 
-The source also includes a Next.js contract workbench, Compose topology and a
-foundation CI workflow. Their full execution remains blocked pending dependency
-resolution and the required runtimes. The simulator, match statistics, agents,
-producer queue, translations and publication pipeline are not implemented yet.
+The Next.js contract workbench now type-checks and produces an optimized production
+build in GitHub Actions. The committed dependency locks, Python 3.12 regression
+suite, strict static checks, schema snapshots and documentation checks have passed
+on the recorded source. A successful build is not a deployed or browser-qualified product.
+
+The Compose topology still needs execution and integration testing. The simulator,
+match statistics, agents, producer queue, translations and publication pipeline are
+not implemented yet.
 
 Read [current progress](docs/PROGRESS.md) and the [evidence index](docs/evidence/INDEX.md)
 before treating any capability as tested or available.
@@ -41,15 +45,30 @@ flowchart LR
 The [solution design](docs/solution-design/02-architecture.md) explains boundaries,
 planned services, failure paths and what this foundation currently exercises.
 
-## Try the implemented API
+## Reproduce the foundation
 
-The target runtime is Python 3.12. The initial local evidence uses preinstalled
-Python 3.13.5 and is supplementary, not a substitute for the target-runtime gate.
-
-With the dependencies recorded in `pyproject.toml` installed:
+The hosted qualification uses Python 3.12.15, Node 22.16.0, npm 10.9.2 and uv 0.10.0.
+Install these tools first, then reproduce the committed locks rather than generating
+new dependency versions during setup:
 
 ```bash
-make api
+make setup
+uv run --no-sync make foundation
+uv run --no-sync make lint
+cd apps/web && npm run build
+```
+
+`make setup` rejects a stale Python lock; `npm ci` rejects a mismatched npm lock.
+`make resolve` is a separate maintenance operation. Review its dependency changes
+and run the full checks before committing. The [compatibility decision](docs/decisions/ADR-0005-build-compatibility.md)
+explains the current AnyIO and TypeScript pins without weakening the checks.
+
+## Try the implemented API
+
+From the repository root after setup:
+
+```bash
+uv run --no-sync make api
 # In another terminal:
 curl http://127.0.0.1:8000/api/health
 ```
@@ -57,34 +76,32 @@ curl http://127.0.0.1:8000/api/health
 The event schema is at `/api/contracts/event`. POST a JSON event to
 `/api/contracts/event/validate`. The response explicitly says `evidence_verified: false`.
 `/api/ready` returns HTTP 503 because the product dependencies are not implemented.
+The structural validator must not be mistaken for a verified football intelligence service.
 
-## Full local setup after network access is available
-
-`make setup` resolves and installs dependencies. Review and commit `uv.lock` and
-`apps/web/package-lock.json` before qualification; they are intentionally absent
-rather than fabricated in this network-restricted snapshot. Narrow the temporary
-React type-package ranges to the resolved exact versions at that point.
+## Local container topology: qualification pending
 
 ```bash
-make setup
 python -m scripts.create_local_env
 make dev
 ```
 
-Use WSL2 or another POSIX shell with Docker, Node 22 and uv. The Compose stack is
-local-only; it does not establish working PostgreSQL integration by merely starting
-a database container. Its execution has not been tested in this environment.
+Use WSL2 or another POSIX shell with Docker. The environment generator creates a
+local secret without printing or replacing it; do not commit `.env`. The Compose
+stack is local-only and its integrated execution is not yet qualified. Starting a
+database container would not by itself establish application persistence or migrations.
 
 ## Tests, comments and documentation
 
-`make foundation` runs the implemented local tests, schema-drift check, documentation
-link check and Python docstring-presence check. `make lint` requires Ruff, mypy and
-frontend type checking. `make evidence` records actual commands and environment
-limits; an unmet gate returns a nonzero exit status and remains visible.
+`make foundation` runs regression tests, schema-drift checks, documentation link checks
+and Python docstring-presence checks. `make lint` runs Ruff, formatting, strict mypy
+and frontend type checks. CI preserves source IDs, hashes, JUnit, coverage and logs
+for both successful and failed runs. The [first passing hosted record](docs/evidence/hosted-foundation-20261008.md)
+contains the scope and limitations of those results.
 
 Every authored Python module, class and function has a docstring. Non-obvious
-validation and security decisions have explanatory comments. TypeScript source,
-configuration and CI include intent comments; generated JSON uses schema descriptions.
+validation and security decisions have explanatory comments. TypeScript includes
+compile-time regression checks for the platform declarations used by Next.js.
+The formatting review preserved the existing docstrings, comments and functional AST.
 See the [coding standard](docs/engineering/coding-standard.md).
 
 ## Navigation

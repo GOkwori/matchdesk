@@ -1,16 +1,19 @@
 # Foundation targets never provision cloud infrastructure or claim a release gate.
 PYTHON ?= python
 export PYTHONPATH := backend/src:.
-.PHONY: setup dev api test contracts comments docs foundation lint evidence deploy
+.PHONY: setup resolve dev api test contracts comments docs foundation lint evidence deploy
 
-# Resolve locks explicitly once network and the specified runtimes are available.
-# Review the resulting lockfile changes before considering the build reproducible.
+# Reproduce the committed locks. Normal setup must never silently re-resolve them.
+# The resolver version used for qualification is uv 0.10.0; see the evidence index.
 setup:
-	uv python install 3.12
-	uv lock --python 3.12
-	uv sync --locked --group test --group quality --python 3.12
-	cd apps/web && npm install --package-lock-only --ignore-scripts
+	uv python install 3.12.15
+	uv sync --locked --no-build --group test --group quality --python 3.12.15
 	cd apps/web && npm ci
+
+# Dependency changes are deliberate maintenance work, followed by diff review and CI.
+resolve:
+	uv lock --python 3.12.15 --no-build
+	cd apps/web && npm install --package-lock-only --ignore-scripts
 
 # Docker is mandatory for the full local topology; there is no SQLite substitute.
 dev:

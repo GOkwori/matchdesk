@@ -1,16 +1,29 @@
 # Evidence index
 
-Dated subdirectories contain actual local commands, JUnit/coverage results, source-file
-hashes, environment metadata and gate status. The `latest.json` pointer identifies the
-latest completed collection without erasing prior attempts.
+Results are tied to source commits and execution environments. A passing build is not
+an approval to deploy, and evidence from one source is not relabelled as another.
 
-Early attempt logs are retained under `initial-attempts`; those runs preceded the final
-local source commit and are not attributed to it. The source-bound qualification run
-is recorded separately. No hosted CI, frontend build, cloud deployment, live model
-execution or production certification is implied by these local results.
+## Hosted foundation
 
-## GitHub import
+- [First passing Python and frontend qualification](hosted-foundation-20261008.md):
+  source `c6de02db7ef268f9f144c8e108a0cb2e079e3111`, run 37751376812.
+- [Initial dependency resolution](dependency-resolution-20261008.md) and its
+  [raw manifest](dependency-resolution-20261008.json) preserve the first candidates.
+- [Corrected dependency and formatting manifest](dependency-compatibility-20261008.json)
+  records exact file identities from resolver run 37751193507.
+- [Formatting review](formatting-review-20261008.json) records the checked source and
+  unchanged functional AST, import bindings, docstrings and comments.
+- [GitHub import and first hosted CI failure](github-import-20261008.md) records the
+  exact imported tree and missing-lock failure.
 
-[Source import and first hosted CI outcome](github-import-20261008.md) records the
-exact imported tree and the missing-lock gate failure. It does not replace or relabel
-the historical local test runs above.
+The passing report links the earlier compatibility failure and exact artifact hashes.
+Downloaded archives were checked against GitHub's reported SHA-256 digests. Raw hosted
+artifacts contain JUnit, coverage and logs; durable report summaries remain in this repo.
+
+## Historical local evidence
+
+Dated subdirectories contain local commands, JUnit/coverage, source hashes and gate
+status. `latest.json` identifies the latest **local collection**, not the latest hosted
+build. Early attempt logs remain under `initial-attempts`; they are not attributed to
+later source. Python 3.13.5 results are supplementary to hosted Python 3.12 qualification.
+No cloud deployment, live model execution or production certification is implied.
