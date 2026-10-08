@@ -11,7 +11,11 @@ from matchdesk.domain.models import (
     Subject,
     VerificationResult,
 )
-from matchdesk.domain.orchestration import apply_verification_gate, record_specialist_attempt, start_workflow
+from matchdesk.domain.orchestration import (
+    apply_verification_gate,
+    record_specialist_attempt,
+    start_workflow,
+)
 from matchdesk.domain.simulator import generate_scenario
 from matchdesk.domain.specialists import (
     ROLE_READ_TOOLS,
@@ -95,9 +99,10 @@ def test_tactical_tools_can_read_events_windows_and_registered_metrics() -> None
     events = _events()
     tools = ScopedReadTools(role="tactical_analyst", events=events)
 
-    assert tools.event_by_id(events[-2].event_id) == events[-2]
+    shot = tools.event_by_id("ca-shot-home")
+    assert shot is not None
     window = MatchWindow(period=1, from_ms=0, to_ms=2_100_000)
-    assert events[-2] in tools.events_in_window(window)
+    assert shot in tools.events_in_window(window)
     assert tools.metric("shots.v1", Subject(team_id="home"), window) == 1.0
 
     with pytest.raises(PermissionError, match="evidence_record"):
@@ -202,7 +207,10 @@ def test_response_requires_meaningful_output() -> None:
 def test_host_rejects_executor_role_spoofing() -> None:
     """A runtime cannot return output under another specialist's role identity."""
     class WrongRoleExecutor:
+        """Return deliberately mislabelled output for host-boundary testing."""
+
         def execute(self, request, tools):
+            """Ignore the request role and return a mismatched response role."""
             return SpecialistResponse(
                 role="narrative_composer",
                 content="wrong role",
@@ -221,7 +229,10 @@ def test_host_rejects_executor_role_spoofing() -> None:
 def test_executor_receives_only_scoped_read_tools() -> None:
     """The host injects read scope and the executor cannot request broader raw access."""
     class TacticalExecutor:
+        """Exercise only the host-provided tactical read scope."""
+
         def execute(self, request, tools):
+            """Read one permitted event and return a non-authoritative proposal."""
             assert request.role == "tactical_analyst"
             assert tools.allowed_tools == ROLE_READ_TOOLS["tactical_analyst"]
             event = tools.event_by_id("ca-shot-home")
