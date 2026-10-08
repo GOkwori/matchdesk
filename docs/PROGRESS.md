@@ -1,6 +1,6 @@
 # Current progress
 
-Date: 8 October 2026. Stage: Phase 1 **VERIFIED / COMPLETED**.
+Date: 8 October 2026. Stage: Phase 2 in progress; P2-01 TESTED.
 Phase 0 gate: **VERIFIED / COMPLETED**.
 
 The engineering foundation was merged through the protected `main` path and the
@@ -94,6 +94,33 @@ The [Phase 1 closure review](evidence/phase1-closure-review-20261008.md) preserv
 qualification matrix, promotion-integrity proof and remaining later-phase boundaries.
 Phase 2 may now begin, but Phase 1 closure does not authorize Azure provisioning,
 live-model activation, production deployment or publication authority.
+
+## Phase 2 progress
+
+P2-01, the bounded deterministic orchestration control plane, is TESTED on development
+source `fdb2acab1007a83377208406f9b3b69e2849aac2`. It locks the four specialist
+roles `tactical_analyst`, `narrative_composer`, `editorial_reviewer` and
+`audience_adapter` into an explicit sequence over typed `WorkflowState`.
+
+The controller owns per-role attempt budgets, timeout classification, terminal blocked
+and fallback states, bounded restart recovery and the verification hand-off. Editorial
+review cannot advance directly to audience adaptation: the workflow first enters
+`awaiting_verification`. A failed verification can request narrative/editorial revision
+only while both role-local attempt budgets remain; exhausted revision budget falls back
+instead of looping. Specialists cannot advance themselves or expand their own authority.
+
+Hosted P2-01 qualification passed Foundation CI 37830905932, Dependency audit
+37830906052, Source security 37830905951 and Foundation integration 37830905979 on the
+exact source above. Foundation CI executed 226 tests on Python 3.12.15 with 99.32%
+measured total package coverage. The new orchestration module reached 100% statement
+and branch coverage. Ruff, formatting and strict mypy passed, the frontend build
+remained green, and runtime/browser plus independent native-image qualification passed.
+See the
+[Phase 2A qualification record](evidence/phase2a-orchestration-control-plane-20261008.md).
+
+No Agent Framework or Foundry runtime, live model, Azure resource, publication authority
+or durable workflow persistence is claimed by P2-01. P2-02 deterministic claim
+verification against Phase 1 evidence is next.
 
 ## Historical native-image remediation before final qualification
 
