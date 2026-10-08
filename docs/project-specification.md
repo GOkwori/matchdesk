@@ -1,6 +1,6 @@
 # MatchDesk project specification
 
-Owner: George Okwori. Baseline: 8 October 2026. Status: IN_PROGRESS; Phase 0 VERIFIED / COMPLETED, Phase 1A TESTED.
+Owner: George Okwori. Baseline: 8 October 2026. Status: IN_PROGRESS; Phase 0 VERIFIED / COMPLETED, P1-01 and P1-02 TESTED.
 
 ## Purpose and users
 
@@ -50,7 +50,9 @@ Phase 0 established contracts, local services, documentation, hosted qualificati
 runtime/browser/security gates and protected repository promotion. It is complete on
 main commit `773ba7cc2da60d14e5a1e3106b61fa202c93624b`.
 
-Phase 1 builds the deterministic engine. P1-01, the seeded synthetic match engine, is TESTED; P1-02 ingestion/replay handling is next. Phase 2 adds agent orchestration and verification.
+Phase 1 builds the deterministic engine. P1-01, the seeded synthetic match engine, and
+P1-02, ordered/idempotent replay ingestion, are TESTED. P1-03 roster/score/possession
+reduction is next. Phase 2 adds agent orchestration and verification.
 Phase 3 completes producer and audience flows. Phase 4 qualifies reliability and security.
 Phase 5 packages the demonstration and submission. Work stops at each owner review gate.
 The internal submission target is 26 October 2026.
@@ -77,6 +79,6 @@ release tagging and later phase approvals remain separate.
 Only main and development are authorised. Environment isolation, optional
 auto-publication and the final inference-review policy require explicit decisions
 before those capabilities are implemented. The [decision log](decisions/ADR-0005-baseline-conflicts.md)
-records the boundaries. The qualified foundation adds no publication or deployment authority. Phase 1 begins
-with the deterministic synthetic match engine; live model and Azure work remain later
+records the boundaries. The deterministic Phase 1 path currently includes the tested
+synthetic engine and in-memory temporal ingestor; live model and Azure work remain later
 controlled decisions.

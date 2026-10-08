@@ -3,6 +3,19 @@
 Results are tied to source commits and execution environments. A passing build is not
 an approval to deploy, and evidence from one source is not relabelled as another.
 
+## Phase 1B temporal ingestion
+
+- [Phase 1B temporal ingestion qualification](phase1b-temporal-ingestion-20261008.md)
+  records ordered/idempotent replay ingestion, explicit gap handling and replay-reset
+  revision behaviour on source `d7567779580d731e61feb02302627975887bf616`.
+- Foundation CI run 37812734147 passed 161 Python tests with 100% package statement
+  and branch coverage, Ruff, formatter checks and strict mypy.
+- Dependency audit 37812734051, Source security 37812734238 and Foundation integration
+  37812734182 also passed, including runtime-browser and native-images.
+
+P1-02 is TESTED only. The ingestor is an in-memory deterministic domain component;
+the football reducer and durable event persistence are not yet implemented.
+
 ## Phase 1A synthetic engine
 
 - [Phase 1A synthetic engine qualification](phase1a-synthetic-engine-20261008.md)
@@ -14,8 +27,8 @@ an approval to deploy, and evidence from one source is not relabelled as another
 - Dependency audit 37809719414, Source security 37809719549 and Foundation integration
   37809719410 also passed, including runtime-browser and native-images.
 
-P1-01 is TESTED only. Ingestion, reducers, metrics and moment detection remain later
-Phase 1 work.
+P1-01 is TESTED. P1-02 is now also TESTED; reducers, metrics and moment detection remain
+later Phase 1 work.
 
 ## Phase 0 closure
 
