@@ -1,0 +1,86 @@
+# One-time metadata collection. No Git writes, cloud credentials or deployments.
+# Reviewed candidates are committed separately before the integration gate runs.
+name: Resolve integration candidates
+on:
+  push:
+    branches: [development]
+    paths: ['.github/workflows/integration-bootstrap.yml']
+permissions:
+  contents: read
+jobs:
+  resolve:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22.16.0'
+      - name: Resolve isolated browser-test dependencies without executing scripts
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/integration-candidates/e2e
+          cat > artifacts/integration-candidates/e2e/package.json <<'JSON'
+          {
+            "name": "matchdesk-browser-tests",
+            "version": "0.0.1",
+            "private": true,
+            "type": "module",
+            "scripts": { "test": "playwright test" },
+            "devDependencies": { "@playwright/test": "1.63.0" }
+          }
+          JSON
+          cd artifacts/integration-candidates/e2e
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund --registry=https://registry.npmjs.org
+      - name: Resolve trusted image tags to immutable digests
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          """Record registry-reported identities; never invent or substitute image hashes."""
+          import hashlib
+          import json
+          import os
+          import re
+          import subprocess
+          from datetime import datetime, timezone
+          from pathlib import Path
+          from urllib.parse import urlsplit
+
+          root = Path('artifacts/integration-candidates')
+          images = {}
+          for name in ('python:3.12.15-slim-bookworm', 'node:22.16.0-bookworm-slim', 'postgres:16-bookworm', 'ghcr.io/astral-sh/uv:0.10.0'):
+              result = subprocess.check_output(['docker', 'buildx', 'imagetools', 'inspect', name], text=True, timeout=90)
+              match = re.search(r'^Digest:\s+(sha256:[0-9a-f]{64})\s*$', result, re.MULTILINE)
+              if not match:
+                  raise ValueError(f'No registry digest for {name}')
+              images[name] = name + '@' + match.group(1)
+          lock = json.loads((root / 'e2e/package-lock.json').read_text())
+          for path, package in lock['packages'].items():
+              if not path:
+                  continue
+              url = urlsplit(package.get('resolved', ''))
+              if url.scheme != 'https' or url.hostname != 'registry.npmjs.org' or url.username or url.password or package.get('link'):
+                  raise ValueError('Unexpected package source')
+              if not package.get('integrity', '').startswith('sha512-'):
+                  raise ValueError('Missing package integrity')
+          manifest = {
+              'status': 'CANDIDATE_NOT_QUALIFIED',
+              'source_commit': os.environ['GITHUB_SHA'],
+              'run_id': os.environ['GITHUB_RUN_ID'],
+              'recorded_at': datetime.now(timezone.utc).isoformat(),
+              'images': images,
+              'files': {str(p.relative_to(root)): hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted((root / 'e2e').glob('*.json'))},
+              'limitations': 'Metadata and dependency resolution only; no runtime, browser or vulnerability qualification.'
+          }
+          (root / 'manifest.json').write_text(json.dumps(manifest, indent=2, sort_keys=True) + '\n')
+          print(json.dumps(manifest, indent=2, sort_keys=True))
+          PY
+      - name: Retain review candidates
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: integration-candidates-${{ github.run_id }}
+          path: artifacts/integration-candidates/
+          if-no-files-found: error
+          retention-days: 60
