@@ -3,7 +3,6 @@
 from dataclasses import FrozenInstanceError
 
 import pytest
-
 from matchdesk.domain.models import (
     Claim,
     EvidenceRecord,
@@ -206,6 +205,7 @@ def test_response_requires_meaningful_output() -> None:
 
 def test_host_rejects_executor_role_spoofing() -> None:
     """A runtime cannot return output under another specialist's role identity."""
+
     class WrongRoleExecutor:
         """Return deliberately mislabelled output for host-boundary testing."""
 
@@ -228,6 +228,7 @@ def test_host_rejects_executor_role_spoofing() -> None:
 
 def test_executor_receives_only_scoped_read_tools() -> None:
     """The host injects read scope and the executor cannot request broader raw access."""
+
     class TacticalExecutor:
         """Exercise only the host-provided tactical read scope."""
 
