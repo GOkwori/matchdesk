@@ -36,7 +36,7 @@ def measured_claim() -> dict[str, object]:
         "kind": "measured_stat",
         "evidence_event_ids": ["event-1"],
         "assertion": {
-            "metric": "shots",
+            "metric": "shots.v1",
             "subject": {"team_id": "demo-a"},
             "window": {"period": 1, "from_ms": 0, "to_ms": 60_000},
             "value": 7.0,
