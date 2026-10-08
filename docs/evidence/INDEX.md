@@ -8,3 +8,9 @@ Early attempt logs are retained under `initial-attempts`; those runs preceded th
 local source commit and are not attributed to it. The source-bound qualification run
 is recorded separately. No hosted CI, frontend build, cloud deployment, live model
 execution or production certification is implied by these local results.
+
+## GitHub import
+
+[Source import and first hosted CI outcome](github-import-20261008.md) records the
+exact imported tree and the missing-lock gate failure. It does not replace or relabel
+the historical local test runs above.
