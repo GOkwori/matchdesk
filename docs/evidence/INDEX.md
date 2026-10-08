@@ -3,6 +3,20 @@
 Results are tied to source commits and execution environments. A passing build is not
 an approval to deploy, and evidence from one source is not relabelled as another.
 
+## Phase 1C football-state reducer
+
+- [Phase 1C football-state reducer qualification](phase1c-football-state-reducer-20261008.md)
+  records roster/current-player validation, substitutions, possession ownership,
+  validated goal→shot references and exactly-once scoring on source
+  `b02ec6138a385dadbc5f2e166cd448d532d9e054`.
+- Foundation CI run 37815702746 passed 184 Python tests with 100% package statement
+  and branch coverage, Ruff, formatter checks and strict mypy.
+- Dependency audit 37815703145, Source security 37815703924 and Foundation integration
+  37815702741 also passed, including runtime-browser and native-images.
+
+P1-03 is TESTED only. Registered metrics and deterministic moment detection remain
+later Phase 1 work.
+
 ## Phase 1B temporal ingestion
 
 - [Phase 1B temporal ingestion qualification](phase1b-temporal-ingestion-20261008.md)
@@ -13,8 +27,8 @@ an approval to deploy, and evidence from one source is not relabelled as another
 - Dependency audit 37812734051, Source security 37812734238 and Foundation integration
   37812734182 also passed, including runtime-browser and native-images.
 
-P1-02 is TESTED only. The ingestor is an in-memory deterministic domain component;
-the football reducer and durable event persistence are not yet implemented.
+P1-02 is TESTED. The ingestor is an in-memory deterministic domain component;
+durable event persistence is not yet implemented.
 
 ## Phase 1A synthetic engine
 
@@ -27,8 +41,8 @@ the football reducer and durable event persistence are not yet implemented.
 - Dependency audit 37809719414, Source security 37809719549 and Foundation integration
   37809719410 also passed, including runtime-browser and native-images.
 
-P1-01 is TESTED. P1-02 is now also TESTED; reducers, metrics and moment detection remain
-later Phase 1 work.
+P1-01, P1-02 and P1-03 are TESTED; registered metrics and moment detection remain later
+Phase 1 work.
 
 ## Phase 0 closure
 

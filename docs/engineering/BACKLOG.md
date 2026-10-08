@@ -20,15 +20,15 @@ See [Phase 0 closure evidence](../evidence/phase0-closure-20261008.md).
 
 ## Phase 1 — deterministic football engine
 
-Phase 1 is in progress. P1-01 and P1-02 are TESTED; P1-03 is next. Optional AI or
-cloud work must not displace the deterministic truth layer.
+Phase 1 is in progress. P1-01, P1-02 and P1-03 are TESTED; P1-04 is next. Optional AI
+or cloud work must not displace the deterministic truth layer.
 
 | ID | Work | Status | Acceptance evidence |
 |---|---|---|---|
 | P1-01 | Build seeded synthetic match engine | TESTED | Four normal scenarios plus one fault scenario; reproducible bytes and valid invariants |
 | P1-02 | Implement ordered/idempotent ingestion and replay revision handling | TESTED | Duplicate/out-of-order/gap/reset regressions; exact-head hosted qualification |
-| P1-03 | Implement roster, score and possession reducer | NEXT | Exactly-once scoring and ownership invariants |
-| P1-04 | Implement registered football metrics | PLANNED | Independent expected-value tests for each formula ID |
+| P1-03 | Implement roster, score and possession reducer | TESTED | Exactly-once scoring, roster, substitution, possession and goal-reference invariants |
+| P1-04 | Implement registered football metrics | NEXT | Independent expected-value tests for each formula ID |
 | P1-05 | Implement deterministic moment detectors | PLANNED | Goal, big chance, momentum swing, pressing spell and counter-attack goal |
 | P1-06 | Review Phase 1 | PLANNED | Source-bound evidence and explicit owner decision |
 
@@ -38,3 +38,5 @@ classified as Phase 1 completion evidence unless the deterministic engine gate i
 P1-01 qualification: [Phase 1A synthetic engine evidence](../evidence/phase1a-synthetic-engine-20261008.md).
 
 P1-02 qualification: [Phase 1B temporal ingestion evidence](../evidence/phase1b-temporal-ingestion-20261008.md).
+
+P1-03 qualification: [Phase 1C football-state reducer evidence](../evidence/phase1c-football-state-reducer-20261008.md).
