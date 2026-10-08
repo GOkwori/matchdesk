@@ -366,3 +366,156 @@ def test_verification_gate_requires_boolean_and_nonblank_reason() -> None:
 
     with pytest.raises(ValueError, match="cannot be blank"):
         apply_verification_gate(state, passed=True, reason="   ")
+
+def test_attempt_contract_and_controller_reject_blank_or_invalid_inputs() -> None:
+    """Attempt records and controller inputs reject blank reasons and invalid durations."""
+    from matchdesk.domain.orchestration import SpecialistAttempt
+
+    with pytest.raises(ValueError, match="cannot be blank"):
+        SpecialistAttempt(
+            role="tactical_analyst",
+            attempt=1,
+            duration_ms=1,
+            outcome="success",
+            reason="   ",
+        )
+
+    state = _start()
+    with pytest.raises(ValueError, match="duration_ms"):
+        record_specialist_attempt(
+            state,
+            "tactical_analyst",
+            duration_ms=-1,
+            outcome="success",
+            reason="invalid duration",
+        )
+    with pytest.raises(ValueError, match="duration_ms"):
+        record_specialist_attempt(
+            state,
+            "tactical_analyst",
+            duration_ms=True,
+            outcome="success",
+            reason="boolean duration",
+        )
+    with pytest.raises(ValueError, match="cannot be blank"):
+        record_specialist_attempt(
+            state,
+            "tactical_analyst",
+            duration_ms=1,
+            outcome="success",
+            reason="   ",
+        )
+
+
+def test_state_contract_rejects_missing_role_verification_role_and_duplicate_completion() -> None:
+    """Persisted state cannot omit active authority or duplicate completed specialists."""
+    with pytest.raises(ValueError, match="Running workflows require"):
+        WorkflowState(
+            workflow_id="wf-1",
+            match_id="match-1",
+            replay_id="replay-1",
+            revision=1,
+            moment_id="moment-1",
+            status="running",
+            current_role=None,
+        )
+
+    with pytest.raises(ValueError, match="Verification hand-off"):
+        WorkflowState(
+            workflow_id="wf-1",
+            match_id="match-1",
+            replay_id="replay-1",
+            revision=1,
+            moment_id="moment-1",
+            status="awaiting_verification",
+            current_role="editorial_reviewer",
+        )
+
+    with pytest.raises(ValueError, match="must be unique"):
+        WorkflowState(
+            workflow_id="wf-1",
+            match_id="match-1",
+            replay_id="replay-1",
+            revision=1,
+            moment_id="moment-1",
+            status="running",
+            current_role="narrative_composer",
+            completed_roles=("tactical_analyst", "tactical_analyst"),
+        )
+
+
+def test_preexhausted_retry_budget_fails_closed() -> None:
+    """A restored running state cannot execute beyond its role-local attempt budget."""
+    from matchdesk.domain.orchestration import SpecialistAttempt
+
+    state = WorkflowState(
+        workflow_id="wf-1",
+        match_id="match-1",
+        replay_id="replay-1",
+        revision=1,
+        moment_id="moment-1",
+        status="running",
+        current_role="tactical_analyst",
+        attempts=(
+            SpecialistAttempt(
+                role="tactical_analyst",
+                attempt=1,
+                duration_ms=1,
+                outcome="retryable_failure",
+                reason="first",
+            ),
+            SpecialistAttempt(
+                role="tactical_analyst",
+                attempt=2,
+                duration_ms=1,
+                outcome="retryable_failure",
+                reason="second",
+            ),
+        ),
+    )
+
+    with pytest.raises(ValueError, match="already exhausted"):
+        record_specialist_attempt(
+            state,
+            "tactical_analyst",
+            duration_ms=1,
+            outcome="success",
+            reason="third attempt",
+        )
+
+
+def test_existing_completed_role_is_not_duplicated_on_success() -> None:
+    """A restored state retains unique completed-role history when replaying success."""
+    state = WorkflowState(
+        workflow_id="wf-1",
+        match_id="match-1",
+        replay_id="replay-1",
+        revision=1,
+        moment_id="moment-1",
+        status="running",
+        current_role="tactical_analyst",
+        completed_roles=("tactical_analyst",),
+    )
+
+    state = record_specialist_attempt(
+        state,
+        "tactical_analyst",
+        duration_ms=1,
+        outcome="success",
+        reason="idempotent restored success",
+    )
+
+    assert state.completed_roles == ("tactical_analyst",)
+    assert state.current_role == "narrative_composer"
+
+
+def test_verification_and_recovery_require_their_exact_gate_and_reason() -> None:
+    """Verification and recovery cannot be invoked from the wrong state or without audit text."""
+    state = _start()
+
+    with pytest.raises(ValueError, match="editorial hand-off"):
+        apply_verification_gate(state, passed=True, reason="too early")
+
+    with pytest.raises(ValueError, match="cannot be blank"):
+        recover_workflow(state, "   ")
+
