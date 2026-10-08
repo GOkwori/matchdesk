@@ -54,7 +54,9 @@ def sample_bundle(root: Path) -> None:
     for name, value in values.items():
         (root / name).write_text(json.dumps(value))
     manifest = {
-        "source_commit": "test-source", "run_id": "42", "scanner_version": "0.75.0",
+        "source_commit": "test-source",
+        "run_id": "42",
+        "scanner_version": "0.75.0",
         "database_sha256": "b" * 64,
         "files": {name: file_hash(root / name) for name in values},
         "scans": {name: {"image_id": IMAGE, "exit_code": 0} for name in ("api", "web", "postgres")},
@@ -75,16 +77,23 @@ def test_real_inventory_is_required_even_for_zero_findings(service: str) -> None
 def test_all_findings_block_including_unfixed(severity: str, fixed: str) -> None:
     """Neither low severity nor the absence of a vendor patch silently exempts a finding."""
     report = sample_report()
-    report["Results"][0]["Vulnerabilities"] = [{
-        "VulnerabilityID": "TEST-NOT-A-REAL-ADVISORY", "PkgName": "libc6",
-        "InstalledVersion": "test-version", "FixedVersion": fixed, "Severity": severity,
-    }]
+    report["Results"][0]["Vulnerabilities"] = [
+        {
+            "VulnerabilityID": "TEST-NOT-A-REAL-ADVISORY",
+            "PkgName": "libc6",
+            "InstalledVersion": "test-version",
+            "FixedVersion": fixed,
+            "Severity": severity,
+        }
+    ]
     result = assess_report(report, IMAGE, "api")
     assert result["status"] == "FAIL"
     assert result["findings"][0]["fixed"] == fixed
 
 
-@pytest.mark.parametrize("defect", ["empty", "wrong-image", "eol", "no-os", "no-app", "modified", "malformed"])
+@pytest.mark.parametrize(
+    "defect", ["empty", "wrong-image", "eol", "no-os", "no-app", "modified", "malformed"]
+)
 def test_incomplete_or_modified_reports_cannot_appear_clean(defect: str) -> None:
     """Removing evidence or modifying findings must fail before a zero-finding claim."""
     report = sample_report()
@@ -118,7 +127,9 @@ def test_bundle_requires_all_three_images_and_matching_source(tmp_path: Path) ->
         evaluate_bundle(tmp_path, "test-source", "43", NOW)
 
 
-@pytest.mark.parametrize("defect", ["missing", "tampered", "scanner-error", "boolean-exit", "missing-image"])
+@pytest.mark.parametrize(
+    "defect", ["missing", "tampered", "scanner-error", "boolean-exit", "missing-image"]
+)
 def test_bundle_rejects_incomplete_or_failed_scans(tmp_path: Path, defect: str) -> None:
     """Partial output, altered bytes and failed scanner execution are not passing scans."""
     sample_bundle(tmp_path)
@@ -163,3 +174,30 @@ def test_timezone_and_input_immutability() -> None:
     assert report == original
     with pytest.raises(ValueError, match="timezone"):
         timestamp("2026-10-08T10:30:00")
+
+
+@pytest.mark.parametrize("with_finding", [False, True])
+def test_overdue_refresh_blocks_without_hiding_findings(tmp_path: Path, with_finding: bool) -> None:
+    """A fresh download of overdue metadata is still blocked and must retain image findings."""
+    sample_bundle(tmp_path)
+    path = tmp_path / "db-metadata.json"
+    database = json.loads(path.read_text())
+    database["NextUpdate"] = "2026-10-08T09:30:00Z"
+    path.write_text(json.dumps(database))
+    if with_finding:
+        image_path = tmp_path / "api.json"
+        report = json.loads(image_path.read_text())
+        report["Results"][0]["Vulnerabilities"] = [
+            {"VulnerabilityID": "TEST-RETAINED-FINDING", "Severity": "HIGH"}
+        ]
+        image_path.write_text(json.dumps(report))
+    manifest_path = tmp_path / "manifest.json"
+    manifest = json.loads(manifest_path.read_text())
+    for name in ("db-metadata.json", "api.json"):
+        manifest["files"][name] = file_hash(tmp_path / name)
+    manifest_path.write_text(json.dumps(manifest))
+    result = evaluate_bundle(tmp_path, "test-source", "42", NOW)
+    assert result["status"] == "FAIL"
+    assert result["database_status"] == "REFRESH_OVERDUE"
+    assert len(result["images"]) == 3
+    assert result["images"][0]["finding_count"] == int(with_finding)

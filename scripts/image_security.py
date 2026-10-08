@@ -74,7 +74,11 @@ def assess_report(report: dict, image_id: str, service: str) -> dict:
         if not isinstance(packages, list) or not packages:
             raise ValueError("Missing package inventory; zero findings alone is insufficient")
         for package in packages:
-            if not isinstance(package, dict) or not package.get("Name") or not package.get("Version"):
+            if (
+                not isinstance(package, dict)
+                or not package.get("Name")
+                or not package.get("Version")
+            ):
                 raise ValueError("Incomplete package identity")
             inventory[result["Class"]].add(package["Name"].lower().replace("_", "-"))
         vulnerabilities = result.get("Vulnerabilities", [])
@@ -85,16 +89,18 @@ def assess_report(report: dict, image_id: str, service: str) -> dict:
         for vulnerability in vulnerabilities:
             if not isinstance(vulnerability, dict) or not vulnerability.get("VulnerabilityID"):
                 raise ValueError("Incomplete vulnerability identity")
-            findings.append({
-                "target": result["Target"],
-                "class": result["Class"],
-                "id": vulnerability["VulnerabilityID"],
-                "package": vulnerability.get("PkgName"),
-                "installed": vulnerability.get("InstalledVersion"),
-                "fixed": vulnerability.get("FixedVersion", ""),
-                "severity": vulnerability.get("Severity", "UNKNOWN"),
-                "status": vulnerability.get("Status", "unknown"),
-            })
+            findings.append(
+                {
+                    "target": result["Target"],
+                    "class": result["Class"],
+                    "id": vulnerability["VulnerabilityID"],
+                    "package": vulnerability.get("PkgName"),
+                    "installed": vulnerability.get("InstalledVersion"),
+                    "fixed": vulnerability.get("FixedVersion", ""),
+                    "severity": vulnerability.get("Severity", "UNKNOWN"),
+                    "status": vulnerability.get("Status", "unknown"),
+                }
+            )
     if not {"dpkg", "libc6"}.issubset(inventory["os-pkgs"]):
         raise ValueError("Expected OS packages were not inventoried")
     required = {"api": {"fastapi", "starlette", "anyio"}, "web": {"next", "react"}}
@@ -103,11 +109,13 @@ def assess_report(report: dict, image_id: str, service: str) -> dict:
     if service == "postgres" and "postgresql-16" not in inventory["os-pkgs"]:
         raise ValueError("PostgreSQL runtime package was not inventoried")
     return {
-        "service": service, "image_id": image_id,
+        "service": service,
+        "image_id": image_id,
         "status": "FAIL" if findings else "PASS",
         "os_packages": len(inventory["os-pkgs"]),
         "language_packages": len(inventory["lang-pkgs"]),
-        "finding_count": len(findings), "findings": findings,
+        "finding_count": len(findings),
+        "findings": findings,
     }
 
 
@@ -119,11 +127,23 @@ def evaluate_bundle(root: Path, source: str, run_id: str, now: datetime) -> dict
     if manifest["scanner_version"] != SCANNER_VERSION:
         raise ValueError("Scanner does not match the reviewed version")
     for name, digest in manifest["files"].items():
-        if name not in {"runtime-checks.json", "db-metadata.json", "api.json", "web.json", "postgres.json"}:
+        if name not in {
+            "runtime-checks.json",
+            "db-metadata.json",
+            "api.json",
+            "web.json",
+            "postgres.json",
+        }:
             raise ValueError("Unapproved evidence filename")
         if file_hash(root / name) != digest:
             raise ValueError("Retained evidence bytes changed")
-    if set(manifest["files"]) != {"runtime-checks.json", "db-metadata.json", "api.json", "web.json", "postgres.json"}:
+    if set(manifest["files"]) != {
+        "runtime-checks.json",
+        "db-metadata.json",
+        "api.json",
+        "web.json",
+        "postgres.json",
+    }:
         raise ValueError("Incomplete image evidence collection")
     database = read_object(root / "db-metadata.json")
     if database.get("Version") != 2:
@@ -131,8 +151,9 @@ def evaluate_bundle(root: Path, source: str, run_id: str, now: datetime) -> dict
     age = now - timestamp(database["UpdatedAt"])
     if age < -timedelta(minutes=5) or age > timedelta(hours=48):
         raise ValueError("Vulnerability database timestamp is stale or in the future")
-    if timestamp(database["NextUpdate"]) < now:
-        raise ValueError("Vulnerability database has passed its next-update time")
+    # An overdue refresh remains blocking, but it must not hide vulnerabilities
+    # already reported by this database. Keep both causes visible in the verdict.
+    database_current = timestamp(database["NextUpdate"]) >= now
     if not re.fullmatch(r"[0-9a-f]{64}", manifest["database_sha256"]):
         raise ValueError("Missing vulnerability database byte identity")
     runtime = read_object(root / "runtime-checks.json")
@@ -150,11 +171,20 @@ def evaluate_bundle(root: Path, source: str, run_id: str, now: datetime) -> dict
             raise ValueError("A scanner failed; partial output cannot pass")
         if scan["image_id"] != images[service]:
             raise ValueError("Scan identity differs from the tested runtime")
-        assessments.append(assess_report(read_object(root / f"{service}.json"), images[service], service))
+        assessments.append(
+            assess_report(read_object(root / f"{service}.json"), images[service], service)
+        )
     return {
-        "source_commit": source, "run_id": run_id, "checked_at": now.isoformat(),
+        "source_commit": source,
+        "run_id": run_id,
+        "checked_at": now.isoformat(),
         "policy": "all-reported-vulnerabilities-block; no exclusions; unfixed included",
-        "status": "PASS" if all(item["status"] == "PASS" for item in assessments) else "FAIL",
+        "database_status": "CURRENT" if database_current else "REFRESH_OVERDUE",
+        "status": (
+            "PASS"
+            if database_current and all(item["status"] == "PASS" for item in assessments)
+            else "FAIL"
+        ),
         "images": assessments,
     }
 
@@ -173,9 +203,13 @@ def collect(root: Path, scanner: str, cache: Path) -> None:
     shutil.copyfile(runtime_path, root / "runtime-checks.json")
     shutil.copyfile(cache / "db/metadata.json", root / "db-metadata.json")
     manifest = {
-        "source_commit": source, "run_id": os.environ["GITHUB_RUN_ID"],
-        "run_attempt": os.environ["GITHUB_RUN_ATTEMPT"], "scanner_version": SCANNER_VERSION,
-        "database_sha256": file_hash(cache / "db/trivy.db"), "scans": {}, "files": {},
+        "source_commit": source,
+        "run_id": os.environ["GITHUB_RUN_ID"],
+        "run_attempt": os.environ["GITHUB_RUN_ATTEMPT"],
+        "scanner_version": SCANNER_VERSION,
+        "database_sha256": file_hash(cache / "db/trivy.db"),
+        "scans": {},
+        "files": {},
     }
     config = root / "scanner.yaml"
     config.write_text("{}\n", encoding="utf-8")
@@ -183,21 +217,55 @@ def collect(root: Path, scanner: str, cache: Path) -> None:
     # Registry fallback is disabled: a missing local image must not scan a substitute.
     for item in runtime["containers"]:
         service, image_id = item["service"], item["image_id"]
-        if (service not in SERVICES or not DIGEST.fullmatch(image_id)
-                or not re.fullmatch(r"[0-9a-f]{64}", item["id"])):
+        if (
+            service not in SERVICES
+            or not DIGEST.fullmatch(image_id)
+            or not re.fullmatch(r"[0-9a-f]{64}", item["id"])
+        ):
             raise ValueError("Unexpected runtime identity")
-        actual = subprocess.check_output([
-            "docker", "inspect", "--format", "{{.Image}}", item["id"],
-        ], text=True).strip()
+        actual = subprocess.check_output(
+            [
+                "docker",
+                "inspect",
+                "--format",
+                "{{.Image}}",
+                item["id"],
+            ],
+            text=True,
+        ).strip()
         if actual != image_id:
             raise ValueError("Runtime image changed after integration checks")
         command = [
-            scanner, "--config", str(config), "--cache-dir", str(cache), "image",
-            "--image-src", "docker", "--scanners", "vuln", "--pkg-types", "os,library",
-            "--format", "json", "--list-all-pkgs", "--ignorefile", "/dev/null",
-            "--ignore-unfixed=false", "--severity", "UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL",
-            "--skip-db-update", "--exit-code", "0", "--exit-on-eol", "2",
-            "--timeout", "5m", "--output", str(root / f"{service}.json"), image_id,
+            scanner,
+            "--config",
+            str(config),
+            "--cache-dir",
+            str(cache),
+            "image",
+            "--image-src",
+            "docker",
+            "--scanners",
+            "vuln",
+            "--pkg-types",
+            "os,library",
+            "--format",
+            "json",
+            "--list-all-pkgs",
+            "--ignorefile",
+            "/dev/null",
+            "--ignore-unfixed=false",
+            "--severity",
+            "UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL",
+            "--skip-db-update",
+            "--exit-code",
+            "0",
+            "--exit-on-eol",
+            "2",
+            "--timeout",
+            "5m",
+            "--output",
+            str(root / f"{service}.json"),
+            image_id,
         ]
         started = datetime.now(timezone.utc).isoformat()
         # A vulnerability result is preserved for the independent gate; process errors
@@ -205,8 +273,11 @@ def collect(root: Path, scanner: str, cache: Path) -> None:
         with (root / f"{service}.log").open("w", encoding="utf-8") as log:
             result = subprocess.run(command, stdout=log, stderr=subprocess.STDOUT, timeout=330)
         manifest["scans"][service] = {
-            "image_id": image_id, "exit_code": result.returncode, "command": command,
-            "started_at": started, "completed_at": datetime.now(timezone.utc).isoformat(),
+            "image_id": image_id,
+            "exit_code": result.returncode,
+            "command": command,
+            "started_at": started,
+            "completed_at": datetime.now(timezone.utc).isoformat(),
         }
     for path in sorted(root.glob("*.json")):
         if path.name != "manifest.json":
@@ -232,11 +303,15 @@ def main() -> int:
     if not args.source or not args.run_id:
         parser.error("gate requires --source and --run-id")
     try:
-        verdict = evaluate_bundle(args.directory, args.source, args.run_id, datetime.now(timezone.utc))
+        verdict = evaluate_bundle(
+            args.directory, args.source, args.run_id, datetime.now(timezone.utc)
+        )
     except (ValueError, KeyError, TypeError, OSError) as error:
         verdict = {"status": "FAIL", "reason": str(error), "source_commit": args.source}
     args.directory.mkdir(parents=True, exist_ok=True)
-    (args.directory / "verdict.json").write_text(json.dumps(verdict, indent=2) + "\n", encoding="utf-8")
+    (args.directory / "verdict.json").write_text(
+        json.dumps(verdict, indent=2) + "\n", encoding="utf-8"
+    )
     print(json.dumps(verdict, indent=2))
     return 0 if verdict["status"] == "PASS" else 1
 

@@ -14,6 +14,11 @@ WORKDIR /app
 ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/app/backend/src
 COPY --from=build /app/.venv /app/.venv
 COPY backend/src backend/src
+# The service runs locked packages from the copied venv; it never installs packages.
+# Remove the base image's unused pip, not scanner metadata or application libraries.
+# The executable absence check is executed during every runtime-image build.
+RUN /usr/local/bin/python -m pip uninstall --yes pip \
+    && /usr/local/bin/python -c "import importlib.util, shutil; assert importlib.util.find_spec('pip') is None; assert shutil.which('pip') is None"
 RUN useradd --uid 10001 --no-log-init --create-home matchdesk
 USER 10001
 EXPOSE 8000
