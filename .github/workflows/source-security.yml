@@ -137,6 +137,9 @@ jobs:
           if len(records) != 13 or len({r['fingerprint'] for r in records}) != 13:
               raise SystemExit('Unexpected historical review scope')
           allowed_commits = {'964fb8c5caae8cb9fc0955c3bf12bd3768b28040', '211d3676e03b70304404558818de4e175b345ef3'}
+          squash_commit = 'f62d8ccc2c02f36a707a6e24c6640c449048d941'
+          fingerprints = []
+          squash_aliases = []
           for record in records:
               commit, path, rule, number = record['fingerprint'].split(':')
               if commit not in allowed_commits or rule != 'generic-api-key':
@@ -159,13 +162,33 @@ jobs:
                   data = subprocess.check_output(['git', 'show', f'{commit}:{target}'])
               if hashlib.sha256(data).hexdigest() != record['sha256']:
                   raise SystemExit('Source bytes do not reproduce the reviewed digest')
+
+              # PR #1 was squash-merged, so the same reviewed digest fields were
+              # introduced once more at the new main commit. Derive only those exact
+              # commit/path/rule/line aliases after proving the line is byte-for-byte
+              # equivalent to the already reviewed digest field.
+              squash_document = subprocess.check_output(['git', 'show', f'{squash_commit}:{path}']).decode('utf-8')
+              squash_line = squash_document.splitlines()[int(number) - 1]
+              squash_match = re.fullmatch(r'\s*"([^"]+)": "([0-9a-f]{64})",?', squash_line)
+              if not squash_match or squash_match.groups() != match.groups():
+                  raise SystemExit('Squash alias is not the reviewed digest field')
+              alias = f'{squash_commit}:{path}:{rule}:{number}'
+              fingerprints.extend([record['fingerprint'], alias])
+              squash_aliases.append({'fingerprint': alias, 'derived_from': record['fingerprint'], 'sha256': record['sha256']})
+
+          if len(fingerprints) != 26 or len(set(fingerprints)) != 26:
+              raise SystemExit('Unexpected exact-fingerprint scope after squash alias derivation')
           output = Path(os.environ['RUNNER_TEMP']) / 'matchdesk-no-ignores' / 'reviewed.ignore'
-          output.write_text('\n'.join(r['fingerprint'] for r in records) + '\n')
+          output.write_text('\n'.join(fingerprints) + '\n')
           Path('artifacts/secrets/classification.json').write_text(json.dumps({
-              'status': 'VERIFIED_NON_SECRET_DIGESTS', 'count': len(records),
-              'scope': 'Exact historical commit/path/rule/line fingerprints only',
-              'records': records}, indent=2) + '\n')
-          print('Recomputed 13 published source/schema digests; no path or rule-wide exclusions.')
+              'status': 'VERIFIED_NON_SECRET_DIGESTS',
+              'reviewed_record_count': len(records),
+              'exact_fingerprint_count': len(fingerprints),
+              'scope': 'Exact commit/path/rule/line fingerprints only; no path or rule-wide exclusions',
+              'squash_commit': squash_commit,
+              'records': records,
+              'derived_squash_aliases': squash_aliases}, indent=2) + '\n')
+          print('Recomputed 13 reviewed digests and 13 exact squash aliases; no path or rule-wide exclusions.')
           PY
       - name: Confirm the scanner still detects a new synthetic key with the same exceptions
         run: |
