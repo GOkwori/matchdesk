@@ -1,0 +1,15 @@
+{
+  "files": {
+    "ApprovalBinding.v1.json": "f606b3daec2041d051e5243c148001f49299d8bae82f5f4b0d126b91cce906eb",
+    "Claim.v1.json": "fcaf9a193cc9bf5e500ea35c543893a0a3c1cc43503bccbc4752e7d0e0b48d9b",
+    "EvidenceRecord.v1.json": "1d7bf1c5ea9ee9ee9f187408c17b99c60f1acb36d56883f1f000d3b4b61f99aa",
+    "Location.v1.json": "b16622287c248d9750ac2492d9f9e1bba7e2da3b7d8c0112982207fd18e314d4",
+    "MatchEvent.v1.json": "79bf85a6c79acd746974f34ec126f043a9fb4f5f1262d4ba8f5b8fa1b71b3c84",
+    "MatchWindow.v1.json": "378083066773d466099046b2f54272ffce2762cc8c06bc0973c498d2abb7fbc5",
+    "MetricAssertion.v1.json": "0f8a3ca7295c56e27e384e9c2a1b0310978c26bf2490892e4456a2470b4254a2",
+    "Subject.v1.json": "4b36259afe9e940cce73534df733a4070c46cecad646e6ca74989b0764693122",
+    "VerificationResult.v1.json": "22e1512f41f8e213264e88c35fbedc249de0f17b20f107dffb4fbb4c795b4944",
+    "openapi.json": "68d371f389b57f8e5994b7e2f1ea88b65ca6149594e16f3cf01a69f3b2b4a3f4"
+  },
+  "schema_version": "1.0"
+}

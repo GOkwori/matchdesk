@@ -1,0 +1,45 @@
+# Local-only topology; it does not claim a working database integration in Phase 0.
+name: matchdesk
+services:
+  postgres:
+    image: postgres:16-bookworm
+    environment:
+      POSTGRES_USER: matchdesk
+      POSTGRES_DB: matchdesk
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run python -m scripts.create_local_env first}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U matchdesk -d matchdesk"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+    # No published database port: only the private Compose network can reach it.
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      # Foundation liveness is intentionally separate from product readiness (503).
+      test: ["CMD", "/app/.venv/bin/python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health', timeout=2)"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      MATCHDESK_API_ORIGIN: http://api:8000
+    depends_on:
+      api:
+        condition: service_healthy
+volumes:
+  postgres-data:

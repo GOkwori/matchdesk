@@ -1,0 +1,38 @@
+# This workflow is authored, not remotely executed. Missing locks fail explicitly.
+name: Foundation CI
+on:
+  push:
+    branches: [development, main]
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: foundation-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  foundation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      # Pin action commits during hosted qualification; no cloud credentials are used.
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.16.0'
+      - name: Require reviewed dependency locks
+        run: test -f uv.lock && test -f apps/web/package-lock.json
+      - name: Install the pinned package manager
+        run: python -m pip install uv==0.10.0
+      - name: Synchronise without rewriting locks
+        run: uv sync --frozen --group test --group quality
+      - name: Validate contracts, comments, documentation and tests
+        run: uv run --no-sync make foundation
+      - name: Check Python static quality
+        run: uv run --no-sync ruff check backend scripts && uv run --no-sync ruff format --check backend scripts && uv run --no-sync mypy backend/src/matchdesk
+      - name: Build the actual web application
+        working-directory: apps/web
+        run: npm ci && npm run typecheck && npm run build

@@ -1,0 +1,116 @@
+{
+  "$defs": {
+    "MatchWindow": {
+      "additionalProperties": false,
+      "description": "A nonempty half-open [from_ms, to_ms) window within one match period.",
+      "properties": {
+        "from_ms": {
+          "minimum": 0,
+          "title": "From Ms",
+          "type": "integer"
+        },
+        "period": {
+          "enum": [
+            1,
+            2
+          ],
+          "title": "Period",
+          "type": "integer"
+        },
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "to_ms": {
+          "minimum": 1,
+          "title": "To Ms",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "period",
+        "from_ms",
+        "to_ms"
+      ],
+      "title": "MatchWindow",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Versioned query provenance scoped to a single match and replay generation.",
+  "properties": {
+    "engine_version": {
+      "maxLength": 96,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9_-]+$",
+      "title": "Engine Version",
+      "type": "string"
+    },
+    "event_ids": {
+      "items": {
+        "maxLength": 96,
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9_-]+$",
+        "type": "string"
+      },
+      "maxItems": 4096,
+      "minItems": 1,
+      "title": "Event Ids",
+      "type": "array"
+    },
+    "evidence_id": {
+      "maxLength": 96,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9_-]+$",
+      "title": "Evidence Id",
+      "type": "string"
+    },
+    "match_id": {
+      "maxLength": 96,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9_-]+$",
+      "title": "Match Id",
+      "type": "string"
+    },
+    "replay_id": {
+      "maxLength": 96,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9_-]+$",
+      "title": "Replay Id",
+      "type": "string"
+    },
+    "revision": {
+      "minimum": 1,
+      "title": "Revision",
+      "type": "integer"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "source_digest": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Source Digest",
+      "type": "string"
+    },
+    "window": {
+      "$ref": "#/$defs/MatchWindow"
+    }
+  },
+  "required": [
+    "evidence_id",
+    "match_id",
+    "replay_id",
+    "revision",
+    "window",
+    "event_ids",
+    "engine_version",
+    "source_digest"
+  ],
+  "title": "EvidenceRecord",
+  "type": "object"
+}

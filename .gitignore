@@ -1,0 +1,19 @@
+# Local credentials, generated runtime state and downloaded dependencies are private.
+.env
+.env.*
+!.env.example
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage*
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+# Raw private execution briefs must never become public project documentation.
+*IMPLEMENTATION_PROMPT*
+private/
+artifacts/

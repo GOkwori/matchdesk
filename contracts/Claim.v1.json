@@ -1,0 +1,208 @@
+{
+  "$defs": {
+    "MatchWindow": {
+      "additionalProperties": false,
+      "description": "A nonempty half-open [from_ms, to_ms) window within one match period.",
+      "properties": {
+        "from_ms": {
+          "minimum": 0,
+          "title": "From Ms",
+          "type": "integer"
+        },
+        "period": {
+          "enum": [
+            1,
+            2
+          ],
+          "title": "Period",
+          "type": "integer"
+        },
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "to_ms": {
+          "minimum": 1,
+          "title": "To Ms",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "period",
+        "from_ms",
+        "to_ms"
+      ],
+      "title": "MatchWindow",
+      "type": "object"
+    },
+    "MetricAssertion": {
+      "additionalProperties": false,
+      "description": "A requested metric comparison; truth is established by a registered query.",
+      "properties": {
+        "comparator": {
+          "default": "eq",
+          "enum": [
+            "eq",
+            "gte",
+            "lte"
+          ],
+          "title": "Comparator",
+          "type": "string"
+        },
+        "metric": {
+          "maxLength": 96,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_-]+$",
+          "title": "Metric",
+          "type": "string"
+        },
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "subject": {
+          "$ref": "#/$defs/Subject"
+        },
+        "unit": {
+          "enum": [
+            "count",
+            "ratio",
+            "synthetic_xg",
+            "metres",
+            "per_minute"
+          ],
+          "title": "Unit",
+          "type": "string"
+        },
+        "value": {
+          "minimum": 0,
+          "title": "Value",
+          "type": "number"
+        },
+        "window": {
+          "$ref": "#/$defs/MatchWindow"
+        }
+      },
+      "required": [
+        "metric",
+        "subject",
+        "window",
+        "value",
+        "unit"
+      ],
+      "title": "MetricAssertion",
+      "type": "object"
+    },
+    "Subject": {
+      "additionalProperties": false,
+      "description": "A team, player, or team-qualified player referenced by an assertion.",
+      "properties": {
+        "player_id": {
+          "anyOf": [
+            {
+              "maxLength": 96,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Player Id"
+        },
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "team_id": {
+          "anyOf": [
+            {
+              "maxLength": 96,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Team Id"
+        }
+      },
+      "title": "Subject",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "A narrative assertion with evidence references, not a verification certificate.",
+  "properties": {
+    "assertion": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/MetricAssertion"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "claim_id": {
+      "maxLength": 96,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9_-]+$",
+      "title": "Claim Id",
+      "type": "string"
+    },
+    "evidence_event_ids": {
+      "items": {
+        "maxLength": 96,
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9_-]+$",
+        "type": "string"
+      },
+      "maxItems": 4096,
+      "minItems": 1,
+      "title": "Evidence Event Ids",
+      "type": "array"
+    },
+    "kind": {
+      "enum": [
+        "measured_stat",
+        "event_fact",
+        "tactical_inference"
+      ],
+      "title": "Kind",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "text": {
+      "maxLength": 2000,
+      "minLength": 1,
+      "title": "Text",
+      "type": "string"
+    }
+  },
+  "required": [
+    "claim_id",
+    "text",
+    "kind",
+    "evidence_event_ids"
+  ],
+  "title": "Claim",
+  "type": "object"
+}

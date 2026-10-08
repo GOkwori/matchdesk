@@ -1,0 +1,129 @@
+{
+  "schema_version": "1.0",
+  "run_id": "20261008T062001Z-phase0-04385d",
+  "started_at": "2026-10-08T06:20:01.476475+00:00",
+  "finished_at": "2026-10-08T06:20:10.568554+00:00",
+  "gate_status": "BLOCKED",
+  "source_commit": "b4b24e5d3bac5b3df435514a27e228de222c6b13",
+  "source_commit_scope": "local_only",
+  "source_tree_sha256": "84df6a94280515aadf7fe4203276e21ac17865d22a7f52839f2f594280424dcb",
+  "source_stable_during_run": true,
+  "source_manifest_excludes": [
+    "docs/evidence",
+    "credentials",
+    "dependencies",
+    "runtime output"
+  ],
+  "python": "3.13.5",
+  "platform": "Linux-6.18.44-x86_64-with-glibc2.41",
+  "model_mode": "not_connected",
+  "cloud_resources_created": false,
+  "packages": {
+    "fastapi": "0.128.2",
+    "pydantic": "2.13.5",
+    "uvicorn": "0.48.0",
+    "pytest": "9.0.2",
+    "pytest-cov": "7.0.0",
+    "httpx": "0.28.1",
+    "jsonschema": "4.26.0",
+    "ruff": null,
+    "mypy": null
+  },
+  "checks": [
+    {
+      "name": "contracts",
+      "command": [
+        "/opt/pyvenv/bin/python",
+        "-m",
+        "scripts.export_contracts"
+      ],
+      "status": "PASS",
+      "exit_code": 0,
+      "elapsed_seconds": 1.0,
+      "log": "contracts.log"
+    },
+    {
+      "name": "comments",
+      "command": [
+        "/opt/pyvenv/bin/python",
+        "-m",
+        "scripts.check_comments"
+      ],
+      "status": "PASS",
+      "exit_code": 0,
+      "elapsed_seconds": 0.741,
+      "log": "comments.log"
+    },
+    {
+      "name": "documentation",
+      "command": [
+        "/opt/pyvenv/bin/python",
+        "-m",
+        "scripts.check_docs"
+      ],
+      "status": "PASS",
+      "exit_code": 0,
+      "elapsed_seconds": 0.601,
+      "log": "documentation.log"
+    },
+    {
+      "name": "pytest",
+      "command": [
+        "/opt/pyvenv/bin/python",
+        "-m",
+        "pytest",
+        "--junitxml=/mnt/data/matchdesk/docs/evidence/20261008T062001Z-phase0-04385d/junit.xml",
+        "--cov=matchdesk",
+        "--cov-report=json:/mnt/data/matchdesk/docs/evidence/20261008T062001Z-phase0-04385d/coverage.json",
+        "--cov-report=term-missing"
+      ],
+      "status": "PASS",
+      "exit_code": 0,
+      "elapsed_seconds": 4.857,
+      "log": "pytest.log"
+    },
+    {
+      "name": "api-http-smoke",
+      "command": [
+        "/opt/pyvenv/bin/python",
+        "-m",
+        "scripts.smoke_api"
+      ],
+      "status": "PASS",
+      "exit_code": 0,
+      "elapsed_seconds": 1.654,
+      "log": "api-http-smoke.log"
+    },
+    {
+      "name": "typescript-syntax",
+      "command": [
+        "node",
+        "scripts/check_ts_syntax.cjs"
+      ],
+      "status": "PASS",
+      "exit_code": 0,
+      "elapsed_seconds": 0.196,
+      "log": "typescript-syntax.log"
+    },
+    {
+      "name": "next-config-syntax",
+      "command": [
+        "node",
+        "--check",
+        "apps/web/next.config.mjs"
+      ],
+      "status": "PASS",
+      "exit_code": 0,
+      "elapsed_seconds": 0.02,
+      "log": "next-config-syntax.log"
+    }
+  ],
+  "blockers": [
+    "GitHub target repository access/publication and hosted CI not established",
+    "Python 3.12 target runtime has not been qualified",
+    "Reviewed uv.lock and package-lock.json are absent; registry DNS is unavailable",
+    "Ruff and mypy have not run; frontend dependency-aware type checking has not run",
+    "Docker/real PostgreSQL topology and actual Next.js/browser tests have not run",
+    "Branch protection, secret/dependency/container scans and action-SHA pinning not qualified"
+  ]
+}

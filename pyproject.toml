@@ -1,0 +1,48 @@
+# Runtime pins match the observed foundation environment. A resolved uv.lock and
+# a Python 3.12 run remain release prerequisites; these pins are not a security audit.
+[project]
+name = "matchdesk"
+version = "0.0.1"
+description = "Evidence-linked football production desk"
+requires-python = ">=3.12,<3.14"
+dependencies = [
+    "fastapi==0.128.2",
+    "pydantic==2.13.5",
+    "uvicorn==0.48.0",
+]
+
+[dependency-groups]
+test = ["pytest==9.0.2", "pytest-cov==7.0.0", "httpx==0.28.1", "jsonschema==4.26.0"]
+
+quality = ["ruff==0.16.10", "mypy==2.4.0"]
+
+[tool.uv]
+# Source execution avoids pretending an unbuilt distribution was installed.
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["backend/tests"]
+pythonpath = ["backend/src", "."]
+addopts = "-ra --strict-markers"
+filterwarnings = ["error"]
+
+[tool.coverage.run]
+source = ["matchdesk"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 90
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+# Public API docstrings are a required quality gate, not an optional style rule.
+select = ["E4", "E7", "E9", "F", "I", "D100", "D101", "D102", "D103", "D104", "D107"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+files = ["backend/src/matchdesk"]

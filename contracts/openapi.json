@@ -1,0 +1,466 @@
+{
+  "components": {
+    "schemas": {
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "HealthResponse": {
+        "description": "Liveness describes this process only, never the availability of the product.",
+        "properties": {
+          "model_mode": {
+            "const": "not_connected",
+            "default": "not_connected",
+            "title": "Model Mode",
+            "type": "string"
+          },
+          "phase": {
+            "const": "foundation",
+            "default": "foundation",
+            "title": "Phase",
+            "type": "string"
+          },
+          "service": {
+            "const": "matchdesk",
+            "default": "matchdesk",
+            "title": "Service",
+            "type": "string"
+          },
+          "status": {
+            "const": "alive",
+            "default": "alive",
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "title": "HealthResponse",
+        "type": "object"
+      },
+      "Location": {
+        "additionalProperties": false,
+        "description": "Position on a 0-100 pitch normalised to the event team's attacking direction.\n\nCoordinates are not metres. Any distance metric must first convert against\nthe documented pitch dimensions. Booleans and non-finite values are invalid.",
+        "properties": {
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "x": {
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "X",
+            "type": "number"
+          },
+          "y": {
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Y",
+            "type": "number"
+          }
+        },
+        "required": [
+          "x",
+          "y"
+        ],
+        "title": "Location",
+        "type": "object"
+      },
+      "MatchEvent": {
+        "additionalProperties": false,
+        "description": "An immutable synthetic event, identified independently of arrival order.\n\nmatch_clock_ms is the display clock: period 2 starts at 45:00 regardless of\nfirst-half stoppage time. Sequence, not this clock alone, defines ordering.\nlinked_event_id associates a goal with its shot; existence is checked later\nby ingestion, not by structural validation.",
+        "properties": {
+          "end_location": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Location"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "event_id": {
+            "maxLength": 96,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_-]+$",
+            "title": "Event Id",
+            "type": "string"
+          },
+          "linked_event_id": {
+            "anyOf": [
+              {
+                "maxLength": 96,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9_-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Linked Event Id"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Location"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "match_clock_ms": {
+            "minimum": 0.0,
+            "title": "Match Clock Ms",
+            "type": "integer"
+          },
+          "match_id": {
+            "maxLength": 96,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_-]+$",
+            "title": "Match Id",
+            "type": "string"
+          },
+          "outcome": {
+            "anyOf": [
+              {
+                "maxLength": 32,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outcome"
+          },
+          "period": {
+            "enum": [
+              1,
+              2
+            ],
+            "title": "Period",
+            "type": "integer"
+          },
+          "player_id": {
+            "anyOf": [
+              {
+                "maxLength": 96,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9_-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Player Id"
+          },
+          "possession_id": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Possession Id"
+          },
+          "related_player_id": {
+            "anyOf": [
+              {
+                "maxLength": 96,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9_-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Related Player Id"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "sequence": {
+            "minimum": 0.0,
+            "title": "Sequence",
+            "type": "integer"
+          },
+          "synthetic": {
+            "const": true,
+            "default": true,
+            "title": "Synthetic",
+            "type": "boolean"
+          },
+          "tags": {
+            "default": [],
+            "items": {
+              "maxLength": 96,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_-]+$",
+              "type": "string"
+            },
+            "title": "Tags",
+            "type": "array"
+          },
+          "team_id": {
+            "anyOf": [
+              {
+                "maxLength": 96,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9_-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Team Id"
+          },
+          "type": {
+            "enum": [
+              "kickoff",
+              "pass",
+              "carry",
+              "dribble",
+              "shot",
+              "save",
+              "tackle",
+              "interception",
+              "recovery",
+              "clearance",
+              "foul",
+              "card",
+              "substitution",
+              "goal",
+              "period_start",
+              "period_end"
+            ],
+            "title": "Type",
+            "type": "string"
+          },
+          "under_pressure": {
+            "default": false,
+            "title": "Under Pressure",
+            "type": "boolean"
+          },
+          "xg": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Xg"
+          }
+        },
+        "required": [
+          "event_id",
+          "match_id",
+          "sequence",
+          "period",
+          "match_clock_ms",
+          "type"
+        ],
+        "title": "MatchEvent",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      },
+      "ValidationResponse": {
+        "description": "Structural acceptance and content identity, explicitly distinct from evidence.",
+        "properties": {
+          "content_digest": {
+            "title": "Content Digest",
+            "type": "string"
+          },
+          "event_id": {
+            "title": "Event Id",
+            "type": "string"
+          },
+          "evidence_verified": {
+            "const": false,
+            "default": false,
+            "title": "Evidence Verified",
+            "type": "boolean"
+          },
+          "structurally_valid": {
+            "const": true,
+            "default": true,
+            "title": "Structurally Valid",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "event_id",
+          "content_digest"
+        ],
+        "title": "ValidationResponse",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "description": "Local contract workbench. Match ingestion and publishing are not implemented.",
+    "title": "MatchDesk foundation API",
+    "version": "0.0.1"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/contracts/event": {
+      "get": {
+        "description": "Expose the exact accepted JSON schema for local integration development.",
+        "operationId": "event_schema_api_contracts_event_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Event Schema Api Contracts Event Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Event Schema"
+      }
+    },
+    "/api/contracts/event/validate": {
+      "post": {
+        "description": "Validate shape without persisting, calculating statistics or trusting a claim.",
+        "operationId": "validate_event_api_contracts_event_validate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MatchEvent"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Validate Event"
+      }
+    },
+    "/api/health": {
+      "get": {
+        "description": "Confirm that the foundation process can answer requests.",
+        "operationId": "health_api_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Health"
+      }
+    },
+    "/api/ready": {
+      "get": {
+        "description": "Fail closed until persistence, model integration and product gates exist.",
+        "operationId": "ready_api_ready_get",
+        "responses": {
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Ready"
+      }
+    }
+  }
+}

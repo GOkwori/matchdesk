@@ -1,0 +1,10 @@
+# Keep private and machine-local files outside container build contexts.
+.git
+.env
+.env.*
+.venv
+**/node_modules
+**/.next
+**/__pycache__
+artifacts
+docs/evidence

@@ -1,0 +1,100 @@
+============================= test session starts ==============================
+platform linux -- Python 3.13.5, pytest-9.0.2, pluggy-1.6.0
+rootdir: /mnt/data/matchdesk
+configfile: pyproject.toml
+testpaths: backend/tests
+plugins: anyio-4.13.0, ddtrace-4.4.0, Faker-40.1.2, asyncio-1.3.0, cov-7.0.0, json-report-1.5.0, metadata-3.1.1
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 71 items
+
+backend/tests/test_api.py .F...........                                  [ 18%]
+backend/tests/test_contracts.py .....F...F.............................. [ 74%]
+..................                                                       [100%]
+
+=================================== FAILURES ===================================
+_____________ test_event_validation_has_no_verification_authority ______________
+
+client = <starlette.testclient.TestClient object at 0x7f18a37c11d0>
+event_data = {'end_location': {'x': 65.0, 'y': 35.0}, 'event_id': 'm001-e0001', 'location': {'x': 50.0, 'y': 30.0}, 'match_clock_ms': 1000, ...}
+
+    def test_event_validation_has_no_verification_authority(client: TestClient, event_data: dict[str, object]) -> None:
+        """HTTP clients can submit JSON arrays without structural success implying truth."""
+        response = client.post("/api/contracts/event/validate", json=event_data)
+>       assert response.status_code == 200, response.text
+E       AssertionError: {"detail":[{"loc":["body","tags"],"type":"tuple_type","msg":"Input should be a valid tuple"}]}
+E       assert 422 == 200
+E        +  where 422 = <Response [422 Unprocessable Entity]>.status_code
+
+backend/tests/test_api.py:22: AssertionError
+___________________ test_invalid_event_rejected[period-True] ___________________
+
+event_data = {'end_location': {'x': 65.0, 'y': 35.0}, 'event_id': 'm001-e0001', 'location': {'x': 50.0, 'y': 30.0}, 'match_clock_ms': 1000, ...}
+field = 'period', value = True
+
+    @pytest.mark.parametrize("field,value", [
+        ("sequence", -1), ("sequence", "1"), ("sequence", True),
+        ("period", 3), ("period", True), ("period", "1"),
+        ("match_clock_ms", -1), ("synthetic", False), ("synthetic", 1),
+        ("synthetic", "true"), ("event_id", "../secret"), ("event_id", ""),
+        ("type", "unknown"), ("under_pressure", "false"), ("unexpected", "secret"),
+        ("outcome", "goal"), ("xg", 0.2), ("player_id", None), ("team_id", None),
+        ("end_location", None), ("location", None),
+        ("tags", ["same", "same"]), ("linked_event_id", "other"),
+        ("related_player_id", "other"),
+    ])
+    def test_invalid_event_rejected(event_data: dict[str, object], field: str, value: object) -> None:
+        """Invalid data must fail explicitly rather than be coerced or silently ignored."""
+        event_data[field] = value
+>       with pytest.raises(ValidationError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE <class 'pydantic_core._pydantic_core.ValidationError'>
+
+backend/tests/test_contracts.py:56: Failed
+___________________ test_invalid_event_rejected[synthetic-1] ___________________
+
+event_data = {'end_location': {'x': 65.0, 'y': 35.0}, 'event_id': 'm001-e0001', 'location': {'x': 50.0, 'y': 30.0}, 'match_clock_ms': 1000, ...}
+field = 'synthetic', value = 1
+
+    @pytest.mark.parametrize("field,value", [
+        ("sequence", -1), ("sequence", "1"), ("sequence", True),
+        ("period", 3), ("period", True), ("period", "1"),
+        ("match_clock_ms", -1), ("synthetic", False), ("synthetic", 1),
+        ("synthetic", "true"), ("event_id", "../secret"), ("event_id", ""),
+        ("type", "unknown"), ("under_pressure", "false"), ("unexpected", "secret"),
+        ("outcome", "goal"), ("xg", 0.2), ("player_id", None), ("team_id", None),
+        ("end_location", None), ("location", None),
+        ("tags", ["same", "same"]), ("linked_event_id", "other"),
+        ("related_player_id", "other"),
+    ])
+    def test_invalid_event_rejected(event_data: dict[str, object], field: str, value: object) -> None:
+        """Invalid data must fail explicitly rather than be coerced or silently ignored."""
+        event_data[field] = value
+>       with pytest.raises(ValidationError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE <class 'pydantic_core._pydantic_core.ValidationError'>
+
+backend/tests/test_contracts.py:56: Failed
+---- generated xml file: /mnt/data/matchdesk/artifacts/attempt-01/junit.xml ----
+================================ tests coverage ================================
+_______________ coverage: platform linux, python 3.13.5-final-0 ________________
+
+Name                                       Stmts   Miss Branch BrPart  Cover   Missing
+--------------------------------------------------------------------------------------
+backend/src/matchdesk/__init__.py              0      0      0      0   100%
+backend/src/matchdesk/api/__init__.py          0      0      0      0   100%
+backend/src/matchdesk/api/app.py              40      1      0      0    98%   78
+backend/src/matchdesk/api/limits.py           47      0     18      0   100%
+backend/src/matchdesk/domain/__init__.py       0      0      0      0   100%
+backend/src/matchdesk/domain/hashing.py        8      0      0      0   100%
+backend/src/matchdesk/domain/models.py       141      0     46      0   100%
+--------------------------------------------------------------------------------------
+TOTAL                                        236      1     64      0    99%
+Coverage JSON written to file artifacts/attempt-01/coverage.json
+Required test coverage of 90.0% reached. Total coverage: 99.67%
+=========================== short test summary info ============================
+FAILED backend/tests/test_api.py::test_event_validation_has_no_verification_authority - AssertionError: {"detail":[{"loc":["body","tags"],"type":"tuple_type","msg":"Input should be a valid tuple"}]}
+assert 422 == 200
+ +  where 422 = <Response [422 Unprocessable Entity]>.status_code
+FAILED backend/tests/test_contracts.py::test_invalid_event_rejected[period-True] - Failed: DID NOT RAISE <class 'pydantic_core._pydantic_core.ValidationError'>
+FAILED backend/tests/test_contracts.py::test_invalid_event_rejected[synthetic-1] - Failed: DID NOT RAISE <class 'pydantic_core._pydantic_core.ValidationError'>
+========================= 3 failed, 68 passed in 2.24s =========================

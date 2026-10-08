@@ -1,0 +1,81 @@
+{
+  "additionalProperties": false,
+  "description": "A checker result with explicit status; this is not permission to publish.\n\nA future numerical checker must supply expected and observed values. This\ncontract also accommodates event checks with an auditable registered query ID.",
+  "properties": {
+    "claim_id": {
+      "maxLength": 96,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9_-]+$",
+      "title": "Claim Id",
+      "type": "string"
+    },
+    "evidence_digest": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Evidence Digest",
+      "type": "string"
+    },
+    "expected": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Expected"
+    },
+    "observed": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Observed"
+    },
+    "query_id": {
+      "maxLength": 96,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9_-]+$",
+      "title": "Query Id",
+      "type": "string"
+    },
+    "reason": {
+      "maxLength": 1000,
+      "minLength": 1,
+      "title": "Reason",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "verified",
+        "supported_inference",
+        "needs_revision",
+        "blocked",
+        "fallback"
+      ],
+      "title": "Status",
+      "type": "string"
+    }
+  },
+  "required": [
+    "claim_id",
+    "status",
+    "query_id",
+    "reason",
+    "evidence_digest"
+  ],
+  "title": "VerificationResult",
+  "type": "object"
+}
