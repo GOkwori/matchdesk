@@ -52,7 +52,7 @@ Final Phase 1 status `main`: `8e110607c6877efca431debe7f8b69b5f53db9d9`.
 
 ## Phase 2 — bounded agent orchestration and verification
 
-Phase 2 is in progress. P2-01 and P2-02 are TESTED; P2-03 is next. Live model and cloud activation
+Phase 2 is in progress. P2-01 through P2-03 are TESTED; P2-04 is next. Live model and cloud activation
 remain separately gated and are not prerequisites for the model-independent control plane
 or deterministic verifier.
 
@@ -60,13 +60,15 @@ or deterministic verifier.
 |---|---|---|---|
 | P2-01 | Implement typed bounded orchestration control plane | TESTED | Four locked specialist roles; typed state; bounded retries/timeouts/recovery; deterministic verification hand-off; 100% orchestration module statement/branch coverage |
 | P2-02 | Implement deterministic claim verifier | TESTED | Recompute measured claims; bind exact evidence; support tactical inference without upgrading prose to fact |
-| P2-03 | Implement specialist execution interfaces and scoped read tools | NEXT | Model-agnostic adapters cannot mutate deterministic evidence or approval state |
-| P2-04 | Integrate four specialist runtimes with Agent Framework / Foundry | PLANNED | Requires separate live-model/cost/credential approval and evaluation evidence; no authority expansion |
+| P2-03 | Implement specialist execution interfaces and scoped read tools | TESTED | Host-owned role scopes, immutable proposal envelopes and read-only deterministic tools |
+| P2-04 | Integrate four specialist runtimes with Agent Framework / Foundry | NEXT | Requires separate live-model/cost/credential approval and evaluation evidence; no authority expansion |
 | P2-05 | Qualify end-to-end retries, timeouts, recovery and model evaluation | PLANNED | Failure injection, bounded recovery, false-claim and natural-output evaluation |
 | P2-06 | Review Phase 2 | PLANNED | Source-bound evidence and exact-head owner decision |
 
 P2-01 qualification: [Phase 2A orchestration control-plane evidence](../evidence/phase2a-orchestration-control-plane-20261008.md).
 
 P2-02 qualification: [Phase 2B claim-verification evidence](../evidence/phase2b-claim-verification-20261008.md).
+
+P2-03 qualification: [Phase 2C specialist-interface evidence](../evidence/phase2c-specialist-interfaces-20261008.md).
 
 Phase 2 does not authorize producer publication, Azure deployment or production readiness.
