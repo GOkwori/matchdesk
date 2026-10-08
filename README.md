@@ -8,8 +8,9 @@ My priority is the path from a synthetic match event to a publishable explanatio
 The design keeps statistics in deterministic code, uses specialist AI agents to
 interpret and present evidence, and gives the producer control over publication.
 
-**Owner: George Okwori. Current stage: Phase 0 foundation; hosted build checks passing.**
-The full Phase 0 gate remains open. There is no deployed product or live Foundry integration.
+**Owner: George Okwori. Current stage: Phase 0 foundation; release blocked.**
+The built-runtime and browser checks pass, but the Python dependency audit has open
+advisories. There is no deployed product or live Foundry integration.
 
 ## What is implemented
 
@@ -18,14 +19,16 @@ exposes its schema and differentiates process liveness from product readiness.
 Immutable domain models cover events, windows, claims, evidence, verification
 results and approval bindings. Structural validation is not factual verification.
 
-The Next.js contract workbench now type-checks and produces an optimized production
-build in GitHub Actions. The committed dependency locks, Python 3.12 regression
-suite, strict static checks, schema snapshots and documentation checks have passed
-on the recorded source. A successful build is not a deployed or browser-qualified product.
+The Next.js workbench builds and runs as a standalone container against the real API.
+The recorded source passed 77 Python tests, strict static checks, schema/documentation
+checks, nine runtime groups and 24 Chromium browser cases at three viewport sizes.
+An input revision guard prevents an old in-flight response from accepting edited text.
 
-The Compose topology still needs execution and integration testing. The simulator,
+The isolated PostgreSQL topology passes transaction, uniqueness, password and restart
+probes. These are not application persistence or migration tests. The simulator,
 match statistics, agents, producer queue, translations and publication pipeline are
-not implemented yet.
+not implemented yet. The [dependency audit](docs/evidence/dependency-audit-20261008.md)
+reported eight distinct advisory IDs in three Python packages; release remains blocked.
 
 Read [current progress](docs/PROGRESS.md) and the [evidence index](docs/evidence/INDEX.md)
 before treating any capability as tested or available.
@@ -49,7 +52,8 @@ planned services, failure paths and what this foundation currently exercises.
 
 The hosted qualification uses Python 3.12.15, Node 22.16.0, npm 10.9.2 and uv 0.10.0.
 Install these tools first, then reproduce the committed locks rather than generating
-new dependency versions during setup:
+new dependency versions during setup. The current dependency audit is not clean;
+these instructions are for isolated development, not production deployment:
 
 ```bash
 make setup
@@ -61,7 +65,8 @@ cd apps/web && npm run build
 `make setup` rejects a stale Python lock; `npm ci` rejects a mismatched npm lock.
 `make resolve` is a separate maintenance operation. Review its dependency changes
 and run the full checks before committing. The [compatibility decision](docs/decisions/ADR-0005-build-compatibility.md)
-explains the current AnyIO and TypeScript pins without weakening the checks.
+records the initial functional AnyIO/TypeScript fixes; the later security audit means
+the Python compatibility choice must be revisited before release.
 
 ## Try the implemented API
 
@@ -78,7 +83,7 @@ The event schema is at `/api/contracts/event`. POST a JSON event to
 `/api/ready` returns HTTP 503 because the product dependencies are not implemented.
 The structural validator must not be mistaken for a verified football intelligence service.
 
-## Local container topology: qualification pending
+## Local container topology
 
 ```bash
 python -m scripts.create_local_env
@@ -86,23 +91,29 @@ make dev
 ```
 
 Use WSL2 or another POSIX shell with Docker. The environment generator creates a
-local secret without printing or replacing it; do not commit `.env`. The Compose
-stack is local-only and its integrated execution is not yet qualified. Starting a
-database container would not by itself establish application persistence or migrations.
+local secret without printing or replacing it; do not commit `.env`. API and web
+ports bind only to loopback, and PostgreSQL has no host port. New database volumes
+initialise TCP authentication with SCRAM. Existing volumes need a separately reviewed
+authentication migration; do not delete a database merely to apply these settings.
+
+The standalone web image compiles its non-secret API upstream during the build.
+The [integration method](docs/testing/integration-foundation.md) explains browser
+setup, isolated probes, measured scope and limitations. No public demo is hosted yet.
 
 ## Tests, comments and documentation
 
 `make foundation` runs regression tests, schema-drift checks, documentation link checks
 and Python docstring-presence checks. `make lint` runs Ruff, formatting, strict mypy
-and frontend type checks. CI preserves source IDs, hashes, JUnit, coverage and logs
-for both successful and failed runs. The [first passing hosted record](docs/evidence/hosted-foundation-20261008.md)
-contains the scope and limitations of those results.
+and frontend type checks. Independent integration and advisory workflows retain failures,
+source IDs, hashes, JUnit, screenshots and logs. The [runtime report](docs/evidence/hosted-integration-20261008.md)
+and [advisory report](docs/evidence/dependency-audit-20261008.md) separate passing
+functional behaviour from unresolved security findings.
 
 Every authored Python module, class and function has a docstring. Non-obvious
-validation and security decisions have explanatory comments. TypeScript includes
-compile-time regression checks for the platform declarations used by Next.js.
-The formatting review preserved the existing docstrings, comments and functional AST.
-See the [coding standard](docs/engineering/coding-standard.md).
+validation, concurrency and security decisions have explanatory comments. Browser
+helpers, controlled fixtures, container definitions and CI steps document their intent.
+TypeScript includes compile-time regression checks for the platform declarations
+used by Next.js. See the [coding standard](docs/engineering/coding-standard.md).
 
 ## Navigation
 

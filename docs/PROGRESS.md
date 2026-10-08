@@ -1,50 +1,68 @@
 # Current progress
 
 Date: 8 October 2026. Stage: Phase 0. Overall gate: **BLOCKED, not certified**.
-Hosted dependency, Python and frontend build qualification: **PASS for the recorded scope**.
+Foundation build and built-runtime/browser checks: **PASS for the recorded scope**.
+Dependency advisory audit: **FAIL; Python remediation required**.
 
 ## Implemented and tested
 
-Immutable version-1 contracts, strict event validation, content hashing, schema and
-health APIs, bounded request bodies, documented boundary/regression tests and the
-Next.js contract workbench are present in `GOkwori/matchdesk` on `development`.
-The first passing [hosted run 37751376812](https://github.com/GOkwori/matchdesk/actions/runs/37751376812)
-tested source `c6de02db7ef268f9f144c8e108a0cb2e079e3111`.
+The foundation includes immutable version-1 contracts, strict synthetic-event
+validation, content hashing, schema/health APIs, bounded request bodies, documented
+boundary tests and a Next.js contract workbench. It is not the complete football
+intelligence or editorial production application.
 
-That source passed 77 tests on Python 3.12.15 with no failures, errors or skips.
-The implemented Python package covered 250/250 statements and 70/70 branches.
-Ruff, formatting, strict mypy, schema snapshots, 115 docstring checks and 42 document
-checks passed. TypeScript and the actual optimized Next.js build passed separately.
-These results do not represent coverage of the unimplemented product features.
+Tested source: `15996afa3219020c44dc1ff8f353e87d93e921e6`.
+[Foundation CI 37755579407](https://github.com/GOkwori/matchdesk/actions/runs/37755579407)
+passed 77 Python 3.12.15 tests, Ruff, formatting, strict mypy, schema snapshots,
+115 Python documentation checks and 47 document checks. The implemented Python
+package covered 250/250 statements and 70/70 branch opportunities. TypeScript and the
+optimized Next.js build passed. These are foundation-only coverage results.
 
-## Corrections made during qualification
+[Integration 37755579408](https://github.com/GOkwori/matchdesk/actions/runs/37755579408)
+passed nine runtime groups and 24 Chromium browser cases across three viewport sizes.
+The actual standalone web server forwards to the API. Invalid input, oversized bodies,
+keyboard operation, controlled transport failures and stale-response handling are tested.
+Database probes established commit/rollback, uniqueness, password enforcement and row
+survival after a container restart. API restart recovery also passed. Application event
+persistence, database migrations and backup restoration are not implemented or qualified.
 
-The initial lock resolution exposed a Starlette/AnyIO import deprecation under
-warnings-as-errors and a TypeScript/Next.js URLPattern declaration mismatch.
-The [compatibility decision](decisions/ADR-0005-build-compatibility.md) documents the
-narrow dependency corrections and the compile-time regression. Neither warning
-suppression nor skipLibCheck was used. Fourteen Python files were formatted using a
-reviewed patch; functional AST, import bindings, docstrings and comments were preserved.
+## Corrections and retained evidence
 
-`uv.lock` and `apps/web/package-lock.json` are real resolver outputs, not hand-authored
-approximations. The temporary write-enabled resolver workflows have been removed.
-Normal setup reproduces committed locks; deliberate resolution is a separate target.
-The [evidence index](evidence/INDEX.md) preserves failures and passing results separately.
-The older Python 3.13.5 local runs remain historical supplementary evidence.
+The earlier compatibility work and local Python 3.13.5 results remain historical
+records. The [evidence index](evidence/INDEX.md) distinguishes each source and execution.
+Normal setup reproduces genuine committed Python/npm locks; deliberate resolution is
+separate. Temporary candidate-resolution workflows have been removed.
+
+The first runtime attempt exposed trusted PostgreSQL loopback TCP and an ambiguous
+browser error locator. New database volumes now initialise TCP authentication with
+SCRAM; the negative-password assertion remains. Existing volumes are not automatically
+changed or deleted. Browser assertions now target the named result panel rather than
+Next's independent route announcer. A revision guard prevents a delayed validation
+response from accepting edited input. Failed artifacts and the fixes remain documented.
+
+## Security blocker
+
+[Dependency audit 37755579414](https://github.com/GOkwori/matchdesk/actions/runs/37755579414)
+reported eight distinct advisory IDs in AnyIO 4.13.0, Starlette 0.50.0 and pytest 9.0.2.
+Application and browser-harness npm audits reported zero known vulnerabilities.
+The [audit record](evidence/dependency-audit-20261008.md) preserves affected versions,
+scanner-reported fixes and the required compatible upgrade/retest sequence. No
+advisories are ignored, and a green functional run does not override this failure.
 
 ## Repository and release boundary
 
 [PR #1](https://github.com/GOkwori/matchdesk/pull/1) remains a draft. `main` remains the
-licence-only bootstrap commit `d8e8d7eb0473f24399e3771e0bea36449c4d4502`.
-The last observed branches were unprotected; protection has not been implemented or
-claimed. No merge, release tag, Azure resource, live model call or owner release approval
-has been performed in this qualification batch.
+licence-only bootstrap `d8e8d7eb0473f24399e3771e0bea36449c4d4502`. Both branches were
+last observed unprotected. No merge, release tag, live model use, Azure resource or
+owner release approval has occurred. The disposable CI database and containers were
+removed after testing; no ordinary local or production database was reset.
 
 ## Remaining Phase 0 work
 
-Execute the real Docker/PostgreSQL topology and browser/API smoke tests. Qualify runtime
-container dependencies and image identities, dependency/security scans, repository
-protections and recovery boundaries. Record genuine results before completing the gate.
-A compiled frontend is not browser acceptance, and a green foundation run is not a
-production certification. Full application persistence, simulator/analytics, Foundry
-agents, editorial publishing and audience adaptation remain future implementation.
+First resolve the Python advisories using a compatible framework/dependency upgrade
+and rerun all three workflows. Then complete image/OS scanning, secret scanning,
+static application security analysis, repository protections and the remaining phase
+review. Screenshots are inspection evidence, not approved visual regression baselines;
+three Chromium viewports are not cross-browser or full accessibility qualification.
+The simulator, football analytics, Foundry agents, editorial publication and audience
+adaptation remain future implementation. No next-phase certification is recorded.

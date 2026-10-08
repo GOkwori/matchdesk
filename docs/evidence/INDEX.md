@@ -3,6 +3,22 @@
 Results are tied to source commits and execution environments. A passing build is not
 an approval to deploy, and evidence from one source is not relabelled as another.
 
+## Built runtime, browser and security
+
+- [Passing hosted runtime and browser qualification](hosted-integration-20261008.md):
+  source `15996afa3219020c44dc1ff8f353e87d93e921e6`, integration run 37755579408;
+  nine runtime groups and 24 Chromium cases passed.
+- [Dependency advisory failure](dependency-audit-20261008.md): the same source,
+  run 37755579414; eight distinct Python advisory IDs across three packages.
+  This failure continues to block phase completion and release.
+- [First failed integration attempt](integration-first-run-20261008.md): source
+  `3b0ae4ae9569ebe97c0bae286720515ea50731ed`, run 37755125431; original assertions
+  and failed evidence retained through the authentication/locator corrections.
+
+Reports identify verified artifact digests, measured outcomes and what was not tested.
+Screenshots do not establish approved visual baselines. Database probe results do not
+establish application persistence, migrations or production disaster recovery.
+
 ## Hosted foundation
 
 - [First passing Python and frontend qualification](hosted-foundation-20261008.md):
