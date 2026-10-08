@@ -188,12 +188,11 @@ def _detect_pressing_spells(events: tuple[MatchEvent, ...]) -> list[DetectedMome
             continue
 
         key = (event.period, event.team_id)
-        candidates = [
-            candidate
-            for candidate in regains.get(key, [])
-            if 0 <= event.match_clock_ms - candidate.match_clock_ms <= _PRESSING_SHOT_FOLLOWUP_MS
-        ]
+        candidates = regains.get(key, [])
         if len(candidates) < 4:
+            continue
+        latest_regain = candidates[-1]
+        if not 0 <= event.match_clock_ms - latest_regain.match_clock_ms <= _PRESSING_SHOT_FOLLOWUP_MS:
             continue
 
         evidence = tuple(candidates[-4:]) + (event,)
