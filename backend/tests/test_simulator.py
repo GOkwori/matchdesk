@@ -80,9 +80,7 @@ def test_pressing_spell_has_four_attacking_half_regains_in_one_minute() -> None:
     """The pressing fixture must provide a measurable defensive-action cluster."""
     scenario = generate_scenario("pressing_spell", 5)
     actions = [
-        event
-        for event in scenario.events
-        if event.type in {"tackle", "interception", "recovery"}
+        event for event in scenario.events if event.type in {"tackle", "interception", "recovery"}
     ]
     assert len(actions) == 4
     assert all(event.team_id == "home" for event in actions)
