@@ -1,6 +1,6 @@
 # Current progress
 
-Date: 8 October 2026. Stage: Phase 1 technical review PASS; owner approval pending.
+Date: 8 October 2026. Stage: Phase 1 **VERIFIED / COMPLETED**.
 Phase 0 gate: **VERIFIED / COMPLETED**.
 
 The engineering foundation was merged through the protected `main` path and the
@@ -82,17 +82,18 @@ its tests, repository checks, Ruff lint and mypy had passed; the exact formatter
 was then qualified successfully. See the
 [Phase 1E qualification record](evidence/phase1e-moment-detection-20261008.md).
 
-P1-06 technical review is PASS and the Phase 1 closure candidate is READY FOR OWNER APPROVAL.
-The review proves the final reviewed PR heads for P1-01 through P1-05 passed the hosted
-workflow matrix and that every reviewed PR head has an identical Git tree to its squash
-commit on main. Current main is `9dd644376148397a73e27b1508372cc7d6bd83c0`;
-reconciled development is `3d82276647488c8ba4b9d47eef8ca2aa8a89f8d3`,
-and the two branches have identical source trees. See the
-[Phase 1 closure review](evidence/phase1-closure-review-20261008.md).
+P1-06 technical review passed on closure head
+`a0642e265aa90d81dfc094c4e75b1f42d64440dc`. Foundation CI, Dependency audit,
+Source security and Foundation integration all passed on that exact head. The owner
+explicitly approved the exact pair against base
+`9dd644376148397a73e27b1508372cc7d6bd83c0`, and PR #24 was squash-merged through
+protected `main` as `e3693da3edf54a155478bc9d38fc279e4051c3ab`.
 
-Phase 1 is not VERIFIED / COMPLETED until the exact closure documentation head passes
-hosted qualification and the owner explicitly approves that head/base pair. Phase 2
-must not begin before that decision gate.
+Phase 1 is therefore **VERIFIED / COMPLETED** for the deterministic-engine scope.
+The [Phase 1 closure review](evidence/phase1-closure-review-20261008.md) preserves the
+qualification matrix, promotion-integrity proof and remaining later-phase boundaries.
+Phase 2 may now begin, but Phase 1 closure does not authorize Azure provisioning,
+live-model activation, production deployment or publication authority.
 
 ## Historical native-image remediation before final qualification
 
