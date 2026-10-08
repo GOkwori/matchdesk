@@ -47,4 +47,24 @@ P1-05 qualification: [Phase 1E moment detection evidence](../evidence/phase1e-mo
 
 P1-06 review: [Phase 1 closure review](../evidence/phase1-closure-review-20261008.md).
 
-Final Phase 1 `main`: `e3693da3edf54a155478bc9d38fc279e4051c3ab`.
+Final Phase 1 status `main`: `8e110607c6877efca431debe7f8b69b5f53db9d9`.
+
+
+## Phase 2 — bounded agent orchestration and verification
+
+Phase 2 is in progress. P2-01 is TESTED; P2-02 is next. Live model and cloud activation
+remain separately gated and are not prerequisites for the model-independent control plane
+or deterministic verifier.
+
+| ID | Work | Status | Acceptance evidence |
+|---|---|---|---|
+| P2-01 | Implement typed bounded orchestration control plane | TESTED | Four locked specialist roles; typed state; bounded retries/timeouts/recovery; deterministic verification hand-off; 100% orchestration module statement/branch coverage |
+| P2-02 | Implement deterministic claim verifier | NEXT | Recompute measured claims from registered Phase 1 formulas; validate event facts; separate supported tactical inference from unsupported claims |
+| P2-03 | Implement specialist execution interfaces and scoped read tools | PLANNED | Model-agnostic adapters cannot mutate deterministic evidence or approval state |
+| P2-04 | Integrate four specialist runtimes with Agent Framework / Foundry | PLANNED | Requires separate live-model/cost/credential approval and evaluation evidence; no authority expansion |
+| P2-05 | Qualify end-to-end retries, timeouts, recovery and model evaluation | PLANNED | Failure injection, bounded recovery, false-claim and natural-output evaluation |
+| P2-06 | Review Phase 2 | PLANNED | Source-bound evidence and exact-head owner decision |
+
+P2-01 qualification: [Phase 2A orchestration control-plane evidence](../evidence/phase2a-orchestration-control-plane-20261008.md).
+
+Phase 2 does not authorize producer publication, Azure deployment or production readiness.

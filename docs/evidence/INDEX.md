@@ -3,6 +3,24 @@
 Results are tied to source commits and execution environments. A passing build is not
 an approval to deploy, and evidence from one source is not relabelled as another.
 
+## Phase 2A bounded orchestration control plane
+
+- [Phase 2A orchestration control-plane qualification](phase2a-orchestration-control-plane-20261008.md)
+  records the four locked specialist roles, typed workflow state, bounded role-local
+  retries, controller timeout classification, deterministic verification hand-off and
+  bounded restart recovery on source `fdb2acab1007a83377208406f9b3b69e2849aac2`.
+- Foundation CI 37830905932 passed 226 Python tests with 99.32% measured total package
+  coverage; the new orchestration module measured 100% statement and branch coverage.
+- Dependency audit 37830906052, Source security 37830905951 and Foundation integration
+  37830905979 also passed, including runtime/browser and the independent native-image
+  verdict.
+- Earlier P2-01 candidates retain the initial Ruff/formatter failure and the later
+  formatter-only edge-coverage failure; no quality gate was disabled or waived.
+
+P2-01 is TESTED. P2-02 deterministic claim verification is the next controlled Phase 2
+work item. No live Agent Framework/Foundry runtime, model execution, Azure provisioning
+or publication authority is implied by this evidence.
+
 ## Phase 1 closure review
 
 - [Phase 1 closure review](phase1-closure-review-20261008.md) records the P1-01 through
