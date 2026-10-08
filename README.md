@@ -8,31 +8,35 @@ My priority is the path from a synthetic match event to a publishable explanatio
 The design keeps statistics in deterministic code, uses specialist AI agents to
 interpret and present evidence, and gives the producer control over publication.
 
-**Owner: George Okwori. Current stage: Phase 0 foundation; merge blocked.**
-The recorded build, runtime/browser, dependency and source-security checks pass.
-The native image gate runs but fails on remaining findings and overdue advisory data.
-Repository protections and final review remain open. There is no deployed product or
-live Foundry integration.
+**Owner: George Okwori. Current stage: Phase 2 in progress; P2-01 TESTED.**
+Phase 0 and the deterministic Phase 1 engine are VERIFIED / COMPLETED. The model-independent
+Phase 2A orchestration control plane is tested, including bounded retries, timeouts,
+recovery and a deterministic verification hand-off. There is still no deployed product,
+live Agent Framework/Foundry runtime or live-model integration.
 
 ## What is implemented
 
-The Python API validates synthetic event structure, returns a content digest,
-exposes its schema and differentiates process liveness from product readiness.
-Immutable domain models cover events, windows, claims, evidence, verification
-results and approval bindings. Structural validation is not factual verification.
+The deterministic football engine now includes a seeded synthetic simulator,
+ordered/idempotent replay ingestion, roster/score/possession reduction, six registered
+metric formulas and five explicit moment detectors. The Python API still distinguishes
+structural validation from factual verification, and immutable contracts cover claims,
+evidence, verification results and approval bindings.
 
-The Next.js workbench builds and runs as a standalone container against the real API.
-The latest recorded source passed 109 Python tests, strict static checks,
-schema/documentation checks, nine runtime groups and 24 Chromium browser cases at
-three viewport sizes. An input revision guard prevents an old in-flight response
-from accepting edited text.
+Phase 2A adds a typed control plane for four specialist roles: Tactical Analyst,
+Narrative Composer, Editorial Reviewer and Audience Adapter. The controller owns role
+order, retry limits, timeout classification, bounded recovery and the verification
+hand-off. It does not call a model and it does not give an agent publishing authority.
 
-The isolated PostgreSQL topology passes transaction, uniqueness, password and restart
-probes. These are not application persistence or migration tests. The simulator,
-match statistics, agents, producer queue, translations and publication pipeline are
-not implemented yet. The [native image report](docs/evidence/native-image-remediation-20261008.md)
-records actual scan findings, the removal of unused runtime package managers and the
-remaining merge blockers. Passing application lock audits did not prove clean images.
+The latest qualified P2-01 code source passed 226 Python tests, strict Ruff/formatting/
+mypy checks, frontend production build, dependency and source-security gates, real
+runtime/PostgreSQL restart checks, Chromium regressions and independent native-image
+qualification. The new orchestration module has 100% measured statement and branch
+coverage.
+
+The PostgreSQL topology is still infrastructure-test scaffolding rather than durable
+application persistence. The deterministic claim verifier, scoped specialist execution
+adapters, live Agent Framework/Foundry integration, producer publication workflow and
+audience outputs remain later work.
 
 Read [current progress](docs/PROGRESS.md) and the [evidence index](docs/evidence/INDEX.md)
 before treating any capability as tested or available.
@@ -41,16 +45,16 @@ before treating any capability as tested or available.
 
 ```mermaid
 flowchart LR
-    S[Seeded synthetic simulator - planned] --> I[Ingest and deterministic intelligence - planned]
-    I --> E[Evidence records - contract implemented]
-    E --> A[Four Foundry specialists - planned]
-    A --> V[Deterministic verification - planned]
-    V --> P[Producer review and approval - planned]
-    P --> O[Overlay and personalised outputs - planned]
+    S[Seeded synthetic simulator - TESTED] --> I[Ingest and deterministic intelligence - TESTED]
+    I --> E[Evidence and claim contracts - implemented]
+    E --> C[Bounded four-specialist control plane - TESTED]
+    C --> V[Deterministic claim verification - NEXT]
+    V --> A[Live Agent Framework / Foundry runtimes - planned]
+    A --> P[Producer review and approval - planned]
+    P --> O[Overlay and audience outputs - planned]
 ```
 
-The [solution design](docs/solution-design/02-architecture.md) explains boundaries,
-planned services, failure paths and what this foundation currently exercises.
+The [solution design](docs/solution-design/02-architecture.md) explains the implemented deterministic boundaries, the tested Phase 2A control plane, planned specialist runtimes and later publication path.
 
 ## Reproduce the foundation
 
@@ -85,8 +89,9 @@ curl http://127.0.0.1:8000/api/health
 
 The event schema is at `/api/contracts/event`. POST a JSON event to
 `/api/contracts/event/validate`. The response explicitly says `evidence_verified: false`.
-`/api/ready` returns HTTP 503 because the product dependencies are not implemented.
-The structural validator must not be mistaken for a verified football intelligence service.
+`/api/ready` remains intentionally fail-closed because durable persistence, live models and
+publication are not operational. The structural validator must not be mistaken for a
+verified or production football-intelligence service.
 
 ## Local container topology
 
@@ -104,7 +109,7 @@ authentication migration; do not delete a database merely to apply these setting
 The standalone web image compiles its non-secret API upstream during the build.
 Unused pip/npm/Yarn/Corepack are excluded from the final service images, not the
 build stages. Image inventories and actual runtime/browser tests check the result;
-OS and PostgreSQL/gosu findings remain open. The
+The qualified native-image gate currently passes on the tested source. The
 [integration method](docs/testing/integration-foundation.md) and
 [image-security method](docs/testing/runtime-image-security.md) explain the scope.
 No public demo is hosted yet.
@@ -115,8 +120,7 @@ No public demo is hosted yet.
 and Python docstring-presence checks. `make lint` runs Ruff, formatting, strict mypy
 and frontend type checks. Independent integration, advisory and source-security workflows
 retain failures, source IDs, hashes, JUnit, screenshots, SARIF and redacted scan reports.
-The [latest image qualification report](docs/evidence/native-image-remediation-20261008.md)
-separates passing application checks from the failed native-image security gate.
+The [evidence index](docs/evidence/INDEX.md) separates historical image-security failures from later passing qualifications and the current Phase 2A evidence.
 
 Every authored Python module, class and function has a docstring. Non-obvious
 validation, concurrency and security decisions have explanatory comments. Browser
@@ -136,8 +140,8 @@ used by Next.js. See the [coding standard](docs/engineering/coding-standard.md).
 
 All supplied example data is invented. No real match footage, team branding or
 player likeness is included. Synthetic xG is an illustrative estimate, not a
-calibrated professional model. Planned runtime agents and their limits remain
-explicit in the [responsible-AI design](docs/solution-design/12-responsible-ai.md).
-No live model integration is connected in this snapshot.
+calibrated professional model. Runtime agents and their limits remain explicit in the
+[responsible-AI design](docs/solution-design/12-responsible-ai.md). The deterministic
+orchestration control plane is implemented, but no live model integration is connected in this snapshot.
 
 Original project source is provided under the [MIT licence](LICENSE).
