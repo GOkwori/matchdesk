@@ -1,6 +1,6 @@
 # Phase 1 closure review — 8 October 2026
 
-Status: **READY FOR OWNER APPROVAL**.
+Status: **VERIFIED / COMPLETED**.
 
 This record reviews Phase 1 only: the deterministic MatchDesk football engine.
 It does not certify Phase 2 agent orchestration, evidence-verification agents,
@@ -96,11 +96,18 @@ Phase 1 does **not** prove or provide:
 
 Those are later-phase concerns and must not be described as operational because of this review.
 
-## Decision gate
+## Owner approval and protected promotion
 
-P1-06 is not COMPLETE until the owner explicitly approves the exact Phase 1 closure
-candidate after the closure documentation head itself passes hosted qualification.
+The exact Phase 1 closure candidate
+`a0642e265aa90d81dfc094c4e75b1f42d64440dc` passed Foundation CI
+37827889798, Dependency audit 37827889754, Source security 37827889745 and
+Foundation integration 37827889498. The owner explicitly approved that exact head
+against base `9dd644376148397a73e27b1508372cc7d6bd83c0`.
 
-If approved and promoted, Phase 1 may be marked **VERIFIED / COMPLETED** and Phase 2
-may begin with bounded agent orchestration and verification. No Azure or live-model
-activation is authorized merely by Phase 1 closure.
+PR #24 was then squash-merged through protected `main` as
+`e3693da3edf54a155478bc9d38fc279e4051c3ab`.
+
+P1-06 is **COMPLETE** and Phase 1 is **VERIFIED / COMPLETED** for the deterministic
+engine scope. Phase 2 may begin with bounded agent orchestration and verification.
+No Azure provisioning, live-model activation, publication authority or production
+deployment is authorized merely by Phase 1 closure.
