@@ -20,7 +20,7 @@ See [Phase 0 closure evidence](../evidence/phase0-closure-20261008.md).
 
 ## Phase 1 — deterministic football engine
 
-Phase 1 is in progress. P1-01 through P1-04 are TESTED; P1-05 is next. Optional AI
+Phase 1 is in progress. P1-01 through P1-05 are TESTED; P1-06 review is next. Optional AI
 or cloud work must not displace the deterministic truth layer.
 
 | ID | Work | Status | Acceptance evidence |
@@ -29,8 +29,8 @@ or cloud work must not displace the deterministic truth layer.
 | P1-02 | Implement ordered/idempotent ingestion and replay revision handling | TESTED | Duplicate/out-of-order/gap/reset regressions; exact-head hosted qualification |
 | P1-03 | Implement roster, score and possession reducer | TESTED | Exactly-once scoring, roster, substitution, possession and goal-reference invariants |
 | P1-04 | Implement registered football metrics | TESTED | Six versioned formula IDs with independent hand-calculated expected-value tests |
-| P1-05 | Implement deterministic moment detectors | NEXT | Goal, big chance, momentum swing, pressing spell and counter-attack goal |
-| P1-06 | Review Phase 1 | PLANNED | Source-bound evidence and explicit owner decision |
+| P1-05 | Implement deterministic moment detectors | TESTED | Five explicit moment types with positive/negative scenario regressions |
+| P1-06 | Review Phase 1 | NEXT | Source-bound evidence and explicit owner decision |
 
 No Microsoft Agent Framework, Foundry, publication or Azure deployment work is
 classified as Phase 1 completion evidence unless the deterministic engine gate is met.
@@ -42,3 +42,5 @@ P1-02 qualification: [Phase 1B temporal ingestion evidence](../evidence/phase1b-
 P1-03 qualification: [Phase 1C football-state reducer evidence](../evidence/phase1c-football-state-reducer-20261008.md).
 
 P1-04 qualification: [Phase 1D registered metrics evidence](../evidence/phase1d-registered-metrics-20261008.md).
+
+P1-05 qualification: [Phase 1E moment detection evidence](../evidence/phase1e-moment-detection-20261008.md).
