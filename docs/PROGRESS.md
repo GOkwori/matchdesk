@@ -1,6 +1,6 @@
 # Current progress
 
-Date: 8 October 2026. Stage: Phase 1 in progress; P1-01 and P1-02 TESTED.
+Date: 8 October 2026. Stage: Phase 1 in progress; P1-01, P1-02 and P1-03 TESTED.
 Phase 0 gate: **VERIFIED / COMPLETED**.
 
 The engineering foundation was merged through the protected `main` path and the
@@ -37,8 +37,18 @@ Foundation integration. Foundation CI ran 161 tests on Python 3.12.15 with 100% 
 statement and branch coverage. See the
 [Phase 1B qualification record](evidence/phase1b-temporal-ingestion-20261008.md).
 
-P1-03, the roster/score/possession reducer with exactly-once scoring and event-reference
-truth, is next.
+P1-03, the roster/score/possession reducer, is TESTED on development source
+`b02ec6138a385dadbc5f2e166cd448d532d9e054`. The reducer validates registered/current
+roster membership, substitutions, possession ownership, strict sequence input, exact
+duplicate idempotency, goal-to-shot reference truth and exactly-once scoring.
+
+Hosted P1-03 qualification passed Foundation CI, Dependency audit, Source security and
+Foundation integration. Foundation CI ran 184 tests on Python 3.12.15 with 100% package
+statement and branch coverage. See the
+[Phase 1C qualification record](evidence/phase1c-football-state-reducer-20261008.md).
+
+P1-04, registered football metrics with explicit formula IDs and independent
+expected-value tests, is next.
 
 ## Historical native-image remediation before final qualification
 
