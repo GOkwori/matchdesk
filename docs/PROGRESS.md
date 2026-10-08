@@ -1,6 +1,6 @@
 # Current progress
 
-Date: 8 October 2026. Stage: Phase 1 in progress; P1-01 through P1-04 TESTED.
+Date: 8 October 2026. Stage: Phase 1 in progress; P1-01 through P1-05 TESTED.
 Phase 0 gate: **VERIFIED / COMPLETED**.
 
 The engineering foundation was merged through the protected `main` path and the
@@ -63,8 +63,26 @@ first candidate run retained a formatting-only failure after its tests, Ruff lin
 mypy had already passed; the exact formatter output was then qualified successfully.
 See the [Phase 1D qualification record](evidence/phase1d-registered-metrics-20261008.md).
 
-P1-05, deterministic moment detectors for goal, big chance, momentum swing, pressing
-spell and counter-attack goal, is next.
+P1-05, deterministic moment detection, is TESTED on development source
+`ad51a072b71d360839e031cbf8cd905634c2428a`. The detector exposes five explicit
+moment types: goal, big chance, momentum swing, pressing spell and counter-attack goal.
+The rules are deterministic and event-bound: goal markers remain distinct from
+goal-valued shots; big chances use an inclusive synthetic-xG threshold of 0.35;
+momentum swings require two same-team goals in one period within five minutes;
+pressing spells require four successful attacking-half regains within 60 seconds
+followed by a shot within 30 seconds of the fourth regain; counter-attack goals require
+recovery-to-goal in one possession within 15 seconds.
+
+Hosted P1-05 qualification passed Foundation CI, Dependency audit, Source security and
+Foundation integration. Foundation CI ran 207 tests on Python 3.12.15 with 99.19%
+measured total package coverage. Ruff, formatter checks and strict mypy passed, the
+frontend build remained green, and integration passed runtime/browser plus independent
+native-image security. The first candidate run retained a formatter-only failure after
+its tests, repository checks, Ruff lint and mypy had passed; the exact formatter output
+was then qualified successfully. See the
+[Phase 1E qualification record](evidence/phase1e-moment-detection-20261008.md).
+
+P1-06, Phase 1 review with source-bound evidence and explicit owner decision, is next.
 
 ## Historical native-image remediation before final qualification
 
