@@ -1,10 +1,15 @@
-# Keep private and machine-local files outside container build contexts.
+# Private inputs, dependencies, evidence and browser tooling never enter build contexts.
 .git
 .env
 .env.*
+**/.env
+**/.env.*
 .venv
 **/node_modules
 **/.next
 **/__pycache__
 artifacts
 docs/evidence
+e2e
+**/test-results
+**/playwright-report

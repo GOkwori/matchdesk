@@ -1,0 +1,88 @@
+# Run a disposable local topology on a hosted runner. No cloud or repository writes.
+name: Foundation integration
+on:
+  push:
+    branches: [development, main]
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: integration-${{ github.ref }}
+  cancel-in-progress: true
+defaults:
+  run:
+    shell: bash
+jobs:
+  runtime-browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CI: 'true'
+      COMPOSE_PROJECT_NAME: matchdesk-it-${{ github.run_id }}-${{ github.run_attempt }}
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22.16.0'
+      - name: Record source and create an ephemeral database password
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/integration
+          git rev-parse HEAD > artifacts/integration/source-commit.txt
+          docker version > artifacts/integration/docker-version.txt
+          docker compose version >> artifacts/integration/docker-version.txt
+          node --version > artifacts/integration/node-version.txt
+          sha256sum uv.lock apps/web/package-lock.json e2e/package-lock.json backend/Dockerfile apps/web/Dockerfile docker-compose.yml > artifacts/integration/input-hashes.txt
+          password="$(openssl rand -hex 32)"
+          echo "::add-mask::$password"
+          echo "POSTGRES_PASSWORD=$password" >> "$GITHUB_ENV"
+      - name: Build and start the actual runtime containers
+        id: start
+        run: |
+          set -euo pipefail
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" build --pull 2>&1 | tee artifacts/integration/build.log
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" up --detach --wait --wait-timeout 180
+      - name: Test real HTTP, runtime boundaries and PostgreSQL restart persistence
+        id: runtime
+        if: ${{ !cancelled() && steps.start.outcome == 'success' }}
+        run: node e2e/runtime-checks.mjs 2>&1 | tee artifacts/integration/runtime.log
+      - name: Install locked browser harness and matching Chromium
+        id: browser
+        if: ${{ !cancelled() && steps.start.outcome == 'success' }}
+        working-directory: e2e
+        run: |
+          set -euo pipefail
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx --no-install playwright install --with-deps chromium
+      - name: Run browser regressions without retrying failures away
+        if: ${{ !cancelled() && steps.browser.outcome == 'success' }}
+        working-directory: e2e
+        run: npm test 2>&1 | tee ../artifacts/integration/browser.log
+      - name: Confirm source and locks were not rewritten
+        if: ${{ !cancelled() }}
+        run: git diff --exit-code
+      - name: Preserve safe container logs
+        if: ${{ always() }}
+        run: |
+          # Never export docker inspect Env or the interpolated Compose configuration.
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" logs --no-color --tail 150 > artifacts/integration/container.log 2>&1
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" ps --all > artifacts/integration/containers.txt
+      - name: Remove only this run's isolated containers and volumes
+        if: ${{ always() }}
+        run: |
+          set -euo pipefail
+          [[ "$COMPOSE_PROJECT_NAME" =~ ^matchdesk-it-[0-9]+-[0-9]+$ ]]
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" down --volumes --remove-orphans
+      - name: Retain results, screenshots and failed traces
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: integration-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/integration/
+          if-no-files-found: error
+          retention-days: 60

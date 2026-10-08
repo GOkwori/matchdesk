@@ -1,7 +1,7 @@
 /** A functional contract workbench, not a simulated completed producer console. */
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 
 /** The response mirrors the exported foundation API; generated typing is a gate item. */
 type ValidationResult = {
@@ -35,10 +35,13 @@ export default function Workbench() {
   const [result, setResult] = useState<ValidationResult | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  // Editing while a request is pending must invalidate that request's eventual result.
+  const inputRevision = useRef(0);
 
   /** Clear stale output and bound the HTTP wait so an unreachable API stays visible. */
   async function validate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const submittedRevision = inputRevision.current;
     setError(""); setResult(null); setBusy(true);
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 8000);
@@ -51,9 +54,12 @@ export default function Workbench() {
       const payload: unknown = await response.json();
       if (!response.ok) throw new Error(`Validation failed (HTTP ${response.status}). Check the event contract.`);
       if (!isValidationResult(payload)) throw new Error("The API returned an unexpected response contract.");
-      setResult(payload);
+      // A response describes only the exact input revision submitted with this request.
+      if (inputRevision.current === submittedRevision) setResult(payload);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "The request could not be completed.");
+      if (inputRevision.current === submittedRevision) {
+        setError(cause instanceof Error ? cause.message : "The request could not be completed.");
+      }
     } finally {
       clearTimeout(timer); setBusy(false);
     }
@@ -73,7 +79,7 @@ export default function Workbench() {
         <div className="panel-heading"><h2>Synthetic event</h2><span>Schema 1.0</span></div>
         <label htmlFor="event-json">Edit the JSON and validate its structure</label>
         <textarea id="event-json" spellCheck={false} value={input}
-          onChange={(event) => { setInput(event.target.value); setResult(null); setError(""); }} />
+          onChange={(event) => { inputRevision.current += 1; setInput(event.target.value); setResult(null); setError(""); }} />
         <button type="submit" disabled={busy}>{busy ? "Validating…" : "Validate event"}</button>
       </form>
       <aside aria-label="Validation result">
