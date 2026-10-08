@@ -5,23 +5,22 @@ version = "0.0.1"
 description = "Evidence-linked football production desk"
 requires-python = ">=3.12,<3.14"
 dependencies = [
-    "fastapi==0.128.2",
+    "fastapi==0.142.4",
     "pydantic==2.13.5",
     "uvicorn==0.48.0",
 ]
 
 [dependency-groups]
-test = ["pytest==9.0.2", "pytest-cov==7.0.0", "httpx==0.28.1", "jsonschema==4.26.0"]
+test = ["pytest==9.0.3", "pytest-cov==7.0.0", "httpx==0.28.1", "jsonschema==4.26.0"]
 
 quality = ["ruff==0.16.10", "mypy==2.4.0"]
 
 [tool.uv]
 # Source execution avoids pretending an unbuilt distribution was installed.
 package = false
-# Starlette 0.50.0 imports an alias deprecated by AnyIO 4.15.1. Keep the compatible
-# boundary explicit until the FastAPI/Starlette upgrade is regression-qualified.
-# Do not hide this dependency mismatch by suppressing DeprecationWarning in pytest.
-constraint-dependencies = ["anyio==4.13.0"]
+# Patched ASGI dependency boundaries are resolved within FastAPI metadata, not
+# forced with overrides. ADR-0007 records the audit and regression qualification.
+constraint-dependencies = ["starlette==1.7.0", "anyio==4.15.1"]
 
 [tool.pytest.ini_options]
 testpaths = ["backend/tests"]
