@@ -212,12 +212,15 @@ def test_pass_accuracy_is_completed_over_attempted_and_supports_player_scope() -
     assert compute_metric(
         "pass_accuracy.v1", events, Subject(team_id="home"), window
     ) == pytest.approx(2.0 / 3.0)
-    assert compute_metric(
-        "pass_accuracy.v1",
-        events,
-        Subject(team_id="home", player_id="home-08"),
-        window,
-    ) == 1.0
+    assert (
+        compute_metric(
+            "pass_accuracy.v1",
+            events,
+            Subject(team_id="home", player_id="home-08"),
+            window,
+        )
+        == 1.0
+    )
 
 
 def test_pass_accuracy_returns_zero_for_a_zero_denominator() -> None:
@@ -238,12 +241,8 @@ def test_final_third_entries_require_completed_boundary_crossings() -> None:
     events = _fixture_events()
     window = _whole_window()
 
-    assert compute_metric(
-        "final_third_entries.v1", events, Subject(team_id="home"), window
-    ) == 2.0
-    assert compute_metric(
-        "final_third_entries.v1", events, Subject(team_id="away"), window
-    ) == 1.0
+    assert compute_metric("final_third_entries.v1", events, Subject(team_id="home"), window) == 2.0
+    assert compute_metric("final_third_entries.v1", events, Subject(team_id="away"), window) == 1.0
 
 
 def test_possession_time_uses_only_observed_attributable_intervals() -> None:
@@ -293,9 +292,7 @@ def test_window_is_half_open_at_the_upper_bound() -> None:
     events = _fixture_events()
     first_thirty_seconds = MatchWindow(period=1, from_ms=0, to_ms=30_000)
 
-    assert compute_metric(
-        "shots.v1", events, Subject(team_id="away"), first_thirty_seconds
-    ) == 0.0
+    assert compute_metric("shots.v1", events, Subject(team_id="away"), first_thirty_seconds) == 0.0
 
 
 def test_unregistered_metric_and_untrusted_event_order_fail_closed() -> None:
