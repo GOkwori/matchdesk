@@ -1,5 +1,4 @@
-# Runtime pins match the observed foundation environment. A resolved uv.lock and
-# a Python 3.12 run remain release prerequisites; these pins are not a security audit.
+# Runtime versions are qualified by the hosted regression suite, not by pins alone.
 [project]
 name = "matchdesk"
 version = "0.0.1"
@@ -19,6 +18,10 @@ quality = ["ruff==0.16.10", "mypy==2.4.0"]
 [tool.uv]
 # Source execution avoids pretending an unbuilt distribution was installed.
 package = false
+# Starlette 0.50.0 imports an alias deprecated by AnyIO 4.15.1. Keep the compatible
+# boundary explicit until the FastAPI/Starlette upgrade is regression-qualified.
+# Do not hide this dependency mismatch by suppressing DeprecationWarning in pytest.
+constraint-dependencies = ["anyio==4.13.0"]
 
 [tool.pytest.ini_options]
 testpaths = ["backend/tests"]

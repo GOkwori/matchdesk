@@ -1,0 +1,22 @@
+{
+  "source_commit": "56b708990dd748649da5cc44f9f099f78a940aaf",
+  "artifact_id": 11538405365,
+  "artifact_sha256": "a855452319ce649041e3be7be01ec9e83232032f8c4aac8eab4aa417103ce2f9",
+  "method": "Applied hosted Ruff suggestion to matching local source. Verified unchanged non-import AST, flattened import bindings, all docstrings and comment text. Import ordering/grouping and layout changes only; runtime qualification remains required.",
+  "files": {
+    "backend/src/matchdesk/api/app.py": "37a5b642750d12148189e0f0998c387c01e1e1323fd90625142af588d5b53d35",
+    "backend/src/matchdesk/api/limits.py": "5ffacf7b790ec4f741cc30e113567e640e9e65c4c0a9ae9e832326fd9f87dff1",
+    "backend/src/matchdesk/domain/hashing.py": "33c4342528d9977b81d568000addbbbdd59de79f0349f70e2331559259b39846",
+    "backend/src/matchdesk/domain/models.py": "42cda8765a76658a8cec4a1fcc066df87f501bd380aade82675ec23841e69264",
+    "backend/tests/conftest.py": "2eccb573e9fe31519c89c532ee66b2c76f4f891cc67c3c60cef5082d60e676f2",
+    "backend/tests/test_api.py": "42856e16c0fcabec0c4b1cc74032d6a6caa1cbeaadec7b8e85ea08465a39db26",
+    "backend/tests/test_contracts.py": "ee861231da8d3fd032b2d10a57cf9de56a03108b5ee87ed97f542a020031ac85",
+    "backend/tests/test_repository_checks.py": "6a0d06bc2d69db29b8b8fbaacb0150be8ee9828fdba28fa5542cb71fedc820cb",
+    "scripts/check_comments.py": "9a8be5d18985a05002f2ccc24ebb11ba5ab3d893a58d8585d27c618ec9457d16",
+    "scripts/check_docs.py": "d354b73b011706a27889b308f17c599ea78ea6453ece20c692c73d2947f08789",
+    "scripts/collect_evidence.py": "bb5408b5642718721ede73fbbe979dd142b4d2682eb102f7a13433ea3f844ca3",
+    "scripts/create_local_env.py": "96bbe620356902c5f98174b0e1116bf33f4028a4616841edc192203252e06ad5",
+    "scripts/export_contracts.py": "79896d1b6d2147708f7d520b1733ae45e5e1fbbcc19bafd14d06ff47852e710f",
+    "scripts/smoke_api.py": "b13d3f58c46d910535f3a4a7bb7eaa04f48aa5e96ffe05fb60b72ac944be02ed"
+  }
+}
