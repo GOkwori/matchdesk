@@ -1,6 +1,6 @@
 # Current progress
 
-Date: 8 October 2026. Stage: Phase 2 in progress; P2-01 and P2-02 TESTED.
+Date: 8 October 2026. Stage: Phase 2 in progress; P2-01 through P2-03 TESTED.
 Phase 0 gate: **VERIFIED / COMPLETED**.
 
 The engineering foundation was merged through the protected `main` path and the
@@ -136,8 +136,25 @@ coverage; the verifier module measured 87%. Ruff, formatting and strict mypy pas
 and runtime/browser plus independent native-image qualification passed. See the
 [Phase 2B qualification record](evidence/phase2b-claim-verification-20261008.md).
 
-P2-03 specialist execution interfaces and scoped read tools is next. Live Agent
-Framework / Foundry integration remains P2-04 and separately gated.
+P2-03, specialist execution interfaces and scoped read tools, is TESTED on
+development source `e50758ca358f8d6bb8596e4a1a89eeeb0f752df7`. The host owns the
+specialist role boundary and read-tool permission matrix. Tactical analysis can read
+accepted events, windows and registered metrics; narrative/editorial roles additionally
+read evidence and verification records; audience adaptation can read only evidence and
+verification records. Requests must match the current P2-01 workflow role, responses
+are frozen non-authoritative proposals using existing Claim records, and mixed-match
+tool snapshots fail closed.
+
+Hosted P2-03 qualification passed Foundation CI 37834593314, Dependency audit
+37834593361, Source security 37834593365 and Foundation integration 37834593382.
+Foundation CI ran 247 tests on Python 3.12.15 with 98.57% measured total package
+coverage; the specialists module measured 99%. Contract/document checks, Ruff,
+formatting and strict mypy passed, and runtime/browser plus independent native-image
+qualification passed. See the
+[Phase 2C qualification record](evidence/phase2c-specialist-interfaces-20261008.md).
+
+P2-04 live specialist runtime integration with Agent Framework / Foundry is next, but
+it remains separately gated by explicit live-model, credential and cost approval.
 
 ## Historical native-image remediation before final qualification
 
