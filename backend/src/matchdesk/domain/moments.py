@@ -181,10 +181,16 @@ def _detect_pressing_spells(events: tuple[MatchEvent, ...]) -> list[DetectedMome
             team_regains = regains.setdefault(key, [])
             team_regains.append(event)
             cutoff = event.match_clock_ms - _PRESSING_WINDOW_MS
-            regains[key] = [candidate for candidate in team_regains if candidate.match_clock_ms >= cutoff]
+            regains[key] = [
+                candidate for candidate in team_regains if candidate.match_clock_ms >= cutoff
+            ]
             continue
 
-        if event.type != "shot" or event.team_id is None or event.event_id in emitted_terminal_shots:
+        if (
+            event.type != "shot"
+            or event.team_id is None
+            or event.event_id in emitted_terminal_shots
+        ):
             continue
 
         key = (event.period, event.team_id)
@@ -192,7 +198,11 @@ def _detect_pressing_spells(events: tuple[MatchEvent, ...]) -> list[DetectedMome
         if len(candidates) < 4:
             continue
         latest_regain = candidates[-1]
-        if not 0 <= event.match_clock_ms - latest_regain.match_clock_ms <= _PRESSING_SHOT_FOLLOWUP_MS:
+        if (
+            not 0
+            <= event.match_clock_ms - latest_regain.match_clock_ms
+            <= _PRESSING_SHOT_FOLLOWUP_MS
+        ):
             continue
 
         evidence = tuple(candidates[-4:]) + (event,)
