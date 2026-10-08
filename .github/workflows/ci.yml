@@ -1,0 +1,127 @@
+# Independent checks retain failures and evidence; no job can deploy or merge.
+name: Foundation CI
+on:
+  push:
+    branches: [development, main]
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: foundation-${{ github.ref }}
+  cancel-in-progress: true
+defaults:
+  run:
+    shell: bash
+jobs:
+  foundation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      PYTHONPATH: backend/src:.
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # inspected v4
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # inspected v5
+        with:
+          python-version: '3.12.15'
+      - name: Record source identity
+        run: |
+          mkdir -p artifacts/python
+          git rev-parse HEAD > artifacts/python/source-commit.txt
+          python --version > artifacts/python/python-version.txt
+          sha256sum pyproject.toml uv.lock > artifacts/python/dependency-hashes.txt
+      - name: Require reviewed dependency locks
+        run: test -f uv.lock && test -f apps/web/package-lock.json
+      - name: Install the pinned package manager
+        run: |
+          python -m pip install --only-binary=:all: uv==0.10.0
+      - name: Synchronise and reject stale locks
+        id: install
+        # --locked validates the manifest; --frozen alone does not detect drift.
+        run: uv sync --locked --no-build --python 3.12 --group test --group quality
+      - name: Validate contracts, comments and documentation
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: uv run --no-sync make contracts comments docs 2>&1 | tee artifacts/python/repository-checks.log
+      - name: Run boundary and regression tests
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: uv run --no-sync python -m pytest --cov=matchdesk --cov-report=term-missing --cov-report=json:artifacts/python/coverage.json --junitxml=artifacts/python/junit.xml 2>&1 | tee artifacts/python/pytest.log
+      # Run each quality gate independently so one defect cannot hide another.
+      - name: Check Python lint and docstrings
+        id: lint
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: uv run --no-sync ruff check backend scripts 2>&1 | tee artifacts/python/ruff.log
+      - name: Check Python formatting
+        id: format
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: uv run --no-sync ruff format --check backend scripts 2>&1 | tee artifacts/python/format.log
+      - name: Check strict Python types
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: uv run --no-sync mypy backend/src/matchdesk 2>&1 | tee artifacts/python/mypy.log
+      - name: Confirm checks did not change the source
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: git diff --exit-code
+      - name: Export a formatting suggestion after a failed gate
+        if: ${{ !cancelled() && steps.install.outcome == 'success' && (steps.lint.outcome == 'failure' || steps.format.outcome == 'failure') }}
+        # This is a review artifact only. Earlier failed steps remain failures;
+        # the suggested patch is never committed, applied to a ref or certified.
+        run: |
+          uv run --no-sync ruff check --select I --fix backend scripts
+          uv run --no-sync ruff format backend scripts
+          git diff --binary -- backend scripts > artifacts/python/formatting-suggestion.patch
+      - name: Preserve Python results including failures
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # inspected v4
+        with:
+          name: foundation-python-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/python/
+          if-no-files-found: error
+          # Keep judging evidence beyond the November review period.
+          retention-days: 60
+  web:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22.16.0'
+      - name: Record frontend identity and require lock
+        run: |
+          mkdir -p artifacts/web
+          git rev-parse HEAD > artifacts/web/source-commit.txt
+          node --version > artifacts/web/node-version.txt
+          npm --version > artifacts/web/npm-version.txt
+          test -f apps/web/package-lock.json
+          sha256sum apps/web/package.json apps/web/package-lock.json > artifacts/web/dependency-hashes.txt
+      - name: Install exact frontend dependencies
+        id: install
+        working-directory: apps/web
+        # Build tooling has no repository-write or cloud credentials.
+        run: npm ci --no-fund 2>&1 | tee ../../artifacts/web/install.log
+      - name: Check TypeScript
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        working-directory: apps/web
+        run: npm run typecheck 2>&1 | tee ../../artifacts/web/typecheck.log
+      - name: Build the actual web application
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        working-directory: apps/web
+        run: npm run build 2>&1 | tee ../../artifacts/web/build.log
+      - name: Confirm frontend manifests did not change
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: git diff --exit-code -- apps/web/package.json apps/web/package-lock.json
+      - name: Preserve frontend results including failures
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: foundation-web-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/web/
+          if-no-files-found: error
+          retention-days: 60

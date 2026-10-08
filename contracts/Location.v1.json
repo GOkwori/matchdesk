@@ -1,0 +1,30 @@
+{
+  "additionalProperties": false,
+  "description": "Position on a 0-100 pitch normalised to the event team's attacking direction.\n\nCoordinates are not metres. Any distance metric must first convert against\nthe documented pitch dimensions. Booleans and non-finite values are invalid.",
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "x": {
+      "maximum": 100,
+      "minimum": 0,
+      "title": "X",
+      "type": "number"
+    },
+    "y": {
+      "maximum": 100,
+      "minimum": 0,
+      "title": "Y",
+      "type": "number"
+    }
+  },
+  "required": [
+    "x",
+    "y"
+  ],
+  "title": "Location",
+  "type": "object"
+}

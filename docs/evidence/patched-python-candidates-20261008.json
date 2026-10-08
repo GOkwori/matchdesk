@@ -1,0 +1,150 @@
+{
+  "files": {
+    "pyproject.toml": {
+      "sha256": "3fa4160bbd3a97c5ac19df1f0da23b931c01ec66cb149e55aa24b000eb3f695a",
+      "size": 1384
+    },
+    "uv.lock": {
+      "sha256": "14c0f7dfa07c5ef9958de57cb5cb6fabe2b33441c9fdc9d6ddc330900eddc4ae",
+      "size": 92477
+    }
+  },
+  "limitations": "Resolver and package-metadata compatibility only; independent tests and advisory scans remain mandatory.",
+  "recorded_at": "2026-10-08T09:30:08.896445+00:00",
+  "resolved_versions": {
+    "annotated-doc": "0.0.5",
+    "annotated-types": "0.8.0",
+    "anyio": "4.15.1",
+    "ast-serialize": "0.12.1",
+    "attrs": "26.1.0",
+    "certifi": "2026.7.22",
+    "click": "8.5.0",
+    "colorama": "0.4.6",
+    "coverage": "7.16.2",
+    "fastapi": "0.142.4",
+    "h11": "0.16.0",
+    "httpcore": "1.0.9",
+    "httpx": "0.28.1",
+    "idna": "3.20",
+    "iniconfig": "2.3.1",
+    "jsonschema": "4.26.0",
+    "jsonschema-specifications": "2025.9.1",
+    "librt": "0.16.0",
+    "mypy": "2.4.0",
+    "mypy-extensions": "1.1.0",
+    "opentelemetry-api": "1.45.1",
+    "packaging": "26.3",
+    "pathspec": "1.1.1",
+    "pluggy": "1.6.0",
+    "pydantic": "2.13.5",
+    "pydantic-core": "2.46.5",
+    "pygments": "2.21.0",
+    "pytest": "9.0.3",
+    "pytest-cov": "7.0.0",
+    "referencing": "0.37.0",
+    "rpds-py": "2026.9.1",
+    "ruff": "0.16.10",
+    "starlette": "1.7.0",
+    "typing-extensions": "4.16.0",
+    "typing-inspection": "0.4.4",
+    "uvicorn": "0.48.0"
+  },
+  "run_attempt": "1",
+  "run_id": "37757055331",
+  "source_commit": "ce3b571ca543039bdd9992b3c4be597c4e6a1fcf",
+  "status": "CANDIDATE_NOT_QUALIFIED",
+  "upstream_metadata": {
+    "anyio": {
+      "requires_dist": [
+        "exceptiongroup>=1.0.2; python_version < \"3.11\"",
+        "idna>=2.8",
+        "typing_extensions>=4.16.0; python_version < \"3.15\"",
+        "trio>=0.32.0; extra == \"trio\""
+      ],
+      "requires_python": ">=3.10",
+      "version": "4.15.1"
+    },
+    "fastapi": {
+      "requires_dist": [
+        "starlette>=0.46.0",
+        "pydantic>=2.9.0",
+        "typing-extensions>=4.8.0",
+        "typing-inspection>=0.4.2",
+        "annotated-doc>=0.0.2",
+        "opentelemetry-api>=1.44.0",
+        "opentelemetry-sdk>=1.44.0; extra == \"opentelemetry\"",
+        "opentelemetry-exporter-otlp-proto-http>=1.44.0; extra == \"opentelemetry\"",
+        "opentelemetry-sdk>=1.44.0; extra == \"standard\"",
+        "opentelemetry-exporter-otlp-proto-http>=1.44.0; extra == \"standard\"",
+        "fastapi-cli[standard]>=0.0.32; extra == \"standard\"",
+        "fastar>=0.9.0; extra == \"standard\"",
+        "httpx<1.0.0,>=0.23.0; extra == \"standard\"",
+        "jinja2>=3.1.5; extra == \"standard\"",
+        "python-multipart>=0.0.18; extra == \"standard\"",
+        "email-validator>=2.0.0; extra == \"standard\"",
+        "uvicorn[standard]>=0.12.0; extra == \"standard\"",
+        "pydantic-settings>=2.0.0; extra == \"standard\"",
+        "pydantic-extra-types>=2.0.0; extra == \"standard\"",
+        "opentelemetry-sdk>=1.44.0; extra == \"standard-no-fastapi-cloud-cli\"",
+        "opentelemetry-exporter-otlp-proto-http>=1.44.0; extra == \"standard-no-fastapi-cloud-cli\"",
+        "fastapi-cli[standard-no-fastapi-cloud-cli]>=0.0.32; extra == \"standard-no-fastapi-cloud-cli\"",
+        "httpx<1.0.0,>=0.23.0; extra == \"standard-no-fastapi-cloud-cli\"",
+        "jinja2>=3.1.5; extra == \"standard-no-fastapi-cloud-cli\"",
+        "python-multipart>=0.0.18; extra == \"standard-no-fastapi-cloud-cli\"",
+        "email-validator>=2.0.0; extra == \"standard-no-fastapi-cloud-cli\"",
+        "uvicorn[standard]>=0.12.0; extra == \"standard-no-fastapi-cloud-cli\"",
+        "pydantic-settings>=2.0.0; extra == \"standard-no-fastapi-cloud-cli\"",
+        "pydantic-extra-types>=2.0.0; extra == \"standard-no-fastapi-cloud-cli\"",
+        "opentelemetry-sdk>=1.44.0; extra == \"all\"",
+        "opentelemetry-exporter-otlp-proto-http>=1.44.0; extra == \"all\"",
+        "fastapi-cli[standard]>=0.0.32; extra == \"all\"",
+        "httpx<1.0.0,>=0.23.0; extra == \"all\"",
+        "jinja2>=3.1.5; extra == \"all\"",
+        "python-multipart>=0.0.18; extra == \"all\"",
+        "itsdangerous>=1.1.0; extra == \"all\"",
+        "pyyaml>=5.3.1; extra == \"all\"",
+        "email-validator>=2.0.0; extra == \"all\"",
+        "uvicorn[standard]>=0.12.0; extra == \"all\"",
+        "pydantic-settings>=2.0.0; extra == \"all\"",
+        "pydantic-extra-types>=2.0.0; extra == \"all\""
+      ],
+      "requires_python": ">=3.10",
+      "version": "0.142.4"
+    },
+    "pytest": {
+      "requires_dist": [
+        "colorama>=0.4; sys_platform == \"win32\"",
+        "exceptiongroup>=1; python_version < \"3.11\"",
+        "iniconfig>=1.0.1",
+        "packaging>=22",
+        "pluggy<2,>=1.5",
+        "pygments>=2.7.2",
+        "tomli>=1; python_version < \"3.11\"",
+        "argcomplete; extra == \"dev\"",
+        "attrs>=19.2; extra == \"dev\"",
+        "hypothesis>=3.56; extra == \"dev\"",
+        "mock; extra == \"dev\"",
+        "requests; extra == \"dev\"",
+        "setuptools; extra == \"dev\"",
+        "xmlschema; extra == \"dev\""
+      ],
+      "requires_python": ">=3.10",
+      "version": "9.0.3"
+    },
+    "starlette": {
+      "requires_dist": [
+        "anyio<5,>=4.0.0",
+        "typing-extensions>=4.10.0; python_version < \"3.13\"",
+        "httpx2>=2.0.0; extra == \"full\"",
+        "httpx<0.29.0,>=0.27.0; extra == \"full\"",
+        "itsdangerous; extra == \"full\"",
+        "jinja2; extra == \"full\"",
+        "opentelemetry-api; extra == \"full\"",
+        "python-multipart>=0.0.18; extra == \"full\"",
+        "pyyaml; extra == \"full\""
+      ],
+      "requires_python": ">=3.10",
+      "version": "1.7.0"
+    }
+  }
+}

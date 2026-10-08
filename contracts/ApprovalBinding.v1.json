@@ -1,0 +1,70 @@
+{
+  "additionalProperties": false,
+  "description": "Exact artefacts that a future producer approval must bind transactionally.\n\nHashing this record is not a signature. The service must establish the actor,\npreserve a server-side approval and compare all bindings at publication.",
+  "properties": {
+    "content_digest": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Content Digest",
+      "type": "string"
+    },
+    "evidence_digest": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Evidence Digest",
+      "type": "string"
+    },
+    "item_id": {
+      "maxLength": 96,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9_-]+$",
+      "title": "Item Id",
+      "type": "string"
+    },
+    "item_version": {
+      "minimum": 1,
+      "title": "Item Version",
+      "type": "integer"
+    },
+    "language": {
+      "enum": [
+        "en",
+        "es",
+        "fr"
+      ],
+      "title": "Language",
+      "type": "string"
+    },
+    "persona": {
+      "enum": [
+        "analyst",
+        "casual_fan",
+        "broadcast_caption"
+      ],
+      "title": "Persona",
+      "type": "string"
+    },
+    "replay_id": {
+      "maxLength": 96,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9_-]+$",
+      "title": "Replay Id",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "item_id",
+    "item_version",
+    "replay_id",
+    "content_digest",
+    "evidence_digest",
+    "language",
+    "persona"
+  ],
+  "title": "ApprovalBinding",
+  "type": "object"
+}

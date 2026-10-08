@@ -1,0 +1,31 @@
+/* Foundation theme uses system fonts. Colours distinguish interaction from verification. */
+:root { color-scheme: dark; font-family: system-ui, -apple-system, sans-serif; background: #0c1422; color: #eef4ff; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+main { max-width: 1400px; padding: 34px 5vw; margin: auto; }
+header { display: flex; justify-content: space-between; gap: 20px; border-bottom: 1px solid #304159; padding-bottom: 20px; }
+.wordmark { text-decoration: none; font-size: 24px; font-weight: 750; color: #eef4ff; }
+.wordmark span { color: #8fa5bf; font-size: 11px; letter-spacing: .14em; }
+.stage, footer, label { color: #b2c2d9; font-size: 13px; }
+.eyebrow { letter-spacing: .2em; font-size: 12px; color: #7bdfea; }
+.introduction { padding: 54px 0 28px; max-width: 720px; }
+h1 { font-size: clamp(36px, 5vw, 62px); line-height: 1.1; margin: 14px 0 20px; letter-spacing: -.03em; }
+p { line-height: 1.7; color: #bdcbe0; }
+.workspace { display: grid; grid-template-columns: 1.35fr 1fr; gap: 24px; }
+form, aside { background: #131f31; border: 1px solid #304159; border-radius: 14px; padding: 28px; }
+h2 { font-size: 19px; margin-top: 0; }
+.panel-heading { display: flex; justify-content: space-between; align-items: baseline; }
+.panel-heading span { color: #92a9c3; font-size: 12px; }
+textarea { width: 100%; min-height: 350px; margin: 12px 0 18px; background: #0b1523; color: #d7e6fa; border: 1px solid #3a526c; border-radius: 8px; padding: 16px; resize: vertical; line-height: 1.6; font: 13px/1.6 ui-monospace, monospace; }
+button { background: #7bdfea; color: #06242d; font-weight: 700; padding: 13px 22px; border: 0; border-radius: 8px; cursor: pointer; }
+button:disabled { opacity: .65; cursor: wait; }
+/* Keyboard focus remains visible even when a pointer-focused surface is subtle. */
+:focus-visible { outline: 3px solid #f1cc72; outline-offset: 4px; }
+.result { border: 1px solid #435b76; padding: 20px; border-radius: 10px; margin: 24px 0; }
+.notice { font-size: 13px; color: #c1cfdf; }
+.error { color: #ffb9b9; border-left: 3px solid #ff9292; padding-left: 12px; }
+code { display: block; overflow-wrap: anywhere; margin-top: 10px; font-size: 12px; }
+footer { padding-top: 28px; }
+/* Layout remains usable without hiding the validation result on narrow screens. */
+@media (max-width: 800px) { .workspace { grid-template-columns: 1fr; } header { flex-direction: column; } main { padding: 24px; } .introduction { padding-top: 30px; } }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto; } }

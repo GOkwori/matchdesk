@@ -1,0 +1,98 @@
+# Advisory audits are independent of functional tests and never modify dependency locks.
+name: Dependency audit
+on:
+  push:
+    branches: [development, main]
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: dependency-audit-${{ github.ref }}
+  cancel-in-progress: true
+defaults:
+  run:
+    shell: bash
+jobs:
+  dependencies:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.15'
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22.16.0'
+      - name: Record audited source and dependency identities
+        run: |
+          mkdir -p artifacts/security
+          git rev-parse HEAD > artifacts/security/source-commit.txt
+          sha256sum uv.lock apps/web/package-lock.json e2e/package-lock.json > artifacts/security/input-hashes.txt
+          date --utc --iso-8601=seconds > artifacts/security/started-at.txt
+      - name: Install isolated pinned Python auditor
+        id: auditor
+        run: |
+          python -m venv /tmp/matchdesk-auditor
+          /tmp/matchdesk-auditor/bin/python -m pip install --only-binary=:all: pip-audit==2.10.1
+          /tmp/matchdesk-auditor/bin/python -m pip freeze > artifacts/security/auditor-environment.txt
+          /tmp/matchdesk-auditor/bin/pip-audit --version > artifacts/security/auditor-version.txt
+      - name: Derive hashed audit inputs from the committed Python lock
+        id: inputs
+        # Audit every registry entry, including test/quality tools. No dependency
+        # resolution or package execution is required to inspect the locked versions.
+        run: |
+          python - <<'PY'
+          """Export only already-resolved registry dependencies and their locked hashes."""
+          import re
+          import tomllib
+          from pathlib import Path
+
+          lock = tomllib.loads(Path('uv.lock').read_text())
+          rows = []
+          seen = set()
+          for package in lock['package']:
+              if package['source'] == {'virtual': '.'} and package['name'] == 'matchdesk':
+                  continue
+              if package['source'].get('registry', '').rstrip('/') != 'https://pypi.org/simple':
+                  raise ValueError('Unexpected registry source')
+              identity = (package['name'], package['version'])
+              if identity in seen:
+                  raise ValueError('Duplicate audit identity requires explicit marker handling')
+              seen.add(identity)
+              distributions = package.get('wheels', []) + ([package['sdist']] if 'sdist' in package else [])
+              hashes = sorted({item['hash'] for item in distributions})
+              if not hashes or any(not re.fullmatch(r'sha256:[0-9a-f]{64}', value) for value in hashes):
+                  raise ValueError('Missing distribution integrity')
+              rows.append(f"{identity[0]}=={identity[1]} " + ' '.join(f'--hash={value}' for value in hashes))
+          if not rows:
+              raise ValueError('An empty audit input is not a successful audit')
+          Path('artifacts/security/python-requirements.txt').write_text('\n'.join(sorted(rows)) + '\n')
+          PY
+      - name: Audit all locked Python dependencies
+        if: ${{ !cancelled() && steps.auditor.outcome == 'success' && steps.inputs.outcome == 'success' }}
+        # No --fix, ignored advisories or suppression of the scanner's exit status.
+        run: /tmp/matchdesk-auditor/bin/pip-audit --require-hashes --disable-pip --progress-spinner off --timeout 30 -r artifacts/security/python-requirements.txt --format json --output artifacts/security/python-audit.json
+      - name: Audit locked application JavaScript dependencies
+        if: ${{ !cancelled() }}
+        working-directory: apps/web
+        run: npm audit --package-lock-only --audit-level=low --json --registry=https://registry.npmjs.org > ../../artifacts/security/web-audit.json
+      - name: Audit locked browser-test dependencies
+        if: ${{ !cancelled() }}
+        working-directory: e2e
+        run: npm audit --package-lock-only --audit-level=low --json --registry=https://registry.npmjs.org > ../artifacts/security/browser-audit.json
+      - name: Confirm the audit did not rewrite source
+        if: ${{ !cancelled() }}
+        run: git diff --exit-code
+      - name: Retain advisory results even when a scanner fails
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: dependency-audit-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/security/
+          if-no-files-found: error
+          retention-days: 60

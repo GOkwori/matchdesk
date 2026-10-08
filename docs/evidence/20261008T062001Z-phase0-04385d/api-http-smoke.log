@@ -1,0 +1,7 @@
+{
+  "health_http": 200,
+  "readiness_http": 503,
+  "validation_http": 200,
+  "scope": "native_loopback_http",
+  "models": "not_connected"
+}

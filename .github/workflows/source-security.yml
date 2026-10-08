@@ -1,0 +1,217 @@
+# Source security is independent of dependency and native-image vulnerability scans.
+# No source-writing token, deployment secret or Azure identity is available here.
+name: Source security
+on:
+  push:
+    branches: [development, main]
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: source-security-${{ github.ref }}
+  cancel-in-progress: true
+defaults:
+  run:
+    shell: bash
+jobs:
+  codeql:
+    name: codeql-${{ matrix.language }}
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [python, javascript-typescript]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      security-events: write # Upload analysis, not repository contents or approvals.
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Record the exact analyzed source
+        run: |
+          mkdir -p artifacts/codeql
+          git rev-parse HEAD > artifacts/codeql/source-commit.txt
+      - name: Initialize the pinned security-extended query suite
+        uses: github/codeql-action/init@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # inspected v4
+        with:
+          tools: linked
+          languages: ${{ matrix.language }}
+          build-mode: none
+          queries: security-extended
+      - name: Analyze and upload exact-head code scanning results
+        id: analyze
+        uses: github/codeql-action/analyze@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2
+        with:
+          output: artifacts/codeql/sarif
+          category: /language:${{ matrix.language }}
+          ref: ${{ github.event_name == 'pull_request' && format('refs/pull/{0}/head', github.event.number) || github.ref }}
+          sha: ${{ github.event.pull_request.head.sha || github.sha }}
+          upload: always
+          upload-database: false
+          wait-for-processing: true
+      - name: Fail on reported source findings, not just scanner execution errors
+        # A successful CodeQL upload alone does not mean the analysis has no alerts.
+        if: ${{ !cancelled() && steps.analyze.outcome == 'success' }}
+        run: |
+          python - <<'PY'
+          """Require real SARIF output and report unsuppressed results as a failed gate."""
+          import json
+          from pathlib import Path
+
+          root = Path('artifacts/codeql')
+          files = sorted((root / 'sarif').glob('*.sarif'))
+          if not files:
+              raise SystemExit('No SARIF analysis was produced')
+          findings = []
+          analyses = []
+          for path in files:
+              document = json.loads(path.read_text())
+              if document.get('version') != '2.1.0' or not document.get('runs'):
+                  raise SystemExit('Invalid or empty SARIF analysis')
+              for run in document['runs']:
+                  driver = run.get('tool', {}).get('driver', {})
+                  if driver.get('name') != 'CodeQL' or not isinstance(run.get('results'), list):
+                      raise SystemExit('Unexpected analysis producer or missing result set')
+                  if any(item.get('executionSuccessful') is False for item in run.get('invocations', [])):
+                      raise SystemExit('The SARIF producer reported failed execution')
+                  # No suppressed findings are silently dropped. Any exception must
+                  # receive a specific review rather than being hidden by this parser.
+                  findings.extend({'rule_id': item.get('ruleId'), 'level': item.get('level')} for item in run['results'])
+                  analyses.append({'file': path.name, 'version': driver.get('version'), 'results': len(run['results'])})
+          report = {'source_commit': (root / 'source-commit.txt').read_text().strip(),
+                    'status': 'FAIL' if findings else 'PASS', 'analyses': analyses,
+                    'findings': findings, 'limitations': 'The configured static query suite is not a proof of absence of vulnerabilities.'}
+          (root / 'gate-summary.json').write_text(json.dumps(report, indent=2) + '\n')
+          print(json.dumps(report, indent=2))
+          if findings:
+              raise SystemExit('CodeQL findings require review before merge')
+          PY
+      - name: Preserve source analysis and gate results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: codeql-${{ matrix.language }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/codeql/
+          if-no-files-found: error
+          retention-days: 60
+  secrets:
+    name: history-secrets
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+          fetch-depth: 0 # Inspect reachable history, not only the latest source tree.
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Record source and verify the pinned scanner download
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/secrets "$RUNNER_TEMP/matchdesk-gitleaks" "$RUNNER_TEMP/matchdesk-no-ignores"
+          git rev-parse HEAD > artifacts/secrets/source-commit.txt
+          git rev-list --all --count > artifacts/secrets/reachable-commits.txt
+          curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 \
+            https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz \
+            --output "$RUNNER_TEMP/matchdesk-gitleaks/scanner.tar.gz"
+          echo '551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  scanner.tar.gz' \
+            | (cd "$RUNNER_TEMP/matchdesk-gitleaks" && sha256sum --check -)
+          tar -xzf "$RUNNER_TEMP/matchdesk-gitleaks/scanner.tar.gz" -C "$RUNNER_TEMP/matchdesk-gitleaks" gitleaks
+          "$RUNNER_TEMP/matchdesk-gitleaks/gitleaks" version > artifacts/secrets/scanner-version.txt
+      - name: Recompute the exact historical digest false positives before excluding them
+        # Only 13 reviewed historical fingerprints qualify, never whole paths or rules.
+        run: |
+          python - <<'PY'
+          """Prove each flagged historical value is its documented source-file SHA-256."""
+          import hashlib
+          import json
+          import os
+          import re
+          import subprocess
+          from pathlib import Path
+
+          records = json.loads(Path('docs/evidence/secret-scan-reviewed-digests-20261008.json').read_text())
+          if len(records) != 13 or len({r['fingerprint'] for r in records}) != 13:
+              raise SystemExit('Unexpected historical review scope')
+          allowed_commits = {'964fb8c5caae8cb9fc0955c3bf12bd3768b28040', '211d3676e03b70304404558818de4e175b345ef3'}
+          for record in records:
+              commit, path, rule, number = record['fingerprint'].split(':')
+              if commit not in allowed_commits or rule != 'generic-api-key':
+                  raise SystemExit('Unreviewed secret-scan fingerprint')
+              document = subprocess.check_output(['git', 'show', f'{commit}:{path}']).decode('utf-8')
+              line = document.splitlines()[int(number) - 1]
+              match = re.fullmatch(r'\s*"([^"]+)": "([0-9a-f]{64})",?', line)
+              if not match or match[2] != record['sha256']:
+                  raise SystemExit('Historical finding is not the reviewed digest field')
+              target = record['digest_of']
+              if match[1] != target and not (path == 'contracts/manifest.json' and 'contracts/' + match[1] == target):
+                  raise SystemExit('Digest field refers to a different source file')
+              # Formatting manifests describe a later reviewed blob, while original
+              # manifests describe files at the immutable import commit itself.
+              if 'git_blob' in record:
+                  if not re.fullmatch(r'[0-9a-f]{40}', record['git_blob']):
+                      raise SystemExit('Invalid source object identity')
+                  data = subprocess.check_output(['git', 'cat-file', 'blob', record['git_blob']])
+              else:
+                  data = subprocess.check_output(['git', 'show', f'{commit}:{target}'])
+              if hashlib.sha256(data).hexdigest() != record['sha256']:
+                  raise SystemExit('Source bytes do not reproduce the reviewed digest')
+          output = Path(os.environ['RUNNER_TEMP']) / 'matchdesk-no-ignores' / 'reviewed.ignore'
+          output.write_text('\n'.join(r['fingerprint'] for r in records) + '\n')
+          Path('artifacts/secrets/classification.json').write_text(json.dumps({
+              'status': 'VERIFIED_NON_SECRET_DIGESTS', 'count': len(records),
+              'scope': 'Exact historical commit/path/rule/line fingerprints only',
+              'records': records}, indent=2) + '\n')
+          print('Recomputed 13 published source/schema digests; no path or rule-wide exclusions.')
+          PY
+      - name: Confirm the scanner still detects a new synthetic key with the same exceptions
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          """Generate a non-working detection control outside the repository and never print it."""
+          import os
+          import secrets
+          from pathlib import Path
+          root = Path(os.environ['RUNNER_TEMP']) / 'matchdesk-secret-control'
+          root.mkdir()
+          (root / 'control.txt').write_text('api_key = "' + secrets.token_hex(32) + '"\n')
+          PY
+          set +e
+          "$RUNNER_TEMP/matchdesk-gitleaks/gitleaks" dir "$RUNNER_TEMP/matchdesk-secret-control" \
+            --redact=100 --no-banner --no-color --ignore-gitleaks-allow \
+            --gitleaks-ignore-path "$RUNNER_TEMP/matchdesk-no-ignores/reviewed.ignore" \
+            --exit-code 1 --report-format json --report-path artifacts/secrets/control-findings.json \
+            > artifacts/secrets/control.log 2>&1
+          result=$?
+          set -e
+          test "$result" -eq 1
+          python - <<'PY'
+          """Distinguish a real detected control from an unrelated scanner failure."""
+          import json
+          from pathlib import Path
+          findings = json.loads(Path('artifacts/secrets/control-findings.json').read_text())
+          if not findings or not any(item.get('RuleID') == 'generic-api-key' for item in findings):
+              raise SystemExit('The synthetic detection control was not identified')
+          print('Synthetic detection control passed; no working credential was used.')
+          PY
+      - name: Scan reachable history with exact reviewed fingerprints only
+        run: |
+          set -euo pipefail
+          test ! -e .gitleaks.toml
+          test ! -e .gitleaksignore
+          "$RUNNER_TEMP/matchdesk-gitleaks/gitleaks" git . \
+            --log-opts='--all' --redact=100 --no-banner --no-color \
+            --ignore-gitleaks-allow --gitleaks-ignore-path "$RUNNER_TEMP/matchdesk-no-ignores/reviewed.ignore" \
+            --exit-code 1 --report-format json --report-path artifacts/secrets/findings.json \
+            2>&1 | tee artifacts/secrets/scan.log
+      - name: Preserve redacted security evidence even after a finding
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: history-secrets-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/secrets/
+          if-no-files-found: error
+          retention-days: 60

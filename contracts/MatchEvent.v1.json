@@ -1,0 +1,252 @@
+{
+  "$defs": {
+    "Location": {
+      "additionalProperties": false,
+      "description": "Position on a 0-100 pitch normalised to the event team's attacking direction.\n\nCoordinates are not metres. Any distance metric must first convert against\nthe documented pitch dimensions. Booleans and non-finite values are invalid.",
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "x": {
+          "maximum": 100,
+          "minimum": 0,
+          "title": "X",
+          "type": "number"
+        },
+        "y": {
+          "maximum": 100,
+          "minimum": 0,
+          "title": "Y",
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "title": "Location",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "An immutable synthetic event, identified independently of arrival order.\n\nmatch_clock_ms is the display clock: period 2 starts at 45:00 regardless of\nfirst-half stoppage time. Sequence, not this clock alone, defines ordering.\nlinked_event_id associates a goal with its shot; existence is checked later\nby ingestion, not by structural validation.",
+  "properties": {
+    "end_location": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Location"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "event_id": {
+      "maxLength": 96,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9_-]+$",
+      "title": "Event Id",
+      "type": "string"
+    },
+    "linked_event_id": {
+      "anyOf": [
+        {
+          "maxLength": 96,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Linked Event Id"
+    },
+    "location": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Location"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "match_clock_ms": {
+      "minimum": 0,
+      "title": "Match Clock Ms",
+      "type": "integer"
+    },
+    "match_id": {
+      "maxLength": 96,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9_-]+$",
+      "title": "Match Id",
+      "type": "string"
+    },
+    "outcome": {
+      "anyOf": [
+        {
+          "maxLength": 32,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Outcome"
+    },
+    "period": {
+      "enum": [
+        1,
+        2
+      ],
+      "title": "Period",
+      "type": "integer"
+    },
+    "player_id": {
+      "anyOf": [
+        {
+          "maxLength": 96,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Player Id"
+    },
+    "possession_id": {
+      "anyOf": [
+        {
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Possession Id"
+    },
+    "related_player_id": {
+      "anyOf": [
+        {
+          "maxLength": 96,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Related Player Id"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "sequence": {
+      "minimum": 0,
+      "title": "Sequence",
+      "type": "integer"
+    },
+    "synthetic": {
+      "const": true,
+      "default": true,
+      "title": "Synthetic",
+      "type": "boolean"
+    },
+    "tags": {
+      "default": [],
+      "items": {
+        "maxLength": 96,
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9_-]+$",
+        "type": "string"
+      },
+      "title": "Tags",
+      "type": "array"
+    },
+    "team_id": {
+      "anyOf": [
+        {
+          "maxLength": 96,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Team Id"
+    },
+    "type": {
+      "enum": [
+        "kickoff",
+        "pass",
+        "carry",
+        "dribble",
+        "shot",
+        "save",
+        "tackle",
+        "interception",
+        "recovery",
+        "clearance",
+        "foul",
+        "card",
+        "substitution",
+        "goal",
+        "period_start",
+        "period_end"
+      ],
+      "title": "Type",
+      "type": "string"
+    },
+    "under_pressure": {
+      "default": false,
+      "title": "Under Pressure",
+      "type": "boolean"
+    },
+    "xg": {
+      "anyOf": [
+        {
+          "maximum": 1,
+          "minimum": 0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Xg"
+    }
+  },
+  "required": [
+    "event_id",
+    "match_id",
+    "sequence",
+    "period",
+    "match_clock_ms",
+    "type"
+  ],
+  "title": "MatchEvent",
+  "type": "object"
+}

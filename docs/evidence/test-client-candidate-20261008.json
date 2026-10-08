@@ -1,0 +1,56 @@
+{
+  "files": {
+    "pyproject.toml": {
+      "sha256": "be39725db70790c7872d34df24f0dacb25a9b2ba8b0962110d4d8f37d625cb94",
+      "size": 1385
+    },
+    "uv.lock": {
+      "sha256": "a41383a89ebaceb32a9b31d6d027da4283f2f382b6b6ddcd288e166bdbb7e529",
+      "size": 93468
+    }
+  },
+  "limitations": "Package resolution and warning-free client import only. Tests, containers and audits must qualify the committed candidate.",
+  "recorded_at": "2026-10-08T09:34:34.713138+00:00",
+  "resolved_versions": {
+    "annotated-doc": "0.0.5",
+    "annotated-types": "0.8.0",
+    "anyio": "4.15.1",
+    "ast-serialize": "0.12.1",
+    "attrs": "26.1.0",
+    "click": "8.5.0",
+    "colorama": "0.4.6",
+    "coverage": "7.16.2",
+    "fastapi": "0.142.4",
+    "h11": "0.16.0",
+    "httpcore2": "2.13.1",
+    "httpx2": "2.13.1",
+    "httpx2-jsfetch": "1.0",
+    "idna": "3.20",
+    "iniconfig": "2.3.1",
+    "jsonschema": "4.26.0",
+    "jsonschema-specifications": "2025.9.1",
+    "librt": "0.16.0",
+    "mypy": "2.4.0",
+    "mypy-extensions": "1.1.0",
+    "opentelemetry-api": "1.45.1",
+    "packaging": "26.3",
+    "pathspec": "1.1.1",
+    "pluggy": "1.6.0",
+    "pydantic": "2.13.5",
+    "pydantic-core": "2.46.5",
+    "pygments": "2.21.0",
+    "pytest": "9.0.3",
+    "pytest-cov": "7.0.0",
+    "referencing": "0.37.0",
+    "rpds-py": "2026.9.1",
+    "ruff": "0.16.10",
+    "starlette": "1.7.0",
+    "truststore": "0.10.4",
+    "typing-extensions": "4.16.0",
+    "typing-inspection": "0.4.4",
+    "uvicorn": "0.48.0"
+  },
+  "run_id": "37757588800",
+  "source_commit": "de8e46fee084465ee1aca8974f32c7c5a49208a4",
+  "status": "CANDIDATE_NOT_QUALIFIED"
+}
