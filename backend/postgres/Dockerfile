@@ -1,14 +1,6 @@
-# Official PostgreSQL 16.15 Alpine image resolved to an immutable digest by
-# hosted candidate run 37778408263. The runtime is patched during image build.
-FROM postgres:16.15-alpine@sha256:721873c34ceb9f8d8fc265984940dc982404c105f19ad51be9fdc5970a6080ea
-
-# The upstream entrypoint calls /usr/local/bin/gosu only when it starts as root.
-# gosu 1.19 is currently built with a Go runtime carrying scanner-reported CVEs.
-# Alpine's su-exec package provides the same user-switch contract without that
-# embedded Go runtime. Use the package-owned /sbin path explicitly: resolving
-# "su-exec" through PATH can select an image-provided compatibility path and made
-# the qualification build hang. Keep the pathname expected by the upstream
-# entrypoint so the entrypoint itself stays unmodified and easy to compare.
+# Build the official PostgreSQL filesystem without the upstream gosu binary.
+# A deletion in a later layer is insufficient: scanners inspect all layers.
+FROM postgres:16.15-alpine@sha256:721873c34ceb9f8d8fc265984940dc982404c105f19ad51be9fdc5970a6080ea AS upstream
 RUN set -eux; \
     apk upgrade --no-cache; \
     apk add --no-cache su-exec; \
@@ -17,3 +9,17 @@ RUN set -eux; \
     printf '#!/bin/sh\nexec /sbin/su-exec "$@"\n' > /usr/local/bin/gosu; \
     chmod 0755 /usr/local/bin/gosu; \
     test "$(/usr/local/bin/gosu postgres id -un)" = "postgres"
+
+# A scratch final stage flattens the patched filesystem into a new image layer.
+# The original upstream layers, including the removed Go executable, are not
+# included in the final artifact. Re-declare the upstream runtime metadata.
+FROM scratch
+COPY --from=upstream / /
+ENV LANG=en_US.utf8
+ENV PG_MAJOR=16
+ENV PGDATA=/var/lib/postgresql/data
+ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+VOLUME /var/lib/postgresql/data
+EXPOSE 5432
+ENTRYPOINT ["docker-entrypoint.sh"]
+CMD ["postgres"]
