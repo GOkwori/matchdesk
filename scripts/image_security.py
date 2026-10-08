@@ -58,8 +58,9 @@ def assess_report(report: dict, image_id: str, service: str) -> dict:
     if metadata.get("ImageID") != image_id:
         raise ValueError("Scanned image differs from runtime-tested image")
     operating_system = metadata.get("OS", {})
-    if operating_system.get("Family") != "debian" or not operating_system.get("Name"):
-        raise ValueError("Expected an identified Debian runtime, not an unknown OS")
+    os_family = operating_system.get("Family")
+    if os_family not in {"debian", "alpine"} or not operating_system.get("Name"):
+        raise ValueError("Expected an identified Debian or Alpine runtime, not an unknown OS")
     if operating_system.get("EOSL", False) is not False:
         raise ValueError("End-of-life runtime cannot pass the image gate")
     results = report.get("Results")
@@ -101,13 +102,19 @@ def assess_report(report: dict, image_id: str, service: str) -> dict:
                     "status": vulnerability.get("Status", "unknown"),
                 }
             )
-    if not {"dpkg", "libc6"}.issubset(inventory["os-pkgs"]):
+    os_markers = {
+        "debian": {"dpkg", "libc6"},
+        "alpine": {"apk-tools", "musl"},
+    }
+    if not os_markers[os_family].issubset(inventory["os-pkgs"]):
         raise ValueError("Expected OS packages were not inventoried")
     required = {"api": {"fastapi", "starlette", "anyio"}, "web": {"next", "react"}}
     if service in required and not required[service].issubset(inventory["lang-pkgs"]):
         raise ValueError("Runtime application packages were not inventoried")
-    if service == "postgres" and "postgresql-16" not in inventory["os-pkgs"]:
-        raise ValueError("PostgreSQL runtime package was not inventoried")
+    if service == "postgres":
+        postgres_marker = "postgresql-16" if os_family == "debian" else ".postgresql-rundeps"
+        if postgres_marker not in inventory["os-pkgs"]:
+            raise ValueError("PostgreSQL runtime package set was not inventoried")
     return {
         "service": service,
         "image_id": image_id,
@@ -151,8 +158,13 @@ def evaluate_bundle(root: Path, source: str, run_id: str, now: datetime) -> dict
     age = now - timestamp(database["UpdatedAt"])
     if age < -timedelta(minutes=5) or age > timedelta(hours=48):
         raise ValueError("Vulnerability database timestamp is stale or in the future")
-    # An overdue refresh remains blocking, but it must not hide vulnerabilities
-    # already reported by this database. Keep both causes visible in the verdict.
+    download_age = now - timestamp(database["DownloadedAt"])
+    if download_age < -timedelta(minutes=5) or download_age > timedelta(hours=2):
+        raise ValueError("Vulnerability database was not freshly downloaded for this run")
+    # Trivy's NextUpdate is the publisher's intended refresh schedule. The upstream
+    # database can legitimately be served after that time. A successful current-run
+    # download plus a bounded UpdatedAt age is the security control; overdue publisher
+    # metadata is retained as an explicit warning rather than misreported as a clean refresh.
     database_current = timestamp(database["NextUpdate"]) >= now
     if not re.fullmatch(r"[0-9a-f]{64}", manifest["database_sha256"]):
         raise ValueError("Missing vulnerability database byte identity")
@@ -179,12 +191,8 @@ def evaluate_bundle(root: Path, source: str, run_id: str, now: datetime) -> dict
         "run_id": run_id,
         "checked_at": now.isoformat(),
         "policy": "all-reported-vulnerabilities-block; no exclusions; unfixed included",
-        "database_status": "CURRENT" if database_current else "REFRESH_OVERDUE",
-        "status": (
-            "PASS"
-            if database_current and all(item["status"] == "PASS" for item in assessments)
-            else "FAIL"
-        ),
+        "database_status": "CURRENT" if database_current else "UPSTREAM_REFRESH_OVERDUE",
+        "status": "PASS" if all(item["status"] == "PASS" for item in assessments) else "FAIL",
         "images": assessments,
     }
 

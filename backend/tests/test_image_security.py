@@ -13,15 +13,22 @@ IMAGE = "sha256:" + "a" * 64
 NOW = datetime(2026, 10, 8, 10, 30, tzinfo=timezone.utc)
 
 
-def sample_report(service: str = "api") -> dict:
+def sample_report(service: str = "api", family: str = "debian") -> dict:
     """Construct only enough explicitly fictional scanner data to exercise policy code."""
-    os_names = ["dpkg", "libc6", "postgresql-16"]
+    if family == "debian":
+        os_names = ["dpkg", "libc6", "postgresql-16"]
+        os_version = "12"
+    elif family == "alpine":
+        os_names = ["apk-tools", "musl", ".postgresql-rundeps"]
+        os_version = "3.24.2"
+    else:
+        raise ValueError("Unsupported synthetic OS family")
     language_names = ["fastapi", "starlette", "anyio"] if service == "api" else ["next", "react"]
     return {
         "SchemaVersion": 2,
         "ArtifactType": "container_image",
         "Trivy": {"Version": "0.75.0"},
-        "Metadata": {"ImageID": IMAGE, "OS": {"Family": "debian", "Name": "12"}},
+        "Metadata": {"ImageID": IMAGE, "OS": {"Family": family, "Name": os_version}},
         "Results": [
             {
                 "Target": "synthetic-os-inventory",
@@ -48,6 +55,7 @@ def sample_bundle(root: Path) -> None:
         "Version": 2,
         "UpdatedAt": "2026-10-08T09:00:00Z",
         "NextUpdate": "2026-10-08T15:00:00Z",
+        "DownloadedAt": "2026-10-08T10:20:00Z",
     }
     values = {"runtime-checks.json": runtime, "db-metadata.json": database}
     values.update({f"{name}.json": sample_report(name) for name in ("api", "web", "postgres")})
@@ -65,9 +73,10 @@ def sample_bundle(root: Path) -> None:
 
 
 @pytest.mark.parametrize("service", ["api", "web", "postgres"])
-def test_real_inventory_is_required_even_for_zero_findings(service: str) -> None:
-    """A correctly identified populated report may pass for each required service."""
-    result = assess_report(sample_report(service), IMAGE, service)
+@pytest.mark.parametrize("family", ["debian", "alpine"])
+def test_real_inventory_is_required_even_for_zero_findings(service: str, family: str) -> None:
+    """A populated Debian or Alpine report may pass for each required service."""
+    result = assess_report(sample_report(service, family), IMAGE, service)
     assert result["status"] == "PASS"
     assert result["os_packages"] == 3
 
@@ -115,6 +124,14 @@ def test_incomplete_or_modified_reports_cannot_appear_clean(defect: str) -> None
         assess_report(report, IMAGE, "api")
 
 
+def test_unknown_os_family_is_rejected() -> None:
+    """Adding a new base family requires an explicit inventory policy."""
+    report = sample_report()
+    report["Metadata"]["OS"]["Family"] = "unknown-os"
+    with pytest.raises(ValueError, match="Debian or Alpine"):
+        assess_report(report, IMAGE, "api")
+
+
 def test_bundle_requires_all_three_images_and_matching_source(tmp_path: Path) -> None:
     """The gate binds a complete collection to the expected source and workflow run."""
     sample_bundle(tmp_path)
@@ -151,8 +168,8 @@ def test_bundle_rejects_incomplete_or_failed_scans(tmp_path: Path, defect: str) 
 
 
 @pytest.mark.parametrize("date", ["2026-10-05T10:00:00Z", "2026-10-10T10:00:00Z"])
-def test_database_must_be_fresh_and_not_future_dated(tmp_path: Path, date: str) -> None:
-    """A cached or future-dated database cannot establish current security evidence."""
+def test_database_content_must_be_recent_and_not_future_dated(tmp_path: Path, date: str) -> None:
+    """Old or future advisory content cannot establish current security evidence."""
     sample_bundle(tmp_path)
     path = tmp_path / "db-metadata.json"
     database = json.loads(path.read_text())
@@ -163,6 +180,22 @@ def test_database_must_be_fresh_and_not_future_dated(tmp_path: Path, date: str) 
     manifest["files"][path.name] = file_hash(path)
     manifest_path.write_text(json.dumps(manifest))
     with pytest.raises(ValueError, match="stale or in the future"):
+        evaluate_bundle(tmp_path, "test-source", "42", NOW)
+
+
+@pytest.mark.parametrize("date", ["2026-10-08T07:00:00Z", "2026-10-08T11:00:00Z"])
+def test_database_must_be_downloaded_for_the_current_run_window(tmp_path: Path, date: str) -> None:
+    """A current metadata file cannot mask reuse of an old or future local database."""
+    sample_bundle(tmp_path)
+    path = tmp_path / "db-metadata.json"
+    database = json.loads(path.read_text())
+    database["DownloadedAt"] = date
+    path.write_text(json.dumps(database))
+    manifest_path = tmp_path / "manifest.json"
+    manifest = json.loads(manifest_path.read_text())
+    manifest["files"][path.name] = file_hash(path)
+    manifest_path.write_text(json.dumps(manifest))
+    with pytest.raises(ValueError, match="freshly downloaded"):
         evaluate_bundle(tmp_path, "test-source", "42", NOW)
 
 
@@ -177,8 +210,10 @@ def test_timezone_and_input_immutability() -> None:
 
 
 @pytest.mark.parametrize("with_finding", [False, True])
-def test_overdue_refresh_blocks_without_hiding_findings(tmp_path: Path, with_finding: bool) -> None:
-    """A fresh download of overdue metadata is still blocked and must retain image findings."""
+def test_overdue_upstream_schedule_is_visible_but_does_not_override_findings(
+    tmp_path: Path, with_finding: bool
+) -> None:
+    """Freshly downloaded recent data may pass an overdue publisher schedule only if scans are clean."""
     sample_bundle(tmp_path)
     path = tmp_path / "db-metadata.json"
     database = json.loads(path.read_text())
@@ -197,7 +232,7 @@ def test_overdue_refresh_blocks_without_hiding_findings(tmp_path: Path, with_fin
         manifest["files"][name] = file_hash(tmp_path / name)
     manifest_path.write_text(json.dumps(manifest))
     result = evaluate_bundle(tmp_path, "test-source", "42", NOW)
-    assert result["status"] == "FAIL"
-    assert result["database_status"] == "REFRESH_OVERDUE"
+    assert result["status"] == ("FAIL" if with_finding else "PASS")
+    assert result["database_status"] == "UPSTREAM_REFRESH_OVERDUE"
     assert len(result["images"]) == 3
     assert result["images"][0]["finding_count"] == int(with_finding)
