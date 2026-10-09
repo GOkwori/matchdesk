@@ -19,10 +19,14 @@ def test_retryable_failure_consumes_one_attempt_then_succeeds() -> None:
     """A transient runtime failure retries the same role within policy."""
 
     class Executor:
+        """Fail once with an explicit transient error, then return a valid response."""
+
         def __init__(self):
+            """Initialize the deterministic call counter."""
             self.calls = 0
 
         async def execute(self, request, tools):
+            """Raise once, then return a role-matched specialist response."""
             self.calls += 1
             if self.calls == 1:
                 raise RetryableSpecialistError("temporary provider failure")
