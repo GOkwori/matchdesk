@@ -160,6 +160,21 @@ class ScopedReadTools:
         self._require("verification_result")
         return self._verification.get(claim_id)
 
+    def snapshot(self) -> dict[str, object]:
+        """Return one immutable JSON-ready snapshot restricted to the role's read scope."""
+        snapshot: dict[str, object] = {"allowed_tools": sorted(self.allowed_tools)}
+        if "event_by_id" in self.allowed_tools or "events_in_window" in self.allowed_tools:
+            snapshot["events"] = [event.model_dump(mode="json") for event in self._events]
+        if "evidence_record" in self.allowed_tools:
+            snapshot["evidence_records"] = [
+                record.model_dump(mode="json") for record in self._evidence.values()
+            ]
+        if "verification_result" in self.allowed_tools:
+            snapshot["verification_results"] = [
+                result.model_dump(mode="json") for result in self._verification.values()
+            ]
+        return snapshot
+
 
 def execute_specialist(
     executor: SpecialistExecutor,
