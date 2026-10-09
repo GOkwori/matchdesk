@@ -102,9 +102,7 @@ async def _run() -> LiveEvaluationEvidence:
         total_tokens=execution.total_tokens,
         proposed_claim_count=len(execution.response.proposed_claims),
         evaluation_status=evaluation.status,
-        verification_statuses=tuple(
-            result.status for result in evaluation.verification_results
-        ),
+        verification_statuses=tuple(result.status for result in evaluation.verification_results),
         evidence_digest=content_digest(evidence),
         store=False,
         max_output_tokens=config.max_output_tokens,
