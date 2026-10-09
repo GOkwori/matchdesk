@@ -1,6 +1,6 @@
 # Current progress
 
-Date: 9 October 2026. Stage: Phase 2 in progress; P2-01 through P2-04 TESTED; P2-05 deterministic qualification PASS / live model evaluation pending.
+Date: 9 October 2026. Stage: Phase 2 in progress; P2-01 through P2-05 TESTED; P2-06 Phase 2 review next.
 Phase 0 gate: **VERIFIED / COMPLETED**.
 
 The engineering foundation was merged through the protected `main` path and the
@@ -206,9 +206,19 @@ recovery without resetting attempt history, deterministic acceptance of evidence
 tactical inference, blocking of evidence-unbound claims, recomputation/revision of false
 measured claims and rejection of natural prose without an evidence-bound claim.
 
-P2-05 remains IN PROGRESS until the separately gated manual
-`P2E live Foundry evaluation` workflow executes exactly one bounded live model call
-against `development` and retains its non-secret evaluation evidence.
+The separately gated manual `P2E live Foundry evaluation` workflow has now completed.
+Run 37941568298 executed exactly one bounded live model call against development source
+`94fa73a37d69dbd03bf14820da63aeee5694383e` and passed. The run retained 2,007 input
+tokens, 117 output tokens, 2,124 total tokens, 8,187 ms measured latency, one proposed
+claim, `store=False`, the locked 1,200-token output ceiling, evaluation status `pass`
+and deterministic verification status `supported_inference`. Evidence digest:
+`6b46703808ef501667ad7cf994207e4298439a41bc75fa44c0f63e2cfaca9645`.
+
+Artifact `p2e-live-foundry-evidence` was retained as artifact ID `11621674108` with
+digest `sha256:20665b333b121aa85abe05b006b3e456fee43def3524ae9488c46ff291888958`.
+
+P2-05 is therefore TESTED for its defined deterministic-resilience and bounded live
+model-evaluation scope. P2-06 Phase 2 review is next.
 
 ## Historical native-image remediation before final qualification
 
