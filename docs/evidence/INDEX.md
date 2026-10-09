@@ -3,6 +3,26 @@
 Results are tied to source commits and execution environments. A passing build is not
 an approval to deploy, and evidence from one source is not relabelled as another.
 
+## Phase 2D Agent Framework / Foundry runtime adapter
+
+- [Phase 2D Foundry runtime adapter qualification](phase2d-foundry-runtime-adapter-20261009.md)
+  records the fail-closed async runtime adapter, bounded structured output, host-scoped
+  read snapshots and retained live-qualification blockers on source
+  `42894407299d4b0a0594f88d364dc8b92586a845`.
+- Foundation CI 37880853903 passed 257 Python tests with 96.68% measured total package
+  coverage; the new Foundry adapter module measured 81% because the real Microsoft
+  client/network path was intentionally not executed.
+- Dependency audit 37880853720, Source security 37880853746 and Foundation integration
+  37880853750 also passed, including runtime/browser and the independent native-image
+  verdict.
+- A dependency-declaration attempt was correctly rejected by the locked-dependency gate
+  because `uv.lock` had not been resolver-generated. The unqualified declaration was
+  reverted; no lock was guessed and no gate was weakened.
+
+P2-04 is **BLOCKED — ADAPTER QUALIFIED**, not TESTED. Live qualification still requires
+a reviewed Agent Framework / Foundry dependency lock plus a real Foundry endpoint,
+model deployment and authenticated credential context. No live model call is claimed.
+
 ## Phase 2C scoped specialist execution interfaces
 
 - [Phase 2C specialist-interface qualification](phase2c-specialist-interfaces-20261008.md)
