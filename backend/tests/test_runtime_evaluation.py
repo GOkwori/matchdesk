@@ -1,7 +1,13 @@
 """P2-05 tests for deterministic live-model evaluation."""
 
 from matchdesk.domain.metrics import compute_metric
-from matchdesk.domain.models import Claim, EvidenceRecord, MatchWindow, MetricAssertion, Subject
+from matchdesk.domain.models import (
+    Claim,
+    EvidenceRecord,
+    MatchWindow,
+    MetricAssertion,
+    Subject,
+)
 from matchdesk.domain.runtime_evaluation import evaluate_specialist_response
 from matchdesk.domain.simulator import generate_scenario
 from matchdesk.domain.specialists import SpecialistResponse
