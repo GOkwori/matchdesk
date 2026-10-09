@@ -1,6 +1,6 @@
 # MatchDesk project specification
 
-Owner: George Okwori. Baseline: 8 October 2026. Status: IN_PROGRESS; Phase 0 and Phase 1 VERIFIED / COMPLETED, Phase 2 P2-01 TESTED.
+Owner: George Okwori. Baseline: 8 October 2026. Status: IN_PROGRESS; Phase 0 and Phase 1 VERIFIED / COMPLETED, Phase 2 P2-01 through P2-05 TESTED and P2-06 in technical closure review.
 
 ## Purpose and users
 
@@ -54,7 +54,7 @@ Phase 1 builds the deterministic engine. P1-01 synthetic generation, P1-02 tempo
 ingestion, P1-03 roster/score/possession reduction, P1-04 registered football metrics
 and P1-05 deterministic moment detection are TESTED. P1-06 technical review passed,
 the exact closure head was owner-approved and merged, and Phase 1 is VERIFIED /
-COMPLETED, with the final status record on main commit `8e110607c6877efca431debe7f8b69b5f53db9d9`. Phase 2 adds agent orchestration and verification. P2-01, the model-independent typed orchestration control plane, is TESTED; P2-02 deterministic claim verification is next.
+COMPLETED, with the final status record on main commit `8e110607c6877efca431debe7f8b69b5f53db9d9`. Phase 2 adds bounded agent orchestration and verification. P2-01 through P2-05 are TESTED, including scoped specialist execution, real Foundry integration, bounded retry/timeout/recovery controls, deterministic model evaluation and one successful live model-evaluation run. P2-06 technical closure review is in progress.
 Phase 3 completes producer and audience flows. Phase 4 qualifies reliability and security.
 Phase 5 packages the demonstration and submission. Work stops at each owner review gate.
 The internal submission target is 26 October 2026.
@@ -84,6 +84,9 @@ before those capabilities are implemented. The [decision log](decisions/ADR-0005
 records the boundaries. The deterministic Phase 1 path currently includes the tested
 synthetic engine, temporal ingestor, football-state reducer, registered metric engine and
 five deterministic moment detectors. P1-06 is COMPLETE and Phase 1 is VERIFIED /
-COMPLETED. Phase 2 now includes a TESTED bounded orchestration control plane with four
-locked specialist roles, typed state, retry/timeout/recovery budgets and a deterministic
-verification hand-off. P2-02 claim verification is next. Live model and Azure work remain later controlled decisions.
+COMPLETED. Phase 2 now includes TESTED bounded orchestration with four locked specialist roles,
+typed state, retry/timeout/recovery budgets, deterministic claim verification, scoped
+read-only specialist tools and a fail-closed Microsoft Agent Framework / Foundry runtime.
+A bounded live tactical proposal has also passed deterministic evaluation as
+`supported_inference`. P2-06 closure review remains subject to fresh exact-head
+qualification, explicit owner approval and protected promotion.
