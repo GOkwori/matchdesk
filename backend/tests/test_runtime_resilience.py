@@ -2,7 +2,7 @@
 
 import asyncio
 
-from matchdesk.domain.orchestration import start_workflow
+from matchdesk.domain.orchestration import RolePolicy, start_workflow
 from matchdesk.domain.runtime_resilience import (
     RetryableSpecialistError,
     execute_bounded_specialist,
@@ -89,10 +89,7 @@ def test_timeout_is_classified_and_bounded() -> None:
             instruction="Analyse the bounded event context.",
             executor=Executor(),
             tools=ScopedReadTools(role="tactical_analyst", events=()),
-            policy=__import__(
-                "matchdesk.domain.orchestration",
-                fromlist=["RolePolicy"],
-            ).RolePolicy(
+            policy=RolePolicy(
                 role="tactical_analyst",
                 max_attempts=2,
                 timeout_ms=1,
