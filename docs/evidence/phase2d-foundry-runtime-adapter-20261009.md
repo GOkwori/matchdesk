@@ -66,6 +66,23 @@ weakened and no dependency gate was bypassed. The unqualified declarations were
 reverted and the temporary resolver workflow was removed before the clean adapter
 qualification above.
 
+## Strengthened live-smoke evidence boundary
+
+The repository-side live smoke harness was strengthened on source
+`43de0b8b645de658aaefb502ea8025c94a9df3bc` so a real Foundry qualification must
+capture actual input/output/total token counts, latency, deployed model identity,
+structured specialist output and a deterministic P2-02 verification result. The smoke
+requires at least one evidence-bound tactical-inference claim whose event IDs are all
+present in the supplied deterministic scenario, and it must classify as
+`supported_inference` through the registered verifier.
+
+That exact source passed Foundation CI 37898724453, Dependency audit 37898724620,
+Source security 37898724364 and Foundation integration 37898724344, including
+runtime/browser and the independent native-image verdict.
+
+The harness still provisions nothing and still uses the locked 1,200-token output
+ceiling with `store=False`.
+
 ## Live-qualification blocker
 
 The reviewed live dependency lock is now resolved. The repository pins
