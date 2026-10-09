@@ -52,7 +52,7 @@ Final Phase 1 status `main`: `8e110607c6877efca431debe7f8b69b5f53db9d9`.
 
 ## Phase 2 — bounded agent orchestration and verification
 
-Phase 2 is in progress. P2-01 through P2-05 are TESTED. P2-05 completed deterministic resilience/evaluation qualification and one bounded live Foundry model-evaluation run on source `94fa73a37d69dbd03bf14820da63aeee5694383e`. P2-06 Phase 2 review is next.
+Phase 2 is in technical closure review. P2-01 through P2-05 are TESTED. P2-06 has a technical review candidate with PASS subject to fresh exact-head qualification and explicit owner approval.
 
 | ID | Work | Status | Acceptance evidence |
 |---|---|---|---|
@@ -61,7 +61,7 @@ Phase 2 is in progress. P2-01 through P2-05 are TESTED. P2-05 completed determin
 | P2-03 | Implement specialist execution interfaces and scoped read tools | TESTED | Host-owned role scopes, immutable proposal envelopes and read-only deterministic tools |
 | P2-04 | Integrate four specialist runtimes with Agent Framework / Foundry | TESTED | Adapter + locked dependencies qualified; live run 37923842661 passed with bounded token usage, retained evidence and `supported_inference` verification |
 | P2-05 | Qualify end-to-end retries, timeouts, recovery and model evaluation | TESTED | Exact-head CI qualified deterministic resilience/evaluation paths; live run 37941568298 passed with one evidence-bound tactical claim, `supported_inference` and retained non-secret evidence |
-| P2-06 | Review Phase 2 | PLANNED | Source-bound evidence and exact-head owner decision |
+| P2-06 | Review Phase 2 | IN REVIEW | Technical review candidate PASS; fresh exact-head qualification and explicit owner approval required before protected merge |
 
 P2-01 qualification: [Phase 2A orchestration control-plane evidence](../evidence/phase2a-orchestration-control-plane-20261008.md).
 
