@@ -3,6 +3,23 @@
 Results are tied to source commits and execution environments. A passing build is not
 an approval to deploy, and evidence from one source is not relabelled as another.
 
+## Phase 2C scoped specialist execution interfaces
+
+- [Phase 2C specialist-interface qualification](phase2c-specialist-interfaces-20261008.md)
+  records the model-agnostic SpecialistExecutor boundary, host-owned role permissions,
+  frozen proposal envelopes and read-only deterministic tool scopes on source
+  `e50758ca358f8d6bb8596e4a1a89eeeb0f752df7`.
+- Foundation CI 37834593314 passed 247 Python tests with 98.57% measured total package
+  coverage; the new specialists module measured 99% coverage.
+- Dependency audit 37834593361, Source security 37834593365 and Foundation integration
+  37834593382 also passed, including runtime/browser and the independent native-image
+  verdict.
+- Earlier candidates retain the real first-window assertion/docstring/style failure and
+  the later style-only failure; no gate was disabled or waived.
+
+P2-03 is TESTED. P2-04 live specialist runtime integration is next but still requires
+the separately defined live-model, credential and cost approval.
+
 ## Phase 2B deterministic claim verification
 
 - [Phase 2B claim-verification qualification](phase2b-claim-verification-20261008.md)
