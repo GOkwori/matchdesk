@@ -1,12 +1,15 @@
 # Phase 2 closure review — 9 October 2026
 
-Status: **TECHNICAL REVIEW CANDIDATE — OWNER DECISION PENDING**.
+Status: **OWNER APPROVED / PROMOTED — POST-MERGE QUALIFICATION PENDING**.
 
-Review candidate source:
-`467101ca78614b23885f2451c5224e83be940901`.
+Exact owner-approved closure source:
+`5203157474bea186d1c3c1fc604e813fd225f3e1`.
 
-Protected promotion target at review preparation:
+Protected promotion base:
 `main` `c722f77896124bcc42ac11ef9aa21fcf3a2c3772`.
+
+Protected PR #36 was squash-merged after approval as main commit
+`aedc840432ca0a868aa091a81ee60c93bb935db4`.
 
 ## Scope reviewed
 
@@ -44,7 +47,7 @@ locked 1,200-token output ceiling. Its retained artifact digest is
 
 ## Technical review result
 
-**PASS, subject to exact-head closure qualification and explicit owner approval.**
+**PASS.** Exact-head qualification and explicit owner approval are complete.
 
 The reviewed implementation demonstrates that:
 
@@ -80,16 +83,16 @@ Those belong to later phases and remain separately gated.
 
 ## Closure gate
 
-Before P2-06 can be marked COMPLETE:
+The exact owner-approved closure source
+`5203157474bea186d1c3c1fc604e813fd225f3e1` passed Foundation CI 37947632341,
+Dependency audit 37947632303, Source security 37947632301 and Foundation integration
+37947632364. George explicitly approved that head against protected main base
+`c722f77896124bcc42ac11ef9aa21fcf3a2c3772`.
 
-1. this closure documentation must receive fresh hosted qualification on its exact
-   development head;
-2. Foundation CI, Dependency audit, Source security and Foundation integration must all
-   pass on that exact head;
-3. the owner must explicitly approve the exact proposed development head and protected
-   main base;
-4. promotion must occur through the protected pull-request path;
-5. post-merge evidence must preserve the resulting main commit identity.
+PR #36 was then promoted through the protected path and squash-merged as
+`aedc840432ca0a868aa091a81ee60c93bb935db4`.
 
-Until those steps complete, Phase 2 remains **IN PROGRESS** and this document is a
-technical review candidate rather than final closure approval.
+The remaining closure action is a clean post-merge qualification on main. No GitHub
+Actions push run was created for the squash commit above, so P2-06 is not yet labelled
+VERIFIED / COMPLETED. This follow-up closure-only promotion exists to create a clean
+post-merge qualification point without changing Phase 2 runtime behaviour.
