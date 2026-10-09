@@ -3,6 +3,35 @@
 Results are tied to source commits and execution environments. A passing build is not
 an approval to deploy, and evidence from one source is not relabelled as another.
 
+## Phase 2 closure review
+
+- [Phase 2 closure review candidate](phase2-closure-review-20261009.md) records the
+  P2-01 through P2-05 qualification matrix, remaining authority boundaries and the
+  technical review result.
+- Technical review result: **PASS subject to fresh exact-head qualification and
+  explicit owner approval**.
+- P2-06 remains **IN REVIEW** until the closure documentation head passes all required
+  hosted workflows, the owner approves the exact development head against protected
+  main, and promotion completes through the pull-request path.
+
+## Phase 2E failure/retry/recovery and model evaluation
+
+- [P2-05 live Foundry model evaluation](phase2e-live-model-evaluation-20261009.md)
+  records successful manual workflow run 37941568298 on development source
+  `94fa73a37d69dbd03bf14820da63aeee5694383e`.
+- The live run used 2,007 input tokens, 117 output tokens and 2,124 total tokens with
+  8,187 ms measured latency, one proposed tactical claim, `store=False`, evaluation
+  status `pass` and deterministic verification status `supported_inference`.
+- Artifact `p2e-live-foundry-evidence` was retained as artifact ID `11621674108`
+  with digest
+  `sha256:20665b333b121aa85abe05b006b3e456fee43def3524ae9488c46ff291888958`.
+- Exact-head deterministic qualification for the same P2-05 implementation passed
+  Foundation CI 37937767196 (270 tests, 96.85% coverage), Dependency audit
+  37937767422, Source security 37937767189 and Foundation integration 37937767394.
+
+P2-05 is **TESTED** for its defined resilience and bounded live model-evaluation scope.
+P2-06 Phase 2 review is next.
+
 ## Phase 2D Agent Framework / Foundry runtime adapter
 
 - [Phase 2D Foundry runtime adapter qualification](phase2d-foundry-runtime-adapter-20261009.md)

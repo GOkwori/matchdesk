@@ -1,6 +1,6 @@
 # Architecture and trust boundaries
 
-Status: proposed whole-system design with Phase 0/1 implemented and Phase 2A orchestration control plane TESTED.
+Status: proposed whole-system design with Phase 0/1 implemented and Phase 2 P2-01 through P2-05 TESTED; Phase 2 closure review in progress.
 
 ```mermaid
 flowchart TB
@@ -19,17 +19,21 @@ flowchart TB
 
 The modular backend separates simulation, ingestion, state, intelligence, verification,
 agents, API and infrastructure. Phase 1 implements the deterministic simulator, ingestion,
-reducer, registered metrics and moment detection. Phase 2A adds a model-independent typed
-orchestration control plane for the four specialist roles, with bounded retry, timeout,
-recovery and deterministic verification hand-off. No persistence adapter or live agent
-execution is represented as complete.
+reducer, registered metrics and moment detection. Phase 2 implements a model-independent
+typed orchestration control plane for four specialist roles, scoped read-only specialist
+tools, deterministic claim verification, a fail-closed Microsoft Agent Framework / Foundry
+runtime, bounded retry/timeout/recovery controls and deterministic model-output evaluation.
+One bounded live Foundry tactical proposal has passed the same evidence-verification path.
+Durable production workflow persistence and producer publication remain later work.
 
 Numerical truth belongs to registered deterministic queries. Narrative reasoning is
 an interpretation of that evidence. Publishing authority belongs to an authenticated
 producer action, never an agent's generated status. Model/tool calls use scoped read
-interfaces and cannot modify metric evidence or approval records. The Phase 2A controller,
+interfaces and cannot modify metric evidence or approval records. The Phase 2 controller,
 not a specialist runtime, owns role order, retry budget, timeout classification, recovery
-budget and eligibility to cross the verification hand-off.
+budget and eligibility to cross the verification hand-off. Live model output remains a
+non-authoritative proposal and must pass deterministic evaluation before later workflow
+stages can rely on it.
 
 Replay cursors, workflow identities and published outputs must include session and
 replay generation. Resetting one judge session cannot invalidate another. A future
