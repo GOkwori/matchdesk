@@ -52,7 +52,7 @@ Final Phase 1 status `main`: `8e110607c6877efca431debe7f8b69b5f53db9d9`.
 
 ## Phase 2 — bounded agent orchestration and verification
 
-Phase 2 is in progress. P2-01 through P2-04 are TESTED. P2-04 completed one bounded live Agent Framework / Foundry invocation with retained telemetry and deterministic verification; P2-05 is next.
+Phase 2 is in progress. P2-01 through P2-04 are TESTED. P2-05 deterministic failure/retry/recovery and model-evaluation controls are qualified on exact head `c20aded022f423226714f775816487a14044d879`; one bounded live P2-05 model-evaluation run remains.
 
 | ID | Work | Status | Acceptance evidence |
 |---|---|---|---|
@@ -60,7 +60,7 @@ Phase 2 is in progress. P2-01 through P2-04 are TESTED. P2-04 completed one boun
 | P2-02 | Implement deterministic claim verifier | TESTED | Recompute measured claims; bind exact evidence; support tactical inference without upgrading prose to fact |
 | P2-03 | Implement specialist execution interfaces and scoped read tools | TESTED | Host-owned role scopes, immutable proposal envelopes and read-only deterministic tools |
 | P2-04 | Integrate four specialist runtimes with Agent Framework / Foundry | TESTED | Adapter + locked dependencies qualified; live run 37923842661 passed with bounded token usage, retained evidence and `supported_inference` verification |
-| P2-05 | Qualify end-to-end retries, timeouts, recovery and model evaluation | PLANNED | Failure injection, bounded recovery, false-claim and natural-output evaluation |
+| P2-05 | Qualify end-to-end retries, timeouts, recovery and model evaluation | IN PROGRESS — DETERMINISTIC GATES QUALIFIED | Exact-head CI passes retry, timeout, recovery, authority-boundary, false-claim and natural-output evaluation; one bounded live model-evaluation run remains |
 | P2-06 | Review Phase 2 | PLANNED | Source-bound evidence and exact-head owner decision |
 
 P2-01 qualification: [Phase 2A orchestration control-plane evidence](../evidence/phase2a-orchestration-control-plane-20261008.md).
