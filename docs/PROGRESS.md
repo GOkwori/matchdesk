@@ -171,12 +171,17 @@ construction/network path was intentionally not executed. See the
 P2-04 is not TESTED. The dependency-lock blocker is now RESOLVED: the repository pins
 `agent-framework-foundry==1.14.1` and `azure-identity==1.26.0`, with a matching
 resolver-generated `uv.lock`. Exact source
-`74107ec777a904b8714855178a27ca35a48a7002` passed Foundation CI 37895765822,
-Dependency audit 37895765998, Source security 37895765838 and Foundation integration
-37895765866, including runtime/browser and independent native-image qualification.
+`726e49578c201b30896f15b8f7ac4d2073f162e2` passed Foundation CI 37896174178,
+Dependency audit 37896174208, Source security 37896174216 and Foundation integration
+37896174180, including runtime/browser and independent native-image qualification.
+Foundation CI ran 258 tests and verified the required API surface directly against the
+installed pinned Microsoft packages.
 
 The sole remaining P2-04 blocker is a real Foundry project endpoint, deployed model name
-and authenticated credential context for one bounded live specialist smoke test.
+and authenticated credential context for one bounded live specialist smoke test. The
+versioned `scripts/p2d_live_foundry_smoke.py` harness is ready to execute exactly one
+tactical specialist turn with the existing 1,200-token ceiling, structured output and
+`store=False`, emitting only non-secret evidence.
 No Foundry/Azure resource was provisioned by this work and no live model invocation is
 claimed yet. P2-05 remains PLANNED until P2-04 live qualification completes.
 
