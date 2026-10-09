@@ -236,3 +236,5 @@ status. `latest.json` identifies the latest **local collection**, not the latest
 build. Early attempt logs remain under `initial-attempts`; they are not attributed to
 later source. Python 3.13.5 results are supplementary to hosted Python 3.12 qualification.
 No cloud deployment, live model execution or production certification is implied.
+
+P2-04 strengthened live-smoke readiness: source `43de0b8b645de658aaefb502ea8025c94a9df3bc` passed all four hosted workflow groups; only real Foundry endpoint/model/authentication remains.
