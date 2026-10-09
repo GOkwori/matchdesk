@@ -1,6 +1,6 @@
 # Current progress
 
-Date: 9 October 2026. Stage: Phase 2 in progress; P2-01 through P2-04 TESTED; P2-05 next.
+Date: 9 October 2026. Stage: Phase 2 in progress; P2-01 through P2-04 TESTED; P2-05 deterministic qualification PASS / live model evaluation pending.
 Phase 0 gate: **VERIFIED / COMPLETED**.
 
 The engineering foundation was merged through the protected `main` path and the
@@ -190,7 +190,25 @@ Artifact `p2d-live-foundry-evidence` was retained with digest
 
 P2-04 is therefore TESTED for the bounded live-runtime scope. This does not authorize
 publication, production deployment, unrestricted agent autonomy or additional model
-spend. P2-05 failure/retry/recovery and model evaluation is next.
+spend.
+
+P2-05 deterministic failure/retry/recovery and model-evaluation controls are now
+qualified on exact development source `c20aded022f423226714f775816487a14044d879`.
+Foundation CI 37937767196 passed 270 tests on Python 3.12.15 with 96.85% measured
+package coverage; repository contract/comment checks, Ruff lint/format and strict mypy
+also passed. Dependency audit 37937767422, Source security 37937767189 and Foundation
+integration 37937767394 all passed on the same exact source.
+
+The qualified P2-05 scope covers one bounded retry followed by success, retry-budget
+exhaustion to fallback, host timeout classification and fallback, immediate blocking of
+host permission failures, blocking of role-mismatched responses, persisted workflow
+recovery without resetting attempt history, deterministic acceptance of evidence-bound
+tactical inference, blocking of evidence-unbound claims, recomputation/revision of false
+measured claims and rejection of natural prose without an evidence-bound claim.
+
+P2-05 remains IN PROGRESS until the separately gated manual
+`P2E live Foundry evaluation` workflow executes exactly one bounded live model call
+against `development` and retains its non-secret evaluation evidence.
 
 ## Historical native-image remediation before final qualification
 
