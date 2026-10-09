@@ -1,6 +1,6 @@
 # Current progress
 
-Date: 9 October 2026. Stage: Phase 2 in progress; P2-01 through P2-05 TESTED; P2-06 Phase 2 review next.
+Date: 9 October 2026. Stage: Phase 2 promoted; P2-01 through P2-05 TESTED; P2-06 owner-approved and merged, post-merge qualification pending.
 Phase 0 gate: **VERIFIED / COMPLETED**.
 
 The engineering foundation was merged through the protected `main` path and the
@@ -219,6 +219,21 @@ digest `sha256:20665b333b121aa85abe05b006b3e456fee43def3524ae9488c46ff291888958`
 
 P2-05 is therefore TESTED for its defined deterministic-resilience and bounded live
 model-evaluation scope. P2-06 Phase 2 review is next.
+
+
+
+P2-06 technical review passed on exact closure head
+`5203157474bea186d1c3c1fc604e813fd225f3e1`. Foundation CI 37947632341,
+Dependency audit 37947632303, Source security 37947632301 and Foundation integration
+37947632364 all passed on that exact source. George explicitly approved that head
+against protected main base `c722f77896124bcc42ac11ef9aa21fcf3a2c3772`, and PR #36
+was squash-merged through the protected path as
+`aedc840432ca0a868aa091a81ee60c93bb935db4`.
+
+No main push workflow runs were emitted for that squash commit, so Phase 2 is not yet
+labelled VERIFIED / COMPLETED. A closure-only follow-up promotion is being used to
+produce a clean post-merge qualification point without changing Phase 2 runtime
+behaviour or authority boundaries.
 
 ## Historical native-image remediation before final qualification
 
