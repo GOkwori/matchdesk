@@ -25,9 +25,13 @@ an approval to deploy, and evidence from one source is not relabelled as another
   37896174180. Foundation CI ran 258 tests and verified the required API surface against
   the actual installed Microsoft packages.
 
-P2-04 is **BLOCKED — ADAPTER + LOCK QUALIFIED**, not TESTED. The sole remaining
-qualification blocker is a real Foundry endpoint/model plus authenticated credential
-context for the bounded live smoke harness. No live model call is claimed.
+- [P2-04 live Foundry smoke qualification](phase2d-live-foundry-smoke-20261009.md)
+  records successful manual workflow run 37923842661 on development source
+  `f1ba3a9ae2b6e2e54de727761763085ee77776d8`, with 2,009 input tokens,
+  104 output tokens, 2,113 total tokens, 6,763 ms latency, one tactical claim,
+  `store=False`, and deterministic `supported_inference` verification.
+
+P2-04 is **TESTED** for the bounded live-runtime scope. P2-05 is next.
 
 ## Phase 2C scoped specialist execution interfaces
 
