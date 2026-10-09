@@ -3,6 +3,17 @@
 Results are tied to source commits and execution environments. A passing build is not
 an approval to deploy, and evidence from one source is not relabelled as another.
 
+## Phase 2 closure review
+
+- [Phase 2 closure review candidate](phase2-closure-review-20261009.md) records the
+  P2-01 through P2-05 qualification matrix, remaining authority boundaries and the
+  technical review result.
+- Technical review result: **PASS subject to fresh exact-head qualification and
+  explicit owner approval**.
+- P2-06 remains **IN REVIEW** until the closure documentation head passes all required
+  hosted workflows, the owner approves the exact development head against protected
+  main, and promotion completes through the pull-request path.
+
 ## Phase 2E failure/retry/recovery and model evaluation
 
 - [P2-05 live Foundry model evaluation](phase2e-live-model-evaluation-20261009.md)
