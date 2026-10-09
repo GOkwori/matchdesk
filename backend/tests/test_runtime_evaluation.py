@@ -82,3 +82,33 @@ def test_evaluation_marks_unbound_claim_blocked() -> None:
 
     assert evaluation.status == "blocked"
     assert evaluation.verification_results[0].status == "blocked"
+
+
+def test_evaluation_marks_false_measured_claim_for_revision() -> None:
+    """A numerically false model claim is recomputed instead of trusted."""
+    events = _events()
+    event = next(item for item in events if item.team_id is not None)
+    subject = Subject(team_id=event.team_id)
+    window = MatchWindow(period=1, from_ms=0, to_ms=2_100_000)
+    observed = compute_metric("shots.v1", events, subject, window)
+    claim = Claim(
+        claim_id="claim-false-stat",
+        text="The team recorded a different shot total.",
+        kind="measured_stat",
+        assertion=MetricAssertion(
+            metric="shots.v1",
+            subject=subject,
+            window=window,
+            comparator="eq",
+            value=observed + 1.0,
+            unit="count",
+        ),
+        evidence_event_ids=(event.event_id,),
+    )
+    evaluation = evaluate_specialist_response(
+        SpecialistResponse(role="tactical_analyst", proposed_claims=(claim,)),
+        _evidence(events),
+        events,
+    )
+    assert evaluation.status == "needs_revision"
+    assert evaluation.verification_results[0].observed == observed
