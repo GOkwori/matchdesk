@@ -23,6 +23,10 @@ from matchdesk.domain.specialists import (
 FailureKind = Literal["timeout", "retryable_failure", "blocked", "invalid_response"]
 
 
+class RetryableSpecialistError(RuntimeError):
+    """Signal a transient runtime failure that may consume one bounded retry."""
+
+
 @dataclass(frozen=True)
 class BoundedExecutionResult:
     """Host-controlled specialist result with explicit failure history."""
@@ -78,6 +82,17 @@ async def execute_bounded_specialist(
                 duration_ms=selected_policy.timeout_ms + 1,
                 outcome="retryable_failure",
                 reason="Specialist runtime exceeded the host timeout",
+                policies=policies,
+            )
+            continue
+        except RetryableSpecialistError as error:
+            failures.append("retryable_failure")
+            current = record_specialist_attempt(
+                current,
+                role,
+                duration_ms=_elapsed_ms(start_ns),
+                outcome="retryable_failure",
+                reason=f"Retryable specialist runtime failure: {type(error).__name__}",
                 policies=policies,
             )
             continue
