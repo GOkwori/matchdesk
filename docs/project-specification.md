@@ -1,6 +1,6 @@
 # MatchDesk project specification
 
-Owner: George Okwori. Baseline: 8 October 2026. Status: IN_PROGRESS; Phase 0 and Phase 1 VERIFIED / COMPLETED, Phase 2 P2-01 through P2-05 TESTED and P2-06 owner-approved/promoted with post-merge qualification pending.
+Owner: George Okwori. Baseline: 8 October 2026. Status: IN_PROGRESS; Phase 0, Phase 1 and Phase 2 VERIFIED / COMPLETED; Phase 3 producer control and audience delivery in progress.
 
 ## Purpose and users
 
@@ -54,7 +54,7 @@ Phase 1 builds the deterministic engine. P1-01 synthetic generation, P1-02 tempo
 ingestion, P1-03 roster/score/possession reduction, P1-04 registered football metrics
 and P1-05 deterministic moment detection are TESTED. P1-06 technical review passed,
 the exact closure head was owner-approved and merged, and Phase 1 is VERIFIED /
-COMPLETED, with the final status record on main commit `8e110607c6877efca431debe7f8b69b5f53db9d9`. Phase 2 adds bounded agent orchestration and verification. P2-01 through P2-05 are TESTED, including scoped specialist execution, real Foundry integration, bounded retry/timeout/recovery controls, deterministic model evaluation and one successful live model-evaluation run. P2-06 technical review passed on an exact-head qualified source, was explicitly owner-approved and promoted through protected PR #36; one clean post-merge qualification point remains before Phase 2 can be labelled VERIFIED / COMPLETED.
+COMPLETED, with the final status record on main commit `8e110607c6877efca431debe7f8b69b5f53db9d9`. Phase 2 adds bounded agent orchestration and verification. P2-01 through P2-05 are TESTED, including scoped specialist execution, real Foundry integration, bounded retry/timeout/recovery controls, deterministic model evaluation and one successful live model-evaluation run. P2-06 technical review passed on an exact-head qualified source, was explicitly owner-approved and promoted through protected PR #36. Closure-only main commit `31371b06b23ee61f25d5b9f6ccceb9b3ae7bb222` then passed Foundation CI, Dependency audit, Source security and Foundation integration, so Phase 2 is VERIFIED / COMPLETED. Phase 3 now implements the producer control and audience delivery path.
 Phase 3 completes producer and audience flows. Phase 4 qualifies reliability and security.
 Phase 5 packages the demonstration and submission. Work stops at each owner review gate.
 The internal submission target is 26 October 2026.
@@ -88,6 +88,6 @@ COMPLETED. Phase 2 now includes TESTED bounded orchestration with four locked sp
 typed state, retry/timeout/recovery budgets, deterministic claim verification, scoped
 read-only specialist tools and a fail-closed Microsoft Agent Framework / Foundry runtime.
 A bounded live tactical proposal has also passed deterministic evaluation as
-`supported_inference`. P2-06 closure review has passed exact-head qualification, explicit owner approval and
-protected promotion. Final VERIFIED / COMPLETED status is held only for a clean
-post-merge qualification point.
+`supported_inference`. P2-06 closure review passed exact-head qualification, explicit owner approval,
+protected promotion and clean post-merge qualification. Phase 3 is now the active
+controlled delivery phase.
