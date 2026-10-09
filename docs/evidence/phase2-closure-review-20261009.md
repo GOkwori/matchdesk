@@ -1,6 +1,6 @@
 # Phase 2 closure review — 9 October 2026
 
-Status: **OWNER APPROVED / PROMOTED — POST-MERGE QUALIFICATION PENDING**.
+Status: **VERIFIED / COMPLETED**.
 
 Exact owner-approved closure source:
 `5203157474bea186d1c3c1fc604e813fd225f3e1`.
@@ -92,7 +92,11 @@ Dependency audit 37947632303, Source security 37947632301 and Foundation integra
 PR #36 was then promoted through the protected path and squash-merged as
 `aedc840432ca0a868aa091a81ee60c93bb935db4`.
 
-The remaining closure action is a clean post-merge qualification on main. No GitHub
-Actions push run was created for the squash commit above, so P2-06 is not yet labelled
-VERIFIED / COMPLETED. This follow-up closure-only promotion exists to create a clean
-post-merge qualification point without changing Phase 2 runtime behaviour.
+The closure-only follow-up was squash-merged as main commit
+`31371b06b23ee61f25d5b9f6ccceb9b3ae7bb222`, which emitted the expected main push
+qualification. Foundation CI 37954560348 passed 270 tests with 96.85% coverage;
+Dependency audit 37954560125, Source security 37954560323 and Foundation integration
+37954560501 also passed on that exact commit.
+
+P2-06 is COMPLETE and Phase 2 is **VERIFIED / COMPLETED** for the bounded
+agent-orchestration and verification scope.
