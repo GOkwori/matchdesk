@@ -19,14 +19,16 @@ version in the same commit. No dependency gate, `--locked` control, source-secur
 gate or branch rule was weakened.
 
 The generated graph passed all required hosted qualification on exact source
-`74107ec777a904b8714855178a27ca35a48a7002`:
+`726e49578c201b30896f15b8f7ac4d2073f162e2`:
 
 | Workflow | Run | Result |
 |---|---:|---|
-| Foundation CI | 37895765822 | PASS |
-| Dependency audit | 37895765998 | PASS |
-| Source security | 37895765838 | PASS |
-| Foundation integration | 37895765866 | PASS |
+| Foundation CI | 37896174178 | PASS |
+| Dependency audit | 37896174208 | PASS |
+| Source security | 37896174216 | PASS |
+| Foundation integration | 37896174180 | PASS |
+
+Foundation CI executed 258 tests on Python 3.12.15 with 96.68% measured total package coverage. The suite imported the actual pinned `agent_framework`, `agent_framework.foundry` and `azure.identity` packages and verified the `FoundryChatClient` constructor and `Agent.run(options=...)` API surface required by the adapter.
 
 Foundation integration includes real HTTP/PostgreSQL checks, locked Chromium
 regressions, exact runtime-image scans and the independent native-image verdict.
