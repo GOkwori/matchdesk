@@ -57,3 +57,27 @@ def test_evaluation_requires_claim_for_model_quality_gate() -> None:
 
     assert evaluation.status == "needs_revision"
     assert evaluation.verification_results == ()
+
+
+def test_evaluation_marks_unbound_claim_blocked() -> None:
+    """A claim citing an event outside the evidence record is blocked."""
+    events = _events()
+    cited = next(item for item in events if item.team_id is not None)
+    evidence = _evidence(events).model_copy(
+        update={"event_ids": tuple(event.event_id for event in events if event != cited)}
+    )
+    claim = Claim(
+        claim_id="claim-unbound",
+        text="The cited event supports this interpretation.",
+        kind="tactical_inference",
+        evidence_event_ids=(cited.event_id,),
+    )
+
+    evaluation = evaluate_specialist_response(
+        SpecialistResponse(role="tactical_analyst", proposed_claims=(claim,)),
+        evidence,
+        events,
+    )
+
+    assert evaluation.status == "blocked"
+    assert evaluation.verification_results[0].status == "blocked"
