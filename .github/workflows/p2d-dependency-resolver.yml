@@ -1,4 +1,5 @@
 name: P2D dependency resolver
+# Temporary resolver: remove after generated lock is committed.
 
 on:
   push:
