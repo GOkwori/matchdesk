@@ -192,9 +192,11 @@ class AgentFrameworkFoundryExecutor:
         prompt = build_specialist_prompt(request, tools)
         result = await agent.run(
             prompt,
-            response_format=RuntimeProposal,
-            max_tokens=self._config.max_output_tokens,
-            store=False,
+            options={
+                "response_format": RuntimeProposal,
+                "max_tokens": self._config.max_output_tokens,
+                "store": False,
+            },
         )
         proposal = _extract_proposal(result)
         return proposal.to_specialist_response(request.role)
@@ -231,8 +233,8 @@ class _DefaultAgentFactory:
         """Create one ephemeral Agent backed by FoundryChatClient."""
         try:
             agent_module = import_module("agent_framework")
-            foundry_module = import_module("agent_framework_foundry")
-            identity_module = import_module("azure.identity.aio")
+            foundry_module = import_module("agent_framework.foundry")
+            identity_module = import_module("azure.identity")
         except ImportError as error:
             raise FoundryRuntimeUnavailable(
                 "Live Foundry dependencies are not installed/pinned in this build"
@@ -245,7 +247,7 @@ class _DefaultAgentFactory:
         credential = credential_type()
         client = client_type(
             project_endpoint=cast(str, config.project_endpoint),
-            model_deployment_name=cast(str, config.model),
+            model=cast(str, config.model),
             credential=credential,
         )
         return cast(
