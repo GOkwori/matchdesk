@@ -16,12 +16,18 @@ an approval to deploy, and evidence from one source is not relabelled as another
   37880853750 also passed, including runtime/browser and the independent native-image
   verdict.
 - A dependency-declaration attempt was correctly rejected by the locked-dependency gate
-  because `uv.lock` had not been resolver-generated. The unqualified declaration was
-  reverted; no lock was guessed and no gate was weakened.
+  because `uv.lock` had not been resolver-generated. No lock was guessed and no gate was weakened.
+- [P2-04 live dependency-lock qualification](phase2d-live-dependency-lock-20261009.md)
+  records the resolver-generated `agent-framework-foundry==1.14.1` /
+  `azure-identity==1.26.0` graph. Exact source
+  `726e49578c201b30896f15b8f7ac4d2073f162e2` passed Foundation CI 37896174178,
+  Dependency audit 37896174208, Source security 37896174216 and Foundation integration
+  37896174180. Foundation CI ran 258 tests and verified the required API surface against
+  the actual installed Microsoft packages.
 
-P2-04 is **BLOCKED — ADAPTER QUALIFIED**, not TESTED. Live qualification still requires
-a reviewed Agent Framework / Foundry dependency lock plus a real Foundry endpoint,
-model deployment and authenticated credential context. No live model call is claimed.
+P2-04 is **BLOCKED — ADAPTER + LOCK QUALIFIED**, not TESTED. The sole remaining
+qualification blocker is a real Foundry endpoint/model plus authenticated credential
+context for the bounded live smoke harness. No live model call is claimed.
 
 ## Phase 2C scoped specialist execution interfaces
 
