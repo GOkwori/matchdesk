@@ -14,8 +14,10 @@ an approval to deploy, and evidence from one source is not relabelled as another
   `c722f77896124bcc42ac11ef9aa21fcf3a2c3772`.
 - PR #36 was squash-merged through the protected path as
   `aedc840432ca0a868aa091a81ee60c93bb935db4`.
-- P2-06 is waiting only for one clean post-merge qualification point before it is
-  labelled **VERIFIED / COMPLETED**.
+- Closure-only main commit `31371b06b23ee61f25d5b9f6ccceb9b3ae7bb222` passed
+  Foundation CI 37954560348 (270 tests, 96.85% coverage), Dependency audit
+  37954560125, Source security 37954560323 and Foundation integration 37954560501.
+- P2-06 is **COMPLETE** and Phase 2 is **VERIFIED / COMPLETED**.
 
 ## Phase 2E failure/retry/recovery and model evaluation
 
