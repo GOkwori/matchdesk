@@ -46,6 +46,17 @@ jobs:
           uv lock --check
           uv sync --locked --no-build --python 3.12 --group test --group quality
           git diff -- pyproject.toml uv.lock > p2d-lock.diff
+      - name: Emit resolver bytes for controlled Git blob creation
+        if: ${{ github.event_name == 'push' }}
+        run: |
+          echo P2D_PYPROJECT_B64_BEGIN
+          base64 -w0 pyproject.toml
+          echo
+          echo P2D_PYPROJECT_B64_END
+          echo P2D_UVLOCK_B64_BEGIN
+          base64 -w0 uv.lock
+          echo
+          echo P2D_UVLOCK_B64_END
       - name: Preserve resolver-generated dependency files
         if: ${{ github.event_name == 'push' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
