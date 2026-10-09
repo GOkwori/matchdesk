@@ -4,8 +4,8 @@ import asyncio
 
 from matchdesk.domain.orchestration import (
     RolePolicy,
-    recover_workflow,
     record_specialist_attempt,
+    recover_workflow,
     start_workflow,
 )
 from matchdesk.domain.runtime_resilience import (
