@@ -1,6 +1,6 @@
 # Current progress
 
-Date: 9 October 2026. Stage: Phase 2 promoted; P2-01 through P2-05 TESTED; P2-06 owner-approved and merged, post-merge qualification pending.
+Date: 9 October 2026. Stage: Phase 2 VERIFIED / COMPLETED; Phase 3 producer control and audience delivery started.
 Phase 0 gate: **VERIFIED / COMPLETED**.
 
 The engineering foundation was merged through the protected `main` path and the
@@ -230,10 +230,16 @@ against protected main base `c722f77896124bcc42ac11ef9aa21fcf3a2c3772`, and PR #
 was squash-merged through the protected path as
 `aedc840432ca0a868aa091a81ee60c93bb935db4`.
 
-No main push workflow runs were emitted for that squash commit, so Phase 2 is not yet
-labelled VERIFIED / COMPLETED. A closure-only follow-up promotion is being used to
-produce a clean post-merge qualification point without changing Phase 2 runtime
-behaviour or authority boundaries.
+A closure-only follow-up was promoted as main commit
+`31371b06b23ee61f25d5b9f6ccceb9b3ae7bb222` specifically to obtain a clean
+post-merge qualification point without changing Phase 2 runtime behaviour or authority
+boundaries. Foundation CI 37954560348 passed 270 tests with 96.85% coverage;
+Dependency audit 37954560125, Source security 37954560323 and Foundation integration
+37954560501 also passed on that exact main commit.
+
+P2-06 is COMPLETE and Phase 2 is therefore **VERIFIED / COMPLETED** for the bounded
+agent-orchestration and verification scope. Phase 3 now begins with producer
+review/version binding and human approval controls.
 
 ## Historical native-image remediation before final qualification
 
