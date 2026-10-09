@@ -1,6 +1,6 @@
 # Current progress
 
-Date: 9 October 2026. Stage: Phase 2 in progress; P2-01 through P2-03 TESTED; P2-04 adapter qualified / live qualification blocked.
+Date: 9 October 2026. Stage: Phase 2 in progress; P2-01 through P2-03 TESTED; P2-04 adapter + dependency lock qualified / live smoke blocked.
 Phase 0 gate: **VERIFIED / COMPLETED**.
 
 The engineering foundation was merged through the protected `main` path and the
@@ -168,12 +168,17 @@ coverage; the Foundry adapter module measured 81% because the real Microsoft cli
 construction/network path was intentionally not executed. See the
 [Phase 2D adapter record](evidence/phase2d-foundry-runtime-adapter-20261009.md).
 
-P2-04 is not TESTED. A dependency-declaration attempt was deliberately rejected by the
-locked-dependency gate because `uv.lock` was stale; the declaration was reverted rather
-than guessing a lock or weakening `--locked`. Live qualification also still requires a
-real Foundry project endpoint, model deployment name and authenticated credential context.
-No Foundry/Azure resource was provisioned and no live model invocation is claimed.
-P2-05 remains PLANNED until P2-04 live qualification completes.
+P2-04 is not TESTED. The dependency-lock blocker is now RESOLVED: the repository pins
+`agent-framework-foundry==1.14.1` and `azure-identity==1.26.0`, with a matching
+resolver-generated `uv.lock`. Exact source
+`74107ec777a904b8714855178a27ca35a48a7002` passed Foundation CI 37895765822,
+Dependency audit 37895765998, Source security 37895765838 and Foundation integration
+37895765866, including runtime/browser and independent native-image qualification.
+
+The sole remaining P2-04 blocker is a real Foundry project endpoint, deployed model name
+and authenticated credential context for one bounded live specialist smoke test.
+No Foundry/Azure resource was provisioned by this work and no live model invocation is
+claimed yet. P2-05 remains PLANNED until P2-04 live qualification completes.
 
 ## Historical native-image remediation before final qualification
 
