@@ -10,12 +10,6 @@ dependencies = [
     "uvicorn==0.48.0",
 ]
 
-[project.optional-dependencies]
-live-foundry = [
-    "agent-framework-foundry==1.14.1",
-    "azure-identity==1.26.0",
-]
-
 [dependency-groups]
 test = ["pytest==9.0.3", "pytest-cov==7.0.0", "httpx2==2.13.1", "jsonschema==4.26.0"]
 
