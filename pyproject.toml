@@ -5,6 +5,8 @@ version = "0.0.1"
 description = "Evidence-linked football production desk"
 requires-python = ">=3.12,<3.14"
 dependencies = [
+    "agent-framework-foundry==1.14.1",
+    "azure-identity==1.26.0",
     "fastapi==0.142.4",
     "pydantic==2.13.5",
     "uvicorn==0.48.0",

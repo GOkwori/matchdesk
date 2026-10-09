@@ -72,9 +72,20 @@ class SpecialistResponse:
 
 
 class SpecialistExecutor(Protocol):
-    """Model-agnostic execution boundary implemented later by local or live runtimes."""
+    """Model-agnostic synchronous execution boundary for local specialist runtimes."""
 
     def execute(
+        self,
+        request: SpecialistRequest,
+        tools: "ScopedReadTools",
+    ) -> SpecialistResponse:
+        """Return a proposal using only host-provided read tools."""
+
+
+class AsyncSpecialistExecutor(Protocol):
+    """Model-agnostic asynchronous boundary for remote or live specialist runtimes."""
+
+    async def execute(
         self,
         request: SpecialistRequest,
         tools: "ScopedReadTools",
@@ -149,6 +160,21 @@ class ScopedReadTools:
         self._require("verification_result")
         return self._verification.get(claim_id)
 
+    def snapshot(self) -> dict[str, object]:
+        """Return one immutable JSON-ready snapshot restricted to the role's read scope."""
+        snapshot: dict[str, object] = {"allowed_tools": sorted(self.allowed_tools)}
+        if "event_by_id" in self.allowed_tools or "events_in_window" in self.allowed_tools:
+            snapshot["events"] = [event.model_dump(mode="json") for event in self._events]
+        if "evidence_record" in self.allowed_tools:
+            snapshot["evidence_records"] = [
+                record.model_dump(mode="json") for record in self._evidence.values()
+            ]
+        if "verification_result" in self.allowed_tools:
+            snapshot["verification_results"] = [
+                result.model_dump(mode="json") for result in self._verification.values()
+            ]
+        return snapshot
+
 
 def execute_specialist(
     executor: SpecialistExecutor,
@@ -166,6 +192,27 @@ def execute_specialist(
         verification_results=verification_results,
     )
     response = executor.execute(request, tools)
+    if response.role != request.role:
+        raise ValueError("Specialist response role must match the requested role")
+    return response
+
+
+async def execute_specialist_async(
+    executor: AsyncSpecialistExecutor,
+    request: SpecialistRequest,
+    *,
+    events: tuple[MatchEvent, ...],
+    evidence_records: tuple[EvidenceRecord, ...] = (),
+    verification_results: tuple[VerificationResult, ...] = (),
+) -> SpecialistResponse:
+    """Execute one asynchronous specialist behind the same host-owned read boundary."""
+    tools = ScopedReadTools(
+        role=request.role,
+        events=events,
+        evidence_records=evidence_records,
+        verification_results=verification_results,
+    )
+    response = await executor.execute(request, tools)
     if response.role != request.role:
         raise ValueError("Specialist response role must match the requested role")
     return response

@@ -3,6 +3,36 @@
 Results are tied to source commits and execution environments. A passing build is not
 an approval to deploy, and evidence from one source is not relabelled as another.
 
+## Phase 2D Agent Framework / Foundry runtime adapter
+
+- [Phase 2D Foundry runtime adapter qualification](phase2d-foundry-runtime-adapter-20261009.md)
+  records the fail-closed async runtime adapter, bounded structured output, host-scoped
+  read snapshots and retained live-qualification blockers on source
+  `42894407299d4b0a0594f88d364dc8b92586a845`.
+- Foundation CI 37880853903 passed 257 Python tests with 96.68% measured total package
+  coverage; the new Foundry adapter module measured 81% because the real Microsoft
+  client/network path was intentionally not executed.
+- Dependency audit 37880853720, Source security 37880853746 and Foundation integration
+  37880853750 also passed, including runtime/browser and the independent native-image
+  verdict.
+- A dependency-declaration attempt was correctly rejected by the locked-dependency gate
+  because `uv.lock` had not been resolver-generated. No lock was guessed and no gate was weakened.
+- [P2-04 live dependency-lock qualification](phase2d-live-dependency-lock-20261009.md)
+  records the resolver-generated `agent-framework-foundry==1.14.1` /
+  `azure-identity==1.26.0` graph. Exact source
+  `726e49578c201b30896f15b8f7ac4d2073f162e2` passed Foundation CI 37896174178,
+  Dependency audit 37896174208, Source security 37896174216 and Foundation integration
+  37896174180. Foundation CI ran 258 tests and verified the required API surface against
+  the actual installed Microsoft packages.
+
+- [P2-04 live Foundry smoke qualification](phase2d-live-foundry-smoke-20261009.md)
+  records successful manual workflow run 37923842661 on development source
+  `f1ba3a9ae2b6e2e54de727761763085ee77776d8`, with 2,009 input tokens,
+  104 output tokens, 2,113 total tokens, 6,763 ms latency, one tactical claim,
+  `store=False`, and deterministic `supported_inference` verification.
+
+P2-04 is **TESTED** for the bounded live-runtime scope. P2-05 is next.
+
 ## Phase 2C scoped specialist execution interfaces
 
 - [Phase 2C specialist-interface qualification](phase2c-specialist-interfaces-20261008.md)
@@ -210,3 +240,5 @@ status. `latest.json` identifies the latest **local collection**, not the latest
 build. Early attempt logs remain under `initial-attempts`; they are not attributed to
 later source. Python 3.13.5 results are supplementary to hosted Python 3.12 qualification.
 No cloud deployment, live model execution or production certification is implied.
+
+P2-04 strengthened live-smoke readiness: source `43de0b8b645de658aaefb502ea8025c94a9df3bc` passed all four hosted workflow groups; only real Foundry endpoint/model/authentication remains.

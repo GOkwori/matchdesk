@@ -1,6 +1,6 @@
 # Current progress
 
-Date: 8 October 2026. Stage: Phase 2 in progress; P2-01 through P2-03 TESTED.
+Date: 9 October 2026. Stage: Phase 2 in progress; P2-01 through P2-04 TESTED; P2-05 next.
 Phase 0 gate: **VERIFIED / COMPLETED**.
 
 The engineering foundation was merged through the protected `main` path and the
@@ -153,8 +153,44 @@ formatting and strict mypy passed, and runtime/browser plus independent native-i
 qualification passed. See the
 [Phase 2C qualification record](evidence/phase2c-specialist-interfaces-20261008.md).
 
-P2-04 live specialist runtime integration with Agent Framework / Foundry is next, but
-it remains separately gated by explicit live-model, credential and cost approval.
+P2-04 live specialist runtime integration is **TESTED**. The fail-closed Agent Framework / Foundry adapter is
+qualified on source `42894407299d4b0a0594f88d364dc8b92586a845`. It adds an async
+specialist boundary, explicit activation and endpoint/model configuration, bounded
+structured RuntimeProposal output, a 1,200-token output ceiling, `store=False`,
+role-specific instructions and host-produced P2-03 read snapshots. It does not grant
+approval or publication authority.
+
+Hosted adapter qualification passed Foundation CI 37880853903, Dependency audit
+37880853720, Source security 37880853746 and Foundation integration 37880853750.
+Foundation CI ran 257 tests on Python 3.12.15 with 96.68% measured total package
+coverage; the Foundry adapter module measured 81% because the real Microsoft client
+construction/network path was intentionally not executed. See the
+[Phase 2D adapter record](evidence/phase2d-foundry-runtime-adapter-20261009.md).
+
+The dependency-lock blocker is RESOLVED: the repository pins
+`agent-framework-foundry==1.14.1` and `azure-identity==1.26.0`, with a matching
+resolver-generated `uv.lock`. Exact source
+`726e49578c201b30896f15b8f7ac4d2073f162e2` passed Foundation CI 37896174178,
+Dependency audit 37896174208, Source security 37896174216 and Foundation integration
+37896174180, including runtime/browser and independent native-image qualification.
+Foundation CI ran 258 tests and verified the required API surface directly against the
+installed pinned Microsoft packages.
+
+The live-qualification blocker is RESOLVED. Manual workflow run
+[37923842661](https://github.com/GOkwori/matchdesk/actions/runs/37923842661) executed
+one real bounded tactical-specialist call from development source
+`f1ba3a9ae2b6e2e54de727761763085ee77776d8` through Microsoft Agent Framework /
+Foundry using the configured `matchdesk-gpt-4o` deployment. The run completed
+successfully with 2,009 input tokens, 104 output tokens, 2,113 total tokens, 6,763 ms
+measured latency, one proposed claim, `store=False`, the locked 1,200-token ceiling,
+and deterministic verification status `supported_inference`. Evidence digest:
+`3d7f721825329852938d485e5b46b80d6c7ab0eeac1720860a8e3aa6cbc0d5a3`.
+Artifact `p2d-live-foundry-evidence` was retained with digest
+`sha256:c150aefc7ff7d29efcba07b82adb2fcafad88b32d248ad875f3aa6ac4a1db481`.
+
+P2-04 is therefore TESTED for the bounded live-runtime scope. This does not authorize
+publication, production deployment, unrestricted agent autonomy or additional model
+spend. P2-05 failure/retry/recovery and model evaluation is next.
 
 ## Historical native-image remediation before final qualification
 
