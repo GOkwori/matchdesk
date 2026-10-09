@@ -52,7 +52,7 @@ Final Phase 1 status `main`: `8e110607c6877efca431debe7f8b69b5f53db9d9`.
 
 ## Phase 2 — bounded agent orchestration and verification
 
-Phase 2 technical review passed, the exact closure head was qualified and owner-approved, and PR #36 was promoted through protected main. P2-06 is awaiting one clean post-merge qualification point because the squash merge commit did not emit main push runs.
+Phase 2 is **VERIFIED / COMPLETED**. P2-01 through P2-05 are TESTED and P2-06 is COMPLETE after exact-head qualification, explicit owner approval, protected promotion and clean post-merge qualification on main.
 
 | ID | Work | Status | Acceptance evidence |
 |---|---|---|---|
@@ -61,7 +61,7 @@ Phase 2 technical review passed, the exact closure head was qualified and owner-
 | P2-03 | Implement specialist execution interfaces and scoped read tools | TESTED | Host-owned role scopes, immutable proposal envelopes and read-only deterministic tools |
 | P2-04 | Integrate four specialist runtimes with Agent Framework / Foundry | TESTED | Adapter + locked dependencies qualified; live run 37923842661 passed with bounded token usage, retained evidence and `supported_inference` verification |
 | P2-05 | Qualify end-to-end retries, timeouts, recovery and model evaluation | TESTED | Exact-head CI qualified deterministic resilience/evaluation paths; live run 37941568298 passed with one evidence-bound tactical claim, `supported_inference` and retained non-secret evidence |
-| P2-06 | Review Phase 2 | POST-MERGE QUALIFICATION PENDING | Exact closure head qualified and owner-approved; PR #36 merged as `aedc840432ca0a868aa091a81ee60c93bb935db4`; clean post-merge qualification still required |
+| P2-06 | Review Phase 2 | COMPLETE | Exact closure head qualified and owner-approved; protected promotion completed; main `31371b06b23ee61f25d5b9f6ccceb9b3ae7bb222` passed all four post-merge workflow groups |
 
 P2-01 qualification: [Phase 2A orchestration control-plane evidence](../evidence/phase2a-orchestration-control-plane-20261008.md).
 
@@ -74,3 +74,23 @@ P2-04 adapter qualification/blocker: [Phase 2D Foundry runtime adapter evidence]
 P2-04 dependency-lock qualification: [Phase 2D live dependency lock evidence](../evidence/phase2d-live-dependency-lock-20261009.md).
 
 Phase 2 does not authorize producer publication, Azure deployment or production readiness.
+
+
+## Phase 3 — producer control and audience delivery
+
+Phase 3 is **IN PROGRESS**. It completes the human-governed producer path and the
+audience-facing delivery contracts required by R5-R7. Phase 2 model proposals and
+verification evidence remain non-authoritative until an authenticated producer action
+binds the exact item version, content digest, evidence digest, language and persona.
+
+| ID | Work | Status | Acceptance evidence |
+|---|---|---|---|
+| P3-01 | Implement producer review/version binding and approval state | IN PROGRESS | Exact-version approve/reject/edit/reverify state; stale approval invalidation; immutable audit records |
+| P3-02 | Implement version-bound publication gate | PLANNED | Publish only the current producer-approved version with matching content/evidence binding |
+| P3-03 | Implement broadcast output contracts | PLANNED | Commentary, explainer, overlay JSON, half-time and full-time recap envelopes |
+| P3-04 | Implement audience adaptation and language variants | PLANNED | Analyst, casual-fan and broadcast-caption outputs in English, Spanish and French with evidence checks |
+| P3-05 | Implement producer desk interaction flow | PLANNED | Inspect, edit, reverify, approve, reject and publish through accessible UI states |
+| P3-06 | Review Phase 3 | PLANNED | End-to-end producer/audience evidence, exact-head qualification and owner decision |
+
+Phase 3 does not authorize automatic publication. Producer approval remains an explicit
+authenticated human action bound to an exact immutable version.
