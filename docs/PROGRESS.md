@@ -1,6 +1,6 @@
 # Current progress
 
-Date: 8 October 2026. Stage: Phase 2 in progress; P2-01 through P2-03 TESTED.
+Date: 9 October 2026. Stage: Phase 2 in progress; P2-01 through P2-03 TESTED; P2-04 adapter qualified / live qualification blocked.
 Phase 0 gate: **VERIFIED / COMPLETED**.
 
 The engineering foundation was merged through the protected `main` path and the
@@ -153,8 +153,27 @@ formatting and strict mypy passed, and runtime/browser plus independent native-i
 qualification passed. See the
 [Phase 2C qualification record](evidence/phase2c-specialist-interfaces-20261008.md).
 
-P2-04 live specialist runtime integration with Agent Framework / Foundry is next, but
-it remains separately gated by explicit live-model, credential and cost approval.
+P2-04 live specialist runtime integration has progressed to an **adapter-qualified /
+live-qualification-blocked** state. The fail-closed Agent Framework / Foundry adapter is
+qualified on source `42894407299d4b0a0594f88d364dc8b92586a845`. It adds an async
+specialist boundary, explicit activation and endpoint/model configuration, bounded
+structured RuntimeProposal output, a 1,200-token output ceiling, `store=False`,
+role-specific instructions and host-produced P2-03 read snapshots. It does not grant
+approval or publication authority.
+
+Hosted adapter qualification passed Foundation CI 37880853903, Dependency audit
+37880853720, Source security 37880853746 and Foundation integration 37880853750.
+Foundation CI ran 257 tests on Python 3.12.15 with 96.68% measured total package
+coverage; the Foundry adapter module measured 81% because the real Microsoft client
+construction/network path was intentionally not executed. See the
+[Phase 2D adapter record](evidence/phase2d-foundry-runtime-adapter-20261009.md).
+
+P2-04 is not TESTED. A dependency-declaration attempt was deliberately rejected by the
+locked-dependency gate because `uv.lock` was stale; the declaration was reverted rather
+than guessing a lock or weakening `--locked`. Live qualification also still requires a
+real Foundry project endpoint, model deployment name and authenticated credential context.
+No Foundry/Azure resource was provisioned and no live model invocation is claimed.
+P2-05 remains PLANNED until P2-04 live qualification completes.
 
 ## Historical native-image remediation before final qualification
 
