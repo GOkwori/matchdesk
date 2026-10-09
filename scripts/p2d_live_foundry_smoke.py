@@ -14,9 +14,12 @@ import time
 from dataclasses import asdict, dataclass
 
 from matchdesk.domain.foundry_runtime import AgentFrameworkFoundryExecutor, FoundryRuntimeConfig
+from matchdesk.domain.hashing import content_digest
+from matchdesk.domain.models import EvidenceRecord, MatchWindow
 from matchdesk.domain.orchestration import start_workflow
 from matchdesk.domain.simulator import generate_scenario
 from matchdesk.domain.specialists import ScopedReadTools, SpecialistRequest
+from matchdesk.domain.verification import verify_claim
 
 
 @dataclass(frozen=True)
@@ -31,6 +34,11 @@ class LiveSmokeEvidence:
     store: bool
     proposed_claim_count: int
     content_present: bool
+    input_tokens: int
+    output_tokens: int
+    total_tokens: int
+    verification_status: str
+    evidence_digest: str
 
 
 async def _run() -> LiveSmokeEvidence:
@@ -57,13 +65,38 @@ async def _run() -> LiveSmokeEvidence:
     tools = ScopedReadTools(role="tactical_analyst", events=events)
 
     started = time.perf_counter()
-    response = await AgentFrameworkFoundryExecutor(config=config).execute(request, tools)
+    execution = await AgentFrameworkFoundryExecutor(config=config).execute_with_evidence(
+        request,
+        tools,
+    )
     latency_ms = round((time.perf_counter() - started) * 1_000)
+    response = execution.response
 
     assert response.role == "tactical_analyst"
-    assert response.content.strip() or response.proposed_claims
-    for claim in response.proposed_claims:
-        assert set(claim.evidence_event_ids).issubset({event.event_id for event in events})
+    assert response.proposed_claims, "live smoke requires at least one evidence-bound claim"
+    assert execution.input_tokens is not None
+    assert execution.output_tokens is not None
+    assert execution.total_tokens is not None
+    assert execution.total_tokens <= execution.input_tokens + config.max_output_tokens
+
+    event_ids = {event.event_id for event in events}
+    claim = response.proposed_claims[0]
+    assert claim.kind == "tactical_inference"
+    assert set(claim.evidence_event_ids).issubset(event_ids)
+    assert claim.evidence_event_ids
+
+    evidence = EvidenceRecord(
+        evidence_id="p2d-live-smoke-evidence",
+        match_id=events[0].match_id,
+        replay_id="p2d-live-smoke-replay",
+        revision=1,
+        window=MatchWindow(period=1, from_ms=0, to_ms=2_100_000),
+        event_ids=tuple(event.event_id for event in events),
+        engine_version="engine-v1",
+        source_digest="a" * 64,
+    )
+    verification = verify_claim(claim, evidence, events)
+    assert verification.status == "supported_inference"
 
     return LiveSmokeEvidence(
         runtime="microsoft-agent-framework-foundry",
@@ -74,6 +107,11 @@ async def _run() -> LiveSmokeEvidence:
         store=False,
         proposed_claim_count=len(response.proposed_claims),
         content_present=bool(response.content.strip()),
+        input_tokens=execution.input_tokens,
+        output_tokens=execution.output_tokens,
+        total_tokens=execution.total_tokens,
+        verification_status=verification.status,
+        evidence_digest=content_digest(evidence),
     )
 
 
