@@ -139,20 +139,8 @@ def _tool_context(request: SpecialistRequest, tools: ScopedReadTools) -> str:
             "moment_id": request.workflow.moment_id,
             "role": request.role,
         },
-        "allowed_tools": sorted(tools.allowed_tools),
+        "read_scope": tools.snapshot(),
     }
-
-    # The runtime receives deterministic values, not callable mutation capabilities.
-    if "events_in_window" in tools.allowed_tools:
-        payload["events"] = [
-            event.model_dump(mode="json")
-            for event in tools.events_in_window(
-                __import__(
-                    "matchdesk.domain.models",
-                    fromlist=["MatchWindow"],
-                ).MatchWindow(period=1, from_ms=0, to_ms=45 * 60_000)
-            )
-        ]
 
     context = json.dumps(payload, separators=(",", ":"), sort_keys=True)
     if len(context) > _MAX_CONTEXT_CHARS:
