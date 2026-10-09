@@ -70,6 +70,18 @@ class FoundryRuntimeConfig:
             )
 
 
+@dataclass(frozen=True)
+class FoundryExecutionResult:
+    """One live specialist proposal plus non-secret runtime qualification telemetry."""
+
+    response: SpecialistResponse
+    input_tokens: int | None
+    output_tokens: int | None
+    total_tokens: int | None
+    finish_reason: str | None
+    response_id: str | None
+
+
 class RuntimeProposal(BaseModel):
     """Structured, non-authoritative output returned by the live specialist runtime."""
 
@@ -186,6 +198,15 @@ class AgentFrameworkFoundryExecutor:
         tools: ScopedReadTools,
     ) -> SpecialistResponse:
         """Run one bounded live specialist turn and return a non-authoritative proposal."""
+        execution = await self.execute_with_evidence(request, tools)
+        return execution.response
+
+    async def execute_with_evidence(
+        self,
+        request: SpecialistRequest,
+        tools: ScopedReadTools,
+    ) -> FoundryExecutionResult:
+        """Run one bounded turn and retain non-secret token/finish evidence."""
         self._config.validate_activation()
         factory = self._factory or _load_default_factory()
         agent = factory.create(role=request.role, config=self._config)
@@ -199,7 +220,32 @@ class AgentFrameworkFoundryExecutor:
             },
         )
         proposal = _extract_proposal(result)
-        return proposal.to_specialist_response(request.role)
+        usage = getattr(result, "usage_details", None)
+        return FoundryExecutionResult(
+            response=proposal.to_specialist_response(request.role),
+            input_tokens=_usage_int(usage, "input_token_count"),
+            output_tokens=_usage_int(usage, "output_token_count"),
+            total_tokens=_usage_int(usage, "total_token_count"),
+            finish_reason=_optional_text(getattr(result, "finish_reason", None)),
+            response_id=_optional_text(getattr(result, "response_id", None)),
+        )
+
+
+def _usage_int(usage: Any, field: str) -> int | None:
+    """Read one integer usage field from mapping- or attribute-style telemetry."""
+    if usage is None:
+        return None
+    value = usage.get(field) if isinstance(usage, Mapping) else getattr(usage, field, None)
+    return value if type(value) is int and value >= 0 else None
+
+
+def _optional_text(value: Any) -> str | None:
+    """Normalize enum/string response metadata into a stable optional string."""
+    if value is None:
+        return None
+    enum_value = getattr(value, "value", value)
+    text_value = str(enum_value).strip()
+    return text_value or None
 
 
 def _extract_proposal(result: Any) -> RuntimeProposal:
