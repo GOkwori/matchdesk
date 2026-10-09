@@ -45,3 +45,28 @@ def test_retryable_failure_consumes_one_attempt_then_succeeds() -> None:
     assert result.failure_kinds == ("retryable_failure",)
     assert result.state.current_role == "narrative_composer"
     assert [attempt.attempt for attempt in result.state.attempts] == [1, 2]
+
+
+def test_repeated_retryable_failure_stops_at_budget() -> None:
+    """The controller stops after the configured role-local attempt budget."""
+
+    class Executor:
+        """Always return the same explicit transient runtime failure."""
+
+        async def execute(self, request, tools):
+            """Raise the transient signal on every invocation."""
+            raise RetryableSpecialistError("temporary provider failure")
+
+    result = asyncio.run(
+        execute_bounded_specialist(
+            _state(),
+            instruction="Analyse the bounded event context.",
+            executor=Executor(),
+            tools=ScopedReadTools(role="tactical_analyst", events=()),
+        )
+    )
+
+    assert result.response is None
+    assert result.failure_kinds == ("retryable_failure", "retryable_failure")
+    assert result.state.status == "fallback"
+    assert result.state.current_role is None
