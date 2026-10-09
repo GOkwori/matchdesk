@@ -254,6 +254,103 @@ def test_live_executor_uses_structured_output_and_locked_run_options() -> None:
     assert factory.agent.kwargs["options"]["store"] is False
 
 
+def test_live_executor_retains_non_secret_usage_and_finish_evidence() -> None:
+    """Non-streaming AgentResponse telemetry is retained for cost/evaluation evidence."""
+
+    class FakeResult:
+        """Expose the AgentResponse fields consumed by the bounded adapter."""
+
+        value = RuntimeProposal(content="Measured response.")
+        usage_details = {
+            "input_token_count": 120,
+            "output_token_count": 30,
+            "total_token_count": 150,
+        }
+        finish_reason = "stop"
+        response_id = "resp-1"
+
+    class FakeAgent:
+        """Return one telemetry-bearing fake AgentResponse."""
+
+        async def run(self, prompt, **kwargs):
+            """Return fixed structured output plus deterministic usage metadata."""
+            return FakeResult()
+
+    class FakeFactory:
+        """Provide the telemetry-bearing fake agent."""
+
+        def create(self, *, role, config):
+            """Return the fake agent for the requested specialist."""
+            return FakeAgent()
+
+    execution = asyncio.run(
+        AgentFrameworkFoundryExecutor(
+            config=FoundryRuntimeConfig(
+                enabled=True,
+                project_endpoint="https://example.services.ai.azure.com/api/projects/p",
+                model="model-1",
+            ),
+            factory=FakeFactory(),
+        ).execute_with_evidence(
+            _request("tactical_analyst"),
+            ScopedReadTools(role="tactical_analyst", events=_events()),
+        )
+    )
+
+    assert execution.response.content == "Measured response."
+    assert execution.input_tokens == 120
+    assert execution.output_tokens == 30
+    assert execution.total_tokens == 150
+    assert execution.finish_reason == "stop"
+    assert execution.response_id == "resp-1"
+
+
+def test_usage_evidence_rejects_non_integer_values() -> None:
+    """Malformed provider usage never becomes trusted numeric qualification evidence."""
+
+    class FakeResult:
+        """Expose malformed provider usage while keeping structured output valid."""
+
+        value = RuntimeProposal(content="Response.")
+        usage_details = {
+            "input_token_count": True,
+            "output_token_count": "30",
+            "total_token_count": -1,
+        }
+
+    class FakeAgent:
+        """Return the malformed-usage fake response."""
+
+        async def run(self, prompt, **kwargs):
+            """Return structured output with unusable usage metadata."""
+            return FakeResult()
+
+    class FakeFactory:
+        """Provide the malformed-usage fake agent."""
+
+        def create(self, *, role, config):
+            """Return the fake agent."""
+            return FakeAgent()
+
+    execution = asyncio.run(
+        AgentFrameworkFoundryExecutor(
+            config=FoundryRuntimeConfig(
+                enabled=True,
+                project_endpoint="https://example.services.ai.azure.com/api/projects/p",
+                model="model-1",
+            ),
+            factory=FakeFactory(),
+        ).execute_with_evidence(
+            _request("tactical_analyst"),
+            ScopedReadTools(role="tactical_analyst", events=_events()),
+        )
+    )
+
+    assert execution.input_tokens is None
+    assert execution.output_tokens is None
+    assert execution.total_tokens is None
+
+
 def test_live_executor_preserves_existing_claim_contract() -> None:
     """Structured model output reuses Claim and cannot invent an authority-bearing schema."""
     claim = Claim(
