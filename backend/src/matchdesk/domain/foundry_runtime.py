@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 import os
 from dataclasses import dataclass
+from importlib import import_module
 from typing import Any, Mapping, Protocol, cast
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -229,23 +230,27 @@ class _DefaultAgentFactory:
     ) -> _AgentLike:
         """Create one ephemeral Agent backed by FoundryChatClient."""
         try:
-            from agent_framework import Agent
-            from agent_framework_foundry import FoundryChatClient
-            from azure.identity.aio import AzureCliCredential
+            agent_module = import_module("agent_framework")
+            foundry_module = import_module("agent_framework_foundry")
+            identity_module = import_module("azure.identity.aio")
         except ImportError as error:
             raise FoundryRuntimeUnavailable(
                 "Live Foundry dependencies are not installed/pinned in this build"
             ) from error
 
-        credential = AzureCliCredential()
-        client = FoundryChatClient(
+        agent_type = agent_module.Agent
+        client_type = foundry_module.FoundryChatClient
+        credential_type = identity_module.AzureCliCredential
+
+        credential = credential_type()
+        client = client_type(
             project_endpoint=cast(str, config.project_endpoint),
             model_deployment_name=cast(str, config.model),
             credential=credential,
         )
         return cast(
             _AgentLike,
-            Agent(
+            agent_type(
                 client=client,
                 instructions=_ROLE_INSTRUCTIONS[role],
                 name=f"matchdesk-{role.replace('_', '-')}",
