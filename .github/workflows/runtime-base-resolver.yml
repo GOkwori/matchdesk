@@ -1,5 +1,4 @@
-# Temporary qualification helper. It resolves current official runtime candidates and
-# scans them without changing application source, branch rules or release authority.
+# Temporary P2-04 dependency-lock resolver. Restored after artifact capture.
 name: Resolve runtime base candidates
 on:
   push:
@@ -10,119 +9,32 @@ permissions:
 jobs:
   resolve:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           persist-credentials: false
-      - name: Pull exact-version official candidates and record immutable identities
-        run: |
-          set -euo pipefail
-          mkdir -p artifacts/runtime-base-candidates
-          python - <<'PY'
-          import json, subprocess
-          from pathlib import Path
-
-          tags = [
-              "python:3.12.15-slim-trixie",
-              "node:22.23.3-trixie-slim",
-              "postgres:16.15-trixie",
-              "python:3.12.15-alpine",
-              "node:22.23.3-alpine",
-              "postgres:16.15-alpine",
-          ]
-          rows = []
-          for tag in tags:
-              subprocess.run(["docker", "pull", tag], check=True)
-              data = json.loads(subprocess.check_output(["docker", "image", "inspect", tag], text=True))[0]
-              digests = data.get("RepoDigests") or []
-              if len(digests) != 1 or "@sha256:" not in digests[0]:
-                  raise RuntimeError(f"Expected one immutable RepoDigest for {tag}: {digests}")
-              rows.append({
-                  "tag": tag,
-                  "repo_digest": digests[0],
-                  "image_id": data["Id"],
-                  "created": data.get("Created"),
-                  "os": data.get("Os"),
-                  "architecture": data.get("Architecture"),
-              })
-          Path("artifacts/runtime-base-candidates/images.json").write_text(
-              json.dumps(rows, indent=2, sort_keys=True) + "\n", encoding="utf-8"
-          )
-          print(json.dumps(rows, indent=2))
-          PY
-      - name: Record runtime versions
-        run: |
-          set -euo pipefail
-          {
-            docker run --rm python:3.12.15-slim-trixie python --version
-            docker run --rm node:22.23.3-trixie-slim node --version
-            docker run --rm postgres:16.15-trixie postgres --version
-            docker run --rm python:3.12.15-alpine python --version
-            docker run --rm node:22.23.3-alpine node --version
-            docker run --rm postgres:16.15-alpine postgres --version
-          } | tee artifacts/runtime-base-candidates/versions.txt
-      - name: Install checksum-verified Trivy and database
-        run: |
-          set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/trivy-bin" "$RUNNER_TEMP/trivy-cache"
-          archive="$RUNNER_TEMP/trivy.tar.gz"
-          curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 \
-            https://github.com/aquasecurity/trivy/releases/download/v0.75.0/trivy_0.75.0_Linux-64bit.tar.gz -o "$archive"
-          echo "c6e65abddb348e25f10549df887045629cf28cc72453cd1c63acb717316b3f3f  $archive" | sha256sum --check
-          tar -xzf "$archive" -C "$RUNNER_TEMP/trivy-bin" trivy
-          "$RUNNER_TEMP/trivy-bin/trivy" --version | tee artifacts/runtime-base-candidates/trivy-version.txt
-          "$RUNNER_TEMP/trivy-bin/trivy" --cache-dir "$RUNNER_TEMP/trivy-cache" image --download-db-only \
-            --db-repository ghcr.io/aquasecurity/trivy-db:2
-          cp "$RUNNER_TEMP/trivy-cache/db/metadata.json" artifacts/runtime-base-candidates/db-metadata.json
-      - name: Scan candidate bases without suppressions
-        run: |
-          set -euo pipefail
-          for spec in \
-            "python_trixie python:3.12.15-slim-trixie" \
-            "node_trixie node:22.23.3-trixie-slim" \
-            "postgres_trixie postgres:16.15-trixie" \
-            "python_alpine python:3.12.15-alpine" \
-            "node_alpine node:22.23.3-alpine" \
-            "postgres_alpine postgres:16.15-alpine"
-          do
-            set -- $spec
-            name="$1"
-            tag="$2"
-            "$RUNNER_TEMP/trivy-bin/trivy" --cache-dir "$RUNNER_TEMP/trivy-cache" image \
-              --image-src docker --scanners vuln --pkg-types os,library --format json \
-              --list-all-pkgs --ignorefile /dev/null --ignore-unfixed=false \
-              --severity UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL --skip-db-update --exit-code 0 \
-              --output "artifacts/runtime-base-candidates/$name.json" "$tag"
-          done
-      - name: Summarise candidate findings
-        run: |
-          python - <<'PY'
-          import collections, json
-          from pathlib import Path
-          summary = {}
-          root = Path("artifacts/runtime-base-candidates")
-          for name in (
-              "python_trixie", "node_trixie", "postgres_trixie",
-              "python_alpine", "node_alpine", "postgres_alpine",
-          ):
-              report = json.loads((root / f"{name}.json").read_text())
-              findings = [
-                  vuln
-                  for result in report.get("Results", [])
-                  for vuln in (result.get("Vulnerabilities") or [])
-              ]
-              summary[name] = {
-                  "total": len(findings),
-                  "severity": dict(collections.Counter(v.get("Severity", "UNKNOWN") for v in findings)),
-                  "with_fixed_version": sum(bool(v.get("FixedVersion")) for v in findings),
-              }
-          (root / "summary.json").write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n")
-          print(json.dumps(summary, indent=2, sort_keys=True))
-          PY
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
         with:
-          name: runtime-base-candidates-${{ github.run_id }}-${{ github.run_attempt }}
-          path: artifacts/runtime-base-candidates/
+          python-version: '3.12.15'
+      - name: Install pinned uv
+        run: python -m pip install --only-binary=:all: uv==0.10.0
+      - name: Resolve approved P2D live-runtime graph
+        run: |
+          set -euo pipefail
+          uv add --no-sync "agent-framework-foundry==1.14.1" "azure-identity==1.26.0"
+          uv lock --check
+          uv sync --locked --no-build --python 3.12 --group test --group quality
+          git diff -- pyproject.toml uv.lock > p2d-lock.diff
+          grep -F 'agent-framework-foundry==1.14.1' pyproject.toml
+          grep -F 'azure-identity==1.26.0' pyproject.toml
+      - name: Upload resolver-generated dependency files
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: p2d-resolved-python-lock
+          path: |
+            pyproject.toml
+            uv.lock
+            p2d-lock.diff
           if-no-files-found: error
-          retention-days: 30
+          retention-days: 7
