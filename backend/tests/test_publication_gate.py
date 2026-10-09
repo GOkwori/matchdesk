@@ -5,7 +5,6 @@ from dataclasses import replace
 import pytest
 
 from matchdesk.domain.models import ApprovalBinding
-from matchdesk.domain.publication_gate import authorize_publication
 from matchdesk.domain.producer_review import (
     ProducerAuditEntry,
     ProducerReviewState,
@@ -14,6 +13,7 @@ from matchdesk.domain.producer_review import (
     record_reverification,
     start_review,
 )
+from matchdesk.domain.publication_gate import authorize_publication
 
 
 def _binding(
