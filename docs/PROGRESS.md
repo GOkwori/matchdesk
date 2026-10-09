@@ -179,9 +179,13 @@ installed pinned Microsoft packages.
 
 The sole remaining P2-04 blocker is a real Foundry project endpoint, deployed model name
 and authenticated credential context for one bounded live specialist smoke test. The
-versioned `scripts/p2d_live_foundry_smoke.py` harness is ready to execute exactly one
-tactical specialist turn with the existing 1,200-token ceiling, structured output and
-`store=False`, emitting only non-secret evidence.
+versioned `scripts/p2d_live_foundry_smoke.py` harness now requires actual input/output/
+total token telemetry, latency, deployed model identity, structured output and a
+P2-02 `supported_inference` result for at least one evidence-bound tactical claim.
+Source `43de0b8b645de658aaefb502ea8025c94a9df3bc` passed Foundation CI
+37898724453, Dependency audit 37898724620, Source security 37898724364 and Foundation
+integration 37898724344 with those controls. The existing 1,200-token ceiling and
+`store=False` remain locked.
 No Foundry/Azure resource was provisioned by this work and no live model invocation is
 claimed yet. P2-05 remains PLANNED until P2-04 live qualification completes.
 
