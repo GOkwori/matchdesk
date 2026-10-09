@@ -52,14 +52,14 @@ Final Phase 1 status `main`: `8e110607c6877efca431debe7f8b69b5f53db9d9`.
 
 ## Phase 2 — bounded agent orchestration and verification
 
-Phase 2 is in progress. P2-01 through P2-03 are TESTED. P2-04 has a qualified fail-closed adapter and a qualified resolver-generated live dependency lock; live qualification is BLOCKED only on a real Foundry endpoint/model and authenticated credential context.
+Phase 2 is in progress. P2-01 through P2-04 are TESTED. P2-04 completed one bounded live Agent Framework / Foundry invocation with retained telemetry and deterministic verification; P2-05 is next.
 
 | ID | Work | Status | Acceptance evidence |
 |---|---|---|---|
 | P2-01 | Implement typed bounded orchestration control plane | TESTED | Four locked specialist roles; typed state; bounded retries/timeouts/recovery; deterministic verification hand-off; 100% orchestration module statement/branch coverage |
 | P2-02 | Implement deterministic claim verifier | TESTED | Recompute measured claims; bind exact evidence; support tactical inference without upgrading prose to fact |
 | P2-03 | Implement specialist execution interfaces and scoped read tools | TESTED | Host-owned role scopes, immutable proposal envelopes and read-only deterministic tools |
-| P2-04 | Integrate four specialist runtimes with Agent Framework / Foundry | BLOCKED — ADAPTER + LOCK QUALIFIED | Adapter and reviewed dependency graph pass; one bounded real Foundry call still requires endpoint/model/authenticated credential context |
+| P2-04 | Integrate four specialist runtimes with Agent Framework / Foundry | TESTED | Adapter + locked dependencies qualified; live run 37923842661 passed with bounded token usage, retained evidence and `supported_inference` verification |
 | P2-05 | Qualify end-to-end retries, timeouts, recovery and model evaluation | PLANNED | Failure injection, bounded recovery, false-claim and natural-output evaluation |
 | P2-06 | Review Phase 2 | PLANNED | Source-bound evidence and exact-head owner decision |
 
