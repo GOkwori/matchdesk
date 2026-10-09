@@ -8,11 +8,14 @@ an approval to deploy, and evidence from one source is not relabelled as another
 - [Phase 2 closure review candidate](phase2-closure-review-20261009.md) records the
   P2-01 through P2-05 qualification matrix, remaining authority boundaries and the
   technical review result.
-- Technical review result: **PASS subject to fresh exact-head qualification and
-  explicit owner approval**.
-- P2-06 remains **IN REVIEW** until the closure documentation head passes all required
-  hosted workflows, the owner approves the exact development head against protected
-  main, and promotion completes through the pull-request path.
+- Technical review result: **PASS**. Exact closure source
+  `5203157474bea186d1c3c1fc604e813fd225f3e1` passed all four required hosted workflow
+  groups and was explicitly owner-approved against protected main base
+  `c722f77896124bcc42ac11ef9aa21fcf3a2c3772`.
+- PR #36 was squash-merged through the protected path as
+  `aedc840432ca0a868aa091a81ee60c93bb935db4`.
+- P2-06 is waiting only for one clean post-merge qualification point before it is
+  labelled **VERIFIED / COMPLETED**.
 
 ## Phase 2E failure/retry/recovery and model evaluation
 
