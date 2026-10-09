@@ -4,7 +4,6 @@ import asyncio
 import json
 
 import pytest
-
 from matchdesk.domain.foundry_runtime import (
     AgentFrameworkFoundryExecutor,
     FoundryRuntimeConfig,
@@ -199,10 +198,12 @@ def test_prompt_context_is_valid_json_payload() -> None:
 
 def test_live_executor_uses_structured_output_and_locked_run_options() -> None:
     """The Agent Framework call receives response schema, output cap and store=False."""
+
     class FakeAgent:
         """Capture one bounded Agent.run invocation."""
 
         def __init__(self) -> None:
+            """Initialize captured prompt and keyword arguments."""
             self.prompt = ""
             self.kwargs = {}
 
@@ -216,6 +217,7 @@ def test_live_executor_uses_structured_output_and_locked_run_options() -> None:
         """Return the fake agent without importing any optional live dependency."""
 
         def __init__(self) -> None:
+            """Initialize one reusable fake agent and captured construction inputs."""
             self.agent = FakeAgent()
             self.role = None
             self.config = None
@@ -299,6 +301,7 @@ def test_live_executor_preserves_existing_claim_contract() -> None:
 
 def test_executor_does_not_touch_factory_when_activation_is_disabled() -> None:
     """Disabled live runtime fails before any client or credential object is created."""
+
     class ExplodingFactory:
         """Fail if construction is attempted despite disabled activation."""
 
