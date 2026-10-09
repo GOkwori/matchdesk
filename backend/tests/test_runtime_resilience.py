@@ -101,3 +101,55 @@ def test_timeout_is_classified_and_bounded() -> None:
     assert result.failure_kinds == ("timeout", "timeout")
     assert result.state.status == "fallback"
     assert [attempt.outcome for attempt in result.state.attempts] == ["timeout", "timeout"]
+
+
+def test_permission_failure_blocks_immediately() -> None:
+    """Host authority denial is terminal and does not consume extra retries."""
+
+    class Executor:
+        """Raise a host-authority permission failure."""
+
+        async def execute(self, request, tools):
+            """Reject the specialist request immediately."""
+            raise PermissionError("scope denied")
+
+    result = asyncio.run(
+        execute_bounded_specialist(
+            _state(),
+            instruction="Analyse the bounded event context.",
+            executor=Executor(),
+            tools=ScopedReadTools(role="tactical_analyst", events=()),
+        )
+    )
+
+    assert result.response is None
+    assert result.failure_kinds == ("blocked",)
+    assert result.state.status == "blocked"
+    assert len(result.state.attempts) == 1
+
+
+def test_role_mismatch_is_blocked() -> None:
+    """A response for another specialist role cannot cross the host boundary."""
+
+    class Executor:
+        """Return a structurally valid response under the wrong role."""
+
+        async def execute(self, request, tools):
+            """Return a role that was not requested."""
+            return SpecialistResponse(
+                role="narrative_composer",
+                content="wrong authority",
+            )
+
+    result = asyncio.run(
+        execute_bounded_specialist(
+            _state(),
+            instruction="Analyse the bounded event context.",
+            executor=Executor(),
+            tools=ScopedReadTools(role="tactical_analyst", events=()),
+        )
+    )
+
+    assert result.response is None
+    assert result.failure_kinds == ("invalid_response",)
+    assert result.state.status == "blocked"
