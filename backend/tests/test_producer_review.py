@@ -1,7 +1,6 @@
 """Phase 3 tests for exact-version producer review and approval state."""
 
 import pytest
-
 from matchdesk.domain.models import ApprovalBinding
 from matchdesk.domain.producer_review import (
     approved_binding,
