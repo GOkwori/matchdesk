@@ -2,7 +2,7 @@
 
 import asyncio
 
-from matchdesk.domain.orchestration import RolePolicy, start_workflow
+from matchdesk.domain.orchestration import RolePolicy, recover_workflow, record_specialist_attempt, start_workflow
 from matchdesk.domain.runtime_resilience import (
     RetryableSpecialistError,
     execute_bounded_specialist,
@@ -153,3 +153,38 @@ def test_role_mismatch_is_blocked() -> None:
     assert result.response is None
     assert result.failure_kinds == ("invalid_response",)
     assert result.state.status == "blocked"
+
+
+def test_recovered_workflow_resumes_same_role_and_completes() -> None:
+    """A restored workflow preserves consumed attempts and resumes without skipping."""
+    state = _state()
+    state = record_specialist_attempt(
+        state,
+        "tactical_analyst",
+        duration_ms=5,
+        outcome="retryable_failure",
+        reason="worker stopped after transient provider failure",
+    )
+    state = recover_workflow(state, "worker restarted from persisted workflow state")
+
+    class Executor:
+        """Return one valid response after host-level workflow recovery."""
+
+        async def execute(self, request, tools):
+            """Complete the same specialist role after recovery."""
+            return SpecialistResponse(role=request.role, content="Recovered response")
+
+    result = asyncio.run(
+        execute_bounded_specialist(
+            state,
+            instruction="Resume the bounded tactical analysis.",
+            executor=Executor(),
+            tools=ScopedReadTools(role="tactical_analyst", events=()),
+        )
+    )
+
+    assert result.response is not None
+    assert result.failure_kinds == ()
+    assert result.state.recovery_count == 1
+    assert result.state.current_role == "narrative_composer"
+    assert [attempt.attempt for attempt in result.state.attempts] == [1, 2]
