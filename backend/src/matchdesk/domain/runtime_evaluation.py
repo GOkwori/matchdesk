@@ -34,9 +34,7 @@ def evaluate_specialist_response(
             reason="Evaluation requires at least one evidence-bound claim",
         )
 
-    results = tuple(
-        verify_claim(claim, evidence, events) for claim in response.proposed_claims
-    )
+    results = tuple(verify_claim(claim, evidence, events) for claim in response.proposed_claims)
     if any(result.status == "blocked" for result in results):
         return ModelEvaluation(
             status="blocked",
