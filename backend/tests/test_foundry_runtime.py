@@ -1,6 +1,7 @@
 """Phase 2D tests for the gated Agent Framework / Foundry runtime adapter."""
 
 import asyncio
+import inspect
 import json
 
 import pytest
@@ -352,3 +353,19 @@ def test_scoped_snapshot_remains_role_restricted() -> None:
     assert "events" not in audience
     assert "evidence_records" in audience
     assert "verification_results" in audience
+
+
+def test_pinned_foundry_packages_expose_required_runtime_api() -> None:
+    """The resolver-qualified Microsoft packages expose the adapter's required API surface."""
+    from agent_framework import Agent
+    from agent_framework.foundry import FoundryChatClient
+    from azure.identity import AzureCliCredential
+
+    client_parameters = inspect.signature(FoundryChatClient).parameters
+    assert "project_endpoint" in client_parameters
+    assert "model" in client_parameters
+    assert "credential" in client_parameters
+
+    run_parameters = inspect.signature(Agent.run).parameters
+    assert "options" in run_parameters
+    assert callable(AzureCliCredential)
