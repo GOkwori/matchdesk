@@ -248,9 +248,9 @@ def test_live_executor_uses_structured_output_and_locked_run_options() -> None:
     assert response.content == "Bounded live proposal."
     assert factory.role == "tactical_analyst"
     assert factory.config == config
-    assert factory.agent.kwargs["response_format"] is RuntimeProposal
-    assert factory.agent.kwargs["max_tokens"] == 600
-    assert factory.agent.kwargs["store"] is False
+    assert factory.agent.kwargs["options"]["response_format"] is RuntimeProposal
+    assert factory.agent.kwargs["options"]["max_tokens"] == 600
+    assert factory.agent.kwargs["options"]["store"] is False
 
 
 def test_live_executor_preserves_existing_claim_contract() -> None:
