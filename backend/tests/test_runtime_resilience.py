@@ -70,3 +70,37 @@ def test_repeated_retryable_failure_stops_at_budget() -> None:
     assert result.failure_kinds == ("retryable_failure", "retryable_failure")
     assert result.state.status == "fallback"
     assert result.state.current_role is None
+
+
+def test_timeout_is_classified_and_bounded() -> None:
+    """The host timeout consumes attempts and finishes in fallback."""
+
+    class Executor:
+        """Sleep beyond the deliberately tiny host timeout."""
+
+        async def execute(self, request, tools):
+            """Wait long enough for asyncio.wait_for to cancel the call."""
+            await asyncio.sleep(0.02)
+            return SpecialistResponse(role=request.role, content="late")
+
+    result = asyncio.run(
+        execute_bounded_specialist(
+            _state(),
+            instruction="Analyse the bounded event context.",
+            executor=Executor(),
+            tools=ScopedReadTools(role="tactical_analyst", events=()),
+            policy=__import__(
+                "matchdesk.domain.orchestration",
+                fromlist=["RolePolicy"],
+            ).RolePolicy(
+                role="tactical_analyst",
+                max_attempts=2,
+                timeout_ms=1,
+            ),
+        )
+    )
+
+    assert result.response is None
+    assert result.failure_kinds == ("timeout", "timeout")
+    assert result.state.status == "fallback"
+    assert [attempt.outcome for attempt in result.state.attempts] == ["timeout", "timeout"]
