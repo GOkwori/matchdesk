@@ -54,8 +54,10 @@ def policy(**overrides) -> CustomerOidcPolicy:
     """Pin a fake External ID broker, registered client and exact HTTPS callback."""
     params = dict(
         broker=CustomerBrokerPolicy(
-            issuer=ISSUER, tenant_id=TENANT,
-            audience="api://customer-test", client_ids=frozenset({CLIENT}),
+            issuer=ISSUER,
+            tenant_id=TENANT,
+            audience="api://customer-test",
+            client_ids=frozenset({CLIENT}),
         ),
         client_id=CLIENT,
         public_origin=ORIGIN,
@@ -92,8 +94,13 @@ def started(store: AtomicAttempts, *, clock: datetime = NOW):
 def complete(store: AtomicAttempts, state: str, binding: str, **overrides):
     """Send a host-controlled synthetic callback to the single-use verifier."""
     args = dict(
-        policy=policy(), store=store, state=state, browser_binding=binding,
-        issuer=ISSUER, code="sample-authorisation-code", now=NOW,
+        policy=policy(),
+        store=store,
+        state=state,
+        browser_binding=binding,
+        issuer=ISSUER,
+        code="sample-authorisation-code",
+        now=NOW,
     )
     args.update(overrides)
     return finish_customer_oidc_login(**args)
@@ -143,9 +150,11 @@ def test_callback_recovers_server_only_verifier_with_exact_state_and_issuer() ->
     assert pending.token_endpoint == f"{PREFIX}/oauth2/v2.0/token"
     assert pending.redirect_uri == f"{ORIGIN}/api/customer/oidc/callback"
     assert pending.client_id == CLIENT
-    challenge = base64.urlsafe_b64encode(
-        hashlib.sha256(pending.code_verifier.encode("ascii")).digest()
-    ).rstrip(b"=").decode()
+    challenge = (
+        base64.urlsafe_b64encode(hashlib.sha256(pending.code_verifier.encode("ascii")).digest())
+        .rstrip(b"=")
+        .decode()
+    )
     assert challenge == query["code_challenge"][0]
     assert pending.nonce == query["nonce"][0]
     assert pending.code_verifier not in redirect.authorization_url
@@ -304,8 +313,12 @@ def test_explicit_short_pending_lifetime_expires_at_boundary() -> None:
     assert "Max-Age=30" in redirect.set_cookie
     with pytest.raises(PermissionError):
         finish_customer_oidc_login(
-            policy=p, store=store, state=query["state"][0],
-            browser_binding=cookie, issuer=ISSUER, code="code",
+            policy=p,
+            store=store,
+            state=query["state"][0],
+            browser_binding=cookie,
+            issuer=ISSUER,
+            code="code",
             now=NOW + timedelta(seconds=30),
         )
 
@@ -344,3 +357,61 @@ def test_explicit_login_cookie_expiry_matches_host_security_contract() -> None:
     assert "Expires=Thu, 01 Jan 1970" in header
     assert "Domain=" not in header
     assert "Secure; HttpOnly; SameSite=Lax" in header
+
+
+
+def test_invalid_broker_scopes_and_callback_time_are_rejected() -> None:
+    """Reject malformed browser-broker policy values and callback clocks."""
+    with pytest.raises(ValueError):
+        policy(scopes=("openid", "custom\nscope"))
+    store = AtomicAttempts()
+    _, query, binding = started(store)
+    with pytest.raises(ValueError):
+        complete(store, query["state"][0], binding, now=NOW.replace(tzinfo=None))
+
+
+@pytest.mark.parametrize("bad_hash", [None, "x" * 64, "a" * 63])
+def test_untrusted_saved_login_hash_is_rejected(bad_hash) -> None:
+    """Never honor malformed state or binding hashes after storage reads."""
+    store = AtomicAttempts()
+    _, query, binding = started(store)
+    state = query["state"][0]
+    key = hashlib.sha256(state.encode()).hexdigest()
+    original = store._rows[key]
+    store._rows[key] = replace(original, binding_hash=bad_hash)
+    with pytest.raises(ValueError):
+        complete(store, state, binding)
+
+
+@pytest.mark.parametrize(
+    "bad",
+    [
+        {"nonce": "a" * 42},
+        {"code_verifier": "invalid-verifier"},
+        {"issued_at": NOW.replace(tzinfo=None)},
+        {"expires_at": NOW + timedelta(minutes=6)},
+    ],
+)
+def test_invalid_stored_login_secrets_and_lifetime_fail_closed(bad) -> None:
+    """Tampered one-time storage records cannot authorize code exchange."""
+    store = AtomicAttempts()
+    _, query, binding = started(store)
+    state = query["state"][0]
+    key = hashlib.sha256(state.encode()).hexdigest()
+    store._rows[key] = replace(store._rows[key], **bad)
+    with pytest.raises(ValueError):
+        complete(store, state, binding)
+
+
+def test_secure_random_generator_fault_denies_authorisation_redirect() -> None:
+    """Malformed RNG output cannot reserve state or expose an unusable URL."""
+    from unittest.mock import patch
+
+    store = AtomicAttempts()
+    with patch(
+        "matchdesk.domain.oidc_login.secrets.token_urlsafe",
+        return_value="not-a-secure-256-bit-value",
+    ):
+        with pytest.raises(RuntimeError, match="random generator"):
+            begin_customer_oidc_login(policy=policy(), store=store, now=NOW)
+    assert store._rows == {}

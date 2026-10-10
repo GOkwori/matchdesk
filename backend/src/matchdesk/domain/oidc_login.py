@@ -99,9 +99,7 @@ class CustomerOidcPolicy:
         return f"{self.public_origin}/api/customer/oidc/callback"
 
 
-def verify_broker_discovery(
-    policy: CustomerOidcPolicy, document: Mapping[str, object]
-) -> None:
+def verify_broker_discovery(policy: CustomerOidcPolicy, document: Mapping[str, object]) -> None:
     """Check already-fetched metadata against host-pinned broker trust.
 
     Fetching, redirect handling, cache expiry and JWKS rotation require a
@@ -145,8 +143,10 @@ class PendingOidcLogin:
     def __post_init__(self) -> None:
         """Reject malformed or overlong persisted login transactions."""
         for value in (self.state_hash, self.binding_hash):
-            if not isinstance(value, str) or len(value) != 64 or any(
-                char not in "0123456789abcdef" for char in value
+            if (
+                not isinstance(value, str)
+                or len(value) != 64
+                or any(char not in "0123456789abcdef" for char in value)
             ):
                 raise ValueError("OIDC transaction requires hashed browser state")
         if (
@@ -224,18 +224,22 @@ def begin_customer_oidc_login(
     if not store.create(attempt):
         raise PermissionError("OIDC login state could not be reserved")
     challenge = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode("ascii")).digest())
-    url = policy.authorization_endpoint + "?" + urlencode(
-        {
-            "response_type": "code",
-            "response_mode": "query",
-            "client_id": policy.client_id,
-            "redirect_uri": policy.redirect_uri,
-            "scope": " ".join(policy.scopes),
-            "state": state,
-            "nonce": nonce,
-            "code_challenge_method": "S256",
-            "code_challenge": challenge.rstrip(b"=").decode("ascii"),
-        }
+    url = (
+        policy.authorization_endpoint
+        + "?"
+        + urlencode(
+            {
+                "response_type": "code",
+                "response_mode": "query",
+                "client_id": policy.client_id,
+                "redirect_uri": policy.redirect_uri,
+                "scope": " ".join(policy.scopes),
+                "state": state,
+                "nonce": nonce,
+                "code_challenge_method": "S256",
+                "code_challenge": challenge.rstrip(b"=").decode("ascii"),
+            }
+        )
     )
     cookie = (
         f"{_LOGIN_COOKIE}={binding}; Max-Age={policy.pending_seconds}; "
@@ -271,9 +275,7 @@ def finish_customer_oidc_login(
     attempt.__post_init__()
     if (
         not _random_value(browser_binding)
-        or not hmac.compare_digest(
-            attempt.binding_hash, _secret_digest(browser_binding)
-        )
+        or not hmac.compare_digest(attempt.binding_hash, _secret_digest(browser_binding))
         or attempt.issued_at > current
         or current >= attempt.expires_at
         or attempt.issuer != policy.broker.issuer
