@@ -3,8 +3,7 @@
 from dataclasses import replace
 
 import pytest
-
-from matchdesk.domain.broadcast_outputs import BroadcastEnvelope, ClaimLinkedText, CommentaryPayload
+from matchdesk.domain.broadcast_outputs import ClaimLinkedText, CommentaryPayload
 from matchdesk.domain.hashing import content_digest
 from matchdesk.domain.producer_commands import (
     HostVerifiedActor,
@@ -107,9 +106,10 @@ def test_reject_stale_hash_and_evidence_mismatch() -> None:
     """Tampered bindings do not get a valid producer transition."""
     case = _case()
     stale = replace(
-        case, output=case.output.model_copy(
+        case,
+        output=case.output.model_copy(
             update={"binding": case.output.binding.model_copy(update={"content_digest": "b" * 64})}
-        )
+        ),
     )
     with pytest.raises(ValueError, match="stale or inconsistent"):
         apply_producer_command(
@@ -128,7 +128,9 @@ class OfflineAtomicStore:
     def load(self, tenant_id: str, session_id: str, output_id: str):
         """Return a case scoped to the trusted tenant/session arguments."""
         if (tenant_id, session_id, output_id) == (
-            self.case.tenant_id, self.case.output.session_id, self.case.output.output_id
+            self.case.tenant_id,
+            self.case.output.session_id,
+            self.case.output.output_id,
         ):
             return self.case
         return None
@@ -146,8 +148,13 @@ def test_store_cas_blocks_concurrent_review() -> None:
     store = OfflineAtomicStore(_case(), race=True)
     with pytest.raises(RuntimeError, match="Concurrent"):
         execute_producer_command(
-            store, actor=_actor(), tenant_id="team-1", session_id="demo-preview-only",
-            output_id="demo-story-output", expected_generation=1, command="reverify",
+            store,
+            actor=_actor(),
+            tenant_id="team-1",
+            session_id="demo-preview-only",
+            output_id="demo-story-output",
+            expected_generation=1,
+            command="reverify",
             reason="Checked",
         )
     assert store.case.generation == 1
@@ -159,6 +166,12 @@ def test_no_command_endpoint_is_exposed() -> None:
     from matchdesk.api.app import create_app
 
     client = TestClient(create_app())
-    assert client.post("/api/producer/preview/reverify", json={"role": "producer"}).status_code == 404
-    assert client.post("/api/producer/preview/approve", json={"role": "producer"}).status_code == 404
-    assert client.post("/api/producer/preview/publish", json={"role": "producer"}).status_code == 404
+    assert (
+        client.post("/api/producer/preview/reverify", json={"role": "producer"}).status_code == 404
+    )
+    assert (
+        client.post("/api/producer/preview/approve", json={"role": "producer"}).status_code == 404
+    )
+    assert (
+        client.post("/api/producer/preview/publish", json={"role": "producer"}).status_code == 404
+    )
