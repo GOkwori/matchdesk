@@ -111,6 +111,10 @@ def test_renew_replaces_token_and_logout_revokes_successor() -> None:
     assert "Domain=" not in renewed.headers["set-cookie"]
     assert "Secure; HttpOnly; SameSite=Lax" in renewed.headers["set-cookie"]
     assert successor_id not in renewed.text
+    # The test client retains the original loose-scope test cookie alongside
+    # the response's host-only replacement. Reset it to model one browser
+    # cookie after rotation; duplicate cookies must remain rejected in prod.
+    client.cookies.clear()
     client.cookies.set(COOKIE_NAME, successor_id)
     logged_out = client.post(
         "/api/customer/session/logout", headers=headers(renewed.json()["csrf_token"])
@@ -190,3 +194,65 @@ def test_router_refuses_untrusted_configuration(change: dict[str, object]) -> No
     options.update(change)
     with pytest.raises(ValueError):
         create_customer_session_router(**options)
+
+
+def test_valid_session_ignores_unrelated_cookie_segments() -> None:
+    """An unrelated cookie must not impersonate or invalidate one exact session."""
+    client, store = configured()
+    raw = f"analytics=irrelevant; {COOKIE_NAME}={store.original.session_id}; other=1"
+    response = client.get("/api/customer/session", headers={"Cookie": raw})
+    assert response.status_code == 200
+    assert response.json()["authenticated"] is True
+
+
+@pytest.mark.parametrize(
+    "raw_cookie",
+    [
+        f"{COOKIE_NAME}; unrelated=1",
+        f"{COOKIE_NAME}={'a' * 64}; {COOKIE_NAME}={'b' * 64}",
+        f"{COOKIE_NAME}={'a' * 64}; {COOKIE_NAME}={'a' * 64}",
+    ],
+)
+def test_cookie_tossing_and_missing_equals_are_rejected(raw_cookie: str) -> None:
+    """Duplicate or unterminated host-prefixed cookies cannot reach the store."""
+    client, _ = configured()
+    response = client.get("/api/customer/session", headers={"Cookie": raw_cookie})
+    assert response.status_code == 401
+
+
+@pytest.mark.parametrize("missing_header", ["Origin", "X-MatchDesk-CSRF"])
+def test_missing_mutation_headers_cannot_revoke_or_rotate(missing_header: str) -> None:
+    """All unsafe session actions need both origin and server-bound CSRF proof."""
+    client, store = configured()
+    client.cookies.set(COOKIE_NAME, store.original.session_id)
+    proof = client.get("/api/customer/session/csrf").json()["csrf_token"]
+    sent = headers(proof)
+    del sent[missing_header]
+    for action in ("renew", "logout"):
+        response = client.post(f"/api/customer/session/{action}", headers=sent)
+        assert response.status_code == 403
+        assert not store.rows[store.original.session_id].revoked
+
+
+def test_csrf_read_fails_if_session_is_revoked_between_lookups() -> None:
+    """The second session check fails closed on a concurrent server-side logout."""
+    from unittest.mock import patch
+
+    client, store = configured()
+    client.cookies.set(COOKIE_NAME, store.original.session_id)
+    with patch.object(store, "load", side_effect=[store.original, None]):
+        response = client.get("/api/customer/session/csrf")
+    assert response.status_code == 401
+    assert "csrf_token" not in response.text
+    assert store.original.session_id not in response.text
+
+
+@pytest.mark.parametrize("fetch_site", ["cross-site", "same-site", "none"])
+def test_customer_reads_reject_cross_origin_fetch_metadata(fetch_site: str) -> None:
+    """Same-site is not necessarily same-origin for protected session reads."""
+    client, store = configured()
+    client.cookies.set(COOKIE_NAME, store.original.session_id)
+    response = client.get(
+        "/api/customer/session/csrf", headers={"Sec-Fetch-Site": fetch_site}
+    )
+    assert response.status_code == 403
