@@ -12,7 +12,11 @@ from typing import Annotated, Literal
 
 from pydantic import BeforeValidator, Field
 
-from matchdesk.domain.broadcast_outputs import BroadcastEnvelope, CommentaryPayload
+from matchdesk.domain.broadcast_outputs import (
+    BroadcastEnvelope,
+    ClaimLinkedText,
+    CommentaryPayload,
+)
 from matchdesk.domain.hashing import canonical_bytes, content_digest
 from matchdesk.domain.models import (
     ApprovalBinding,
@@ -102,9 +106,7 @@ def build_producer_desk_preview() -> ProducerDeskPreview:
     if verification.status != "verified":
         raise AssertionError("Producer preview must fail closed on a failed metric check")
 
-    payload = CommentaryPayload(
-        lines=({"claim_id": claim.claim_id, "text": claim.text},)
-    )
+    payload = CommentaryPayload(lines=(ClaimLinkedText(claim_id=claim.claim_id, text=claim.text),))
     binding = ApprovalBinding(
         item_id="demo-first-half-story",
         item_version=1,
