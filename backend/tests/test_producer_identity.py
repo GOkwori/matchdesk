@@ -17,7 +17,7 @@ ISSUER = "https://login.microsoftonline.com/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee
 TENANT = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
 AUDIENCE = "api://matchdesk-ci"
 CLIENT = "matchdesk-frontend-ci"
-NOW = datetime(2026, 10, 10, 8, 0, tzinfo=timezone.utc)
+NOW = datetime.now(timezone.utc)
 
 
 class Grants:
