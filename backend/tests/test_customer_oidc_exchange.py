@@ -83,9 +83,7 @@ def configured():
 def test_pinned_code_post_returns_id_token_only(configured) -> None:
     """Never disclose upstream access tokens, roles or the injected client secret."""
     policy, pending, transport = configured
-    exchanger = BrokerCodeExchanger(
-        policy=policy, client_secret=CLIENT_SECRET, transport=transport
-    )
+    exchanger = BrokerCodeExchanger(policy=policy, client_secret=CLIENT_SECRET, transport=transport)
     assert exchanger.redeem(pending=pending) == "header.payload.signature"
     assert len(transport.requests) == 1
     request = transport.requests[0]
@@ -126,9 +124,7 @@ def test_pinned_code_post_returns_id_token_only(configured) -> None:
 def test_bad_exchange_never_reaches_http_transport(configured, change) -> None:
     """Tampered broker, PKCE, redirect and code are refused before network calls."""
     policy, pending, transport = configured
-    exchanger = BrokerCodeExchanger(
-        policy=policy, client_secret=CLIENT_SECRET, transport=transport
-    )
+    exchanger = BrokerCodeExchanger(policy=policy, client_secret=CLIENT_SECRET, transport=transport)
     with pytest.raises(PermissionError):
         exchanger.redeem(pending=replace(pending, **change))
     assert not transport.requests
@@ -175,9 +171,7 @@ def test_bad_token_response_cannot_leave_exchange(
         location=location,
         redirected=redirected,
     )
-    exchanger = BrokerCodeExchanger(
-        policy=policy, client_secret=CLIENT_SECRET, transport=transport
-    )
+    exchanger = BrokerCodeExchanger(policy=policy, client_secret=CLIENT_SECRET, transport=transport)
     with pytest.raises(PermissionError, match="code redemption denied") as failure:
         exchanger.redeem(pending=pending)
     assert len(transport.requests) == 1
@@ -188,9 +182,7 @@ def test_transport_error_is_redacted_and_not_retried(configured) -> None:
     """A network failure does not reveal secrets or replay a spent OIDC code."""
     policy, pending, transport = configured
     transport.failure = RuntimeError("private client credential and network address")
-    exchanger = BrokerCodeExchanger(
-        policy=policy, client_secret=CLIENT_SECRET, transport=transport
-    )
+    exchanger = BrokerCodeExchanger(policy=policy, client_secret=CLIENT_SECRET, transport=transport)
     with pytest.raises(PermissionError, match="code redemption denied") as failure:
         exchanger.redeem(pending=pending)
     assert len(transport.requests) == 1
@@ -200,9 +192,7 @@ def test_transport_error_is_redacted_and_not_retried(configured) -> None:
 def test_concrete_https_transport_uses_verified_tls_no_proxy_and_no_redirect(configured) -> None:
     """Use a single direct HTTPS POST with a bounded read and no redirect handler."""
     policy, pending, transport = configured
-    exchanger = BrokerCodeExchanger(
-        policy=policy, client_secret=CLIENT_SECRET, transport=transport
-    )
+    exchanger = BrokerCodeExchanger(policy=policy, client_secret=CLIENT_SECRET, transport=transport)
     assert exchanger.redeem(pending=pending) == "header.payload.signature"
     request = transport.requests[0]
     reply = Mock()
@@ -212,9 +202,7 @@ def test_concrete_https_transport_uses_verified_tls_no_proxy_and_no_redirect(con
         ("Content-Encoding", "identity"),
     ]
     reply.read.return_value = b'{"id_token":"header.payload.signature"}'
-    with patch(
-        "matchdesk.domain.customer_oidc_exchange.HTTPSConnection"
-    ) as connection_factory:
+    with patch("matchdesk.domain.customer_oidc_exchange.HTTPSConnection") as connection_factory:
         connection_factory.return_value.getresponse.return_value = reply
         result = HttpsOidcTokenTransport().post(request)
     assert result.body == reply.read.return_value
@@ -246,17 +234,13 @@ def test_https_transport_rejects_redirects_errors_compression_and_oversize(
 ) -> None:
     """The wire transport neither follows redirects nor downloads unbounded data."""
     policy, pending, captured = configured
-    exchanger = BrokerCodeExchanger(
-        policy=policy, client_secret=CLIENT_SECRET, transport=captured
-    )
+    exchanger = BrokerCodeExchanger(policy=policy, client_secret=CLIENT_SECRET, transport=captured)
     exchanger.redeem(pending=pending)
     request = captured.requests[0]
     reply = Mock(status=status)
     reply.getheaders.return_value = headers
     reply.read.return_value = body
-    with patch(
-        "matchdesk.domain.customer_oidc_exchange.HTTPSConnection"
-    ) as connection_factory:
+    with patch("matchdesk.domain.customer_oidc_exchange.HTTPSConnection") as connection_factory:
         connection_factory.return_value.getresponse.return_value = reply
         with pytest.raises(PermissionError, match="transport denied"):
             HttpsOidcTokenTransport().post(request)
@@ -276,13 +260,11 @@ def test_https_transport_rejects_redirects_errors_compression_and_oversize(
 def test_https_transport_rejects_unpinned_endpoint_before_socket(configured, endpoint) -> None:
     """Arbitrary URLs cannot turn the low-level client into an SSRF primitive."""
     policy, pending, captured = configured
-    BrokerCodeExchanger(
-        policy=policy, client_secret=CLIENT_SECRET, transport=captured
-    ).redeem(pending=pending)
+    BrokerCodeExchanger(policy=policy, client_secret=CLIENT_SECRET, transport=captured).redeem(
+        pending=pending
+    )
     request = replace(captured.requests[0], endpoint=endpoint)
-    with patch(
-        "matchdesk.domain.customer_oidc_exchange.HTTPSConnection"
-    ) as connection_factory:
+    with patch("matchdesk.domain.customer_oidc_exchange.HTTPSConnection") as connection_factory:
         with pytest.raises(PermissionError):
             HttpsOidcTokenTransport().post(request)
         connection_factory.assert_not_called()
@@ -291,13 +273,11 @@ def test_https_transport_rejects_unpinned_endpoint_before_socket(configured, end
 def test_tls_failure_is_redacted_and_connection_closed(configured) -> None:
     """Certificate, DNS and timeout diagnostics cannot leak from the token adapter."""
     policy, pending, captured = configured
-    BrokerCodeExchanger(
-        policy=policy, client_secret=CLIENT_SECRET, transport=captured
-    ).redeem(pending=pending)
+    BrokerCodeExchanger(policy=policy, client_secret=CLIENT_SECRET, transport=captured).redeem(
+        pending=pending
+    )
     request = captured.requests[0]
-    with patch(
-        "matchdesk.domain.customer_oidc_exchange.HTTPSConnection"
-    ) as connection_factory:
+    with patch("matchdesk.domain.customer_oidc_exchange.HTTPSConnection") as connection_factory:
         connection_factory.return_value.request.side_effect = OSError("private host")
         with pytest.raises(PermissionError, match="transport denied") as failure:
             HttpsOidcTokenTransport().post(request)

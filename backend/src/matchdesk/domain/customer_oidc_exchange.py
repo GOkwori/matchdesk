@@ -203,6 +203,7 @@ class HttpsOidcTokenTransport:
             if (
                 reply.status != 200
                 or len(content_types) != 1
+                or content_types[0].split(";", 1)[0].strip().lower() != "application/json"
                 or len(encodings) > 1
                 or any(value.strip().lower() != "identity" for value in encodings)
                 or any(name.lower() == "location" for name, _ in headers)
