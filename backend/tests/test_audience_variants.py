@@ -1,7 +1,6 @@
 """Phase 3D tests for audience language/persona variant qualification."""
 
 import pytest
-
 from matchdesk.domain.audience_variants import qualify_audience_variant
 from matchdesk.domain.broadcast_outputs import (
     BroadcastEnvelope,
