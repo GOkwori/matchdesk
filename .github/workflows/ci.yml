@@ -53,7 +53,7 @@ jobs:
           if check_exports():
               exports = expected_exports()
               for name in ("openapi.json", "manifest.json"):
-                  print("MATCHDESK_CONTRACT_SUGGESTION:" + name + ":" + json.dumps(json.loads(exports[name]), separators=(",", ":"), ensure_ascii=True))
+                  print("MATCHDESK_CONTRACT_SUGGESTION:" + name + ":" + json.dumps(exports[name], ensure_ascii=True))
           PY
       - name: Validate contracts, comments and documentation
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
