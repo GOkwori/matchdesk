@@ -31,9 +31,7 @@ def producer_connection_factory(
 
     def open_connection() -> DbConnection:
         """Open a new connection for one exact scoped store operation."""
-        connection = psycopg.connect(
-            conninfo, autocommit=True, connect_timeout=connect_timeout
-        )
+        connection = psycopg.connect(conninfo, autocommit=True, connect_timeout=connect_timeout)
         return cast(DbConnection, connection)
 
     return open_connection

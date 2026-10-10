@@ -23,13 +23,13 @@ def test_timeout_is_bounded(timeout: int) -> None:
 def test_connections_are_explicitly_autocommit_and_host_scoped() -> None:
     """Psycopg handles per-operation transaction() and cursor() contexts itself."""
     conn = MagicMock()
-    with patch("matchdesk.domain.psycopg_producer_driver.psycopg.connect", return_value=conn) as call:
+    with patch(
+        "matchdesk.domain.psycopg_producer_driver.psycopg.connect", return_value=conn
+    ) as call:
         factory = producer_connection_factory(
             conninfo="host=localhost dbname=synthetic", connect_timeout=7
         )
         assert factory() is conn
         assert factory() is conn
     assert call.call_count == 2
-    call.assert_called_with(
-        "host=localhost dbname=synthetic", autocommit=True, connect_timeout=7
-    )
+    call.assert_called_with("host=localhost dbname=synthetic", autocommit=True, connect_timeout=7)
