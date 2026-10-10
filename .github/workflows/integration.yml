@@ -333,6 +333,79 @@ jobs:
           END;
           $cleanup$;
           SQL
+      - name: Qualify ID3G revocation on disposable PostgreSQL only
+        id: id3g_revocation_qa
+        if: ${{ !cancelled() && steps.directory_gate.outcome == 'success' && steps.id3g_role_probe.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          # Run the reviewed SQL ONLY in this run's disposable PostgreSQL topology.
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+            psql --no-psqlrc -X -v ON_ERROR_STOP=1 -U matchdesk -d matchdesk <<'SQL'
+          INSERT INTO public.matchdesk_customer_sessions
+            (token_hash, issuer, tenant_id, subject, account_id, realm,
+             created_at, expires_at, last_seen_at, revoked)
+          VALUES
+            (repeat('e', 64),
+             'https://ci.ciamlogin.com/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/v2.0',
+             'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+             'ci-registered', 'ci-1', 'customer',
+             now(), now() + interval '1 hour', now(), FALSE)
+          ON CONFLICT DO NOTHING;
+          SQL
+          for attempt in 1 2; do
+            docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+              psql --no-psqlrc -X -v ON_ERROR_STOP=1 -U matchdesk -d matchdesk \
+              < qualification/id3g/005_customer_account_revocation.sql
+          done
+          session_password="$(openssl rand -hex 32)"
+          operator_password="$(openssl rand -hex 32)"
+          echo "::add-mask::$session_password"
+          echo "::add-mask::$operator_password"
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+            psql --no-psqlrc -X -v ON_ERROR_STOP=1 -U matchdesk -d matchdesk \
+            -v session_password="$session_password" \
+            -v operator_password="$operator_password" <<'SQL'
+          REVOKE CREATE ON SCHEMA public FROM PUBLIC;
+          CREATE ROLE matchdesk_session_revocation_ci LOGIN PASSWORD :'session_password';
+          CREATE ROLE matchdesk_account_operator_ci LOGIN PASSWORD :'operator_password';
+          GRANT CONNECT ON DATABASE matchdesk TO
+            matchdesk_session_revocation_ci, matchdesk_account_operator_ci;
+          GRANT USAGE ON SCHEMA public TO
+            matchdesk_session_revocation_ci, matchdesk_account_operator_ci;
+          GRANT SELECT, INSERT, UPDATE ON public.matchdesk_customer_sessions
+            TO matchdesk_session_revocation_ci;
+          GRANT SELECT, UPDATE (state, account_id), DELETE
+            ON public.matchdesk_customer_accounts TO matchdesk_account_operator_ci;
+          -- The operator cannot inspect, create, or modify any customer session.
+          INSERT INTO public.matchdesk_customer_accounts
+            (issuer, tenant_id, subject, account_id, state)
+          VALUES
+            ('https://ci.ciamlogin.com/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/v2.0',
+             'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', 'ci-revive', 'ci-revive-account', 'active'),
+            ('https://ci.ciamlogin.com/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/v2.0',
+             'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', 'ci-reassign', 'ci-reassign-account', 'active'),
+            ('https://ci.ciamlogin.com/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/v2.0',
+             'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', 'ci-pending-new', 'ci-pending-new-account', 'active'),
+            ('https://ci.ciamlogin.com/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/v2.0',
+             'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', 'ci-delete', 'ci-delete-account', 'active'),
+            ('https://ci.ciamlogin.com/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/v2.0',
+             'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', 'ci-insert-first', 'ci-insert-first-account', 'active'),
+            ('https://ci.ciamlogin.com/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/v2.0',
+             'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', 'ci-suspend-first', 'ci-suspend-first-account', 'active'),
+            ('https://ci.ciamlogin.com/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/v2.0',
+             'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', 'ci-rotate-race', 'ci-rotate-race-account', 'active');
+          SQL
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true \
+            -e "CI_REVOCATION_SESSION_PASSWORD=$session_password" \
+            -e "CI_REVOCATION_OPERATOR_PASSWORD=$operator_password" api \
+            /app/.venv/bin/python - < qualification/id3g/customer_account_revocation_psycopg.py \
+            2>&1 | tee artifacts/integration/customer-account-revocation-psycopg.log
+      - name: Require executed ID3G PostgreSQL revocation acceptance
+        id: id3g_revocation_gate
+        if: ${{ !cancelled() && steps.directory_gate.outcome == 'success' && steps.id3g_role_probe.outcome == 'success' }}
+        run: |
+          test "${{ steps.id3g_revocation_qa.outcome }}" = success
       - name: Install locked browser harness and matching Chromium
         id: browser
         if: ${{ !cancelled() && steps.start.outcome == 'success' }}
@@ -347,7 +420,7 @@ jobs:
         run: npm test 2>&1 | tee ../artifacts/integration/browser.log
       - name: Install the verified native-image scanner and current database
         id: scanner
-        if: ${{ !cancelled() && steps.runtime.outcome == 'success' && steps.producer_storage.outcome == 'success' && steps.psycopg_storage.outcome == 'success' && steps.customer_sessions_storage.outcome == 'success' && steps.oidc_storage.outcome == 'success' && steps.account_directory.outcome == 'success' && steps.directory_gate.outcome == 'success' && steps.id3g_role_probe.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.runtime.outcome == 'success' && steps.producer_storage.outcome == 'success' && steps.psycopg_storage.outcome == 'success' && steps.customer_sessions_storage.outcome == 'success' && steps.oidc_storage.outcome == 'success' && steps.account_directory.outcome == 'success' && steps.directory_gate.outcome == 'success' && steps.id3g_role_probe.outcome == 'success' && steps.id3g_revocation_qa.outcome == 'success' && steps.id3g_revocation_gate.outcome == 'success' }}
         # This is the official 0.75.0 Linux-64bit asset, independently inspected before pinning.
         # No curl-to-shell execution, repository token or downloaded installer is used.
         run: |
