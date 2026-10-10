@@ -1,0 +1,73 @@
+# Read-only one-shot resolver to make PyJWT a direct, pinned API dependency.
+# It proposes a lockfile change; it does not push, deploy or request secrets.
+name: Resolve P3G producer OIDC lock
+on:
+  push:
+    branches: [development]
+    paths: ['.github/workflows/p3g-oidc-lock-resolver.yml']
+permissions:
+  contents: read
+jobs:
+  resolve:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.15'
+      - name: Install pinned resolver
+        run: "python -m pip install --only-binary=:all: uv==0.10.0"
+      - name: Resolve direct PyJWT crypto dependency
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          path = Path("pyproject.toml")
+          text = path.read_text()
+          old = '    "pydantic==2.13.5",\n'
+          assert text.count(old) == 1
+          assert '"PyJWT[crypto]==' not in text
+          path.write_text(text.replace(old, old + '    "PyJWT[crypto]==2.15.1",\n'))
+          PY
+          uv lock --python 3.12 --no-build
+      - name: Check locked version and print review-only patch
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib
+          import subprocess
+          import tomllib
+          from pathlib import Path
+          original = tomllib.loads(subprocess.check_output(["git", "show", "HEAD:uv.lock"], text=True))
+          updated = tomllib.loads(Path("uv.lock").read_text())
+          versions = lambda data: {package["name"]: package["version"] for package in data["package"]}
+          before, after = versions(original), versions(updated)
+          changed = {name: (version, after.get(name)) for name, version in before.items() if after.get(name) != version}
+          if changed or (after.keys() - before.keys()):
+              raise RuntimeError("Unexpected package resolution: " + repr(changed))
+          assert after["pyjwt"] == "2.15.1"
+          assert Path("pyproject.toml").read_text().count('"PyJWT[crypto]==2.15.1"') == 1
+          diff = subprocess.run(["git", "diff", "--", "pyproject.toml", "uv.lock"], text=True, capture_output=True, check=True).stdout
+          if not diff or len(diff) > 120000:
+              raise RuntimeError("Unexpected resolver diff")
+          print("MATCHDESK_RESOLVER_PATCH_START")
+          for line in diff.splitlines():
+              print("MATCHDESK_PATCH|" + line)
+          print("MATCHDESK_RESOLVER_PATCH_END")
+          for name in ("pyproject.toml", "uv.lock"):
+              data = Path(name).read_bytes()
+              print("MATCHDESK_FILE|" + name + "|bytes=" + str(len(data)) + "|sha256=" + hashlib.sha256(data).hexdigest())
+          print("MATCHDESK_PACKAGE_VERSIONS|" + repr({"pyjwt": after["pyjwt"]}))
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: p3g-identity-lock-suggestion
+          path: |
+            pyproject.toml
+            uv.lock
+          if-no-files-found: error
+          retention-days: 14
