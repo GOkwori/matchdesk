@@ -16,6 +16,8 @@ from matchdesk.domain.hashing import content_digest
 from matchdesk.domain.models import ApprovalBinding
 from pydantic import ValidationError
 
+from scripts.export_contracts import expected_exports
+
 
 def _statement(
     claim_id: str = "claim-1", text: str = "An evidence-linked moment."
@@ -297,3 +299,47 @@ def test_content_identity_is_language_scoped_but_does_not_grant_publication() ->
     alternate = BroadcastEnvelope.model_validate_json(json.dumps(draft))
     assert alternate.binding != envelope.binding
     assert not hasattr(alternate, "publication_authorized")
+
+
+
+def test_exported_broadcast_schema_is_registered_and_versioned() -> None:
+    """The frozen export manifest must include the entire version-one payload union."""
+    exports = expected_exports()
+    name = "BroadcastEnvelope.v1.json"
+    assert name in exports
+    manifest = json.loads(exports["manifest.json"])
+    assert name in manifest["files"]
+    schema = json.loads(exports[name])
+    assert set(schema["properties"]["payload"]["discriminator"]["mapping"]) == {
+        "commentary",
+        "explainer",
+        "overlay",
+        "half_time_recap",
+        "full_time_recap",
+    }
+
+
+@pytest.mark.parametrize(
+    "model,field,maximum",
+    [
+        ("BroadcastEnvelope", "windows", 2),
+        ("BroadcastEnvelope", "evidence_ids", 4096),
+        ("BroadcastEnvelope", "claim_ids", 4096),
+        ("CommentaryPayload", "lines", 4),
+        ("ExplainerPayload", "points", 8),
+        ("OverlayPayload", "metrics", 6),
+        ("HalfTimeRecapPayload", "highlights", 12),
+        ("FullTimeRecapPayload", "highlights", 16),
+    ],
+)
+def test_exported_array_bounds_have_correct_schema_keywords(
+    model: str, field: str, maximum: int
+) -> None:
+    """External JSON Schema validators must get item limits, never string limits."""
+    schema = json.loads(expected_exports()["BroadcastEnvelope.v1.json"])
+    properties = schema["properties"] if model == "BroadcastEnvelope" else schema["$defs"][model]["properties"]
+    array = properties[field]
+    assert array["minItems"] == 1
+    assert array["maxItems"] == maximum
+    assert "minLength" not in array
+    assert "maxLength" not in array

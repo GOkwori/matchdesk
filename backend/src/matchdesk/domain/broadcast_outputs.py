@@ -49,8 +49,8 @@ class CommentaryPayload(BroadcastPayload):
     kind: Literal["commentary"] = "commentary"
     lines: Annotated[
         tuple[ClaimLinkedText, ...],
-        BeforeValidator(immutable_array),
         Field(min_length=1, max_length=4),
+        BeforeValidator(immutable_array),
     ]
 
 
@@ -61,8 +61,8 @@ class ExplainerPayload(BroadcastPayload):
     headline: ClaimLinkedText
     points: Annotated[
         tuple[ClaimLinkedText, ...],
-        BeforeValidator(immutable_array),
         Field(min_length=1, max_length=8),
+        BeforeValidator(immutable_array),
     ]
 
 
@@ -97,8 +97,8 @@ class OverlayPayload(BroadcastPayload):
     headline: ClaimLinkedText
     metrics: Annotated[
         tuple[OverlayMetric, ...],
-        BeforeValidator(immutable_array),
         Field(min_length=1, max_length=6),
+        BeforeValidator(immutable_array),
     ]
 
 
@@ -109,8 +109,8 @@ class HalfTimeRecapPayload(BroadcastPayload):
     headline: ClaimLinkedText
     highlights: Annotated[
         tuple[ClaimLinkedText, ...],
-        BeforeValidator(immutable_array),
         Field(min_length=1, max_length=12),
+        BeforeValidator(immutable_array),
     ]
 
 
@@ -121,8 +121,8 @@ class FullTimeRecapPayload(BroadcastPayload):
     headline: ClaimLinkedText
     highlights: Annotated[
         tuple[ClaimLinkedText, ...],
-        BeforeValidator(immutable_array),
         Field(min_length=1, max_length=16),
+        BeforeValidator(immutable_array),
     ]
 
 
@@ -161,18 +161,18 @@ class BroadcastEnvelope(Contract):
     binding: ApprovalBinding
     windows: Annotated[
         tuple[MatchWindow, ...],
-        BeforeValidator(immutable_array),
         Field(min_length=1, max_length=2),
+        BeforeValidator(immutable_array),
     ]
     evidence_ids: Annotated[
         tuple[Identifier, ...],
-        BeforeValidator(immutable_array),
         Field(min_length=1, max_length=4096),
+        BeforeValidator(immutable_array),
     ]
     claim_ids: Annotated[
         tuple[Identifier, ...],
-        BeforeValidator(immutable_array),
         Field(min_length=1, max_length=4096),
+        BeforeValidator(immutable_array),
     ]
     payload: OutputPayload
 

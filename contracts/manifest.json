@@ -1,6 +1,7 @@
 {
   "files": {
     "ApprovalBinding.v1.json": "f606b3daec2041d051e5243c148001f49299d8bae82f5f4b0d126b91cce906eb",
+    "BroadcastEnvelope.v1.json": "e0d03dc86eef0c7b8aa434944bd2114f66f16c7e5a1a54cdc7ffbf7cd497dbcc",
     "Claim.v1.json": "168279945019819b56eadba19f93a61d113e33476b20712153c56c11448c3bb2",
     "EvidenceRecord.v1.json": "1d7bf1c5ea9ee9ee9f187408c17b99c60f1acb36d56883f1f000d3b4b61f99aa",
     "Location.v1.json": "b16622287c248d9750ac2492d9f9e1bba7e2da3b7d8c0112982207fd18e314d4",
