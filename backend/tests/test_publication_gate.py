@@ -3,7 +3,6 @@
 from dataclasses import replace
 
 import pytest
-
 from matchdesk.domain.models import ApprovalBinding
 from matchdesk.domain.producer_review import (
     ProducerAuditEntry,
