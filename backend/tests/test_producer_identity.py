@@ -95,7 +95,7 @@ def test_valid_signature_and_server_grants_create_producer_actor(signing) -> Non
     actor = verify_producer_access_token(
         token(private, roles=["admin"], permitted_sessions=["foreign-match"]),
         policy=policy(),
-            keys=keys,
+        keys=keys,
             entitlements=Grants(),
             now=NOW,
     )
@@ -153,10 +153,11 @@ def test_wrong_signing_key_and_untrusted_header_are_rejected(signing) -> None:
     for value in cases:
         with pytest.raises(PermissionError):
             verify_producer_access_token(
-                value, policy=policy(),
-            keys=keys,
-            entitlements=Grants(),
-            now=NOW,
+                value,
+                policy=policy(),
+                keys=keys,
+                entitlements=Grants(),
+                now=NOW,
             )
 
 
@@ -179,7 +180,8 @@ def test_invalid_token_framing_fails_closed(signing, invalid) -> None:
     _, keys = signing
     with pytest.raises(PermissionError):
         verify_producer_access_token(
-            invalid, policy=policy(),
+            invalid,
+            policy=policy(),
             keys=keys,
             entitlements=Grants(),
             now=NOW,
