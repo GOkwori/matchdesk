@@ -377,8 +377,9 @@ def test_untrusted_saved_login_hash_is_rejected(bad_hash) -> None:
     _, query, binding = started(store)
     state = query["state"][0]
     key = hashlib.sha256(state.encode()).hexdigest()
-    original = store._rows[key]
-    store._rows[key] = replace(original, binding_hash=bad_hash)
+    # Persisted rows may be corrupted after construction; simulate a bad row
+    # without invoking dataclass validation before the callback guard.
+    object.__setattr__(store._rows[key], "binding_hash", bad_hash)
     with pytest.raises(ValueError):
         complete(store, state, binding)
 
@@ -398,7 +399,8 @@ def test_invalid_stored_login_secrets_and_lifetime_fail_closed(bad) -> None:
     _, query, binding = started(store)
     state = query["state"][0]
     key = hashlib.sha256(state.encode()).hexdigest()
-    store._rows[key] = replace(store._rows[key], **bad)
+    for name, value in bad.items():
+        object.__setattr__(store._rows[key], name, value)
     with pytest.raises(ValueError):
         complete(store, state, binding)
 
