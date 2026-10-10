@@ -88,13 +88,14 @@ binds the exact item version, content digest, evidence digest, language and pers
 | P3-01 | Implement producer review/version binding and approval state | TESTED | Exact-version approve/reject/edit/reverify state; stale approval invalidation; immutable audit records |
 | P3-02 | Implement version-bound publication gate | TESTED | Pure domain gate authorises only the current approved content/evidence binding; no delivery side effect |
 | P3-03 | Implement broadcast output contracts | TESTED | Five strict immutable output envelopes; claim/evidence binding; registered overlay metrics; explicit recap period scope; frozen JSON Schema |
-| P3-04 | Implement audience adaptation and language variants | PLANNED | Analyst, casual-fan and broadcast-caption outputs in English, Spanish and French with evidence checks |
+| P3-04 | Implement audience adaptation and language variants | IN PROGRESS | Offline generation/verification and nine-pair quality-review contracts qualified (388 tests, 96.01% coverage); real multilingual model output and independent linguistic acceptance outstanding |
 | P3-05 | Implement producer desk interaction flow | PLANNED | Inspect, edit, reverify, approve, reject and publish through accessible UI states |
 | P3-06 | Review Phase 3 | PLANNED | End-to-end producer/audience evidence, exact-head qualification and owner decision |
 
 P3-01: [producer-review evidence](../evidence/phase3a-producer-review-20261009.md).
 P3-02: [publication-gate evidence](../evidence/phase3b-publication-gate-20261010.md).
 P3-03: [broadcast-output evidence](../evidence/phase3c-broadcast-outputs-20261010.md).
+P3-04: [offline audience qualification and live acceptance gap](../evidence/phase3d-audience-offline-20261010.md).
 
 The tested P3-01/P3-02 components are pure domain controls. Host authentication,
 durable approval storage and actual publication are not implemented by these slices.
