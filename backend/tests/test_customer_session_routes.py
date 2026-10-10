@@ -252,7 +252,5 @@ def test_customer_reads_reject_cross_origin_fetch_metadata(fetch_site: str) -> N
     """Same-site is not necessarily same-origin for protected session reads."""
     client, store = configured()
     client.cookies.set(COOKIE_NAME, store.original.session_id)
-    response = client.get(
-        "/api/customer/session/csrf", headers={"Sec-Fetch-Site": fetch_site}
-    )
+    response = client.get("/api/customer/session/csrf", headers={"Sec-Fetch-Site": fetch_site})
     assert response.status_code == 403
