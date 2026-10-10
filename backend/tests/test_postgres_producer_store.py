@@ -273,7 +273,6 @@ def test_cas_rejects_skipped_or_negative_generation() -> None:
         store.replace_if_generation(case, expected_generation=-1)
 
 
-
 def test_malformed_storage_row_is_rejected_before_deserializing() -> None:
     """A broken database cursor must never return a trusted producer snapshot."""
     db = FakeDatabase()
