@@ -58,9 +58,13 @@ def test_new_session_is_opaque_unique_and_customer_only() -> None:
 def test_invalid_or_revoked_server_sessions_never_authorize(change) -> None:
     """Privilege crossover, expiry, idle timeout and corrupt snapshots fail closed."""
     original = new_customer_session(identity=IDENTITY, account_id="account-1", now=NOW)
-    corrupted = replace(original, **change)
+    # Simulate a corrupted or forged persisted snapshot. dataclasses.replace()
+    # would fail in __post_init__ before the resolver could exercise its
+    # fail-closed revalidation of a retrieved record.
+    for field, value in change.items():
+        object.__setattr__(original, field, value)
     with pytest.raises(PermissionError):
-        resolve_customer_session(original.session_id, store=Store(corrupted), now=NOW)
+        resolve_customer_session(original.session_id if "session_id" not in change else "a" * 64, store=Store(original), now=NOW)
 
 
 @pytest.mark.parametrize("bad", [None, "", "x", "z" * 64, "0" * 63])
@@ -88,3 +92,35 @@ def test_expiry_boundary_is_exclusive() -> None:
     value = new_customer_session(identity=IDENTITY, account_id="account-1", now=NOW)
     with pytest.raises(PermissionError):
         resolve_customer_session(value.session_id, store=Store(value), now=value.expires_at)
+
+
+def test_future_last_seen_is_not_accepted_as_active() -> None:
+    """A future last-activity timestamp cannot extend the idle window."""
+    active = new_customer_session(identity=IDENTITY, account_id="account-1", now=NOW)
+    forged = replace(active, last_seen_at=NOW + timedelta(minutes=5))
+    with pytest.raises(PermissionError):
+        resolve_customer_session(active.session_id, store=Store(forged), now=NOW)
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("account_id", object()),
+        ("revoked", 0),
+        ("created_at", "not-a-datetime"),
+        ("identity", None),
+        ("last_seen_at", None),
+    ],
+)
+def test_malformed_persisted_types_fail_closed(field: str, value: object) -> None:
+    """The trust boundary must revalidate types even if deserialization was bypassed."""
+    active = new_customer_session(identity=IDENTITY, account_id="account-1", now=NOW)
+    object.__setattr__(active, field, value)
+    with pytest.raises(PermissionError):
+        resolve_customer_session(active.session_id, store=Store(active), now=NOW)
+
+
+def test_non_session_storage_response_is_rejected() -> None:
+    """Malformed database row objects cannot impersonate a trusted session."""
+    with pytest.raises(PermissionError, match="Invalid customer session record"):
+        resolve_customer_session("a" * 64, store=Store(object()), now=NOW)

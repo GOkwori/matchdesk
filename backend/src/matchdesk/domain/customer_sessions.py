@@ -37,16 +37,21 @@ class CustomerSession:
             or not isinstance(self.session_id, str)
             or len(self.session_id) != 64
             or any(ch not in "0123456789abcdef" for ch in self.session_id)
+            or not isinstance(self.identity, CustomerIdentityKey)
             or not isinstance(self.account_id, str)
             or not self.account_id.strip()
+            or type(self.revoked) is not bool
             or any(
-                value.tzinfo is None or value.utcoffset() is None
+                not isinstance(value, datetime)
+                or value.tzinfo is None
+                or value.utcoffset() is None
                 for value in (self.created_at, self.expires_at, self.last_seen_at)
             )
             or not self.created_at <= self.last_seen_at <= self.expires_at
             or not timedelta(0) < self.expires_at - self.created_at <= timedelta(hours=8)
         ):
             raise ValueError("Invalid or privileged customer session record")
+        self.identity.__post_init__()
 
 
 class CustomerSessionStore(Protocol):
@@ -96,6 +101,8 @@ def resolve_customer_session(
     record = store.load(opaque_session_id)
     if record is None:
         raise PermissionError("Customer session is unavailable")
+    if not isinstance(record, CustomerSession):
+        raise PermissionError("Invalid customer session record")
     try:
         record.__post_init__()
         current = now or datetime.now(timezone.utc)
@@ -104,6 +111,7 @@ def resolve_customer_session(
             or record.revoked
             or current < record.created_at
             or current >= record.expires_at
+            or record.last_seen_at > current
             or current - record.last_seen_at > timedelta(minutes=30)
         ):
             raise PermissionError("Customer session is expired or revoked")
