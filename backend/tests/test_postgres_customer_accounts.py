@@ -48,13 +48,17 @@ def test_exact_broker_identity_resolves_only_active_registration():
     assert db.closed
 
 
-@pytest.mark.parametrize("row", [None, (), (None,), ("",), (" invalid",), (123,), ("x" * 129,), ("a", "b")])
+@pytest.mark.parametrize(
+    "row", [None, (), (None,), ("",), (" invalid",), (123,), ("x" * 129,), ("a", "b")]
+)
 def test_missing_or_corrupt_rows_fail_closed(row):
     """Unknown accounts return None; malformed results cannot authenticate."""
     db = Connection(row)
-    lookup = lambda: PostgresCustomerAccountDirectory(lambda: db).lookup(
-        issuer=ISSUER, tenant_id=TENANT, subject=SUBJECT
-    )
+    def lookup():
+        """Resolve the exact broker subject through the test database."""
+        return PostgresCustomerAccountDirectory(lambda: db).lookup(
+            issuer=ISSUER, tenant_id=TENANT, subject=SUBJECT
+        )
     if row is None:
         assert lookup() is None
     else:
