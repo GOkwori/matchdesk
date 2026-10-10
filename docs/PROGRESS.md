@@ -260,7 +260,26 @@ retained as evidence and repaired by a one-line non-functional change.
 See the [Phase 3B record](evidence/phase3b-publication-gate-20261010.md).
 
 These are pure domain safeguards, not a published API or operational
-authenticated publishing system. P3-03 broadcast output contracts are next.
+authenticated publishing system.
+
+P3-03 broadcast output contracts are TESTED on development source
+`798d4ec87faf16080a653d9f3585d2819eaf52ab`. Foundation CI
+38017275181 passed 340 tests with 96.85% coverage; Foundation integration
+38017275218, Dependency audit 38017275238 and Source security 38017275189
+also passed. Five immutable draft output kinds, exact claim/evidence bindings,
+registered overlay metrics and frozen JSON schema are covered. See
+[Phase 3C evidence](evidence/phase3c-broadcast-outputs-20261010.md).
+
+P3-04 offline audience controls are qualified on exact development source
+`d3709d89cfcd942a0a3acd8aacb7d4d6c6d3aa88`. Foundation CI 38020128307
+passed 388 tests with 96.01% coverage; integration 38020128302, Dependency
+audit 38020128254 and Source security 38020128281 passed. Provider-independent
+draft generation, evidence/digest binding, nine language/persona combinations
+and reviewer-reported quality matrix contracts have passed **offline** tests.
+Actual multilingual model generations and independent fluent review remain
+unperformed; P3-04 remains IN PROGRESS. See
+[Phase 3D offline evidence](evidence/phase3d-audience-offline-20261010.md).
+
 Production deployment and main promotion remain unauthorised.
 
 ## Historical native-image remediation before final qualification
