@@ -211,3 +211,32 @@ def test_keys_are_issuer_bound_and_unknown_rotation_fails_closed(signing) -> Non
     _, keys = signing
     assert keys.resolve(issuer=ISSUER, kid="not-registered") is None
     assert keys.resolve(issuer="https://other.example/v2.0", kid="kid-1") is None
+
+
+class MissingGrants:
+    """Represent a verified subject without a server-owned entitlement record."""
+
+    def resolve(self, *, tenant_id: str, subject: str):
+        """Deny absent users without falling back to signed roles."""
+        del tenant_id, subject
+        return None
+
+
+def test_missing_server_entitlement_record_fails_closed(signing) -> None:
+    """Valid signed claims must not grant access after membership is removed."""
+    private, keys = signing
+    with pytest.raises(PermissionError, match="server-side grants"):
+        verify_producer_access_token(
+            token(private),
+            policy=policy(),
+            keys=keys,
+            entitlements=MissingGrants(),
+            now=NOW,
+        )
+
+
+@pytest.mark.parametrize("issuer,keys", [("", {}), (ISSUER, {})])
+def test_static_signing_keys_require_nonempty_configuration(issuer: str, keys: dict) -> None:
+    """Missing trusted issuer/key configuration cannot silently accept tokens."""
+    with pytest.raises(ValueError, match="Trusted signing keys"):
+        StaticTrustedKeys(issuer, keys)
