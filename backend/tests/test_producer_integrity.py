@@ -342,7 +342,14 @@ def test_edited_output_preserves_all_scope_and_exact_version(changed: str) -> No
         )
         binding = draft.binding.model_copy(update={"content_digest": content_digest(payload)})
         draft = draft.model_copy(update={"payload": payload, "binding": binding})
-    elif changed in ("evidence_digest", "item_version", "item_id", "replay_id", "language", "persona"):
+    elif changed in (
+        "evidence_digest",
+        "item_version",
+        "item_id",
+        "replay_id",
+        "language",
+        "persona",
+    ):
         modifications: dict[str, object] = {
             "evidence_digest": "b" * 64,
             "item_version": 3,
@@ -470,7 +477,9 @@ def test_store_rejects_out_of_scope_loaded_cases(wrong: str) -> None:
     if wrong == "tenant":
         case = replace(case, tenant_id="foreign-tenant")
     elif wrong == "session":
-        case = replace(case, output=case.output.model_copy(update={"session_id": "foreign-session"}))
+        case = replace(
+            case, output=case.output.model_copy(update={"session_id": "foreign-session"})
+        )
     else:
         case = replace(case, output=case.output.model_copy(update={"output_id": "foreign-output"}))
     store = OfflineStore(case)

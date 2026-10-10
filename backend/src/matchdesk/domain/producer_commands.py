@@ -87,7 +87,6 @@ def _authorize(actor: HostVerifiedActor, tenant_id: str, session_id: str) -> Non
         raise PermissionError("Producer mutation requires a producer role")
 
 
-
 def _validate_review_history(case: ProducerCase) -> None:
     """Reconstruct every review transition instead of trusting a stored status flag.
 
@@ -101,9 +100,7 @@ def _validate_review_history(case: ProducerCase) -> None:
         raise ValueError("Producer review must have one valid audit entry per generation")
 
     initial = audit[0]
-    reconstructed = start_review(
-        initial.binding, actor_id=initial.actor_id, reason=initial.reason
-    )
+    reconstructed = start_review(initial.binding, actor_id=initial.actor_id, reason=initial.reason)
     for entry in audit[1:]:
         if entry.action == "revision_opened":
             reconstructed = open_revision(
