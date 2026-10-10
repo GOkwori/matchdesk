@@ -26,7 +26,7 @@ _PERSONA_POLICIES = {
     "casual_fan": "Explain jargon in short, clear language; do not exaggerate certainty.",
     "broadcast_caption": "Keep concise, readable caption wording without losing factual qualifications.",
 }
-_OUTPUT_ADAPTER = TypeAdapter(OutputPayload)
+_OUTPUT_ADAPTER: TypeAdapter[OutputPayload] = TypeAdapter(OutputPayload)
 
 
 @dataclass(frozen=True)
