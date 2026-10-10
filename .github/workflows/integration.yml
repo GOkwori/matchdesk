@@ -246,6 +246,93 @@ jobs:
         if: ${{ !cancelled() && steps.oidc_storage.outcome == 'success' }}
         run: |
           test "${{ steps.account_directory.outcome }}" = success
+      - name: Prove ID3G definer least privilege with rollback-only PostgreSQL
+        id: id3g_role_probe
+        if: ${{ !cancelled() && steps.directory_gate.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          # This test runs only against the existing disposable GitHub integration DB.
+          # PostgreSQL ROLLBACK must remove the probe role, function, and its grants.
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+            psql --no-psqlrc -X -v ON_ERROR_STOP=1 -U matchdesk -d matchdesk <<'SQL'
+          BEGIN;
+          SET LOCAL lock_timeout = '5s';
+          CREATE ROLE matchdesk_id3g_probe_definer_owner
+            NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE
+            NOINHERIT NOREPLICATION NOBYPASSRLS;
+          GRANT USAGE ON SCHEMA public TO matchdesk_id3g_probe_definer_owner;
+          GRANT SELECT, UPDATE(state) ON public.matchdesk_customer_accounts
+            TO matchdesk_id3g_probe_definer_owner;
+          GRANT SELECT, UPDATE(revoked) ON public.matchdesk_customer_sessions
+            TO matchdesk_id3g_probe_definer_owner;
+          CREATE FUNCTION public.matchdesk_id3g_probe_definer()
+          RETURNS boolean
+          LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog
+          AS $md$
+          DECLARE
+            found_account text;
+          BEGIN
+            SELECT a.account_id INTO found_account
+            FROM public.matchdesk_customer_accounts AS a
+            WHERE a.issuer = 'https://ci.ciamlogin.com/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/v2.0'
+              AND a.tenant_id = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
+              AND a.subject = 'ci-registered'
+              AND a.state = 'active'
+            FOR SHARE;
+            RETURN current_user = 'matchdesk_id3g_probe_definer_owner'
+               AND found_account = 'ci-1';
+          END;
+          $md$;
+          REVOKE ALL ON FUNCTION public.matchdesk_id3g_probe_definer() FROM PUBLIC;
+          ALTER FUNCTION public.matchdesk_id3g_probe_definer()
+            OWNER TO matchdesk_id3g_probe_definer_owner;
+          DO $assert$
+          BEGIN
+            IF NOT public.matchdesk_id3g_probe_definer() THEN
+              RAISE EXCEPTION 'ID3G role cannot read and lock exactly its active account';
+            END IF;
+            IF NOT EXISTS (
+              SELECT 1 FROM pg_catalog.pg_proc p
+              JOIN pg_catalog.pg_roles r ON r.oid = p.proowner
+              JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+              WHERE n.nspname = 'public' AND p.proname = 'matchdesk_id3g_probe_definer'
+                AND p.prosecdef AND r.rolname = 'matchdesk_id3g_probe_definer_owner'
+                AND NOT r.rolsuper AND NOT r.rolcanlogin AND NOT r.rolbypassrls
+            ) THEN
+              RAISE EXCEPTION 'ID3G definer is not the approved non-superuser';
+            END IF;
+            IF EXISTS (
+              SELECT 1 FROM pg_catalog.pg_auth_members m
+              JOIN pg_catalog.pg_roles r ON r.oid = m.roleid
+              WHERE r.rolname = 'matchdesk_id3g_probe_definer_owner'
+            ) THEN
+              RAISE EXCEPTION 'ID3G definer must have no role members';
+            END IF;
+            IF has_table_privilege('matchdesk_id3g_probe_definer_owner',
+                 'public.matchdesk_producer_cases', 'SELECT') THEN
+              RAISE EXCEPTION 'ID3G definer obtained producer-data access';
+            END IF;
+            IF has_table_privilege('matchdesk_id3g_probe_definer_owner',
+                 'public.matchdesk_customer_sessions', 'DELETE') THEN
+              RAISE EXCEPTION 'ID3G definer obtained session-delete access';
+            END IF;
+          END;
+          $assert$;
+          -- All test DDL and grants are rolled back, including this role/function.
+          ROLLBACK;
+          DO $cleanup$
+          BEGIN
+            IF EXISTS (
+              SELECT 1 FROM pg_catalog.pg_roles
+              WHERE rolname = 'matchdesk_id3g_probe_definer_owner'
+            ) OR EXISTS (
+              SELECT 1 FROM pg_catalog.pg_proc WHERE proname = 'matchdesk_id3g_probe_definer'
+            ) THEN
+              RAISE EXCEPTION 'ID3G probe failed to roll back its role/function';
+            END IF;
+          END;
+          $cleanup$;
+          SQL
       - name: Install locked browser harness and matching Chromium
         id: browser
         if: ${{ !cancelled() && steps.start.outcome == 'success' }}
@@ -260,7 +347,7 @@ jobs:
         run: npm test 2>&1 | tee ../artifacts/integration/browser.log
       - name: Install the verified native-image scanner and current database
         id: scanner
-        if: ${{ !cancelled() && steps.runtime.outcome == 'success' && steps.producer_storage.outcome == 'success' && steps.psycopg_storage.outcome == 'success' && steps.customer_sessions_storage.outcome == 'success' && steps.oidc_storage.outcome == 'success' && steps.account_directory.outcome == 'success' && steps.directory_gate.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.runtime.outcome == 'success' && steps.producer_storage.outcome == 'success' && steps.psycopg_storage.outcome == 'success' && steps.customer_sessions_storage.outcome == 'success' && steps.oidc_storage.outcome == 'success' && steps.account_directory.outcome == 'success' && steps.directory_gate.outcome == 'success' && steps.id3g_role_probe.outcome == 'success' }}
         # This is the official 0.75.0 Linux-64bit asset, independently inspected before pinning.
         # No curl-to-shell execution, repository token or downloaded installer is used.
         run: |
