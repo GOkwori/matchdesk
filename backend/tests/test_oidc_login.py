@@ -359,7 +359,6 @@ def test_explicit_login_cookie_expiry_matches_host_security_contract() -> None:
     assert "Secure; HttpOnly; SameSite=Lax" in header
 
 
-
 def test_invalid_broker_scopes_and_callback_time_are_rejected() -> None:
     """Reject malformed browser-broker policy values and callback clocks."""
     with pytest.raises(ValueError):
