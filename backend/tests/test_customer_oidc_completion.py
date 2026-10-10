@@ -138,9 +138,7 @@ def signed(setup, **changes) -> str:
         "exp": now + 500,
     }
     claims.update(changes)
-    return jwt.encode(
-        claims, setup["private"], algorithm="RS256", headers={"kid": "trusted-key"}
-    )
+    return jwt.encode(claims, setup["private"], algorithm="RS256", headers={"kid": "trusted-key"})
 
 
 def complete(setup):
