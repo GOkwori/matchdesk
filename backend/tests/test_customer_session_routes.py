@@ -415,9 +415,7 @@ def test_untrusted_forwarded_protocol_does_not_override_http() -> None:
         create_app(customer_session_router=router), base_url="http://matchdesk.example"
     )
     insecure.cookies.set(COOKIE_NAME, store.original.session_id)
-    response = insecure.get(
-        "/api/customer/session", headers={"X-Forwarded-Proto": "https"}
-    )
+    response = insecure.get("/api/customer/session", headers={"X-Forwarded-Proto": "https"})
     assert response.status_code == 403
 
 

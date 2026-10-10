@@ -210,9 +210,7 @@ def create_customer_session_router(
                 status_code=503, detail="Customer renewal unavailable", headers=_headers()
             )
         try:
-            cookie = customer_session_cookie(
-                successor.session_id, store=store, policy=policy
-            )
+            cookie = customer_session_cookie(successor.session_id, store=store, policy=policy)
             proof = issue_customer_csrf(
                 successor.session_id, store=store, policy=policy, secret=csrf_secret
             )
