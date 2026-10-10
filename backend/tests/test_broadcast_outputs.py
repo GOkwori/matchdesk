@@ -301,7 +301,6 @@ def test_content_identity_is_language_scoped_but_does_not_grant_publication() ->
     assert not hasattr(alternate, "publication_authorized")
 
 
-
 def test_exported_broadcast_schema_is_registered_and_versioned() -> None:
     """The frozen export manifest must include the entire version-one payload union."""
     exports = expected_exports()
@@ -337,7 +336,11 @@ def test_exported_array_bounds_have_correct_schema_keywords(
 ) -> None:
     """External JSON Schema validators must get item limits, never string limits."""
     schema = json.loads(expected_exports()["BroadcastEnvelope.v1.json"])
-    properties = schema["properties"] if model == "BroadcastEnvelope" else schema["$defs"][model]["properties"]
+    properties = (
+        schema["properties"]
+        if model == "BroadcastEnvelope"
+        else schema["$defs"][model]["properties"]
+    )
     array = properties[field]
     assert array["minItems"] == 1
     assert array["maxItems"] == maximum
