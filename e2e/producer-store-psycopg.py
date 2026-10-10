@@ -193,6 +193,40 @@ def _initial() -> None:
 
     _check_role_privileges(conninfo)
 
+    # A restricted writer can append an audit row, but it must not be able to
+    # make an unreviewed snapshot appear to be a valid producer state.
+    isolated = initial.output.model_copy(update={"output_id": "ci-audit-tamper-probe"})
+    tamper_case = open_producer_case(
+        actor=actor,
+        tenant_id="ci-tenant",
+        output=isolated,
+        claims=(preview.claim,),
+        evidence=preview.evidence,
+        accepted_events=preview.events,
+    )
+    assert store.create(tamper_case)
+    with psycopg.connect(conninfo, autocommit=True) as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "INSERT INTO matchdesk_producer_audit "
+                "(tenant_id, session_id, output_id, generation, entry_json, audit_digest) "
+                "VALUES (%s, %s, %s, 2, %s::jsonb, %s)",
+                (
+                    "ci-tenant",
+                    isolated.session_id,
+                    isolated.output_id,
+                    '{"action":"forged"}',
+                    "0" * 64,
+                ),
+            )
+    try:
+        store.load("ci-tenant", isolated.session_id, isolated.output_id)
+    except ValueError as exc:
+        assert "audit table" in str(exc)
+    else:
+        raise AssertionError("Unrecorded audit insert was accepted as a valid review state")
+    print("PASS: separate audit-table reconciliation fails closed on forged extra row")
+
 
 def _after_restart() -> None:
     """Prove a fresh Psycopg connection can reconstruct audit and state after restart."""

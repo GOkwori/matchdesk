@@ -94,12 +94,23 @@ class FakeCursor:
         """Remember the shared table and one prospective fetched row."""
         self.db = database
         self.result = None
+        self.rows: list[tuple[object, ...]] = []
 
     def execute(self, sql: str, parameters: tuple[object, ...]) -> None:
         """Emulate scoped SELECT, unique CREATE, exact CAS and atomic audit append."""
         self.db.statements.append((sql, parameters))
         self.result = None
-        if sql.lstrip().startswith("SELECT generation"):
+        self.rows = []
+        if sql.lstrip().startswith("SET TRANSACTION ISOLATION LEVEL"):
+            return
+        if sql.lstrip().startswith("SELECT generation, entry_json, audit_digest"):
+            tenant, session, output = parameters
+            self.rows = [
+                (generation, entry, digest)
+                for (t, s, o, generation), (entry, digest) in sorted(self.db.audit.items())
+                if (t, s, o) == (tenant, session, output)
+            ]
+        elif sql.lstrip().startswith("SELECT generation"):
             self.result = self.db.cases.get(parameters)
         elif sql.lstrip().startswith("INSERT INTO matchdesk_producer_cases"):
             tenant, session, output, generation, payload, digest = parameters
@@ -128,6 +139,10 @@ class FakeCursor:
     def fetchone(self):
         """Return the row from this cursor's most recent SQL statement."""
         return self.result
+
+    def fetchall(self) -> list[tuple[object, ...]]:
+        """Return separately stored rows for the independently scoped audit query."""
+        return self.rows
 
 
 def test_create_reload_review_and_audit_are_atomic() -> None:
@@ -303,3 +318,30 @@ def test_failed_cas_with_changed_prior_audit_digest_does_not_append() -> None:
     )
     assert not store.replace_if_generation(updated, expected_generation=1)
     assert len(db.audit) == 1
+
+
+@pytest.mark.parametrize(
+    "corruption",
+    ["missing", "forged_actor", "wrong_digest", "wrong_generation", "extra"],
+)
+def test_append_only_audit_must_match_independent_case_snapshot(corruption: str) -> None:
+    """Valid-looking case JSON cannot conceal absent, forged or extra audit rows."""
+    database = FakeDatabase()
+    store = PostgresProducerCaseStore(database)
+    case = _case()
+    assert store.create(case)
+    key = ("tenant-1", "demo-preview-only", "demo-story-output", 1)
+    entry, digest = database.audit[key]
+    if corruption == "missing":
+        del database.audit[key]
+    elif corruption == "forged_actor":
+        entry["actor_id"] = "fabricated-actor"
+    elif corruption == "wrong_digest":
+        database.audit[key] = (entry, "0" * 64)
+    elif corruption == "wrong_generation":
+        del database.audit[key]
+        database.audit[(*key[:3], 2)] = (entry, digest)
+    else:
+        database.audit[(*key[:3], 2)] = (entry, digest)
+    with pytest.raises(ValueError, match="audit"):
+        store.load(*key[:3])

@@ -28,6 +28,9 @@ class DbCursor(Protocol):
     def fetchone(self) -> tuple[object, ...] | None:
         """Read one row, or None if the exact-generation write did not apply."""
 
+    def fetchall(self) -> list[tuple[object, ...]]:
+        """Read complete scoped audit history for independent reconciliation."""
+
 
 class DbConnection(Protocol):
     """Host-owned transaction and cursor provider, supplied by a pinned DB driver."""
@@ -50,6 +53,12 @@ _LOAD = """
 SELECT generation, case_json, audit_digest
 FROM matchdesk_producer_cases
 WHERE tenant_id = %s AND session_id = %s AND output_id = %s
+"""
+_LOAD_AUDIT = """
+SELECT generation, entry_json, audit_digest
+FROM matchdesk_producer_audit
+WHERE tenant_id = %s AND session_id = %s AND output_id = %s
+ORDER BY generation
 """
 _CREATE = """
 INSERT INTO matchdesk_producer_cases
@@ -82,6 +91,38 @@ def _case_json(case: ProducerCase) -> str:
     return _CASE.dump_json(case).decode("utf-8")
 
 
+def _reconcile_audit(
+    case: ProducerCase, rows: list[tuple[object, ...]]
+) -> None:
+    """Match every immutable audit-table row with the exact stored review history.
+
+    Case snapshots and audit records are separate physical tables. Comparing a
+    snapshot's self-contained hash alone is insufficient: an altered snapshot could
+    claim approvals that were never appended to the protected audit table.
+    """
+    history = case.review.audit
+    if len(rows) != len(history):
+        raise ValueError("Producer audit table does not match case generation")
+    for generation, (row, expected) in enumerate(zip(rows, history, strict=True), start=1):
+        if (
+            not isinstance(row, tuple)
+            or len(row) != 3
+            or type(row[0]) is not int
+            or row[0] != generation
+            or not isinstance(row[2], str)
+            or row[2] != _audit_digest(history[:generation])
+        ):
+            raise ValueError("Producer audit table has a missing or inconsistent generation")
+        raw_entry = row[1]
+        entry_json = (
+            raw_entry
+            if isinstance(raw_entry, (str, bytes, bytearray))
+            else json.dumps(raw_entry)
+        )
+        if _ENTRY.validate_json(entry_json) != expected:
+            raise ValueError("Producer audit entry differs from the review snapshot")
+
+
 class PostgresProducerCaseStore:
     """Atomically persist a case and its append-only audit for one exact tenant/session.
 
@@ -100,8 +141,15 @@ class PostgresProducerCaseStore:
         try:
             with connection.transaction():
                 with connection.cursor() as cursor:
+                    # One stable read snapshot avoids a false audit mismatch if a
+                    # concurrent transaction commits between the two queries.
+                    cursor.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY", ())
                     cursor.execute(_LOAD, (tenant_id, session_id, output_id))
                     row = cursor.fetchone()
+                    audit_rows: list[tuple[object, ...]] = []
+                    if row is not None:
+                        cursor.execute(_LOAD_AUDIT, (tenant_id, session_id, output_id))
+                        audit_rows = cursor.fetchall()
             if row is None:
                 return None
             if len(row) != 3 or type(row[0]) is not int or not isinstance(row[2], str):
@@ -117,6 +165,7 @@ class PostgresProducerCaseStore:
                 or _audit_digest(case.review.audit) != row[2]
             ):
                 raise ValueError("Producer storage snapshot does not match its scope or audit")
+            _reconcile_audit(case, audit_rows)
             return case
         finally:
             connection.close()
