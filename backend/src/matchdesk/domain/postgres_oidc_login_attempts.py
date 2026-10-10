@@ -7,7 +7,6 @@ created here. State and browser-binding hashes are never stored as raw secrets.
 
 from __future__ import annotations
 
-import hashlib
 import json
 import secrets
 from collections.abc import Callable
@@ -17,7 +16,7 @@ from cryptography.exceptions import InvalidTag
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 from matchdesk.domain.oidc_login import PendingOidcLogin
-from matchdesk.domain.postgres_producer_store import DbConnection, DbCursor
+from matchdesk.domain.postgres_producer_store import DbConnection
 
 _INSERT = """
 INSERT INTO matchdesk_oidc_login_attempts (

@@ -64,8 +64,17 @@ def encrypted_row(a: PendingOidcLogin):
     conn.cursor_obj.fetchone.return_value = (a.state_hash,)
     assert PostgresOidcLoginAttemptStore(lambda: conn, encryption_key=KEY).create(a)
     params = conn.cursor_obj.execute.call_args.args[1]
-    return conn, (a.state_hash, a.binding_hash, a.issuer, a.client_id,
-                  a.redirect_uri, a.issued_at, a.expires_at, params[7], params[8])
+    return conn, (
+        a.state_hash,
+        a.binding_hash,
+        a.issuer,
+        a.client_id,
+        a.redirect_uri,
+        a.issued_at,
+        a.expires_at,
+        params[7],
+        params[8],
+    )
 
 
 def test_encrypted_create_and_consume() -> None:
@@ -111,25 +120,33 @@ def test_duplicate_state_create_is_denied() -> None:
     """An existing state tombstone prevents reserve-again."""
     conn = FakeConnection()
     conn.cursor_obj.fetchone.return_value = None
-    assert not PostgresOidcLoginAttemptStore(lambda: conn, encryption_key=KEY).create(
-        attempt()
-    )
+    assert not PostgresOidcLoginAttemptStore(lambda: conn, encryption_key=KEY).create(attempt())
     assert conn.closed
 
 
 @pytest.mark.parametrize(
     "column,replacement",
     [
-        (0, "b" * 64), (1, "b" * 64), (2, "evil-issuer"),
-        (3, "other-client"), (4, "https://evil.example"),
+        (0, "b" * 64),
+        (1, "b" * 64),
+        (2, "evil-issuer"),
+        (3, "other-client"),
+        (4, "https://evil.example"),
         (5, NOW - timedelta(seconds=1)),
         (6, NOW + timedelta(seconds=1)),
-        (7, b"x" * 12), (8, b"x" * 103),
-        (0, None), (1, None), (2, None), (3, None), (4, None),
-        (5, "bad-date"), (6, "bad-date"),
+        (7, b"x" * 12),
+        (8, b"x" * 103),
+        (0, None),
+        (1, None),
+        (2, None),
+        (3, None),
+        (4, None),
+        (5, "bad-date"),
+        (6, "bad-date"),
         (5, NOW.replace(tzinfo=None)),
         (6, NOW.replace(tzinfo=None)),
-        (7, b"invalid"), (8, b"invalid"),
+        (7, b"invalid"),
+        (8, b"invalid"),
     ],
 )
 def test_changed_stored_columns_cannot_reveal_pkce(column, replacement) -> None:
@@ -148,9 +165,7 @@ def test_missing_or_bad_row_never_authenticates() -> None:
         _decode("a" * 64, ("bad",), encryption_key=KEY)
     conn = FakeConnection()
     conn.cursor_obj.fetchone.return_value = None
-    assert PostgresOidcLoginAttemptStore(
-        lambda: conn, encryption_key=KEY
-    ).consume("a" * 64) is None
+    assert PostgresOidcLoginAttemptStore(lambda: conn, encryption_key=KEY).consume("a" * 64) is None
 
 
 def test_wrong_key_and_authenticated_bad_payload_fail_closed() -> None:
@@ -171,9 +186,7 @@ def test_storage_failure_closes_connection() -> None:
     conn = FakeConnection()
     conn.cursor_obj.execute.side_effect = RuntimeError("database offline")
     with pytest.raises(RuntimeError, match="database offline"):
-        PostgresOidcLoginAttemptStore(
-            lambda: conn, encryption_key=KEY
-        ).create(attempt())
+        PostgresOidcLoginAttemptStore(lambda: conn, encryption_key=KEY).create(attempt())
     assert conn.closed
 
 
@@ -181,7 +194,5 @@ def test_invalid_host_attempt_does_not_reach_database() -> None:
     """A caller cannot insert a fake attempt with arbitrary attributes."""
     conn = FakeConnection()
     with pytest.raises(ValueError):
-        PostgresOidcLoginAttemptStore(
-            lambda: conn, encryption_key=KEY
-        ).create("untrusted")
+        PostgresOidcLoginAttemptStore(lambda: conn, encryption_key=KEY).create("untrusted")
     assert not conn.cursor_obj.execute.called
