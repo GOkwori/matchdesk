@@ -160,6 +160,42 @@ jobs:
             -e CI=true -e "PGPASSWORD=$role_password" api \
             /app/.venv/bin/python - after-restart < e2e/customer-sessions-psycopg.py \
             2>&1 | tee -a artifacts/integration/customer-sessions-psycopg.log
+      - name: Qualify real encrypted single-use OIDC state in PostgreSQL
+        id: oidc_storage
+        if: ${{ !cancelled() && steps.customer_sessions_storage.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          for attempt in 1 2; do
+            docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+              psql --no-psqlrc -X -v ON_ERROR_STOP=1 -U matchdesk -d matchdesk \
+              < backend/postgres/migrations/003_oidc_login_attempts.sql
+          done
+          oidc_password="$(openssl rand -hex 32)"
+          echo "::add-mask::$oidc_password"
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+            psql --no-psqlrc -X -v ON_ERROR_STOP=1 -U matchdesk -d matchdesk \
+            -v role_password="$oidc_password" <<'SQL'
+          CREATE ROLE matchdesk_oidc_ci LOGIN PASSWORD :'role_password';
+          GRANT CONNECT ON DATABASE matchdesk TO matchdesk_oidc_ci;
+          GRANT USAGE ON SCHEMA public TO matchdesk_oidc_ci;
+          GRANT SELECT, INSERT, UPDATE ON matchdesk_oidc_login_attempts TO matchdesk_oidc_ci;
+          SQL
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$oidc_password" api \
+            /app/.venv/bin/python - initial < e2e/oidc-login-psycopg.py \
+            2>&1 | tee artifacts/integration/oidc-login-psycopg.log
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" restart postgres
+          for attempt in $(seq 1 40); do
+            if docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+              pg_isready -U matchdesk -d matchdesk > /dev/null 2>&1; then
+              break
+            fi
+            sleep 1
+          done
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$oidc_password" api \
+            /app/.venv/bin/python - after-restart < e2e/oidc-login-psycopg.py \
+            2>&1 | tee -a artifacts/integration/oidc-login-psycopg.log
       - name: Install locked browser harness and matching Chromium
         id: browser
         if: ${{ !cancelled() && steps.start.outcome == 'success' }}
@@ -174,7 +210,7 @@ jobs:
         run: npm test 2>&1 | tee ../artifacts/integration/browser.log
       - name: Install the verified native-image scanner and current database
         id: scanner
-        if: ${{ !cancelled() && steps.runtime.outcome == 'success' && steps.producer_storage.outcome == 'success' && steps.psycopg_storage.outcome == 'success' && steps.customer_sessions_storage.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.runtime.outcome == 'success' && steps.producer_storage.outcome == 'success' && steps.psycopg_storage.outcome == 'success' && steps.customer_sessions_storage.outcome == 'success' && steps.oidc_storage.outcome == 'success' }}
         # This is the official 0.75.0 Linux-64bit asset, independently inspected before pinning.
         # No curl-to-shell execution, repository token or downloaded installer is used.
         run: |
