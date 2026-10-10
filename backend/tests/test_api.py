@@ -144,3 +144,25 @@ def test_limiter_replays_chunks_then_disconnect() -> None:
     asyncio.run(BodyLimitMiddleware(application)({"type": "http", "headers": []}, receive, send))
     assert received[0]["body"] == b"ab"
     assert received[1]["type"] == "http.disconnect"
+
+
+def test_customer_session_router_requires_explicit_mount() -> None:
+    """The shipping application exposes no session routes by default."""
+    from fastapi import APIRouter
+    from matchdesk.api.app import create_app
+
+    default = TestClient(create_app())
+    assert default.get("/api/customer/session").status_code == 404
+    assert "/api/customer/session" not in default.get("/openapi.json").json()["paths"]
+
+    # Prove that only an explicit caller-supplied router changes the route map.
+    router = APIRouter(prefix="/api/customer/session")
+
+    @router.get("")
+    def scoped_probe() -> dict[str, bool]:
+        """Return only a non-authentication probe in an isolated test app."""
+        return {"configured": True}
+
+    configured = TestClient(create_app(customer_session_router=router))
+    assert configured.get("/api/customer/session").json() == {"configured": True}
+    assert default.get("/api/customer/session").status_code == 404
