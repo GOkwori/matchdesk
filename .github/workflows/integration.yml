@@ -56,6 +56,55 @@ jobs:
         id: producer_storage
         if: ${{ !cancelled() && steps.start.outcome == 'success' && steps.runtime.outcome == 'success' }}
         run: node e2e/producer-store-postgres.mjs 2>&1 | tee artifacts/integration/producer-store-postgres.log
+      - name: Verify restricted real-Psycopg producer transactions and recovery
+        id: psycopg_storage
+        if: ${{ !cancelled() && steps.producer_storage.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          # A fresh, masked password exists only in this disposable workflow step.
+          role_password="$(openssl rand -hex 32)"
+          echo "::add-mask::$role_password"
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+            psql --no-psqlrc -X -v ON_ERROR_STOP=1 -U matchdesk -d matchdesk \
+            -v role_password="$role_password" <<'SQL'
+          REVOKE CREATE ON SCHEMA public FROM PUBLIC;
+          CREATE ROLE matchdesk_producer_ci LOGIN PASSWORD :'role_password';
+          GRANT CONNECT ON DATABASE matchdesk TO matchdesk_producer_ci;
+          GRANT USAGE ON SCHEMA public TO matchdesk_producer_ci;
+          GRANT SELECT, INSERT, UPDATE ON matchdesk_producer_cases TO matchdesk_producer_ci;
+          GRANT SELECT, INSERT ON matchdesk_producer_audit TO matchdesk_producer_ci;
+          -- CI-only failure injection: a valid case update must roll back too.
+          CREATE FUNCTION matchdesk_ci_reject_selected_audit()
+          RETURNS trigger LANGUAGE plpgsql AS $ci$
+          BEGIN
+            IF NEW.tenant_id='ci-tenant'
+               AND NEW.entry_json->>'reason'='ci-rollback-probe' THEN
+              RAISE EXCEPTION 'MatchDesk CI forced audit rollback';
+            END IF;
+            RETURN NEW;
+          END;
+          $ci$;
+          CREATE TRIGGER matchdesk_ci_reject_selected_audit
+          BEFORE INSERT ON matchdesk_producer_audit
+          FOR EACH ROW EXECUTE FUNCTION matchdesk_ci_reject_selected_audit();
+          SQL
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$role_password" api \
+            /app/.venv/bin/python - initial < e2e/producer-store-psycopg.py \
+            2>&1 | tee artifacts/integration/psycopg-producer-store.log
+          # Reconnect from the non-root API container following a real DB restart.
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" restart postgres
+          for attempt in $(seq 1 40); do
+            if docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+              pg_isready -U matchdesk -d matchdesk > /dev/null 2>&1; then
+              break
+            fi
+            sleep 1
+          done
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$role_password" api \
+            /app/.venv/bin/python - after-restart < e2e/producer-store-psycopg.py \
+            2>&1 | tee -a artifacts/integration/psycopg-producer-store.log
       - name: Install locked browser harness and matching Chromium
         id: browser
         if: ${{ !cancelled() && steps.start.outcome == 'success' }}
@@ -70,7 +119,7 @@ jobs:
         run: npm test 2>&1 | tee ../artifacts/integration/browser.log
       - name: Install the verified native-image scanner and current database
         id: scanner
-        if: ${{ !cancelled() && steps.runtime.outcome == 'success' && steps.producer_storage.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.runtime.outcome == 'success' && steps.producer_storage.outcome == 'success' && steps.psycopg_storage.outcome == 'success' }}
         # This is the official 0.75.0 Linux-64bit asset, independently inspected before pinning.
         # No curl-to-shell execution, repository token or downloaded installer is used.
         run: |
