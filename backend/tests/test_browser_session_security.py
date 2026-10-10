@@ -40,9 +40,7 @@ class Store:
 
 def session(*, ttl: timedelta = timedelta(hours=1)):
     """Issue a synthetic valid offline customer session."""
-    return new_customer_session(
-        identity=IDENTITY, account_id="account-1", now=NOW, ttl=ttl
-    )
+    return new_customer_session(identity=IDENTITY, account_id="account-1", now=NOW, ttl=ttl)
 
 
 def test_cookie_is_host_only_http_only_and_lifetime_bounded() -> None:
@@ -110,31 +108,30 @@ def test_csrf_is_bound_to_current_persisted_session() -> None:
     """Only server-owned sessions can mint or validate a same-origin CSRF token."""
     s = session()
     store = Store(s)
-    csrf = issue_customer_csrf(
-        s.session_id, store=store, policy=POLICY, secret=SECRET, now=NOW
-    )
+    csrf = issue_customer_csrf(s.session_id, store=store, policy=POLICY, secret=SECRET, now=NOW)
     assert len(csrf) == 64
     assert csrf != s.session_id
-    assert authorize_customer_mutation(
-        s.session_id,
-        store=store,
-        policy=POLICY,
-        secret=SECRET,
-        method="POST",
-        request_origin=POLICY.public_origin,
-        csrf_header=csrf,
-        fetch_site="same-origin",
-        now=NOW,
-    ) == s
+    assert (
+        authorize_customer_mutation(
+            s.session_id,
+            store=store,
+            policy=POLICY,
+            secret=SECRET,
+            method="POST",
+            request_origin=POLICY.public_origin,
+            csrf_header=csrf,
+            fetch_site="same-origin",
+            now=NOW,
+        )
+        == s
+    )
 
 
 @pytest.mark.parametrize("method", ["GET", "HEAD", "OPTIONS", "post", "TRACE"])
 def test_nonmutation_or_unexpected_methods_fail_closed(method: str) -> None:
     """The mutation guard must never be repurposed to approve safe or unknown calls."""
     s = session()
-    csrf = issue_customer_csrf(
-        s.session_id, store=Store(s), policy=POLICY, secret=SECRET, now=NOW
-    )
+    csrf = issue_customer_csrf(s.session_id, store=Store(s), policy=POLICY, secret=SECRET, now=NOW)
     with pytest.raises(PermissionError):
         authorize_customer_mutation(
             s.session_id,
@@ -228,9 +225,7 @@ def test_csrf_requires_a_protected_256_bit_server_key(secret) -> None:
     """Client-supplied or low-entropy material cannot control HMAC signing."""
     s = session()
     with pytest.raises(ValueError, match="256 bits"):
-        issue_customer_csrf(
-            s.session_id, store=Store(s), policy=POLICY, secret=secret, now=NOW
-        )
+        issue_customer_csrf(s.session_id, store=Store(s), policy=POLICY, secret=secret, now=NOW)
 
 
 def test_revoked_or_missing_session_cannot_get_csrf_or_cookie() -> None:
@@ -238,9 +233,7 @@ def test_revoked_or_missing_session_cannot_get_csrf_or_cookie() -> None:
     s = session()
     for store in (Store(None), Store(replace(s, revoked=True))):
         with pytest.raises(PermissionError):
-            issue_customer_csrf(
-                s.session_id, store=store, policy=POLICY, secret=SECRET, now=NOW
-            )
+            issue_customer_csrf(s.session_id, store=store, policy=POLICY, secret=SECRET, now=NOW)
         with pytest.raises(PermissionError):
             customer_session_cookie(s.session_id, store=store, policy=POLICY, now=NOW)
 
@@ -248,9 +241,7 @@ def test_revoked_or_missing_session_cannot_get_csrf_or_cookie() -> None:
 def test_expired_session_cannot_authorize_mutation() -> None:
     """A correct HMAC never overrides server-side expiry."""
     s = session(ttl=timedelta(seconds=5))
-    token = issue_customer_csrf(
-        s.session_id, store=Store(s), policy=POLICY, secret=SECRET, now=NOW
-    )
+    token = issue_customer_csrf(s.session_id, store=Store(s), policy=POLICY, secret=SECRET, now=NOW)
     with pytest.raises(PermissionError):
         authorize_customer_mutation(
             s.session_id,

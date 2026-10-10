@@ -93,8 +93,7 @@ def customer_session_cookie(
     if max_age <= 0:
         raise PermissionError("Customer browser session has expired")
     return (
-        f"{_COOKIE}={record.session_id}; Max-Age={max_age}; Path=/; "
-        "Secure; HttpOnly; SameSite=Lax"
+        f"{_COOKIE}={record.session_id}; Max-Age={max_age}; Path=/; Secure; HttpOnly; SameSite=Lax"
     )
 
 
