@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from typing import Annotated, Literal, Self
 
+from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, model_validator
+
 from matchdesk.domain.hashing import content_digest
 from matchdesk.domain.metrics import METRIC_DEFINITIONS
 from matchdesk.domain.models import (
@@ -19,7 +21,6 @@ from matchdesk.domain.models import (
     MetricAssertion,
     immutable_array,
 )
-from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, model_validator
 
 
 class BroadcastPayload(Contract):

@@ -248,9 +248,7 @@ def test_blank_or_extraneous_payload_fields_are_rejected(kind: str) -> None:
         {"assertion": {"value": True}},
     ],
 )
-def test_overlay_requires_registered_precise_metric_values(
-    metric_patch: dict[str, object]
-) -> None:
+def test_overlay_requires_registered_precise_metric_values(metric_patch: dict[str, object]) -> None:
     """Overlay JSON cannot introduce unknown metrics, loose comparisons or invalid values."""
     draft = _envelope("overlay")
     payload = draft["payload"]
