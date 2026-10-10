@@ -42,6 +42,19 @@ jobs:
         id: install
         # --locked validates the manifest; --frozen alone does not detect drift.
         run: uv sync --locked --no-build --python 3.12 --group test --group quality
+      - name: Print generated contract suggestion only when snapshots drift
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: |
+          # Emit generated schema content as a review suggestion, never commit it.
+          # The subsequent gate still fails until reviewed snapshots are committed.
+          uv run --no-sync python - <<'PY'
+          import json
+          from scripts.export_contracts import expected_exports, check_exports
+          if check_exports():
+              exports = expected_exports()
+              for name in ("openapi.json", "manifest.json"):
+                  print("MATCHDESK_CONTRACT_SUGGESTION:" + name + ":" + json.dumps(json.loads(exports[name]), separators=(",", ":"), ensure_ascii=True))
+          PY
       - name: Validate contracts, comments and documentation
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: uv run --no-sync make contracts comments docs 2>&1 | tee artifacts/python/repository-checks.log
