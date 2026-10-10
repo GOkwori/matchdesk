@@ -87,8 +87,53 @@ def _authorize(actor: HostVerifiedActor, tenant_id: str, session_id: str) -> Non
         raise PermissionError("Producer mutation requires a producer role")
 
 
+
+def _validate_review_history(case: ProducerCase) -> None:
+    """Reconstruct every review transition instead of trusting a stored status flag.
+
+    Frozen dataclasses prevent accidental changes, not forged or corrupt storage.
+    Replaying the existing state machine verifies the complete version-bound audit,
+    the status and the one-audit-entry-per-generation invariant before mutation.
+    This does not authenticate the recorded actors or replace a trusted audit store.
+    """
+    audit = case.review.audit
+    if not audit or audit[0].action != "review_started" or case.generation != len(audit):
+        raise ValueError("Producer review must have one valid audit entry per generation")
+
+    initial = audit[0]
+    reconstructed = start_review(
+        initial.binding, actor_id=initial.actor_id, reason=initial.reason
+    )
+    for entry in audit[1:]:
+        if entry.action == "revision_opened":
+            reconstructed = open_revision(
+                reconstructed, entry.binding, actor_id=entry.actor_id, reason=entry.reason
+            )
+        elif entry.action == "reverified":
+            reconstructed = record_reverification(
+                reconstructed, entry.binding, actor_id=entry.actor_id, reason=entry.reason
+            )
+        elif entry.action in ("approved", "rejected"):
+            decision: Literal["approve", "reject"] = (
+                "approve" if entry.action == "approved" else "reject"
+            )
+            reconstructed = record_decision(
+                reconstructed,
+                entry.binding,
+                actor_id=entry.actor_id,
+                decision=decision,
+                reason=entry.reason,
+            )
+        else:
+            raise ValueError("Producer review contains an unsupported audit transition")
+
+    if reconstructed != case.review:
+        raise ValueError("Producer review state does not match its immutable audit history")
+
+
 def _validate_case(case: ProducerCase) -> None:
     """Recheck the source, claim, content and review bindings at each command boundary."""
+    _validate_review_history(case)
     draft = case.output
     evidence = case.evidence
     if (
