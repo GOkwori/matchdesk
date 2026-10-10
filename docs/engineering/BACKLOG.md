@@ -98,6 +98,16 @@ P3-03: [broadcast-output evidence](../evidence/phase3c-broadcast-outputs-2026101
 P3-04: [offline audience qualification and live acceptance gap](../evidence/phase3d-audience-offline-20261010.md).
 P3-05: [producer PostgreSQL SQL-boundary qualification](../evidence/phase3e-producer-postgres-20261010.md), followed by [restricted real Psycopg and audit reconciliation](../evidence/phase3f-real-psycopg-audit-20261010.md).
 
+**Authentication architecture is APPROVED in [ADR-0011](../decisions/ADR-0011-federated-authentication.md)**, but no provider or paid identity resource is activated.
+
+| Slice | Status | Required acceptance |
+|---|---|---|
+| P3-05-ID1: workforce issuer, signature and host entitlements | IN PROGRESS | Offline JWT denial and cross-realm regression tests; exact-head CI |
+| P3-05-ID2: customer broker, provider federation and identity mapping | PLANNED | External ID issuer/audience separation, account-link consent and collision tests |
+| P3-05-ID3: protected browser/BFF sessions | PLANNED | Code+PKCE, state, CSRF, MFA, logout, replay and revocation |
+| P3-05-ID4: provider activation | PLANNED | Provider-by-provider real sandbox UAT; cost and secret governance |
+| P3-05-ID5: authenticated producer commands | PLANNED | Workforce MFA, session grants, atomic audit, end-to-end security and human approval |
+
 The tested P3-01/P3-02 components are pure domain controls. Host authentication,
 durable approval storage and actual publication are not implemented by these slices.
 Phase 3 does not authorise automatic publication; an authenticated human decision

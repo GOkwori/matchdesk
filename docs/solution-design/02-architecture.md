@@ -29,9 +29,32 @@ output envelopes. The PostgreSQL producer-case tables, generation/audit CAS and
 rollback/restart semantics have been tested through the actual pinned Psycopg Python
 adapter using a restricted role in disposable integration, including independent
 audit-row reconciliation and DB restart. This is not production persistence.
-Trusted OIDC, server-owned session authorization, authenticated HTTP producer
-commands, transactional delivery and production workflow persistence remain
-later work.
+The multi-provider sign-in decision is now approved in
+[ADR-0011](../decisions/ADR-0011-federated-authentication.md). The customer
+journey will broker Apple, Google, Facebook, personal Microsoft, organisational
+Entra ID and local email through a **separate Entra External ID tenant**.
+Producers/admins will use a workforce Entra tenant. Both issuers, API audiences,
+tenant IDs, sessions and entitlements remain isolated; all users are mapped by
+trusted issuer+tenant+immutable subject, never by email matching.
+
+```mermaid
+flowchart TB
+    Users[Fans and customers] --> BFF[Browser-delegated BFF login]
+    Social[Apple Google Facebook and personal Microsoft] --> Broker[Entra External ID]
+    Local[Email OTP or password] --> Broker
+    Orgs[Approved organisations via OIDC or SAML] --> Broker
+    BFF --> Broker
+    Broker --> CustomerAPI[Customer broker JWT and server-owned viewer grants]
+    Staff[Human producer and administrator] --> Workforce[Workforce Entra ID and MFA]
+    Workforce --> ProducerAPI[Separate workforce JWT and session grants]
+    ProducerAPI --> Review[Version-bound human review]
+    Review --> Publish[Governed publication gate]
+```
+
+The customer broker and protected BFF sessions are **PLANNED, not live**.
+An offline workforce JWT verifier is implemented, but trusted production
+JWKS retrieval, session authorisation, authenticated HTTP producer commands,
+transactional delivery and production workflow persistence remain later work.
 
 Numerical truth belongs to registered deterministic queries. Narrative reasoning is
 an interpretation of that evidence. Publishing authority belongs to an authenticated

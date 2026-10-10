@@ -78,6 +78,17 @@ supersedes the additional-reviewer requirement, not security gates or phase appr
 Ruleset activation and the Phase 0 protected merges are complete. Production deployment,
 release tagging and later phase approvals remain separate.
 
+## Authentication architecture decision — 10 October 2026
+
+The owner approved [ADR-0011](decisions/ADR-0011-federated-authentication.md):
+customer identity through Entra External ID with Apple, Google, Facebook,
+personal Microsoft, organisational OIDC and local email options; privileged
+producers/admins authenticate through separate workforce Entra ID.
+A social account cannot approve or publish content simply by signing in.
+Identity uses immutable issuer/tenant/subject; application permission is
+server-owned. Live provider setup, paid service activation, MFA/PKCE/BFF UAT,
+account linking, production sign-in and publication remain separately gated.
+
 ## Open design decisions
 
 Only main and development are authorised. Environment isolation, optional
