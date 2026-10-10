@@ -331,3 +331,61 @@ def test_language_review_rejects_unaccepted_semantics(meaning: bool, quality: bo
             meaning_preserved=meaning,
             language_quality_accepted=quality,
         )
+
+def test_qualification_rejects_stale_variant_content_digest() -> None:
+    """Even an immutable model can be copied without Pydantic revalidation."""
+    source = _envelope(
+        "source",
+        language="en",
+        persona="analyst",
+        first_text="Two shots.",
+        second_text="Pressure increased.",
+    )
+    variant = _envelope(
+        "variant",
+        language="es",
+        persona="casual_fan",
+        first_text="Dos tiros.",
+        second_text="Aumento la presion.",
+    )
+    altered = variant.model_copy(
+        update={"binding": variant.binding.model_copy(update={"content_digest": "c" * 64})}
+    )
+    with pytest.raises(ValueError, match="intact source and variant digests"):
+        qualify_audience_variant(source, altered, _results())
+
+
+def test_language_review_rejects_modified_payload_without_digest_update() -> None:
+    """Language acceptance must not be reused after content changes."""
+    source = _envelope(
+        "source",
+        language="en",
+        persona="analyst",
+        first_text="Two shots.",
+        second_text="Pressure increased.",
+    )
+    variant = _envelope(
+        "variant",
+        language="fr",
+        persona="broadcast_caption",
+        first_text="Deux tirs.",
+        second_text="La pression augmente.",
+    )
+    qualified = qualify_audience_variant(source, variant, _results())
+    payload = CommentaryPayload.model_validate(
+        {
+            "lines": [
+                {"claim_id": "claim-1", "text": "Trois tirs."},
+                {"claim_id": "claim-2", "text": "La pression augmente."},
+            ]
+        }
+    )
+    altered = variant.model_copy(update={"payload": payload})
+    with pytest.raises(ValueError, match="intact reviewed content"):
+        record_audience_language_review(
+            altered,
+            qualified,
+            reviewer_actor_id="editor-1",
+            meaning_preserved=True,
+            language_quality_accepted=True,
+        )
