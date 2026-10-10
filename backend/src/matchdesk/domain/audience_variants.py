@@ -9,9 +9,11 @@ existing deterministic verification boundary before a producer can review the va
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Literal
 
-from matchdesk.domain.broadcast_outputs import BroadcastEnvelope
-from matchdesk.domain.models import VerificationResult
+from matchdesk.domain.broadcast_outputs import BroadcastEnvelope, OutputPayload, OverlayPayload
+from matchdesk.domain.hashing import content_digest
+from matchdesk.domain.models import ApprovalBinding, VerificationResult
 
 
 @dataclass(frozen=True)
@@ -24,6 +26,8 @@ class AudienceVariantQualification:
     persona: str
     claim_ids: tuple[str, ...]
     verification_statuses: tuple[str, ...]
+    variant_content_digest: str
+    evidence_digest: str
 
 
 def qualify_audience_variant(
@@ -42,6 +46,17 @@ def qualify_audience_variant(
         raise ValueError("Audience variant must preserve the exact claim set")
     if source.payload.kind != variant.payload.kind:
         raise ValueError("Audience variant must preserve the broadcast output kind")
+    if isinstance(source.payload, OverlayPayload):
+        # A translated label may change, but its source metric and numerical claim may not.
+        assert isinstance(variant.payload, OverlayPayload)
+        source_metrics = {metric.claim_id: metric.assertion for metric in source.payload.metrics}
+        variant_metrics = {metric.claim_id: metric.assertion for metric in variant.payload.metrics}
+        if (
+            len(source_metrics) != len(source.payload.metrics)
+            or len(variant_metrics) != len(variant.payload.metrics)
+            or source_metrics != variant_metrics
+        ):
+            raise ValueError("Audience overlay must preserve each exact numerical assertion")
 
     source_binding = source.binding
     variant_binding = variant.binding
@@ -76,4 +91,102 @@ def qualify_audience_variant(
         persona=variant_binding.persona,
         claim_ids=variant.claim_ids,
         verification_statuses=tuple(ordered_statuses),
+        variant_content_digest=variant_binding.content_digest,
+        evidence_digest=variant_binding.evidence_digest,
+    )
+
+
+@dataclass(frozen=True)
+class AudienceLanguageReview:
+    """Host-supplied editorial acceptance bound to one exact localized draft.
+
+    This is an audit record, not actor authentication or permission to publish.
+    A trusted host must establish the reviewer before calling this function.
+    """
+
+    source_output_id: str
+    variant_output_id: str
+    reviewer_actor_id: str
+    variant_content_digest: str
+    evidence_digest: str
+    language: str
+    persona: str
+
+
+def build_audience_variant(
+    source: BroadcastEnvelope,
+    *,
+    output_id: str,
+    payload: OutputPayload,
+    language: Literal["en", "es", "fr"],
+    persona: Literal["analyst", "casual_fan", "broadcast_caption"],
+) -> BroadcastEnvelope:
+    """Bind model- or editor-proposed copy to a fresh locale/persona content identity.
+
+    The new draft inherits evidence, claim and replay scope, never the approval itself.
+    Neither variant construction nor Pydantic validation proves semantic equivalence.
+    """
+    if payload.kind != source.payload.kind:
+        raise ValueError("Audience draft must retain the source output kind")
+
+    current = source.binding
+    binding = ApprovalBinding(
+        item_id=current.item_id,
+        item_version=current.item_version,
+        replay_id=current.replay_id,
+        content_digest=content_digest(payload),
+        evidence_digest=current.evidence_digest,
+        language=language,
+        persona=persona,
+    )
+    return BroadcastEnvelope(
+        output_id=output_id,
+        session_id=source.session_id,
+        match_id=source.match_id,
+        binding=binding,
+        windows=source.windows,
+        evidence_ids=source.evidence_ids,
+        claim_ids=source.claim_ids,
+        payload=payload,
+    )
+
+
+def record_audience_language_review(
+    variant: BroadcastEnvelope,
+    qualification: AudienceVariantQualification,
+    *,
+    reviewer_actor_id: str,
+    meaning_preserved: bool,
+    language_quality_accepted: bool,
+) -> AudienceLanguageReview:
+    """Require explicit editorial language/meaning acceptance for exact reviewed copy.
+
+    Deterministic claim checks cannot evaluate whether translated prose changes meaning.
+    The trusted host must independently authenticate the reviewer and persist this
+    version-bound decision; no publishing authority is returned from this function.
+    """
+    if (
+        qualification.variant_output_id != variant.output_id
+        or qualification.variant_content_digest != variant.binding.content_digest
+        or qualification.evidence_digest != variant.binding.evidence_digest
+        or qualification.language != variant.binding.language
+        or qualification.persona != variant.binding.persona
+        or qualification.claim_ids != variant.claim_ids
+    ):
+        raise ValueError("Audience language review must bind the exact qualified variant")
+    actor_id = reviewer_actor_id.strip()
+    if not actor_id:
+        raise ValueError("Audience language reviewer actor_id cannot be blank")
+    if type(meaning_preserved) is not bool or type(language_quality_accepted) is not bool:
+        raise ValueError("Language review decisions must be explicit booleans")
+    if not meaning_preserved or not language_quality_accepted:
+        raise ValueError("Audience language review requires meaning and quality acceptance")
+    return AudienceLanguageReview(
+        source_output_id=qualification.source_output_id,
+        variant_output_id=variant.output_id,
+        reviewer_actor_id=actor_id,
+        variant_content_digest=variant.binding.content_digest,
+        evidence_digest=variant.binding.evidence_digest,
+        language=variant.binding.language,
+        persona=variant.binding.persona,
     )
