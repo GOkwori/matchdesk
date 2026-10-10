@@ -115,7 +115,10 @@ def _validate_case(case: ProducerCase) -> None:
     if (
         any(event.match_id != draft.match_id for event in case.accepted_events)
         or not set(evidence.event_ids).issubset(event_ids)
-        or any(not set(claim.evidence_event_ids).issubset(set(evidence.event_ids)) for claim in case.claims)
+        or any(
+            not set(claim.evidence_event_ids).issubset(set(evidence.event_ids))
+            for claim in case.claims
+        )
     ):
         raise ValueError("Producer case claims and events must belong to the exact evidence")
 
