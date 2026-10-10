@@ -8,11 +8,11 @@ My priority is the path from a synthetic match event to a publishable explanatio
 The design keeps statistics in deterministic code, uses specialist AI agents to
 interpret and present evidence, and gives the producer control over publication.
 
-**Owner: George Okwori. Current stage: Phase 2 in progress; P2-01 TESTED.**
-Phase 0 and the deterministic Phase 1 engine are VERIFIED / COMPLETED. The model-independent
-Phase 2A orchestration control plane is tested, including bounded retries, timeouts,
-recovery and a deterministic verification hand-off. There is still no deployed product,
-live Agent Framework/Foundry runtime or live-model integration.
+**Owner: George Okwori. Current stage: Phase 3 in progress; P3-01 and P3-02 TESTED.**
+Phase 0, Phase 1 and Phase 2 are VERIFIED / COMPLETED. The deterministic engine,
+bounded specialist workflow, evidence verification and controlled Agent Framework /
+Foundry runtime have source-bound test evidence. Phase 3 has added immutable producer
+review and exact-binding publication authorisation, but no deployed publishing service.
 
 ## What is implemented
 
@@ -26,17 +26,18 @@ Phase 2A adds a typed control plane for four specialist roles: Tactical Analyst,
 Narrative Composer, Editorial Reviewer and Audience Adapter. The controller owns role
 order, retry limits, timeout classification, bounded recovery and the verification
 hand-off. It does not call a model and it does not give an agent publishing authority.
+Later Phase 2 slices add evidence verification, scoped specialists, one bounded
+live Foundry invocation and tested retry/recovery and model-evaluation controls.
 
-The latest qualified P2-01 code source passed 226 Python tests, strict Ruff/formatting/
-mypy checks, frontend production build, dependency and source-security gates, real
-runtime/PostgreSQL restart checks, Chromium regressions and independent native-image
-qualification. The new orchestration module has 100% measured statement and branch
-coverage.
+At the latest tested P3-02 source, 290 Python tests passed with 96.73% measured
+branch-aware package coverage. Ruff, formatting, strict mypy, frontend build,
+dependency audit, source security, runtime/browser integration and native-image
+qualification passed on the same exact commit.
 
 The PostgreSQL topology is still infrastructure-test scaffolding rather than durable
-application persistence. The deterministic claim verifier, scoped specialist execution
-adapters, live Agent Framework/Foundry integration, producer publication workflow and
-audience outputs remain later work.
+application persistence. Authenticated producer actions, durable approval storage,
+real publication delivery, broadcast outputs and audience adaptations remain later
+work; a pure domain authorisation function does not substitute for these.
 
 Read [current progress](docs/PROGRESS.md) and the [evidence index](docs/evidence/INDEX.md)
 before treating any capability as tested or available.
@@ -48,13 +49,13 @@ flowchart LR
     S[Seeded synthetic simulator - TESTED] --> I[Ingest and deterministic intelligence - TESTED]
     I --> E[Evidence and claim contracts - implemented]
     E --> C[Bounded four-specialist control plane - TESTED]
-    C --> V[Deterministic claim verification - NEXT]
-    V --> A[Live Agent Framework / Foundry runtimes - planned]
-    A --> P[Producer review and approval - planned]
-    P --> O[Overlay and audience outputs - planned]
+    C --> A[Bounded Agent Framework / Foundry integration - TESTED]
+    A --> V[Deterministic claim verification - TESTED]
+    V --> P[Producer review and exact-binding domain gate - TESTED]
+    P --> O[Authenticated publishing and audience outputs - PLANNED]
 ```
 
-The [solution design](docs/solution-design/02-architecture.md) explains the implemented deterministic boundaries, the tested Phase 2A control plane, planned specialist runtimes and later publication path.
+The [solution design](docs/solution-design/02-architecture.md) explains the deterministic, specialist, verification and producer trust boundaries, plus the later authenticated publication path.
 
 ## Reproduce the foundation
 
@@ -120,7 +121,7 @@ No public demo is hosted yet.
 and Python docstring-presence checks. `make lint` runs Ruff, formatting, strict mypy
 and frontend type checks. Independent integration, advisory and source-security workflows
 retain failures, source IDs, hashes, JUnit, screenshots, SARIF and redacted scan reports.
-The [evidence index](docs/evidence/INDEX.md) separates historical image-security failures from later passing qualifications and the current Phase 2A evidence.
+The [evidence index](docs/evidence/INDEX.md) separates historical image-security failures from later passing qualifications and the current Phase 3A/3B evidence.
 
 Every authored Python module, class and function has a docstring. Non-obvious
 validation, concurrency and security decisions have explanatory comments. Browser
@@ -141,7 +142,7 @@ used by Next.js. See the [coding standard](docs/engineering/coding-standard.md).
 All supplied example data is invented. No real match footage, team branding or
 player likeness is included. Synthetic xG is an illustrative estimate, not a
 calibrated professional model. Runtime agents and their limits remain explicit in the
-[responsible-AI design](docs/solution-design/12-responsible-ai.md). The deterministic
-orchestration control plane is implemented, but no live model integration is connected in this snapshot.
+[responsible-AI design](docs/solution-design/12-responsible-ai.md). Bounded live Foundry calls have been tested via manually gated workflows; this is
+not an always-on model service or a deployed public demo.
 
 Original project source is provided under the [MIT licence](LICENSE).

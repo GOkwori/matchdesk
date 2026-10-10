@@ -3,6 +3,21 @@
 Results are tied to source commits and execution environments. A passing build is not
 an approval to deploy, and evidence from one source is not relabelled as another.
 
+## Phase 3A producer review and Phase 3B publication gate
+
+- [Phase 3A producer-review qualification](phase3a-producer-review-20261009.md)
+  records the exact-version approval state machine and four passing hosted
+  workflow groups on source `bfa883597056c9c934f3e8fdce7cdc24adfeb73a`.
+- [Phase 3B publication-gate qualification](phase3b-publication-gate-20261010.md)
+  records exact current-version publication authorisation on source
+  `1cf95c850b609e7906e25550f1d4d9a53a6f0384`.
+- P3-02 Foundation CI 38015851840 passed 290 Python tests with 96.73% coverage;
+  Dependency audit 38015851831, Source security 38015851810 and Foundation
+  integration 38015851847 also passed on the same exact source.
+
+P3-01 and P3-02 are **TESTED** as pure domain controls, not an authenticated
+publishing service. No content was published, and P3-03 output contracts are next.
+
 ## Phase 2 closure review
 
 - [Phase 2 closure review candidate](phase2-closure-review-20261009.md) records the

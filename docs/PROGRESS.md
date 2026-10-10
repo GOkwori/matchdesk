@@ -1,6 +1,6 @@
 # Current progress
 
-Date: 9 October 2026. Stage: Phase 2 VERIFIED / COMPLETED; Phase 3 producer control and audience delivery started.
+Date: 10 October 2026. Stage: Phase 2 VERIFIED / COMPLETED; Phase 3 producer control and audience delivery in progress.
 Phase 0 gate: **VERIFIED / COMPLETED**.
 
 The engineering foundation was merged through the protected `main` path and the
@@ -240,6 +240,28 @@ Dependency audit 37954560125, Source security 37954560323 and Foundation integra
 P2-06 is COMPLETE and Phase 2 is therefore **VERIFIED / COMPLETED** for the bounded
 agent-orchestration and verification scope. Phase 3 now begins with producer
 review/version binding and human approval controls.
+
+## Phase 3 progress
+
+P3-01 producer review and version binding is **TESTED** on development source
+`bfa883597056c9c934f3e8fdce7cdc24adfeb73a`. The immutable state machine
+requires reverification before approval, rejects stale decisions and invalidates
+approval when a newer revision is opened. All four hosted workflow groups passed.
+See the [Phase 3A record](evidence/phase3a-producer-review-20261009.md).
+
+P3-02 exact-binding publication authorisation is **TESTED** on source
+`1cf95c850b609e7906e25550f1d4d9a53a6f0384`. Foundation CI
+38015851840 passed 290 Python tests with 96.73% measured package coverage,
+Ruff lint/format, strict mypy, contract/document checks and frontend build.
+Dependency audit 38015851831, Source security 38015851810 and Foundation
+integration 38015851847 passed on the same source, including runtime/browser
+and native-image checks. The initial failed Ruff I001 import-grouping check was
+retained as evidence and repaired by a one-line non-functional change.
+See the [Phase 3B record](evidence/phase3b-publication-gate-20261010.md).
+
+These are pure domain safeguards, not a published API or operational
+authenticated publishing system. P3-03 broadcast output contracts are next.
+Production deployment and main promotion remain unauthorised.
 
 ## Historical native-image remediation before final qualification
 

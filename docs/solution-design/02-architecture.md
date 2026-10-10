@@ -1,6 +1,6 @@
 # Architecture and trust boundaries
 
-Status: proposed whole-system design with Phase 0/1 implemented and Phase 2 P2-01 through P2-05 TESTED; Phase 2 closure review in progress.
+Status: proposed whole-system design; Phase 0/1/2 VERIFIED / COMPLETED and Phase 3 P3-01/P3-02 pure domain controls TESTED.
 
 ```mermaid
 flowchart TB
@@ -24,7 +24,9 @@ typed orchestration control plane for four specialist roles, scoped read-only sp
 tools, deterministic claim verification, a fail-closed Microsoft Agent Framework / Foundry
 runtime, bounded retry/timeout/recovery controls and deterministic model-output evaluation.
 One bounded live Foundry tactical proposal has passed the same evidence-verification path.
-Durable production workflow persistence and producer publication remain later work.
+Phase 3 now includes tested pure-domain producer review and publication gating.
+Authenticated producer commands, durable approval records, transactional delivery
+and production workflow persistence remain later work.
 
 Numerical truth belongs to registered deterministic queries. Narrative reasoning is
 an interpretation of that evidence. Publishing authority belongs to an authenticated

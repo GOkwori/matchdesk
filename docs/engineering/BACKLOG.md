@@ -85,12 +85,17 @@ binds the exact item version, content digest, evidence digest, language and pers
 
 | ID | Work | Status | Acceptance evidence |
 |---|---|---|---|
-| P3-01 | Implement producer review/version binding and approval state | IN PROGRESS | Exact-version approve/reject/edit/reverify state; stale approval invalidation; immutable audit records |
-| P3-02 | Implement version-bound publication gate | PLANNED | Publish only the current producer-approved version with matching content/evidence binding |
+| P3-01 | Implement producer review/version binding and approval state | TESTED | Exact-version approve/reject/edit/reverify state; stale approval invalidation; immutable audit records |
+| P3-02 | Implement version-bound publication gate | TESTED | Pure domain gate authorises only the current approved content/evidence binding; no delivery side effect |
 | P3-03 | Implement broadcast output contracts | PLANNED | Commentary, explainer, overlay JSON, half-time and full-time recap envelopes |
 | P3-04 | Implement audience adaptation and language variants | PLANNED | Analyst, casual-fan and broadcast-caption outputs in English, Spanish and French with evidence checks |
 | P3-05 | Implement producer desk interaction flow | PLANNED | Inspect, edit, reverify, approve, reject and publish through accessible UI states |
 | P3-06 | Review Phase 3 | PLANNED | End-to-end producer/audience evidence, exact-head qualification and owner decision |
 
-Phase 3 does not authorize automatic publication. Producer approval remains an explicit
-authenticated human action bound to an exact immutable version.
+P3-01: [producer-review evidence](../evidence/phase3a-producer-review-20261009.md).
+P3-02: [publication-gate evidence](../evidence/phase3b-publication-gate-20261010.md).
+
+The tested P3-01/P3-02 components are pure domain controls. Host authentication,
+durable approval storage and actual publication are not implemented by these slices.
+Phase 3 does not authorise automatic publication; an authenticated human decision
+must bind each exact immutable version before a trusted publishing adapter is added.
