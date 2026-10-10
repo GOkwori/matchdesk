@@ -19,7 +19,7 @@ jobs:
         with:
           python-version: '3.12.15'
       - name: Install exact approved resolver
-        run: python -m pip install --only-binary=:all: uv==0.10.0
+        run: "python -m pip install --only-binary=:all: uv==0.10.0"
       - name: Resolve exact Psycopg dependency without repository write authority
         run: |
           set -euo pipefail
