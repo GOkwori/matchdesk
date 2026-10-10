@@ -16,6 +16,7 @@ from pydantic import BaseModel
 from matchdesk.api.limits import BodyLimitMiddleware
 from matchdesk.domain.hashing import content_digest
 from matchdesk.domain.models import MatchEvent
+from matchdesk.domain.producer_preview import ProducerDeskPreview, build_producer_desk_preview
 
 
 class HealthResponse(BaseModel):
@@ -81,6 +82,11 @@ def create_app() -> FastAPI:
                 },
             },
         )
+
+    @app.get("/api/producer/preview", response_model=ProducerDeskPreview)
+    def producer_preview() -> ProducerDeskPreview:
+        """Inspect real seeded evidence without creating an authenticated review."""
+        return build_producer_desk_preview()
 
     @app.get("/api/contracts/event")
     def event_schema() -> dict[str, object]:
