@@ -198,7 +198,7 @@ jobs:
             2>&1 | tee -a artifacts/integration/oidc-login-psycopg.log
       - name: Qualify SELECT-only customer directory with real PostgreSQL
         id: account_directory
-        if: ${{ !cancelled() && steps.oidc_storage.outcome == 'success' && steps.account_directory.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.oidc_storage.outcome == 'success' }}
         run: |
           set -euo pipefail
           for attempt in 1 2; do
@@ -241,6 +241,11 @@ jobs:
             -e CI=true -e "PGPASSWORD=$role_password" api \
             /app/.venv/bin/python - after-restart < e2e/customer-accounts-psycopg.py \
             2>&1 | tee -a artifacts/integration/customer-accounts-psycopg.log
+      - name: Require successful customer directory PostgreSQL qualification
+        id: directory_gate
+        if: ${{ !cancelled() && steps.oidc_storage.outcome == 'success' }}
+        run: |
+          test "${{ steps.account_directory.outcome }}" = success
       - name: Install locked browser harness and matching Chromium
         id: browser
         if: ${{ !cancelled() && steps.start.outcome == 'success' }}
@@ -255,7 +260,7 @@ jobs:
         run: npm test 2>&1 | tee ../artifacts/integration/browser.log
       - name: Install the verified native-image scanner and current database
         id: scanner
-        if: ${{ !cancelled() && steps.runtime.outcome == 'success' && steps.producer_storage.outcome == 'success' && steps.psycopg_storage.outcome == 'success' && steps.customer_sessions_storage.outcome == 'success' && steps.oidc_storage.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.runtime.outcome == 'success' && steps.producer_storage.outcome == 'success' && steps.psycopg_storage.outcome == 'success' && steps.customer_sessions_storage.outcome == 'success' && steps.oidc_storage.outcome == 'success' && steps.account_directory.outcome == 'success' && steps.directory_gate.outcome == 'success' }}
         # This is the official 0.75.0 Linux-64bit asset, independently inspected before pinning.
         # No curl-to-shell execution, repository token or downloaded installer is used.
         run: |
