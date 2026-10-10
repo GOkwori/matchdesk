@@ -3,8 +3,6 @@
 import asyncio
 
 import pytest
-from pydantic import ValidationError
-
 from matchdesk.domain.audience_generation import (
     AudienceDraftRequest,
     build_audience_prompt,
@@ -13,6 +11,7 @@ from matchdesk.domain.audience_generation import (
 from matchdesk.domain.broadcast_outputs import BroadcastEnvelope, CommentaryPayload
 from matchdesk.domain.hashing import content_digest
 from matchdesk.domain.models import ApprovalBinding
+from pydantic import ValidationError
 
 
 def _source() -> BroadcastEnvelope:
@@ -56,9 +55,7 @@ class OfflineProvider:
 
 @pytest.mark.parametrize("language", ["en", "es", "fr"])
 @pytest.mark.parametrize("persona", ["analyst", "casual_fan", "broadcast_caption"])
-def test_offline_provider_emits_unapproved_scoped_draft(
-    language: str, persona: str
-) -> None:
+def test_offline_provider_emits_unapproved_scoped_draft(language: str, persona: str) -> None:
     """All nine language/persona combinations retain evidence and claim identity."""
     provider = OfflineProvider(
         {"kind": "commentary", "lines": [{"claim_id": "claim-1", "text": "Draft."}]}
