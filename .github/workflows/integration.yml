@@ -338,6 +338,14 @@ jobs:
         if: ${{ !cancelled() && steps.directory_gate.outcome == 'success' && steps.id3g_role_probe.outcome == 'success' }}
         run: |
           set -euo pipefail
+          # The runtime migration, not a QA-only copy, is the tested SQL.
+          # Reject drift before touching even this disposable PostgreSQL database.
+          test -f backend/postgres/migrations/005_customer_account_revocation.sql
+          cmp -s qualification/id3g/005_customer_account_revocation.sql \
+            backend/postgres/migrations/005_customer_account_revocation.sql
+          sha256sum backend/postgres/migrations/005_customer_account_revocation.sql \
+            qualification/id3g/005_customer_account_revocation.sql \
+            > artifacts/integration/id3g-migration-hashes.txt
           # Run the reviewed SQL ONLY in this run's disposable PostgreSQL topology.
           docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
             psql --no-psqlrc -X -v ON_ERROR_STOP=1 -U matchdesk -d matchdesk <<'SQL'
@@ -355,7 +363,7 @@ jobs:
           for attempt in 1 2; do
             docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
               psql --no-psqlrc -X -v ON_ERROR_STOP=1 -U matchdesk -d matchdesk \
-              < qualification/id3g/005_customer_account_revocation.sql
+              < backend/postgres/migrations/005_customer_account_revocation.sql
           done
           session_password="$(openssl rand -hex 32)"
           operator_password="$(openssl rand -hex 32)"
