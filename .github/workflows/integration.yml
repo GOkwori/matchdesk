@@ -52,6 +52,10 @@ jobs:
         id: runtime
         if: ${{ !cancelled() && steps.start.outcome == 'success' }}
         run: node e2e/runtime-checks.mjs 2>&1 | tee artifacts/integration/runtime.log
+      - name: Qualify producer audit and CAS on real isolated PostgreSQL
+        id: producer_storage
+        if: ${{ !cancelled() && steps.start.outcome == 'success' && steps.runtime.outcome == 'success' }}
+        run: node e2e/producer-store-postgres.mjs 2>&1 | tee artifacts/integration/producer-store-postgres.log
       - name: Install locked browser harness and matching Chromium
         id: browser
         if: ${{ !cancelled() && steps.start.outcome == 'success' }}
@@ -66,7 +70,7 @@ jobs:
         run: npm test 2>&1 | tee ../artifacts/integration/browser.log
       - name: Install the verified native-image scanner and current database
         id: scanner
-        if: ${{ !cancelled() && steps.runtime.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.runtime.outcome == 'success' && steps.producer_storage.outcome == 'success' }}
         # This is the official 0.75.0 Linux-64bit asset, independently inspected before pinning.
         # No curl-to-shell execution, repository token or downloaded installer is used.
         run: |
