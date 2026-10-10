@@ -37,7 +37,11 @@ class ValidationResponse(BaseModel):
     content_digest: str
 
 
-def create_app(*, customer_session_router: APIRouter | None = None) -> FastAPI:
+def create_app(
+    *,
+    customer_session_router: APIRouter | None = None,
+    customer_oidc_router: APIRouter | None = None,
+) -> FastAPI:
     """Construct an isolated app for the local workbench and integration tests."""
     app = FastAPI(
         title="MatchDesk foundation API",
@@ -51,6 +55,9 @@ def create_app(*, customer_session_router: APIRouter | None = None) -> FastAPI:
     # The default application exposes no authenticated session routes.
     if customer_session_router is not None:
         app.include_router(customer_session_router)
+    # OIDC is opt-in and cannot be activated by the default exported app.
+    if customer_oidc_router is not None:
+        app.include_router(customer_oidc_router)
 
     @app.exception_handler(RequestValidationError)
     async def invalid_request(request: Request, exc: RequestValidationError) -> JSONResponse:
