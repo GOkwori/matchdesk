@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from fastapi import FastAPI, Request
+from fastapi import APIRouter, FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -37,7 +37,7 @@ class ValidationResponse(BaseModel):
     content_digest: str
 
 
-def create_app() -> FastAPI:
+def create_app(*, customer_session_router: APIRouter | None = None) -> FastAPI:
     """Construct an isolated app for the local workbench and integration tests."""
     app = FastAPI(
         title="MatchDesk foundation API",
@@ -47,6 +47,10 @@ def create_app() -> FastAPI:
         redoc_url=None,
     )
     app.add_middleware(BodyLimitMiddleware)
+    # Only a trusted host may explicitly mount a separately qualified router.
+    # The default application exposes no authenticated session routes.
+    if customer_session_router is not None:
+        app.include_router(customer_session_router)
 
     @app.exception_handler(RequestValidationError)
     async def invalid_request(request: Request, exc: RequestValidationError) -> JSONResponse:
