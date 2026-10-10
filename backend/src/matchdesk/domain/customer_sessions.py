@@ -42,9 +42,7 @@ class CustomerSession:
             or not self.account_id.strip()
             or type(self.revoked) is not bool
             or any(
-                not isinstance(value, datetime)
-                or value.tzinfo is None
-                or value.utcoffset() is None
+                not isinstance(value, datetime) or value.tzinfo is None or value.utcoffset() is None
                 for value in (self.created_at, self.expires_at, self.last_seen_at)
             )
             or not self.created_at <= self.last_seen_at <= self.expires_at

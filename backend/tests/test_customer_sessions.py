@@ -64,7 +64,11 @@ def test_invalid_or_revoked_server_sessions_never_authorize(change) -> None:
     for field, value in change.items():
         object.__setattr__(original, field, value)
     with pytest.raises(PermissionError):
-        resolve_customer_session(original.session_id if "session_id" not in change else "a" * 64, store=Store(original), now=NOW)
+        resolve_customer_session(
+            original.session_id if "session_id" not in change else "a" * 64,
+            store=Store(original),
+            now=NOW,
+        )
 
 
 @pytest.mark.parametrize("bad", [None, "", "x", "z" * 64, "0" * 63])
