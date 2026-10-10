@@ -13,6 +13,7 @@ import pytest
 from matchdesk.domain.postgres_producer_store import PostgresProducerCaseStore
 from matchdesk.domain.producer_commands import (
     HostVerifiedActor,
+    apply_producer_command,
     execute_producer_command,
     open_producer_case,
 )
@@ -270,3 +271,36 @@ def test_cas_rejects_skipped_or_negative_generation() -> None:
     assert store.create(case)
     with pytest.raises(ValueError, match="exactly one"):
         store.replace_if_generation(case, expected_generation=-1)
+
+
+
+def test_malformed_storage_row_is_rejected_before_deserializing() -> None:
+    """A broken database cursor must never return a trusted producer snapshot."""
+    db = FakeDatabase()
+    store = PostgresProducerCaseStore(db)
+    case = _case()
+    assert store.create(case)
+    key = ("tenant-1", "demo-preview-only", "demo-story-output")
+    db.cases[key] = ("1", {}, "0" * 64)
+    with pytest.raises(ValueError, match="invalid row"):
+        store.load(*key)
+
+
+def test_failed_cas_with_changed_prior_audit_digest_does_not_append() -> None:
+    """A same-generation snapshot with a different audit root rejects the write."""
+    db = FakeDatabase()
+    store = PostgresProducerCaseStore(db)
+    case = _case()
+    assert store.create(case)
+    key = ("tenant-1", "demo-preview-only", "demo-story-output")
+    generation, content, _ = db.cases[key]
+    db.cases[key] = (generation, content, "f" * 64)
+    updated = apply_producer_command(
+        case,
+        actor=_actor(),
+        expected_generation=1,
+        command="reverify",
+        reason="Check audit drift",
+    )
+    assert not store.replace_if_generation(updated, expected_generation=1)
+    assert len(db.audit) == 1
