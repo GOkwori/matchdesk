@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Literal, Mapping, Protocol
+from typing import Mapping, Protocol
 
 import jwt
 from jwt import InvalidTokenError, PyJWK
@@ -127,7 +127,8 @@ def verify_producer_access_token(
             or claims.get("azp") not in policy.client_ids
             or not isinstance(claims.get("scp"), str)
             or policy.required_scope not in claims["scp"].split()
-            or "idtyp" in claims and claims["idtyp"] == "app"
+            or "idtyp" in claims
+            and claims["idtyp"] == "app"
         ):
             raise PermissionError("Producer token is outside delegated API policy")
         grants = entitlements.resolve(tenant_id=policy.tenant_id, subject=claims["sub"])
