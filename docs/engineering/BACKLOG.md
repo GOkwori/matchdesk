@@ -89,7 +89,7 @@ binds the exact item version, content digest, evidence digest, language and pers
 | P3-02 | Implement version-bound publication gate | TESTED | Pure domain gate authorises only the current approved content/evidence binding; no delivery side effect |
 | P3-03 | Implement broadcast output contracts | TESTED | Five strict immutable output envelopes; claim/evidence binding; registered overlay metrics; explicit recap period scope; frozen JSON Schema |
 | P3-04 | Implement audience adaptation and language variants | IN PROGRESS | Offline generation/verification and nine-pair quality-review contracts qualified (388 tests, 96.01% coverage); real multilingual model output and independent linguistic acceptance outstanding |
-| P3-05 | Implement producer desk interaction flow | PLANNED | Inspect, edit, reverify, approve, reject and publish through accessible UI states |
+| P3-05 | Implement producer desk interaction flow | IN PROGRESS | Deterministic read-only evidence inspection API/UI introduced; authenticated durable edit/reverify/approve/reject/publish not yet implemented or authorized |
 | P3-06 | Review Phase 3 | PLANNED | End-to-end producer/audience evidence, exact-head qualification and owner decision |
 
 P3-01: [producer-review evidence](../evidence/phase3a-producer-review-20261009.md).
