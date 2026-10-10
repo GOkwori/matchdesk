@@ -11,7 +11,6 @@ from __future__ import annotations
 import hashlib
 from collections.abc import Callable
 from datetime import datetime, timedelta, timezone
-from typing import Literal, cast
 
 from matchdesk.domain.customer_identity import CustomerIdentityKey
 from matchdesk.domain.customer_sessions import (
@@ -81,7 +80,7 @@ def _decode(token: str, row: tuple[object, ...]) -> CustomerSession:
         session_id=token,
         identity=CustomerIdentityKey(issuer=issuer, tenant_id=tenant, subject=subject),
         account_id=account,
-        realm=cast("Literal['customer', 'workforce']", realm),
+        realm=realm,
         created_at=created,
         expires_at=expires,
         last_seen_at=seen,

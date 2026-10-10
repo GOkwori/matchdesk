@@ -1,10 +1,10 @@
 """Unit tests for hashed PostgreSQL customer-session transactions and rotation."""
 
+from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock
 
 import pytest
-
 from matchdesk.domain.customer_identity import CustomerIdentityKey
 from matchdesk.domain.customer_sessions import new_customer_session
 from matchdesk.domain.postgres_customer_sessions import (
@@ -202,3 +202,99 @@ def test_invalid_stored_row_fails_closed() -> None:
     """Malformed stored session snapshots must not turn into valid identities."""
     with pytest.raises(ValueError):
         _decode("a" * 64, ("bad",))
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        ("issuer", object()),
+        ("tenant", None),
+        ("subject", 42),
+        ("account", []),
+        ("realm", "workforce"),
+        ("created", "invalid"),
+        ("expires", None),
+        ("seen", 123),
+        ("revoked", "false"),
+    ],
+)
+def test_decode_rejects_invalid_persisted_column_types(change) -> None:
+    """A compromised storage row cannot bypass realm or field type checking."""
+    session = record()
+    row = [
+        session.identity.issuer,
+        session.identity.tenant_id,
+        session.identity.subject,
+        session.account_id,
+        "customer",
+        session.created_at,
+        session.expires_at,
+        session.last_seen_at,
+        False,
+    ]
+    index = {
+        "issuer": 0,
+        "tenant": 1,
+        "subject": 2,
+        "account": 3,
+        "realm": 4,
+        "created": 5,
+        "expires": 6,
+        "seen": 7,
+        "revoked": 8,
+    }[change[0]]
+    row[index] = change[1]
+    with pytest.raises(ValueError, match="Invalid stored"):
+        _decode(session.session_id, tuple(row))
+
+
+@pytest.mark.parametrize(
+    "modification",
+    [
+        {"revoked": True},
+        {"last_seen_at": NOW + timedelta(seconds=1)},
+    ],
+)
+def test_create_rejects_revoked_or_nonfresh_session(modification) -> None:
+    """Only an initially unrevoked record can be persisted as a new session."""
+    connection = FakeConnection()
+    store = PostgresCustomerSessionStore(lambda: connection)
+    session = replace(record(), **modification)
+    with pytest.raises(ValueError, match="fresh"):
+        store.create(session)
+    assert not connection.cursor_obj.execute.called
+    assert connection.closed
+
+
+def test_rotation_rejects_naive_clock_without_database_access() -> None:
+    """A caller cannot bypass expiry using an untrusted local wall clock."""
+    connection = FakeConnection()
+    token = record().session_id
+    store = PostgresCustomerSessionStore(lambda: connection)
+    with pytest.raises(ValueError, match="timezone-aware"):
+        store.rotate(token, now=NOW.replace(tzinfo=None))
+    assert not connection.cursor_obj.execute.called
+
+
+def test_rotation_denied_when_predecessor_revocation_loses_race() -> None:
+    """A CAS failure must not create a successor token or grant fresh authority."""
+    connection = FakeConnection()
+    session = record()
+    connection.cursor_obj.fetchone.side_effect = [
+        (
+            session.identity.issuer,
+            session.identity.tenant_id,
+            session.identity.subject,
+            session.account_id,
+            "customer",
+            session.created_at,
+            session.expires_at,
+            session.last_seen_at,
+            False,
+        ),
+        None,
+    ]
+    store = PostgresCustomerSessionStore(lambda: connection)
+    assert store.rotate(session.session_id, now=NOW + timedelta(seconds=1)) is None
+    assert len(connection.cursor_obj.execute.call_args_list) == 2
+    assert connection.closed
