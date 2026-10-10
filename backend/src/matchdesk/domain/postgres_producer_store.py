@@ -91,9 +91,7 @@ def _case_json(case: ProducerCase) -> str:
     return _CASE.dump_json(case).decode("utf-8")
 
 
-def _reconcile_audit(
-    case: ProducerCase, rows: list[tuple[object, ...]]
-) -> None:
+def _reconcile_audit(case: ProducerCase, rows: list[tuple[object, ...]]) -> None:
     """Match every immutable audit-table row with the exact stored review history.
 
     Case snapshots and audit records are separate physical tables. Comparing a
@@ -115,9 +113,7 @@ def _reconcile_audit(
             raise ValueError("Producer audit table has a missing or inconsistent generation")
         raw_entry = row[1]
         entry_json = (
-            raw_entry
-            if isinstance(raw_entry, (str, bytes, bytearray))
-            else json.dumps(raw_entry)
+            raw_entry if isinstance(raw_entry, (str, bytes, bytearray)) else json.dumps(raw_entry)
         )
         if _ENTRY.validate_json(entry_json) != expected:
             raise ValueError("Producer audit entry differs from the review snapshot")
