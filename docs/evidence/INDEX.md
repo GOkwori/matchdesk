@@ -3,6 +3,18 @@
 Results are tied to source commits and execution environments. A passing build is not
 an approval to deploy, and evidence from one source is not relabelled as another.
 
+## Phase 3F restricted Psycopg and independently reconciled audit
+
+- [Phase 3F exact-source qualification](phase3f-real-psycopg-audit-20261010.md)
+  records passing *actual Python* Psycopg integration with a restricted PostgreSQL role,
+  concurrent CAS, rollback, restart and fail-closed independent audit reconciliation.
+- Qualified development source `9c6cb30b53d5d1fc1186ff2a758db807057c4a99`:
+  Foundation CI 38032825378 (477 tests, 98% storage coverage), Dependency audit
+  38032825394, Source security 38032825398 and Foundation integration
+  38032825383 all PASS on the same exact commit.
+- P3-05 remains IN PROGRESS: trusted OIDC, session entitlements, authenticated
+  producer commands, publishing delivery and production hardening remain unverified.
+
 ## Phase 3E producer-case SQL integrity
 
 - [P3-05 real PostgreSQL SQL-boundary qualification](phase3e-producer-postgres-20261010.md)

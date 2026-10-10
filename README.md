@@ -35,11 +35,12 @@ branch-aware package coverage. Ruff, formatting, strict mypy, frontend build,
 dependency audit, source security, runtime/browser integration and native-image
 qualification passed on the same exact commit.
 
-PostgreSQL now has a local producer-case migration, a transactional Python storage
-adapter contract and eight passing real SQL integration checks in disposable CI.
-A pinned live Python PostgreSQL driver, least-privilege runtime roles, trusted OIDC,
-production durability, operational publishing and independently accepted multilingual
-adaptations remain outstanding; passing SQL tests does not qualify those operations.
+PostgreSQL now has a reviewed producer-case migration, a pinned Psycopg driver,
+real adapter qualification with a restricted disposable database role, atomic
+audit/CAS/restart evidence, and independent validation of append-only audit rows
+against the producer state snapshot. This does **not** qualify a production
+database, Entra/OIDC authentication, host session grants or actual publication.
+Independently accepted multilingual adaptations also remain outstanding.
 
 Read [current progress](docs/PROGRESS.md) and the [evidence index](docs/evidence/INDEX.md)
 before treating any capability as tested or available.

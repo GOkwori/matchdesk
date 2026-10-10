@@ -294,6 +294,20 @@ tested, and neither least-privilege database credentials nor live OIDC have
 been qualified. P3-05 remains IN PROGRESS; see the
 [Phase 3E record](evidence/phase3e-producer-postgres-20261010.md).
 
+P3-05 restricted real Psycopg store and independent audit reconciliation have now
+passed exact-head qualification on development
+`9c6cb30b53d5d1fc1186ff2a758db807057c4a99`.
+Foundation CI 38032825378 passed 477 tests (97% rounded overall coverage,
+98% storage module), Dependency audit 38032825394, Source security
+38032825398 and Foundation integration 38032825383 all passed. Disposable
+PostgreSQL tests exercised actual restricted-role Python writes, complete
+rollback, concurrent CAS, restart recovery and independent audit-table tampering
+rejection. The Python driver and least-privilege role are now TESTED for this
+isolated scope; claims to the contrary in earlier evidence are historical.
+See [Phase 3F evidence](evidence/phase3f-real-psycopg-audit-20261010.md).
+Trusted OIDC identity/session grants, an authenticated producer API, production
+database lifecycle and publishing delivery remain outstanding. P3-05 IN PROGRESS.
+
 Production deployment and main promotion remain unauthorised.
 
 ## Historical native-image remediation before final qualification

@@ -26,10 +26,12 @@ runtime, bounded retry/timeout/recovery controls and deterministic model-output 
 One bounded live Foundry tactical proposal has passed the same evidence-verification path.
 Phase 3 includes tested producer review, pure-domain publication gating and broadcast
 output envelopes. The PostgreSQL producer-case tables, generation/audit CAS and
-rollback/restart semantics have been tested against disposable PostgreSQL; the Python
-adapter currently uses a fake in unit tests. Trusted OIDC, least-privilege database
-roles, a pinned live connection driver, authenticated producer commands, transactional
-delivery and production workflow persistence remain later work.
+rollback/restart semantics have been tested through the actual pinned Psycopg Python
+adapter using a restricted role in disposable integration, including independent
+audit-row reconciliation and DB restart. This is not production persistence.
+Trusted OIDC, server-owned session authorization, authenticated HTTP producer
+commands, transactional delivery and production workflow persistence remain
+later work.
 
 Numerical truth belongs to registered deterministic queries. Narrative reasoning is
 an interpretation of that evidence. Publishing authority belongs to an authenticated
