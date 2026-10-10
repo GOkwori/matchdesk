@@ -36,6 +36,13 @@ def qualify_audience_variant(
     verification_results: tuple[VerificationResult, ...],
 ) -> AudienceVariantQualification:
     """Validate one adapted variant without granting producer or publish authority."""
+    # Pydantic's model_copy(update=...) bypasses validation. Verify content identity
+    # again at the trust boundary rather than relying on an immutable type alone.
+    if (
+        source.binding.content_digest != content_digest(source.payload)
+        or variant.binding.content_digest != content_digest(variant.payload)
+    ):
+        raise ValueError("Audience qualification requires intact source and variant digests")
     if source.session_id != variant.session_id or source.match_id != variant.match_id:
         raise ValueError("Audience variant must remain in the same session and match")
     if source.windows != variant.windows:
@@ -174,6 +181,8 @@ def record_audience_language_review(
         or qualification.claim_ids != variant.claim_ids
     ):
         raise ValueError("Audience language review must bind the exact qualified variant")
+    if variant.binding.content_digest != content_digest(variant.payload):
+        raise ValueError("Audience language review requires intact reviewed content")
     actor_id = reviewer_actor_id.strip()
     if not actor_id:
         raise ValueError("Audience language reviewer actor_id cannot be blank")
