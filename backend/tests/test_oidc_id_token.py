@@ -30,23 +30,37 @@ def materials():
         return jwt.utils.base64url_encode(n.to_bytes((n.bit_length() + 7) // 8, "big")).decode()
 
     jwk = PyJWK.from_dict(
-        {"kty": "RSA", "alg": "RS256", "kid": "signed-test-key", "use": "sig",
-         "n": b64(numbers.n), "e": b64(numbers.e)}
+        {
+            "kty": "RSA",
+            "alg": "RS256",
+            "kid": "signed-test-key",
+            "use": "sig",
+            "n": b64(numbers.n),
+            "e": b64(numbers.e),
+        }
     )
     broker = CustomerBrokerPolicy(
-        issuer=ISSUER, tenant_id=TENANT, audience="api://customer",
+        issuer=ISSUER,
+        tenant_id=TENANT,
+        audience="api://customer",
         client_ids=frozenset({CLIENT}),
     )
     policy = CustomerOidcPolicy(
-        broker=broker, client_id=CLIENT, public_origin=ORIGIN,
+        broker=broker,
+        client_id=CLIENT,
+        public_origin=ORIGIN,
         authorization_endpoint=f"{BASE}/oauth2/v2.0/authorize",
         token_endpoint=f"{BASE}/oauth2/v2.0/token",
         jwks_uri=f"{BASE}/discovery/v2.0/keys",
     )
     pending = PendingOidcExchange(
-        issuer=ISSUER, client_id=CLIENT,
-        token_endpoint=policy.token_endpoint, redirect_uri=policy.redirect_uri,
-        authorization_code="code", code_verifier="a" * 43, nonce="b" * 43,
+        issuer=ISSUER,
+        client_id=CLIENT,
+        token_endpoint=policy.token_endpoint,
+        redirect_uri=policy.redirect_uri,
+        authorization_code="code",
+        code_verifier="a" * 43,
+        nonce="b" * 43,
     )
     resolver = Mock()
     resolver.resolve.return_value = jwk
@@ -58,8 +72,14 @@ def signed(materials, **changes) -> str:
     private, _, _, pending = materials
     now = int(NOW.timestamp())
     claims = {
-        "iss": ISSUER, "aud": CLIENT, "tid": TENANT, "sub": "broker-subject",
-        "nonce": pending.nonce, "iat": now - 5, "nbf": now - 5, "exp": now + 500,
+        "iss": ISSUER,
+        "aud": CLIENT,
+        "tid": TENANT,
+        "sub": "broker-subject",
+        "nonce": pending.nonce,
+        "iat": now - 5,
+        "nbf": now - 5,
+        "exp": now + 500,
     }
     claims.update(changes)
     return jwt.encode(claims, private, algorithm="RS256", headers={"kid": "signed-test-key"})
@@ -69,9 +89,7 @@ def test_valid_broker_identity_has_no_roles_or_social_email(materials) -> None:
     """A valid signature establishes only an issuer-qualified customer identity."""
     _, resolver, policy, pending = materials
     token = signed(materials, roles=["producer"], email="admin@example.com")
-    result = verify_broker_id_token(
-        token, pending=pending, policy=policy, keys=resolver, now=NOW
-    )
+    result = verify_broker_id_token(token, pending=pending, policy=policy, keys=resolver, now=NOW)
     assert result.lookup_key == (ISSUER, TENANT, "broker-subject")
     assert not hasattr(result, "email")
     assert not hasattr(result, "roles")
@@ -132,6 +150,9 @@ def test_mismatched_exchange_context_is_rejected(materials) -> None:
     _, keys, policy, pending = materials
     with pytest.raises(PermissionError):
         verify_broker_id_token(
-            signed(materials), pending=replace(pending, client_id="another-client"),
-            policy=policy, keys=keys, now=NOW
+            signed(materials),
+            pending=replace(pending, client_id="another-client"),
+            policy=policy,
+            keys=keys,
+            now=NOW,
         )
