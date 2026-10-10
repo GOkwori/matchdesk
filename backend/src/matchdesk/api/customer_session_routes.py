@@ -58,8 +58,7 @@ def _browser(request: Request, policy: CustomerBrowserPolicy) -> None:
     # Never treat unqualified client proxy metadata as trusted HTTPS evidence.
     # A reviewed gateway must strip forwarding headers before routing traffic.
     forwarded = any(
-        name.lower() == "forwarded"
-        or name.lower().startswith(("x-forwarded-", "x-original-"))
+        name.lower() == "forwarded" or name.lower().startswith(("x-forwarded-", "x-original-"))
         for name in request.headers
     )
     hosts = request.headers.getlist("host")
