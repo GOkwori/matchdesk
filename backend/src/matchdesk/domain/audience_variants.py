@@ -38,10 +38,9 @@ def qualify_audience_variant(
     """Validate one adapted variant without granting producer or publish authority."""
     # Pydantic's model_copy(update=...) bypasses validation. Verify content identity
     # again at the trust boundary rather than relying on an immutable type alone.
-    if (
-        source.binding.content_digest != content_digest(source.payload)
-        or variant.binding.content_digest != content_digest(variant.payload)
-    ):
+    if source.binding.content_digest != content_digest(
+        source.payload
+    ) or variant.binding.content_digest != content_digest(variant.payload):
         raise ValueError("Audience qualification requires intact source and variant digests")
     if source.session_id != variant.session_id or source.match_id != variant.match_id:
         raise ValueError("Audience variant must remain in the same session and match")
