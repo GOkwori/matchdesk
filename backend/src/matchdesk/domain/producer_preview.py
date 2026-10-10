@@ -65,12 +65,12 @@ def build_producer_desk_preview() -> ProducerDeskPreview:
     events = scenario.events
     window = MatchWindow(period=1, from_ms=0, to_ms=2_700_000)
     first_half = tuple(
-        event for event in events
+        event
+        for event in events
         if event.period == 1 and window.from_ms <= event.match_clock_ms < window.to_ms
     )
     home_goal_events = tuple(
-        event.event_id for event in first_half
-        if event.type == "goal" and event.team_id == "home"
+        event.event_id for event in first_half if event.type == "goal" and event.team_id == "home"
     )
     if len(home_goal_events) != 1:
         raise AssertionError("The locked producer preview fixture must have one home goal")
