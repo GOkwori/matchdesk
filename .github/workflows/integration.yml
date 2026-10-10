@@ -105,6 +105,61 @@ jobs:
             -e CI=true -e "PGPASSWORD=$role_password" api \
             /app/.venv/bin/python - after-restart < e2e/producer-store-psycopg.py \
             2>&1 | tee -a artifacts/integration/psycopg-producer-store.log
+      - name: Qualify real customer sessions under a restricted PostgreSQL role
+        id: customer_sessions_storage
+        if: ${{ !cancelled() && steps.psycopg_storage.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          # Use only the existing disposable database; migration must be idempotent.
+          for attempt in 1 2; do
+            docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+              psql --no-psqlrc -X -v ON_ERROR_STOP=1 -U matchdesk -d matchdesk \
+              < backend/postgres/migrations/002_customer_sessions.sql
+          done
+          role_password="$(openssl rand -hex 32)"
+          echo "::add-mask::$role_password"
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+            psql --no-psqlrc -X -v ON_ERROR_STOP=1 -U matchdesk -d matchdesk \
+            -v role_password="$role_password" <<'SQL'
+          REVOKE CREATE ON SCHEMA public FROM PUBLIC;
+          CREATE ROLE matchdesk_customer_session_ci LOGIN PASSWORD :'role_password';
+          GRANT CONNECT ON DATABASE matchdesk TO matchdesk_customer_session_ci;
+          GRANT USAGE ON SCHEMA public TO matchdesk_customer_session_ci;
+          GRANT SELECT, INSERT, UPDATE ON matchdesk_customer_sessions
+            TO matchdesk_customer_session_ci;
+          -- CI-only fail-insert injection proves rotation revocation rolls back.
+          CREATE FUNCTION matchdesk_ci_reject_session_successor()
+          RETURNS trigger LANGUAGE plpgsql AS $ci$
+          BEGIN
+            IF NEW.account_id = 'ci-rollback' AND EXISTS (
+              SELECT 1 FROM matchdesk_customer_sessions
+               WHERE account_id = NEW.account_id
+            ) THEN
+              RAISE EXCEPTION 'MatchDesk CI forced session insert rollback';
+            END IF;
+            RETURN NEW;
+          END;
+          $ci$;
+          CREATE TRIGGER matchdesk_ci_reject_session_successor
+          BEFORE INSERT ON matchdesk_customer_sessions
+          FOR EACH ROW EXECUTE FUNCTION matchdesk_ci_reject_session_successor();
+          SQL
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$role_password" api \
+            /app/.venv/bin/python - initial < e2e/customer-sessions-psycopg.py \
+            2>&1 | tee artifacts/integration/customer-sessions-psycopg.log
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" restart postgres
+          for attempt in $(seq 1 40); do
+            if docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+              pg_isready -U matchdesk -d matchdesk > /dev/null 2>&1; then
+              break
+            fi
+            sleep 1
+          done
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$role_password" api \
+            /app/.venv/bin/python - after-restart < e2e/customer-sessions-psycopg.py \
+            2>&1 | tee -a artifacts/integration/customer-sessions-psycopg.log
       - name: Install locked browser harness and matching Chromium
         id: browser
         if: ${{ !cancelled() && steps.start.outcome == 'success' }}
@@ -119,7 +174,7 @@ jobs:
         run: npm test 2>&1 | tee ../artifacts/integration/browser.log
       - name: Install the verified native-image scanner and current database
         id: scanner
-        if: ${{ !cancelled() && steps.runtime.outcome == 'success' && steps.producer_storage.outcome == 'success' && steps.psycopg_storage.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.runtime.outcome == 'success' && steps.producer_storage.outcome == 'success' && steps.psycopg_storage.outcome == 'success' && steps.customer_sessions_storage.outcome == 'success' }}
         # This is the official 0.75.0 Linux-64bit asset, independently inspected before pinning.
         # No curl-to-shell execution, repository token or downloaded installer is used.
         run: |
