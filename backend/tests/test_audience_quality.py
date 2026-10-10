@@ -113,9 +113,7 @@ def test_partial_matrix_never_reports_a_pass() -> None:
 
 def test_reported_meaning_failure_requires_revision() -> None:
     """A structural claim-ID match alone cannot overrule a negative human judgment."""
-    report = summarize_audience_quality(
-        (_assessment("es", "casual_fan", meaning=False),)
-    )
+    report = summarize_audience_quality((_assessment("es", "casual_fan", meaning=False),))
     assert report.status == "needs_revision"
     assert report.needs_revision == (("es", "casual_fan"),)
 
@@ -132,9 +130,7 @@ def test_quality_matrix_rejects_mixed_evidence_and_unsupported_language() -> Non
     base = _assessment()
     other = _assessment("fr", "broadcast_caption")
     with pytest.raises(ValueError, match="one source and evidence generation"):
-        summarize_audience_quality(
-            (base, replace(other, evidence_digest="b" * 64))
-        )
+        summarize_audience_quality((base, replace(other, evidence_digest="b" * 64)))
     with pytest.raises(ValueError, match="unsupported language/persona"):
         summarize_audience_quality((replace(base, language="de"),))
 
@@ -163,11 +159,7 @@ def test_quality_review_rejects_stale_qualification() -> None:
     )
     qualified = qualify_audience_variant(source, variant, verification)
     altered = variant.model_copy(
-        update={
-            "binding": variant.binding.model_copy(
-                update={"content_digest": "b" * 64}
-            )
-        }
+        update={"binding": variant.binding.model_copy(update={"content_digest": "b" * 64})}
     )
     with pytest.raises(ValueError, match="intact variant content digest"):
         record_audience_quality_assessment(
