@@ -54,11 +54,13 @@ def test_exact_broker_identity_resolves_only_active_registration():
 def test_missing_or_corrupt_rows_fail_closed(row):
     """Unknown accounts return None; malformed results cannot authenticate."""
     db = Connection(row)
+
     def lookup():
         """Resolve the exact broker subject through the test database."""
         return PostgresCustomerAccountDirectory(lambda: db).lookup(
             issuer=ISSUER, tenant_id=TENANT, subject=SUBJECT
         )
+
     if row is None:
         assert lookup() is None
     else:
