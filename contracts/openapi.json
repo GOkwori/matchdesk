@@ -1,6 +1,457 @@
 {
   "components": {
     "schemas": {
+      "ApprovalBinding": {
+        "additionalProperties": false,
+        "description": "Exact artefacts that a future producer approval must bind transactionally.\n\nHashing this record is not a signature. The service must establish the actor,\npreserve a server-side approval and compare all bindings at publication.",
+        "properties": {
+          "content_digest": {
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Content Digest",
+            "type": "string"
+          },
+          "evidence_digest": {
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Evidence Digest",
+            "type": "string"
+          },
+          "item_id": {
+            "maxLength": 96,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_-]+$",
+            "title": "Item Id",
+            "type": "string"
+          },
+          "item_version": {
+            "minimum": 1.0,
+            "title": "Item Version",
+            "type": "integer"
+          },
+          "language": {
+            "enum": [
+              "en",
+              "es",
+              "fr"
+            ],
+            "title": "Language",
+            "type": "string"
+          },
+          "persona": {
+            "enum": [
+              "analyst",
+              "casual_fan",
+              "broadcast_caption"
+            ],
+            "title": "Persona",
+            "type": "string"
+          },
+          "replay_id": {
+            "maxLength": 96,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_-]+$",
+            "title": "Replay Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "item_id",
+          "item_version",
+          "replay_id",
+          "content_digest",
+          "evidence_digest",
+          "language",
+          "persona"
+        ],
+        "title": "ApprovalBinding",
+        "type": "object"
+      },
+      "BroadcastEnvelope": {
+        "additionalProperties": false,
+        "description": "One session/replay-scoped draft with exact content and evidence references.\n\nThe producer-approved binding must use the canonical digest of the complete\npayload, including the versioned kind. This detects payload drift, but does not\nauthenticate a producer, prove claim truth or authorize actual publication.",
+        "properties": {
+          "binding": {
+            "$ref": "#/components/schemas/ApprovalBinding"
+          },
+          "claim_ids": {
+            "items": {
+              "maxLength": 96,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_-]+$",
+              "type": "string"
+            },
+            "maxItems": 4096,
+            "minItems": 1,
+            "title": "Claim Ids",
+            "type": "array"
+          },
+          "evidence_ids": {
+            "items": {
+              "maxLength": 96,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_-]+$",
+              "type": "string"
+            },
+            "maxItems": 4096,
+            "minItems": 1,
+            "title": "Evidence Ids",
+            "type": "array"
+          },
+          "match_id": {
+            "maxLength": 96,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_-]+$",
+            "title": "Match Id",
+            "type": "string"
+          },
+          "output_id": {
+            "maxLength": 96,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_-]+$",
+            "title": "Output Id",
+            "type": "string"
+          },
+          "payload": {
+            "discriminator": {
+              "mapping": {
+                "commentary": "#/components/schemas/CommentaryPayload",
+                "explainer": "#/components/schemas/ExplainerPayload",
+                "full_time_recap": "#/components/schemas/FullTimeRecapPayload",
+                "half_time_recap": "#/components/schemas/HalfTimeRecapPayload",
+                "overlay": "#/components/schemas/OverlayPayload"
+              },
+              "propertyName": "kind"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CommentaryPayload"
+              },
+              {
+                "$ref": "#/components/schemas/ExplainerPayload"
+              },
+              {
+                "$ref": "#/components/schemas/OverlayPayload"
+              },
+              {
+                "$ref": "#/components/schemas/HalfTimeRecapPayload"
+              },
+              {
+                "$ref": "#/components/schemas/FullTimeRecapPayload"
+              }
+            ],
+            "title": "Payload"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "session_id": {
+            "maxLength": 96,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_-]+$",
+            "title": "Session Id",
+            "type": "string"
+          },
+          "windows": {
+            "items": {
+              "$ref": "#/components/schemas/MatchWindow"
+            },
+            "maxItems": 2,
+            "minItems": 1,
+            "title": "Windows",
+            "type": "array"
+          }
+        },
+        "required": [
+          "output_id",
+          "session_id",
+          "match_id",
+          "binding",
+          "windows",
+          "evidence_ids",
+          "claim_ids",
+          "payload"
+        ],
+        "title": "BroadcastEnvelope",
+        "type": "object"
+      },
+      "Claim": {
+        "additionalProperties": false,
+        "description": "A narrative assertion with evidence references, not a verification certificate.",
+        "properties": {
+          "assertion": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MetricAssertion"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "claim_id": {
+            "maxLength": 96,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_-]+$",
+            "title": "Claim Id",
+            "type": "string"
+          },
+          "evidence_event_ids": {
+            "items": {
+              "maxLength": 96,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_-]+$",
+              "type": "string"
+            },
+            "maxItems": 4096,
+            "minItems": 1,
+            "title": "Evidence Event Ids",
+            "type": "array"
+          },
+          "kind": {
+            "enum": [
+              "measured_stat",
+              "event_fact",
+              "tactical_inference"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "text": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "claim_id",
+          "text",
+          "kind",
+          "evidence_event_ids"
+        ],
+        "title": "Claim",
+        "type": "object"
+      },
+      "ClaimLinkedText": {
+        "additionalProperties": false,
+        "description": "An authored passage explicitly associated with an upstream claim ID.",
+        "properties": {
+          "claim_id": {
+            "maxLength": 96,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_-]+$",
+            "title": "Claim Id",
+            "type": "string"
+          },
+          "text": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "claim_id",
+          "text"
+        ],
+        "title": "ClaimLinkedText",
+        "type": "object"
+      },
+      "CommentaryPayload": {
+        "additionalProperties": false,
+        "description": "One short, ordered play-by-play or analysis commentary draft.",
+        "properties": {
+          "kind": {
+            "const": "commentary",
+            "default": "commentary",
+            "title": "Kind",
+            "type": "string"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/ClaimLinkedText"
+            },
+            "maxItems": 4,
+            "minItems": 1,
+            "title": "Lines",
+            "type": "array"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "lines"
+        ],
+        "title": "CommentaryPayload",
+        "type": "object"
+      },
+      "EvidenceRecord": {
+        "additionalProperties": false,
+        "description": "Versioned query provenance scoped to a single match and replay generation.",
+        "properties": {
+          "engine_version": {
+            "maxLength": 96,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_-]+$",
+            "title": "Engine Version",
+            "type": "string"
+          },
+          "event_ids": {
+            "items": {
+              "maxLength": 96,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_-]+$",
+              "type": "string"
+            },
+            "maxItems": 4096,
+            "minItems": 1,
+            "title": "Event Ids",
+            "type": "array"
+          },
+          "evidence_id": {
+            "maxLength": 96,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_-]+$",
+            "title": "Evidence Id",
+            "type": "string"
+          },
+          "match_id": {
+            "maxLength": 96,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_-]+$",
+            "title": "Match Id",
+            "type": "string"
+          },
+          "replay_id": {
+            "maxLength": 96,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_-]+$",
+            "title": "Replay Id",
+            "type": "string"
+          },
+          "revision": {
+            "minimum": 1.0,
+            "title": "Revision",
+            "type": "integer"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "source_digest": {
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Source Digest",
+            "type": "string"
+          },
+          "window": {
+            "$ref": "#/components/schemas/MatchWindow"
+          }
+        },
+        "required": [
+          "evidence_id",
+          "match_id",
+          "replay_id",
+          "revision",
+          "window",
+          "event_ids",
+          "engine_version",
+          "source_digest"
+        ],
+        "title": "EvidenceRecord",
+        "type": "object"
+      },
+      "ExplainerPayload": {
+        "additionalProperties": false,
+        "description": "A headline and ordered explanatory points bound to claim references.",
+        "properties": {
+          "headline": {
+            "$ref": "#/components/schemas/ClaimLinkedText"
+          },
+          "kind": {
+            "const": "explainer",
+            "default": "explainer",
+            "title": "Kind",
+            "type": "string"
+          },
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/ClaimLinkedText"
+            },
+            "maxItems": 8,
+            "minItems": 1,
+            "title": "Points",
+            "type": "array"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "headline",
+          "points"
+        ],
+        "title": "ExplainerPayload",
+        "type": "object"
+      },
+      "FullTimeRecapPayload": {
+        "additionalProperties": false,
+        "description": "A two-period draft with claim-linked headline and ordered highlights.",
+        "properties": {
+          "headline": {
+            "$ref": "#/components/schemas/ClaimLinkedText"
+          },
+          "highlights": {
+            "items": {
+              "$ref": "#/components/schemas/ClaimLinkedText"
+            },
+            "maxItems": 16,
+            "minItems": 1,
+            "title": "Highlights",
+            "type": "array"
+          },
+          "kind": {
+            "const": "full_time_recap",
+            "default": "full_time_recap",
+            "title": "Kind",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "headline",
+          "highlights"
+        ],
+        "title": "FullTimeRecapPayload",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -12,6 +463,42 @@
           }
         },
         "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "HalfTimeRecapPayload": {
+        "additionalProperties": false,
+        "description": "A first-half draft with claim-linked headline and ordered highlights.",
+        "properties": {
+          "headline": {
+            "$ref": "#/components/schemas/ClaimLinkedText"
+          },
+          "highlights": {
+            "items": {
+              "$ref": "#/components/schemas/ClaimLinkedText"
+            },
+            "maxItems": 12,
+            "minItems": 1,
+            "title": "Highlights",
+            "type": "array"
+          },
+          "kind": {
+            "const": "half_time_recap",
+            "default": "half_time_recap",
+            "title": "Kind",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "headline",
+          "highlights"
+        ],
+        "title": "HalfTimeRecapPayload",
         "type": "object"
       },
       "HealthResponse": {
@@ -286,6 +773,288 @@
         "title": "MatchEvent",
         "type": "object"
       },
+      "MatchWindow": {
+        "additionalProperties": false,
+        "description": "A nonempty half-open [from_ms, to_ms) window within one match period.",
+        "properties": {
+          "from_ms": {
+            "minimum": 0.0,
+            "title": "From Ms",
+            "type": "integer"
+          },
+          "period": {
+            "enum": [
+              1,
+              2
+            ],
+            "title": "Period",
+            "type": "integer"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "to_ms": {
+            "minimum": 1.0,
+            "title": "To Ms",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "period",
+          "from_ms",
+          "to_ms"
+        ],
+        "title": "MatchWindow",
+        "type": "object"
+      },
+      "MetricAssertion": {
+        "additionalProperties": false,
+        "description": "A requested metric comparison; truth is established by a registered query.",
+        "properties": {
+          "comparator": {
+            "default": "eq",
+            "enum": [
+              "eq",
+              "gte",
+              "lte"
+            ],
+            "title": "Comparator",
+            "type": "string"
+          },
+          "metric": {
+            "maxLength": 96,
+            "minLength": 1,
+            "pattern": "^[a-z][a-z0-9_]*\\.v[1-9][0-9]*$",
+            "title": "Metric",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "subject": {
+            "$ref": "#/components/schemas/Subject"
+          },
+          "unit": {
+            "enum": [
+              "count",
+              "ratio",
+              "synthetic_xg",
+              "metres",
+              "per_minute"
+            ],
+            "title": "Unit",
+            "type": "string"
+          },
+          "value": {
+            "minimum": 0.0,
+            "title": "Value",
+            "type": "number"
+          },
+          "window": {
+            "$ref": "#/components/schemas/MatchWindow"
+          }
+        },
+        "required": [
+          "metric",
+          "subject",
+          "window",
+          "value",
+          "unit"
+        ],
+        "title": "MetricAssertion",
+        "type": "object"
+      },
+      "OverlayMetric": {
+        "additionalProperties": false,
+        "description": "An overlay number that must be checked against its referenced metric claim.",
+        "properties": {
+          "assertion": {
+            "$ref": "#/components/schemas/MetricAssertion"
+          },
+          "claim_id": {
+            "maxLength": 96,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_-]+$",
+            "title": "Claim Id",
+            "type": "string"
+          },
+          "label": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "claim_id",
+          "assertion"
+        ],
+        "title": "OverlayMetric",
+        "type": "object"
+      },
+      "OverlayPayload": {
+        "additionalProperties": false,
+        "description": "Structured overlay JSON with claim-bound numbers, not display-string facts.",
+        "properties": {
+          "headline": {
+            "$ref": "#/components/schemas/ClaimLinkedText"
+          },
+          "kind": {
+            "const": "overlay",
+            "default": "overlay",
+            "title": "Kind",
+            "type": "string"
+          },
+          "metrics": {
+            "items": {
+              "$ref": "#/components/schemas/OverlayMetric"
+            },
+            "maxItems": 6,
+            "minItems": 1,
+            "title": "Metrics",
+            "type": "array"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "headline",
+          "metrics"
+        ],
+        "title": "OverlayPayload",
+        "type": "object"
+      },
+      "ProducerDeskPreview": {
+        "additionalProperties": false,
+        "description": "Strict read-only projection; the response has no review-command capability.",
+        "properties": {
+          "authenticated": {
+            "const": false,
+            "default": false,
+            "title": "Authenticated",
+            "type": "boolean"
+          },
+          "claim": {
+            "$ref": "#/components/schemas/Claim"
+          },
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/MatchEvent"
+            },
+            "maxItems": 128,
+            "minItems": 1,
+            "title": "Events",
+            "type": "array"
+          },
+          "evidence": {
+            "$ref": "#/components/schemas/EvidenceRecord"
+          },
+          "mode": {
+            "const": "synthetic_read_only",
+            "default": "synthetic_read_only",
+            "title": "Mode",
+            "type": "string"
+          },
+          "output": {
+            "$ref": "#/components/schemas/BroadcastEnvelope"
+          },
+          "publication_enabled": {
+            "const": false,
+            "default": false,
+            "title": "Publication Enabled",
+            "type": "boolean"
+          },
+          "review_status": {
+            "const": "pending_verification",
+            "default": "pending_verification",
+            "title": "Review Status",
+            "type": "string"
+          },
+          "scenario": {
+            "const": "late_winner",
+            "default": "late_winner",
+            "title": "Scenario",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "seed": {
+            "const": 7,
+            "default": 7,
+            "title": "Seed",
+            "type": "integer"
+          },
+          "verification": {
+            "$ref": "#/components/schemas/VerificationResult"
+          }
+        },
+        "required": [
+          "output",
+          "claim",
+          "evidence",
+          "verification",
+          "events"
+        ],
+        "title": "ProducerDeskPreview",
+        "type": "object"
+      },
+      "Subject": {
+        "additionalProperties": false,
+        "description": "A team, player, or team-qualified player referenced by an assertion.",
+        "properties": {
+          "player_id": {
+            "anyOf": [
+              {
+                "maxLength": 96,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9_-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Player Id"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "team_id": {
+            "anyOf": [
+              {
+                "maxLength": 96,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9_-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Team Id"
+          }
+        },
+        "title": "Subject",
+        "type": "object"
+      },
       "ValidationError": {
         "properties": {
           "ctx": {
@@ -355,6 +1124,85 @@
           "content_digest"
         ],
         "title": "ValidationResponse",
+        "type": "object"
+      },
+      "VerificationResult": {
+        "additionalProperties": false,
+        "description": "A checker result with explicit status; this is not permission to publish.\n\nA future numerical checker must supply expected and observed values. This\ncontract also accommodates event checks with an auditable registered query ID.",
+        "properties": {
+          "claim_id": {
+            "maxLength": 96,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_-]+$",
+            "title": "Claim Id",
+            "type": "string"
+          },
+          "evidence_digest": {
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Evidence Digest",
+            "type": "string"
+          },
+          "expected": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected"
+          },
+          "observed": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observed"
+          },
+          "query_id": {
+            "maxLength": 96,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_-]+$",
+            "title": "Query Id",
+            "type": "string"
+          },
+          "reason": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "verified",
+              "supported_inference",
+              "needs_revision",
+              "blocked",
+              "fallback"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "claim_id",
+          "status",
+          "query_id",
+          "reason",
+          "evidence_digest"
+        ],
+        "title": "VerificationResult",
         "type": "object"
       }
     }
@@ -443,6 +1291,25 @@
           }
         },
         "summary": "Health"
+      }
+    },
+    "/api/producer/preview": {
+      "get": {
+        "description": "Inspect real seeded evidence without creating an authenticated review.",
+        "operationId": "producer_preview_api_producer_preview_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProducerDeskPreview"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Producer Preview"
       }
     },
     "/api/ready": {
