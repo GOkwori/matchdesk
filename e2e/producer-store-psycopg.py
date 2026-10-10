@@ -135,7 +135,7 @@ def _initial() -> None:
         reason="Verified synthetic source evidence",
     )
     assert reviewed.generation == 2
-    assert reviewed.review.status == "awaiting_decision"
+    assert reviewed.review.status == "ready_for_decision"
     _assert_audit(conninfo, 2)
     print("PASS: actual Psycopg transaction committed reverified state and audit")
 
