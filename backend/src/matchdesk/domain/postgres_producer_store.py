@@ -44,6 +44,7 @@ class DbConnection(Protocol):
 
 _CASE = TypeAdapter(ProducerCase)
 _AUDIT = TypeAdapter(tuple[ProducerAuditEntry, ...])
+_ENTRY = TypeAdapter(ProducerAuditEntry)
 
 _LOAD = """
 SELECT generation, case_json, audit_digest
@@ -150,7 +151,7 @@ class PostgresProducerCaseStore:
                             case.output.session_id,
                             case.output.output_id,
                             case.generation,
-                            _AUDIT.dump_json(case.review.audit[-1]).decode("utf-8"),
+                            _ENTRY.dump_json(case.review.audit[-1]).decode("utf-8"),
                             digest,
                         ),
                     )
@@ -191,7 +192,7 @@ class PostgresProducerCaseStore:
                             case.output.session_id,
                             case.output.output_id,
                             case.generation,
-                            _AUDIT.dump_json(case.review.audit[-1]).decode("utf-8"),
+                            _ENTRY.dump_json(case.review.audit[-1]).decode("utf-8"),
                             digest,
                         ),
                     )

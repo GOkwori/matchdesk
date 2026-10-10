@@ -10,16 +10,13 @@ from contextlib import contextmanager
 from dataclasses import replace
 
 import pytest
-from matchdesk.domain.postgres_producer_store import (
-    PostgresProducerCaseStore,
-    _audit_digest,
-)
+from matchdesk.domain.postgres_producer_store import PostgresProducerCaseStore
 from matchdesk.domain.producer_commands import (
+    HostVerifiedActor,
     execute_producer_command,
     open_producer_case,
 )
 from matchdesk.domain.producer_preview import build_producer_desk_preview
-from matchdesk.domain.producer_commands import HostVerifiedActor
 
 
 def _actor() -> HostVerifiedActor:
