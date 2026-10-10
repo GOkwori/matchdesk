@@ -55,10 +55,18 @@ def _headers() -> dict[str, str]:
 
 def _browser(request: Request, policy: CustomerBrowserPolicy) -> None:
     """Reject spoofed hosts, insecure transport and cross-site browser requests."""
+    # Never treat unqualified client proxy metadata as trusted HTTPS evidence.
+    # A reviewed gateway must strip forwarding headers before routing traffic.
+    forwarded = any(
+        name.lower() == "forwarded"
+        or name.lower().startswith(("x-forwarded-", "x-original-"))
+        for name in request.headers
+    )
     hosts = request.headers.getlist("host")
     fetch_sites = request.headers.getlist("sec-fetch-site")
     if (
-        request.url.scheme != "https"
+        forwarded
+        or request.url.scheme != "https"
         or len(hosts) != 1
         or f"https://{hosts[0]}" != policy.public_origin
         or len(fetch_sites) > 1
@@ -214,6 +222,10 @@ def create_customer_session_router(
             proof = issue_customer_csrf(
                 successor.session_id, store=store, policy=policy, secret=csrf_secret
             )
+            headers = _headers()
+            headers["Set-Cookie"] = cookie
+            # Construct the response before leaving the post-commit cleanup guard.
+            return JSONResponse({"renewed": True, "csrf_token": proof}, headers=headers)
         except Exception as exc:
             # Rotation already committed: best-effort revoke the successor.
             # Never return its bearer, a Set-Cookie header or an authenticated
@@ -226,9 +238,6 @@ def create_customer_session_router(
             raise HTTPException(
                 status_code=503, detail="Customer renewal unavailable", headers=_headers()
             ) from exc
-        headers = _headers()
-        headers["Set-Cookie"] = cookie
-        return JSONResponse({"renewed": True, "csrf_token": proof}, headers=headers)
 
     @router.post("/logout")
     def logout(request: Request) -> Response:

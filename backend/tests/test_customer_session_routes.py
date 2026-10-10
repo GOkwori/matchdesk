@@ -428,3 +428,42 @@ def test_customer_read_security_headers_disallow_embedding() -> None:
     assert response.headers["X-Frame-Options"] == "DENY"
     assert "frame-ancestors 'none'" in response.headers["Content-Security-Policy"]
     assert response.headers["Referrer-Policy"] == "no-referrer"
+
+
+@pytest.mark.parametrize(
+    "untrusted",
+    [
+        {"Forwarded": "proto=https;host=matchdesk.example"},
+        {"X-Forwarded-Proto": "https"},
+        {"X-Forwarded-Host": "matchdesk.example"},
+        {"X-Forwarded-For": "203.0.113.18"},
+        {"X-Original-Host": "matchdesk.example"},
+    ],
+)
+def test_unqualified_forwarding_headers_are_denied(untrusted: dict[str, str]) -> None:
+    """Unreviewed client proxy headers never establish trusted session origin."""
+    client, store = configured()
+    client.cookies.set(COOKIE_NAME, store.original.session_id)
+    response = client.get("/api/customer/session", headers=untrusted)
+    assert response.status_code == 403
+    assert "authenticated" not in response.text
+    assert not store.rows[store.original.session_id].revoked
+
+
+def test_response_construction_failure_revokes_unexposed_successor() -> None:
+    """A failed response after rotation must revoke the new undelivered bearer."""
+    from unittest.mock import patch
+
+    client, store = configured()
+    client.cookies.set(COOKIE_NAME, store.original.session_id)
+    csrf = client.get("/api/customer/session/csrf").json()["csrf_token"]
+    with patch(
+        "matchdesk.api.customer_session_routes.JSONResponse",
+        side_effect=RuntimeError("private serialization detail"),
+    ):
+        response = client.post("/api/customer/session/renew", headers=headers(csrf))
+    assert response.status_code == 503
+    assert "set-cookie" not in response.headers
+    assert "private serialization detail" not in response.text
+    assert all(session.revoked for session in store.rows.values())
+    assert response.headers["Cache-Control"].startswith("no-store")
