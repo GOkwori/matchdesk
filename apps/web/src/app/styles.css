@@ -29,3 +29,7 @@ footer { padding-top: 28px; }
 /* Layout remains usable without hiding the validation result on narrow screens. */
 @media (max-width: 800px) { .workspace { grid-template-columns: 1fr; } header { flex-direction: column; } main { padding: 24px; } .introduction { padding-top: 30px; } }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto; } }
+
+/* Producer preview uses the same accessible panel treatment as the foundation workbench. */
+.desk-panel { background: #131f31; border: 1px solid #304159; border-radius: 14px; padding: 28px; }
+.desk-panel code { white-space: normal; }
