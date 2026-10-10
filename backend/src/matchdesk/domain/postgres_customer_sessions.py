@@ -11,6 +11,7 @@ from __future__ import annotations
 import hashlib
 from collections.abc import Callable
 from datetime import datetime, timedelta, timezone
+from typing import Literal, cast
 
 from matchdesk.domain.customer_identity import CustomerIdentityKey
 from matchdesk.domain.customer_sessions import (
@@ -64,13 +65,23 @@ def _decode(token: str, row: tuple[object, ...]) -> CustomerSession:
     if not isinstance(row, tuple) or len(row) != 9:
         raise ValueError("Invalid stored customer session")
     issuer, tenant, subject, account, realm, created, expires, seen, revoked = row
-    if not all(isinstance(value, str) for value in (issuer, tenant, subject, account)):
-        raise ValueError("Invalid stored customer identity")
+    if (
+        not isinstance(issuer, str)
+        or not isinstance(tenant, str)
+        or not isinstance(subject, str)
+        or not isinstance(account, str)
+        or realm != "customer"
+        or not isinstance(created, datetime)
+        or not isinstance(expires, datetime)
+        or not isinstance(seen, datetime)
+        or type(revoked) is not bool
+    ):
+        raise ValueError("Invalid stored customer identity or session")
     return CustomerSession(
         session_id=token,
         identity=CustomerIdentityKey(issuer=issuer, tenant_id=tenant, subject=subject),
         account_id=account,
-        realm=realm,
+        realm=cast("Literal['customer', 'workforce']", realm),
         created_at=created,
         expires_at=expires,
         last_seen_at=seen,
