@@ -96,8 +96,8 @@ def test_valid_signature_and_server_grants_create_producer_actor(signing) -> Non
         token(private, roles=["admin"], permitted_sessions=["foreign-match"]),
         policy=policy(),
         keys=keys,
-            entitlements=Grants(),
-            now=NOW,
+        entitlements=Grants(),
+        now=NOW,
     )
     assert actor.subject == "person-1"
     assert actor.roles == frozenset({"producer"})
@@ -240,3 +240,19 @@ def test_static_signing_keys_require_nonempty_configuration(issuer: str, keys: d
     """Missing trusted issuer/key configuration cannot silently accept tokens."""
     with pytest.raises(ValueError, match="Trusted signing keys"):
         StaticTrustedKeys(issuer, keys)
+
+
+@pytest.mark.parametrize(
+    "invalid_issuer",
+    [
+        f"https://customer.ciamlogin.com/{TENANT}/v2.0",
+        "https://login.microsoftonline.com/common/v2.0",
+        "https://login.microsoftonline.com/organizations/v2.0",
+        "https://login.microsoftonline.com/another-tenant/v2.0",
+        f"https://login.microsoftonline.com.evil.example/{TENANT}/v2.0",
+    ],
+)
+def test_privileged_auth_never_trusts_customer_or_generic_issuer(invalid_issuer: str) -> None:
+    """Customer and generic authorities cannot configure producer trust."""
+    with pytest.raises(ValueError, match="workforce issuer"):
+        policy(issuer=invalid_issuer)

@@ -32,6 +32,10 @@ class ProducerIdentityPolicy:
 
     def __post_init__(self) -> None:
         """Refuse wildcard trust, missing allowlists and unbounded expiry grace."""
+        # Privileged tokens require the exact configured workforce issuer;
+        # customer External ID and common/organizations remain untrusted.
+        if self.issuer != f"https://login.microsoftonline.com/{self.tenant_id}/v2.0":
+            raise ValueError("Producer policy requires the exact workforce issuer")
         if (
             not self.issuer.startswith("https://")
             or not self.issuer.endswith("/v2.0")
