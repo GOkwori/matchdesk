@@ -149,7 +149,7 @@ def test_create_reload_review_and_audit_are_atomic() -> None:
     assert updated.generation == 2
     assert len(db.audit) == 2
     assert store.load("tenant-1", "demo-preview-only", "demo-story-output") == updated
-    assert db.closed == 4
+    assert db.closed == 5
 
 
 def test_duplicate_initial_insert_never_overwrites_history() -> None:
