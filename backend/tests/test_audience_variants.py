@@ -332,6 +332,7 @@ def test_language_review_rejects_unaccepted_semantics(meaning: bool, quality: bo
             language_quality_accepted=quality,
         )
 
+
 def test_qualification_rejects_stale_variant_content_digest() -> None:
     """Even an immutable model can be copied without Pydantic revalidation."""
     source = _envelope(
