@@ -254,3 +254,179 @@ def test_customer_reads_reject_cross_origin_fetch_metadata(fetch_site: str) -> N
     client.cookies.set(COOKIE_NAME, store.original.session_id)
     response = client.get("/api/customer/session/csrf", headers={"Sec-Fetch-Site": fetch_site})
     assert response.status_code == 403
+
+
+def test_renewal_does_not_succeed_on_database_rotation_exception() -> None:
+    """A storage failure must not produce a new cookie or echo secrets."""
+    from unittest.mock import patch
+
+    client, store = configured()
+    client.cookies.set(COOKIE_NAME, store.original.session_id)
+    proof = client.get("/api/customer/session/csrf").json()["csrf_token"]
+    with patch.object(store, "rotate", side_effect=RuntimeError("private database DSN")):
+        result = client.post("/api/customer/session/renew", headers=headers(proof))
+    assert result.status_code == 503
+    assert "set-cookie" not in result.headers
+    assert "private database DSN" not in result.text
+    assert result.headers["Cache-Control"].startswith("no-store")
+    assert not store.rows[store.original.session_id].revoked
+
+
+def test_renewal_postcommit_cookie_failure_revokes_successor() -> None:
+    """A failed session re-read after rotation must revoke the hidden new bearer."""
+    client, store = configured()
+    client.cookies.set(COOKIE_NAME, store.original.session_id)
+    proof = client.get("/api/customer/session/csrf").json()["csrf_token"]
+    original_load = store.load
+
+    def fail_new_session(opaque_session_id: str):
+        """Simulate database loss after a successful predecessor rotation."""
+        if opaque_session_id != store.original.session_id:
+            raise RuntimeError("hidden successor lookup secret")
+        return original_load(opaque_session_id)
+
+    from unittest.mock import patch
+
+    with patch.object(store, "load", side_effect=fail_new_session):
+        response = client.post("/api/customer/session/renew", headers=headers(proof))
+    assert response.status_code == 503
+    assert "set-cookie" not in response.headers
+    assert "hidden successor lookup secret" not in response.text
+    assert response.headers["Cache-Control"].startswith("no-store")
+    assert store.rows[store.original.session_id].revoked
+    successors = [
+        record
+        for session_id, record in store.rows.items()
+        if session_id != store.original.session_id
+    ]
+    assert len(successors) == 1 and successors[0].revoked
+
+
+def test_renewal_postcommit_csrf_failure_revokes_successor() -> None:
+    """CSRF response failure must not leave a newly issued token active."""
+    from unittest.mock import patch
+
+    client, store = configured()
+    client.cookies.set(COOKIE_NAME, store.original.session_id)
+    proof = client.get("/api/customer/session/csrf").json()["csrf_token"]
+    with patch(
+        "matchdesk.api.customer_session_routes.issue_customer_csrf",
+        side_effect=RuntimeError("private CSRF signing key"),
+    ):
+        response = client.post("/api/customer/session/renew", headers=headers(proof))
+    assert response.status_code == 503
+    assert "set-cookie" not in response.headers
+    assert "private CSRF signing key" not in response.text
+    assert all(record.revoked for record in store.rows.values())
+
+
+def test_failed_postcommit_cleanup_never_leaks_successor() -> None:
+    """The result remains a non-cacheable failure when cleanup is unavailable."""
+    from unittest.mock import patch
+
+    client, store = configured()
+    client.cookies.set(COOKIE_NAME, store.original.session_id)
+    proof = client.get("/api/customer/session/csrf").json()["csrf_token"]
+    store.reject_revoke = True
+    with patch(
+        "matchdesk.api.customer_session_routes.issue_customer_csrf",
+        side_effect=RuntimeError("private signing failure"),
+    ):
+        response = client.post("/api/customer/session/renew", headers=headers(proof))
+    assert response.status_code == 503
+    assert "set-cookie" not in response.headers
+    assert "private signing failure" not in response.text
+    assert "csrf_token" not in response.text
+    assert response.headers["Cache-Control"].startswith("no-store")
+
+
+def test_logout_failure_never_acknowledges_revocation() -> None:
+    """A database exception must not claim the customer was signed out."""
+    from unittest.mock import patch
+
+    client, store = configured()
+    client.cookies.set(COOKIE_NAME, store.original.session_id)
+    proof = client.get("/api/customer/session/csrf").json()["csrf_token"]
+    with patch.object(store, "revoke", side_effect=RuntimeError("private SQL failure")):
+        response = client.post("/api/customer/session/logout", headers=headers(proof))
+    assert response.status_code == 503
+    assert "set-cookie" not in response.headers
+    assert "private SQL failure" not in response.text
+    assert not store.rows[store.original.session_id].revoked
+
+
+def test_session_status_database_outage_is_redacted() -> None:
+    """A customer read cannot leak storage details when its backend is down."""
+    from unittest.mock import patch
+
+    client, store = configured()
+    client.cookies.set(COOKIE_NAME, store.original.session_id)
+    with patch.object(store, "load", side_effect=RuntimeError("private DB credentials")):
+        response = client.get("/api/customer/session")
+    assert response.status_code == 503
+    assert "private DB credentials" not in response.text
+    assert response.headers["Cache-Control"].startswith("no-store")
+
+
+def test_mutation_database_outage_denies_access_without_cookie() -> None:
+    """A post-CSRF storage outage must prevent logout or renewal."""
+    from unittest.mock import patch
+
+    client, store = configured()
+    client.cookies.set(COOKIE_NAME, store.original.session_id)
+    proof = client.get("/api/customer/session/csrf").json()["csrf_token"]
+    with patch.object(store, "load", side_effect=RuntimeError("private database host")):
+        response = client.post("/api/customer/session/logout", headers=headers(proof))
+    assert response.status_code == 503
+    assert "set-cookie" not in response.headers
+    assert "private database host" not in response.text
+
+
+def test_csrf_read_database_outage_is_redacted() -> None:
+    """The second lookup must not expose a store error or CSRF proof."""
+    from unittest.mock import patch
+
+    client, store = configured()
+    client.cookies.set(COOKIE_NAME, store.original.session_id)
+    original_load = store.load
+    reads = 0
+
+    def fail_second_read(token: str):
+        """Allow validation before failing CSRF's second authorization check."""
+        nonlocal reads
+        reads += 1
+        if reads > 1:
+            raise RuntimeError("private connection string")
+        return original_load(token)
+
+    with patch.object(store, "load", side_effect=fail_second_read):
+        response = client.get("/api/customer/session/csrf")
+    assert response.status_code == 503
+    assert "csrf_token" not in response.text
+    assert "private connection string" not in response.text
+    assert response.headers["Cache-Control"].startswith("no-store")
+
+
+def test_untrusted_forwarded_protocol_does_not_override_http() -> None:
+    """An attacker-controlled forwarding header cannot make HTTP appear HTTPS."""
+    store = Store()
+    router = create_customer_session_router(store=store, policy=POLICY, csrf_secret=SECRET)
+    insecure = TestClient(
+        create_app(customer_session_router=router), base_url="http://matchdesk.example"
+    )
+    insecure.cookies.set(COOKIE_NAME, store.original.session_id)
+    response = insecure.get(
+        "/api/customer/session", headers={"X-Forwarded-Proto": "https"}
+    )
+    assert response.status_code == 403
+
+
+def test_customer_read_security_headers_disallow_embedding() -> None:
+    """CSRF proofs are never cacheable, embeddable, or sent as URL referrers."""
+    client, store = configured()
+    client.cookies.set(COOKIE_NAME, store.original.session_id)
+    response = client.get("/api/customer/session/csrf")
+    assert response.status_code == 200
+    assert response.headers["X-Frame-Options"] == "DENY"
+    assert "frame-ancestors 'none'" in response.headers["Content-Security-Policy"]
+    assert response.headers["Referrer-Policy"] == "no-referrer"

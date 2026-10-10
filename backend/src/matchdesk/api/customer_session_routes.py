@@ -48,6 +48,8 @@ def _headers() -> dict[str, str]:
         "Referrer-Policy": "no-referrer",
         "X-Content-Type-Options": "nosniff",
         "Vary": "Cookie, Origin, Sec-Fetch-Site",
+        "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none'",
+        "X-Frame-Options": "DENY",
     }
 
 
@@ -91,7 +93,18 @@ def _active(token: str, store: CustomerLifecycleStore) -> CustomerSession:
     try:
         return resolve_customer_session(token, store=store)
     except (ValueError, TypeError, PermissionError) as exc:
-        raise HTTPException(status_code=401, detail="Customer session unavailable") from exc
+        raise HTTPException(
+            status_code=401,
+            detail="Customer session unavailable",
+            headers=_headers(),
+        ) from exc
+    except Exception as exc:
+        # Host-owned database faults must not reveal connection or token details.
+        raise HTTPException(
+            status_code=503,
+            detail="Customer session service unavailable",
+            headers=_headers(),
+        ) from exc
 
 
 def _write(
@@ -120,7 +133,17 @@ def _write(
             fetch_site=fetch_sites[0] if fetch_sites else None,
         )
     except (PermissionError, ValueError, TypeError) as exc:
-        raise HTTPException(status_code=403, detail="Customer CSRF verification denied") from exc
+        raise HTTPException(
+            status_code=403,
+            detail="Customer CSRF verification denied",
+            headers=_headers(),
+        ) from exc
+    except Exception as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="Customer session service unavailable",
+            headers=_headers(),
+        ) from exc
 
 
 def create_customer_session_router(
@@ -156,7 +179,13 @@ def create_customer_session_router(
         try:
             proof = issue_customer_csrf(token, store=store, policy=policy, secret=csrf_secret)
         except PermissionError as exc:
-            raise HTTPException(status_code=401, detail="Customer session unavailable") from exc
+            raise HTTPException(
+                status_code=401, detail="Customer session unavailable", headers=_headers()
+            ) from exc
+        except Exception as exc:
+            raise HTTPException(
+                status_code=503, detail="Customer session service unavailable", headers=_headers()
+            ) from exc
         return JSONResponse({"csrf_token": proof}, headers=_headers())
 
     @router.post("/renew")
@@ -165,13 +194,40 @@ def create_customer_session_router(
         _browser(request, policy)
         token = _cookie(request)
         _write(request, token, store=store, policy=policy, secret=csrf_secret)
-        successor = store.rotate(token)
+        try:
+            successor = store.rotate(token)
+        except Exception as exc:
+            # No success response can be issued after an uncertain database write.
+            raise HTTPException(
+                status_code=503, detail="Customer renewal unavailable", headers=_headers()
+            ) from exc
         if successor is None:
-            raise HTTPException(status_code=401, detail="Customer renewal denied")
-        cookie = customer_session_cookie(successor.session_id, store=store, policy=policy)
-        proof = issue_customer_csrf(
-            successor.session_id, store=store, policy=policy, secret=csrf_secret
-        )
+            raise HTTPException(
+                status_code=401, detail="Customer renewal denied", headers=_headers()
+            )
+        if not isinstance(successor, CustomerSession):
+            raise HTTPException(
+                status_code=503, detail="Customer renewal unavailable", headers=_headers()
+            )
+        try:
+            cookie = customer_session_cookie(
+                successor.session_id, store=store, policy=policy
+            )
+            proof = issue_customer_csrf(
+                successor.session_id, store=store, policy=policy, secret=csrf_secret
+            )
+        except Exception as exc:
+            # Rotation already committed: best-effort revoke the successor.
+            # Never return its bearer, a Set-Cookie header or an authenticated
+            # success when post-commit serialization or revalidation fails.
+            try:
+                store.revoke(successor.session_id)
+            except Exception:
+                # A storage outage can prevent cleanup; the bearer was not sent.
+                pass
+            raise HTTPException(
+                status_code=503, detail="Customer renewal unavailable", headers=_headers()
+            ) from exc
         headers = _headers()
         headers["Set-Cookie"] = cookie
         return JSONResponse({"renewed": True, "csrf_token": proof}, headers=headers)
@@ -182,8 +238,17 @@ def create_customer_session_router(
         _browser(request, policy)
         token = _cookie(request)
         _write(request, token, store=store, policy=policy, secret=csrf_secret)
-        if not store.revoke(token):
-            raise HTTPException(status_code=401, detail="Customer logout denied")
+        try:
+            revoked = store.revoke(token)
+        except Exception as exc:
+            # Never acknowledge a logout if the revocation commit is unknown.
+            raise HTTPException(
+                status_code=503, detail="Customer logout unavailable", headers=_headers()
+            ) from exc
+        if not revoked:
+            raise HTTPException(
+                status_code=401, detail="Customer logout denied", headers=_headers()
+            )
         headers = _headers()
         headers["Set-Cookie"] = clear_customer_session_cookie()
         return Response(status_code=204, headers=headers)
