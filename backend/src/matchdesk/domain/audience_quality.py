@@ -16,9 +16,7 @@ from matchdesk.domain.hashing import content_digest
 
 _LANGUAGES = ("en", "es", "fr")
 _PERSONAS = ("analyst", "casual_fan", "broadcast_caption")
-_REQUIRED_PAIRS = frozenset(
-    (language, persona) for language in _LANGUAGES for persona in _PERSONAS
-)
+_REQUIRED_PAIRS = frozenset((language, persona) for language in _LANGUAGES for persona in _PERSONAS)
 MatrixStatus = Literal["incomplete", "needs_revision", "reported_pass"]
 
 
