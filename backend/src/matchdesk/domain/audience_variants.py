@@ -51,7 +51,9 @@ def qualify_audience_variant(
         or source_binding.replay_id != variant_binding.replay_id
         or source_binding.evidence_digest != variant_binding.evidence_digest
     ):
-        raise ValueError("Audience variant must preserve item, version, replay and evidence identity")
+        raise ValueError(
+            "Audience variant must preserve item, version, replay and evidence identity"
+        )
 
     by_claim = {result.claim_id: result for result in verification_results}
     if set(by_claim) != set(variant.claim_ids) or len(by_claim) != len(verification_results):
