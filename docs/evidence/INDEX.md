@@ -3,6 +3,19 @@
 Results are tied to source commits and execution environments. A passing build is not
 an approval to deploy, and evidence from one source is not relabelled as another.
 
+## Phase 3E producer-case SQL integrity
+
+- [P3-05 real PostgreSQL SQL-boundary qualification](phase3e-producer-postgres-20261010.md)
+  records the exact source `207a2921b4fa634dcf22b598f3a98d83a51043b2`,
+  eight passing disposable database checks and unresolved driver/identity gaps.
+- Foundation CI 38023985097 passed 464 tests with 96.46% package coverage;
+  Dependency audit 38023985161, Source security 38023985199 and Foundation
+  integration 38023985147 passed on the same commit, including independent
+  native-image scanning.
+
+**P3-05 is IN PROGRESS**: tested SQL statements are not yet an authenticated
+producer service or live Python PostgreSQL adapter.
+
 ## Phase 3A producer review and Phase 3B publication gate
 
 - [Phase 3A producer-review qualification](phase3a-producer-review-20261009.md)

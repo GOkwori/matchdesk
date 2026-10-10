@@ -8,11 +8,12 @@ My priority is the path from a synthetic match event to a publishable explanatio
 The design keeps statistics in deterministic code, uses specialist AI agents to
 interpret and present evidence, and gives the producer control over publication.
 
-**Owner: George Okwori. Current stage: Phase 3 in progress; P3-01 and P3-02 TESTED.**
+**Owner: George Okwori. Current stage: Phase 3 in progress; P3-01/P3-02/P3-03 TESTED; P3-04/P3-05 IN PROGRESS.**
 Phase 0, Phase 1 and Phase 2 are VERIFIED / COMPLETED. The deterministic engine,
 bounded specialist workflow, evidence verification and controlled Agent Framework /
-Foundry runtime have source-bound test evidence. Phase 3 has added immutable producer
-review and exact-binding publication authorisation, but no deployed publishing service.
+Foundry runtime have source-bound test evidence. Phase 3 has added immutable producer review, exact-binding publication authorisation,
+versioned broadcast draft contracts, and offline audience/producer operations;
+there is still no deployed or authenticated publishing service.
 
 ## What is implemented
 
@@ -34,10 +35,11 @@ branch-aware package coverage. Ruff, formatting, strict mypy, frontend build,
 dependency audit, source security, runtime/browser integration and native-image
 qualification passed on the same exact commit.
 
-The PostgreSQL topology is still infrastructure-test scaffolding rather than durable
-application persistence. Authenticated producer actions, durable approval storage,
-real publication delivery, broadcast outputs and audience adaptations remain later
-work; a pure domain authorisation function does not substitute for these.
+PostgreSQL now has a local producer-case migration, a transactional Python storage
+adapter contract and eight passing real SQL integration checks in disposable CI.
+A pinned live Python PostgreSQL driver, least-privilege runtime roles, trusted OIDC,
+production durability, operational publishing and independently accepted multilingual
+adaptations remain outstanding; passing SQL tests does not qualify those operations.
 
 Read [current progress](docs/PROGRESS.md) and the [evidence index](docs/evidence/INDEX.md)
 before treating any capability as tested or available.

@@ -280,6 +280,20 @@ Actual multilingual model generations and independent fluent review remain
 unperformed; P3-04 remains IN PROGRESS. See
 [Phase 3D offline evidence](evidence/phase3d-audience-offline-20261010.md).
 
+P3-05 producer-case storage has qualified its **real SQL boundary** on development
+`207a2921b4fa634dcf22b598f3a98d83a51043b2`: Foundation CI
+38023985097 passed 464 tests with 96.46% total package coverage, including
+100% producer-command and 98% PostgreSQL-adapter measured statement/branch
+coverage. Dependency audit 38023985161, Source security 38023985199 and
+Foundation integration 38023985147 passed on that exact SHA.
+Eight real disposable PostgreSQL checks passed for migration idempotence,
+transactional generation/audit CAS, stale/foreign-scope rejections, rollback,
+append-only audit, concurrent SQL writers and restart recovery. Browser and
+native-image gates also passed. The Python adapter itself remains fake-driver
+tested, and neither least-privilege database credentials nor live OIDC have
+been qualified. P3-05 remains IN PROGRESS; see the
+[Phase 3E record](evidence/phase3e-producer-postgres-20261010.md).
+
 Production deployment and main promotion remain unauthorised.
 
 ## Historical native-image remediation before final qualification
