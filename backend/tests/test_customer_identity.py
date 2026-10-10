@@ -85,9 +85,7 @@ def token(private, **overrides):
         exp=now + 500,
     )
     claims.update(overrides)
-    return jwt.encode(
-        claims, private, algorithm="RS256", headers={"kid": "customer-test-kid"}
-    )
+    return jwt.encode(claims, private, algorithm="RS256", headers={"kid": "customer-test-kid"})
 
 
 def test_external_id_broker_creates_role_free_identity(signer) -> None:
@@ -169,9 +167,7 @@ def test_token_claim_substitution_and_invalid_timing_fail_closed(signer, invalid
     """A provider-token substitution cannot reach the internal account directory."""
     private, keys = signer
     with pytest.raises(PermissionError):
-        verify_customer_access_token(
-            token(private, **invalid), policy=policy(), keys=keys, now=NOW
-        )
+        verify_customer_access_token(token(private, **invalid), policy=policy(), keys=keys, now=NOW)
 
 
 @pytest.mark.parametrize("value", ["", "opaque", "a.b", "a.b.c.d", "x" * 17000, None])
@@ -188,9 +184,7 @@ def test_forged_signing_key_unknown_rotation_and_remote_jwk_header_fail(signer) 
     untrusted = rsa.generate_private_key(public_exponent=65537, key_size=2048)
     tokens = (
         token(untrusted),
-        jwt.encode(
-            {"sub": "x"}, private, algorithm="RS256", headers={"kid": "unknown-kid"}
-        ),
+        jwt.encode({"sub": "x"}, private, algorithm="RS256", headers={"kid": "unknown-kid"}),
         jwt.encode(
             {"sub": "x"},
             private,
@@ -200,9 +194,7 @@ def test_forged_signing_key_unknown_rotation_and_remote_jwk_header_fail(signer) 
     )
     for signed in tokens:
         with pytest.raises(PermissionError):
-            verify_customer_access_token(
-                signed, policy=policy(), keys=keys, now=NOW
-            )
+            verify_customer_access_token(signed, policy=policy(), keys=keys, now=NOW)
 
 
 @pytest.mark.parametrize("subject", ["", " ", " leading", "trailing ", "x" * 257, None])
@@ -251,9 +243,7 @@ def test_same_email_different_subjects_cannot_merge_accounts(signer) -> None:
 def test_directory_rejects_missing_or_invalid_account_id(signer, account_id) -> None:
     """Malformed host mappings fail closed instead of allocating a new account."""
     private, keys = signer
-    customer = verify_customer_access_token(
-        token(private), policy=policy(), keys=keys, now=NOW
-    )
+    customer = verify_customer_access_token(token(private), policy=policy(), keys=keys, now=NOW)
     directory = RegisteredAccounts()
     directory.rows[customer.lookup_key] = account_id
     with pytest.raises(PermissionError):
