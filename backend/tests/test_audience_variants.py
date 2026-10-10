@@ -1,7 +1,11 @@
 """Phase 3D tests for audience language/persona variant qualification."""
 
 import pytest
-from matchdesk.domain.audience_variants import qualify_audience_variant
+from matchdesk.domain.audience_variants import (
+    build_audience_variant,
+    qualify_audience_variant,
+    record_audience_language_review,
+)
 from matchdesk.domain.broadcast_outputs import (
     BroadcastEnvelope,
     CommentaryPayload,
@@ -228,3 +232,77 @@ def test_missing_or_duplicate_claim_verification_is_rejected() -> None:
         qualify_audience_variant(source, variant, one)
     with pytest.raises(ValueError, match="every claim exactly once"):
         qualify_audience_variant(source, variant, duplicate)
+
+
+def test_build_variant_preserves_scope_without_inheriting_approval() -> None:
+    """Locale adaptation creates a new exact digest, not a publish authorization."""
+    source = _envelope(
+        "source", language="en", persona="analyst",
+        first_text="Two attempts were made.", second_text="The pressure increased.",
+    )
+    proposed = CommentaryPayload.model_validate(
+        {"lines": [
+            {"claim_id": "claim-1", "text": "Se realizaron dos intentos."},
+            {"claim_id": "claim-2", "text": "Aumento la presion."},
+        ]}
+    )
+    variant = build_audience_variant(
+        source, output_id="es-variant", payload=proposed,
+        language="es", persona="casual_fan",
+    )
+    assert variant.claim_ids == source.claim_ids
+    assert variant.evidence_ids == source.evidence_ids
+    assert variant.binding.content_digest == content_digest(proposed)
+    assert variant.binding.content_digest != source.binding.content_digest
+    assert not hasattr(variant, "publication_authorized")
+
+
+def test_language_review_requires_verification_and_exact_content() -> None:
+    """Review must be tied to evidence-checked current localized content."""
+    source = _envelope(
+        "source", language="en", persona="analyst",
+        first_text="Claim one.", second_text="Claim two.",
+    )
+    variant = _envelope(
+        "variant", language="fr", persona="broadcast_caption",
+        first_text="Un.", second_text="Deux.",
+    )
+    qualification = qualify_audience_variant(source, variant, _results())
+    review = record_audience_language_review(
+        variant, qualification, reviewer_actor_id="editor-1",
+        meaning_preserved=True, language_quality_accepted=True,
+    )
+    assert review.variant_content_digest == variant.binding.content_digest
+    assert review.reviewer_actor_id == "editor-1"
+
+    changed = variant.model_copy(
+        update={"binding": variant.binding.model_copy(update={"content_digest": "b" * 64})}
+    )
+    with pytest.raises(ValueError, match="exact qualified variant"):
+        record_audience_language_review(
+            changed, qualification, reviewer_actor_id="editor-1",
+            meaning_preserved=True, language_quality_accepted=True,
+        )
+
+
+@pytest.mark.parametrize(
+    "meaning,quality", [(False, True), (True, False), (False, False)]
+)
+def test_language_review_rejects_unaccepted_semantics(
+    meaning: bool, quality: bool
+) -> None:
+    """Language quality and meaning are separate fail-closed editorial requirements."""
+    source = _envelope(
+        "source", language="en", persona="analyst",
+        first_text="Claim one.", second_text="Claim two.",
+    )
+    variant = _envelope(
+        "variant", language="es", persona="casual_fan",
+        first_text="Uno.", second_text="Dos.",
+    )
+    qualification = qualify_audience_variant(source, variant, _results())
+    with pytest.raises(ValueError, match="meaning and quality acceptance"):
+        record_audience_language_review(
+            variant, qualification, reviewer_actor_id="editor-1",
+            meaning_preserved=meaning, language_quality_accepted=quality,
+        )
