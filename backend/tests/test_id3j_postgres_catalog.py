@@ -1,6 +1,7 @@
 """ID3J catalogue regression tests: deny forged, elevated and unavailable grants."""
 
 from contextlib import contextmanager
+
 import pytest
 from matchdesk.domain.id3h_release_approval import ReleaseDenied
 from matchdesk.domain.id3j_postgres_catalog import (
