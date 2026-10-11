@@ -260,6 +260,4 @@ def test_untrusted_source_and_fake_reservation_store_cannot_be_injected(tmp_path
             source=object(), context=context, reservations=host._reservations
         )
     with pytest.raises(ReleaseDenied):
-        DisposableReadOnlyHostPreflight(
-            source=host._source, context=context, reservations=object()
-        )
+        DisposableReadOnlyHostPreflight(source=host._source, context=context, reservations=object())
