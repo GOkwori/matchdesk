@@ -1,6 +1,16 @@
 /** Sunset Studio v3 screens 03–04: read-only event evidence and absent coordinate regressions. */
 import { test, expect } from '@playwright/test';
 
+async function openView(page, desktop, mobile) {
+  // Mobile navigation is the only visible navigation at 390px.
+  if (page.viewportSize()?.width < 640) {
+    await page.getByRole('navigation', { name: 'Mobile demo navigation' })
+      .getByRole('button', { name: mobile }).click();
+  } else {
+    await page.getByRole('button', { name: desktop, exact: true }).click();
+  }
+}
+
 test.beforeEach(async ({ page }) => {
   await page.goto('/sunset-v3');
 });
@@ -10,7 +20,7 @@ test('command centre selects only recorded events and binds the corner to the go
   page.on('request', request => {
     if (new URL(request.url()).pathname.startsWith('/api/')) calls.push(request.url());
   });
-  await page.getByRole('button', { name: 'Live Intelligence', exact: true }).click();
+  await openView(page, 'Live Intelligence', /Command/);
   await expect(page.getByRole('heading', { name: 'Match Intelligence Command Centre' })).toBeVisible();
   await expect(page.getByRole('group', { name: /Shot-location pitch schematic/ })).toContainText('Coordinates unavailable');
   await expect(page.getByText('14 seconds between events')).toBeVisible();
@@ -25,7 +35,7 @@ test('command centre selects only recorded events and binds the corner to the go
 });
 
 test('tactical filters are controlled and never invent event coordinates', async ({ page }) => {
-  await page.getByRole('button', { name: 'Tactical Analysis', exact: true }).click();
+  await openView(page, 'Tactical Analysis', /Tactical/);
   await expect(page.getByRole('heading', { name: 'Tactical Analysis' })).toBeVisible();
   const pitch = page.getByRole('group', { name: /Event-location pitch schematic/ });
   await expect(pitch).toContainText('Coordinates unavailable');

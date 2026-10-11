@@ -102,7 +102,7 @@ function GoalEventMarkers() {
 
 /** A recorded event can be inspected locally but never approved or published. */
 function RecordedFeed({ selectedId, onSelect }: { selectedId: string; onSelect: (id: string) => void }) {
-  return <div className="mdv3-recorded-feed" aria-label="Recorded synthetic event feed">
+  return <div role="group" className="mdv3-recorded-feed" aria-label="Recorded synthetic event feed">
     {feed.map(item => <button type="button" key={item.id}
         className={"mdv3-feed-button" + (selectedId === item.id ? " mdv3-feed-selected" : "")}
         aria-pressed={selectedId === item.id} onClick={() => onSelect(item.id)}>

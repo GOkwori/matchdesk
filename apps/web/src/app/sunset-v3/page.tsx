@@ -114,7 +114,7 @@ export default function SunsetStudioPreview() {
         <nav>{nav.map((label, index) => {
           const available = index === 0 || index === 2 || index === 4;
           return available
-            ? <button key={label} type="button" className={`mdv3-nav ${(index === 0 && page === "overview") || (index === 2 && page === "command") || (index === 4 && page === "tactical") ? "active" : ""}`}
+            ? <button key={label} type="button" aria-label={label} className={`mdv3-nav ${(index === 0 && page === "overview") || (index === 2 && page === "command") || (index === 4 && page === "tactical") ? "active" : ""}`}
                 aria-current={(index === 0 && page === "overview") || (index === 2 && page === "command") || (index === 4 && page === "tactical") ? "page" : undefined}
                 onClick={() => setPage(index === 0 ? "overview" : index === 2 ? "command" : "tactical")}><span aria-hidden="true">{index === 0 ? "⌂" : "◈"}</span>{label}</button>
             : <div key={label} className="mdv3-nav mdv3-nav-unavailable"><span aria-hidden="true">○</span>{label}
