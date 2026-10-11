@@ -77,6 +77,22 @@ def test_non_execution_receipt_and_read_only_transaction():
     assert "has_any_column_privilege" in conn.test_cursor.calls[1]
 
 
+def test_catalog_privilege_functions_are_guarded_by_object_kind():
+    """Protect against PostgreSQL planner reordering and SQLSTATE 42809.
+
+    Filtering with a separate AND c.relkind predicate is insufficient: the
+    planner can evaluate has_sequence_privilege on a non-sequence pg_class row.
+    The disposable integration workflow executes this query on real PostgreSQL.
+    """
+    conn = Connection()
+    inspect_disposable_catalog(conn)
+    query = conn.test_cursor.calls[1]
+    assert "WHEN c.relkind IN ('r', 'p', 'v', 'm', 'f') THEN" in query
+    assert "WHEN c.relkind = 'S'" in query
+    assert "ELSE FALSE" in query
+    assert query.count("ELSE FALSE") == 2
+
+
 @pytest.mark.parametrize("column", range(4, 17))
 def test_any_elevated_or_inherited_capability_is_denied(column):
     """One role, schema, table, column, sequence or routine right must block."""

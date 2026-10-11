@@ -39,22 +39,27 @@ SELECT current_database()::text, current_user::text, session_user::text,
            SELECT 1 FROM pg_catalog.pg_class c
            JOIN pg_catalog.pg_namespace ns ON ns.oid = c.relnamespace
            WHERE ns.nspname !~ '^pg_' AND ns.nspname <> 'information_schema'
-             AND c.relkind IN ('r', 'p', 'v', 'm', 'f')
-             AND (
-               pg_catalog.has_table_privilege(
-                   c.oid, 'INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER'
-               )
-               OR pg_catalog.has_any_column_privilege(
-                   c.oid, 'INSERT, UPDATE, REFERENCES'
-               )
-             )
+             AND CASE
+                 -- The planner may reorder AND predicates: a privilege probe
+                 -- must never be evaluated for an incompatible object kind.
+                 WHEN c.relkind IN ('r', 'p', 'v', 'm', 'f') THEN
+                     pg_catalog.has_table_privilege(
+                         c.oid, 'INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER'
+                     )
+                     OR pg_catalog.has_any_column_privilege(
+                         c.oid, 'INSERT, UPDATE, REFERENCES'
+                     )
+                 ELSE FALSE
+             END
        ),
        EXISTS (
            SELECT 1 FROM pg_catalog.pg_class c
            JOIN pg_catalog.pg_namespace ns ON ns.oid = c.relnamespace
            WHERE ns.nspname !~ '^pg_' AND ns.nspname <> 'information_schema'
-             AND c.relkind = 'S'
-             AND pg_catalog.has_sequence_privilege(c.oid, 'USAGE, UPDATE')
+             AND CASE WHEN c.relkind = 'S'
+                 THEN pg_catalog.has_sequence_privilege(c.oid, 'USAGE, UPDATE')
+                 ELSE FALSE
+             END
        ),
        EXISTS (
            SELECT 1 FROM pg_catalog.pg_proc p
