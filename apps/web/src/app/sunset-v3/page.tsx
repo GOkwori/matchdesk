@@ -4,19 +4,32 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { CommandCentre, TacticalAnalysis } from "./dashboard";
+import { AIIntelligenceWorkspace, EvidenceVerificationExplorer, MomentsTimeline } from "./journey";
 import { editorial, fixture, latestMoments, matchStatistics } from "./demo-data";
 import "./tokens.css";
 import "./sunset.css";
 import "./journey.css";
 
-type Page = "welcome" | "overview" | "command" | "tactical";
+type Page = "welcome" | "overview" | "command" | "tactical" | "moments" | "ai" | "evidence";
 type Notice = "success" | "information" | "warning";
 
 const nav = [
   "Overview", "Matches", "Live Intelligence", "Moments & Timeline",
-  "Tactical Analysis", "Evidence & Verification", "Producer Desk",
+  "Tactical Analysis", "Evidence & Verification", "AI Intelligence Workspace", "Producer Desk",
   "Editorial Review", "Audience Outputs", "Activity & Audit", "Settings & Help",
 ] as const;
+
+/** Map approved, implemented demo screens to local client-only views.
+ * Unmapped features have no clickable placeholder links or API permissions.
+ */
+const demoDestinations: Partial<Record<(typeof nav)[number], Page>> = {
+  "Overview": "overview",
+  "Live Intelligence": "command",
+  "Moments & Timeline": "moments",
+  "Tactical Analysis": "tactical",
+  "Evidence & Verification": "evidence",
+  "AI Intelligence Workspace": "ai",
+};
 
 /** Surface a status label with its icon; do not rely on colour alone. */
 function Status({ label, kind }: { label: string; kind: "success" | "warning" | "planned" }) {
@@ -112,14 +125,18 @@ export default function SunsetStudioPreview() {
       <aside className="mdv3-side" aria-label="Main navigation">
         <Link href="/sunset-v3" className="mdv3-logo" aria-label="MatchDesk Sunset Studio home"><span className="mdv3-brand-emblem" aria-hidden="true">⌃</span>Match<span>Desk</span><sup>™</sup></Link>
         <span className="mdv3-side-label">WORKSPACES</span>
-        <nav>{nav.map((label, index) => {
-          const available = index === 0 || index === 2 || index === 4;
-          return available
-            ? <button key={label} type="button" aria-label={label} className={`mdv3-nav ${(index === 0 && page === "overview") || (index === 2 && page === "command") || (index === 4 && page === "tactical") ? "active" : ""}`}
-                aria-current={(index === 0 && page === "overview") || (index === 2 && page === "command") || (index === 4 && page === "tactical") ? "page" : undefined}
-                onClick={() => setPage(index === 0 ? "overview" : index === 2 ? "command" : "tactical")}><span aria-hidden="true">{index === 0 ? "⌂" : "◈"}</span>{label}</button>
-            : <div key={label} className="mdv3-nav mdv3-nav-unavailable"><span aria-hidden="true">○</span>{label}
-                <span className="mdv3-nav-tag">{index >= 7 ? "Planned" : "Preview"}</span></div>;
+        <nav>{nav.map(label => {
+          const destination = demoDestinations[label];
+          return destination
+            ? <button key={label} type="button" aria-label={label}
+                className={`mdv3-nav ${page === destination ? "active" : ""}`}
+                aria-current={page === destination ? "page" : undefined}
+                onClick={() => setPage(destination)}>
+                <span aria-hidden="true">{label === "Overview" ? "⌂" : "◈"}</span>{label}
+              </button>
+            : <div key={label} className="mdv3-nav mdv3-nav-unavailable">
+                <span aria-hidden="true">○</span>{label}<span className="mdv3-nav-tag">Planned</span>
+              </div>;
         })}</nav>
         <div className="mdv3-side-bottom">✧<p>AI-assisted.<br/>Verified.<br/>Human-led.</p></div>
       </aside>
@@ -133,7 +150,13 @@ export default function SunsetStudioPreview() {
         {notice && <div className={`mdv3-inapp mdv3-${notice}`} role="status"><strong>{notice === "success" ? "Demo view updated" : notice === "warning" ? "Approval unavailable" : "Read-only preview"}</strong>
           <span>{notice === "warning" ? "A verified, authenticated producer workflow is required. No change was made." : "These are design-only synthetic values. No server data changed."}</span>
           <button type="button" onClick={() => setNotice(null)} aria-label="Dismiss message">×</button></div>}
-        {page === "command" ? <CommandCentre score={<ScoreHeader/>}/> : page === "tactical" ? <TacticalAnalysis score={<ScoreHeader/>} onOpenCommand={() => setPage("command")}/> : page === "welcome" ? <div className="mdv3-content">
+        {page === "moments" ? <MomentsTimeline score={<ScoreHeader/>}
+          onOpenIntelligence={() => setPage("ai")} onOpenEvidence={() => setPage("evidence")}/>
+          : page === "ai" ? <AIIntelligenceWorkspace score={<ScoreHeader/>}
+            onOpenEvidence={() => setPage("evidence")} onOpenTimeline={() => setPage("moments")}/>
+          : page === "evidence" ? <EvidenceVerificationExplorer score={<ScoreHeader/>}
+            onOpenTimeline={() => setPage("moments")}/>
+          : page === "command" ? <CommandCentre score={<ScoreHeader/>}/> : page === "tactical" ? <TacticalAnalysis score={<ScoreHeader/>} onOpenCommand={() => setPage("command")}/> : page === "welcome" ? <div className="mdv3-content">
           <section className="mdv3-hero"><div className="mdv3-hero-copy"><span className="mdv3-kicker">MATCHDESK · SUNSET STUDIO V3 · SYNTHETIC DEMO</span>
               <h1>Turn football<br/>moments into<br/><em>verifiable stories.</em></h1>
               <p>AI-assisted analysis. Deterministic verification. Human control. Ready for broadcast.</p>
@@ -189,7 +212,10 @@ export default function SunsetStudioPreview() {
         <footer className="mdv3-footer"><span>MatchDesk · Synthetic demo · Football intelligence platform</span><span>Analyse · Verify · Create · Inform</span><Link href="/">Original event workbench ↗</Link></footer>
       </main>
     </div>
-    <nav className="mdv3-mobile-nav" aria-label="Mobile demo navigation"><button type="button" aria-current={page==="welcome"?"page":undefined} onClick={()=>setPage("welcome")}>⌂<small>Welcome</small></button><button type="button" aria-current={page==="overview"?"page":undefined} onClick={()=>setPage("overview")}>◈<small>Overview</small></button><button type="button" aria-current={page==="command"?"page":undefined} onClick={()=>setPage("command")}>◇<small>Command</small></button><button type="button" aria-current={page==="tactical"?"page":undefined} onClick={()=>setPage("tactical")}>▦<small>Tactical</small></button></nav>
+    <nav className="mdv3-mobile-nav" aria-label="Mobile demo navigation"><button type="button" aria-current={page==="welcome"?"page":undefined} onClick={()=>setPage("welcome")}>⌂<small>Welcome</small></button><button type="button" aria-current={page==="overview"?"page":undefined} onClick={()=>setPage("overview")}>◈<small>Overview</small></button><button type="button" aria-current={page==="command"?"page":undefined} onClick={()=>setPage("command")}>◇<small>Command</small></button><button type="button" aria-current={page==="tactical"?"page":undefined} onClick={()=>setPage("tactical")}>▦<small>Tactical</small></button>
+      <button type="button" aria-current={page==="moments"?"page":undefined} onClick={()=>setPage("moments")}>◷<small>Moments</small></button>
+      <button type="button" aria-current={page==="ai"?"page":undefined} onClick={()=>setPage("ai")}>✦<small>AI Desk</small></button>
+      <button type="button" aria-current={page==="evidence"?"page":undefined} onClick={()=>setPage("evidence")}>◇<small>Evidence</small></button></nav>
     {showDialog && <div className="mdv3-dialog-backdrop" role="presentation"><div className="mdv3-dialog" ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="mdv3-dialog-title" aria-describedby="mdv3-dialog-desc">
       <h2 id="mdv3-dialog-title">Approval blocked</h2><p id="mdv3-dialog-desc">{editorial.blockingReason}</p><p>Your work hasn’t been lost. <code>ref: req-7f3a</code></p>
       <div className="mdv3-actions"><button type="button" className="mdv3-primary" onClick={()=>{setShowDialog(false);setNotice("warning");}}>Understood</button><button type="button" className="mdv3-secondary" onClick={()=>setShowDialog(false)}>Close</button></div>
