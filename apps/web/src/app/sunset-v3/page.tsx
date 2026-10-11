@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { CommandCentre, TacticalAnalysis } from "./dashboard";
 import { editorial, fixture, latestMoments, matchStatistics } from "./demo-data";
+import "./tokens.css";
 import "./sunset.css";
 
 type Page = "welcome" | "overview" | "command" | "tactical";
@@ -105,6 +106,7 @@ export default function SunsetStudioPreview() {
     { icon: "◉", label: "Audience outputs", number: "—", state: "Planned", kind: "planned" as const },
   ];
   return <div className="mdv3" data-theme={theme}>
+    <a className="mdv3-skip-link" href="#mdv3-main">Skip to main content</a>
     <div className="mdv3-shell">
       <aside className="mdv3-side" aria-label="Main navigation">
         <Link href="/sunset-v3" className="mdv3-logo" aria-label="MatchDesk Sunset Studio home">Match<span>Desk</span><sup>™</sup></Link>
@@ -120,7 +122,7 @@ export default function SunsetStudioPreview() {
         })}</nav>
         <div className="mdv3-side-bottom">✧<p>AI-assisted.<br/>Verified.<br/>Human-led.</p></div>
       </aside>
-      <main className="mdv3-main">
+      <main id="mdv3-main" className="mdv3-main" tabIndex={-1}>
         <header className="mdv3-top">
           <div className="mdv3-top-left"><strong className="mdv3-mobile-brand">Match<span>Desk</span></strong><span>FOOTBALL INTELLIGENCE. EXPLAINED. VERIFIED. READY FOR BROADCAST.</span></div>
           <div className="mdv3-top-right"><span className="mdv3-demo-dot" aria-hidden="true"/>Demo · {fixture.replayDate}
