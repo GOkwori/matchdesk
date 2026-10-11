@@ -414,9 +414,24 @@ jobs:
         if: ${{ !cancelled() && steps.directory_gate.outcome == 'success' && steps.id3g_role_probe.outcome == 'success' }}
         run: |
           test "${{ steps.id3g_revocation_qa.outcome }}" = success
+      - name: Verify legacy ID3G catalog before ID3H reconciliation
+        id: id3h_legacy_catalog
+        if: ${{ !cancelled() && steps.id3g_revocation_gate.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          candidate=qualification/id3h/legacy_catalog_preflight_REVIEW_ONLY.sql
+          test "$(git hash-object "$candidate")" = 6240a844c80c662a8303211d41dac4cec585255a
+          # Run strictly read-only, before the separate ID3H receipt candidate.
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+            psql --no-psqlrc -X -v ON_ERROR_STOP=1 -U matchdesk -d matchdesk \
+              < "$candidate" > artifacts/integration/id3h-legacy-catalog.log
+          grep -F 'matchdesk_revoke_sessions_for_customer_change' \
+            artifacts/integration/id3h-legacy-catalog.log >/dev/null
+          # The isolated legacy database must still lack the later receipt.
+          echo "MATCHDESK_ID3H_LEGACY_READ_ONLY_PREFLIGHT_PASS"
       - name: Qualify ID3H one-time migration candidate in disposable PostgreSQL
         id: id3h_replay_preflight
-        if: ${{ !cancelled() && steps.id3g_revocation_gate.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.id3g_revocation_gate.outcome == 'success' && steps.id3h_legacy_catalog.outcome == 'success' }}
         run: |
           set -euo pipefail
           candidate=qualification/id3h/005_customer_account_revocation_once_REVIEW_ONLY.sql
