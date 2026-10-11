@@ -156,3 +156,36 @@ def authorize_customer_mutation(
     if not hmac.compare_digest(csrf_header, expected):
         raise PermissionError("Customer CSRF proof does not match this session")
     return record
+
+
+def verify_customer_revocation_proof(
+    token: str,
+    *,
+    policy: CustomerBrowserPolicy,
+    secret: bytes,
+    method: str,
+    request_origin: str | None,
+    csrf_header: str | None,
+    fetch_site: str | None = None,
+) -> None:
+    """Allow only same-origin CSRF-protected logout of an old session bearer.
+
+    The proof is bound to the original bearer and never authorizes account
+    access, rotation, a fresh CSRF proof, or any other application mutation.
+    A valid proof may outlive session revocation solely to clear its cookie.
+    """
+    if (
+        method != "POST"
+        or request_origin != policy.public_origin
+        or fetch_site not in (None, "same-origin")
+        or not isinstance(token, str)
+        or len(token) != 64
+        or any(char not in "0123456789abcdef" for char in token)
+        or not isinstance(csrf_header, str)
+        or len(csrf_header) != 64
+        or any(char not in "0123456789abcdef" for char in csrf_header)
+    ):
+        raise PermissionError("Customer revocation proof is not trusted")
+    expected = _csrf_digest(token, policy=policy, secret=secret)
+    if not hmac.compare_digest(csrf_header, expected):
+        raise PermissionError("Customer revocation proof does not match this session")

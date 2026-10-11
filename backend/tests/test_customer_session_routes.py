@@ -17,6 +17,25 @@ COOKIE_NAME = "__Host-matchdesk_customer"
 POLICY = CustomerBrowserPolicy(public_origin=ORIGIN)
 
 
+class Directory:
+    """A separate server-owned active-account registry for the exact identity."""
+
+    def __init__(self) -> None:
+        """Start with one registered customer identity."""
+        self.account_id: str | None = "fan"
+        self.fail = False
+        self.lookups = 0
+
+    def lookup(self, *, issuer: str, tenant_id: str, subject: str) -> str | None:
+        """Return the current account only for the exact issuer/tenant/subject."""
+        self.lookups += 1
+        if self.fail:
+            raise RuntimeError("private directory connection")
+        if (issuer, tenant_id, subject) != (ORIGIN, "ci", "fan"):
+            return None
+        return self.account_id
+
+
 class Store:
     """A test-only trusted session store; real PostgreSQL tested independently."""
 
@@ -25,6 +44,7 @@ class Store:
         identity = CustomerIdentityKey(issuer=ORIGIN, tenant_id="ci", subject="fan")
         original = new_customer_session(identity=identity, account_id="fan")
         self.original = original
+        self.directory = Directory()
         self.rows = {original.session_id: original}
         self.reject_rotate = False
         self.reject_revoke = False
@@ -65,7 +85,9 @@ class Store:
 def configured() -> tuple[TestClient, Store]:
     """Mount the router on an isolated test app only."""
     store = Store()
-    router = create_customer_session_router(store=store, policy=POLICY, csrf_secret=SECRET)
+    router = create_customer_session_router(
+        store=store, directory=store.directory, policy=POLICY, csrf_secret=SECRET
+    )
     return TestClient(create_app(customer_session_router=router), base_url=ORIGIN), store
 
 
@@ -140,7 +162,9 @@ def test_invalid_or_absent_session_cookie_never_authenticates(cookie: str) -> No
 def test_insecure_or_wrong_host_cannot_read_session(origin: str) -> None:
     """A valid cookie cannot be used under a different scheme or host."""
     store = Store()
-    router = create_customer_session_router(store=store, policy=POLICY, csrf_secret=SECRET)
+    router = create_customer_session_router(
+        store=store, directory=store.directory, policy=POLICY, csrf_secret=SECRET
+    )
     client = TestClient(create_app(customer_session_router=router), base_url=origin)
     client.cookies.set(COOKIE_NAME, store.original.session_id)
     assert client.get("/api/customer/session").status_code == 403
@@ -190,7 +214,13 @@ def test_store_rejection_denies_lifecycle_operation(operation: str) -> None:
 )
 def test_router_refuses_untrusted_configuration(change: dict[str, object]) -> None:
     """Configuration errors fail closed rather than enabling a public login."""
-    options: dict[str, object] = {"store": Store(), "policy": POLICY, "csrf_secret": SECRET}
+    store = Store()
+    options: dict[str, object] = {
+        "store": store,
+        "directory": store.directory,
+        "policy": POLICY,
+        "csrf_secret": SECRET,
+    }
     options.update(change)
     with pytest.raises(ValueError):
         create_customer_session_router(**options)
@@ -410,7 +440,9 @@ def test_csrf_read_database_outage_is_redacted() -> None:
 def test_untrusted_forwarded_protocol_does_not_override_http() -> None:
     """An attacker-controlled forwarding header cannot make HTTP appear HTTPS."""
     store = Store()
-    router = create_customer_session_router(store=store, policy=POLICY, csrf_secret=SECRET)
+    router = create_customer_session_router(
+        store=store, directory=store.directory, policy=POLICY, csrf_secret=SECRET
+    )
     insecure = TestClient(
         create_app(customer_session_router=router), base_url="http://matchdesk.example"
     )
@@ -467,3 +499,121 @@ def test_response_construction_failure_revokes_unexposed_successor() -> None:
     assert "private serialization detail" not in response.text
     assert all(session.revoked for session in store.rows.values())
     assert response.headers["Cache-Control"].startswith("no-store")
+
+
+@pytest.mark.parametrize("account_id", [None, "a-different-account"])
+def test_suspended_or_reassigned_account_cannot_read_or_renew(
+    account_id: str | None,
+) -> None:
+    """A historically valid bearer cannot survive loss of account authority."""
+    client, store = configured()
+    client.cookies.set(COOKIE_NAME, store.original.session_id)
+    csrf = client.get("/api/customer/session/csrf").json()["csrf_token"]
+    store.directory.account_id = account_id
+    for path in ("/api/customer/session", "/api/customer/session/csrf"):
+        response = client.get(path)
+        assert response.status_code == 401
+        assert "csrf_token" not in response.text
+        assert "authenticated" not in response.text
+    response = client.post("/api/customer/session/renew", headers=headers(csrf))
+    assert response.status_code == 401
+    assert "set-cookie" not in response.headers
+    assert not store.rows[store.original.session_id].revoked
+
+
+@pytest.mark.parametrize("endpoint", ["", "/csrf", "/renew"])
+def test_account_registry_outage_fails_closed_without_leaking_details(
+    endpoint: str,
+) -> None:
+    """A missing private directory must never restore cached account authority."""
+    client, store = configured()
+    client.cookies.set(COOKIE_NAME, store.original.session_id)
+    csrf = client.get("/api/customer/session/csrf").json()["csrf_token"]
+    store.directory.fail = True
+    if endpoint == "/renew":
+        response = client.post("/api/customer/session/renew", headers=headers(csrf))
+    else:
+        response = client.get("/api/customer/session" + endpoint)
+    assert response.status_code == 503
+    assert "private directory connection" not in response.text
+    assert "set-cookie" not in response.headers
+    assert response.headers["Cache-Control"].startswith("no-store")
+
+
+@pytest.mark.parametrize("account_id", [None, "reassigned-account"])
+def test_rotation_account_change_revokes_unexposed_successor(
+    account_id: str | None,
+) -> None:
+    """A post-commit account change must never create a usable new bearer."""
+    from unittest.mock import patch
+
+    client, store = configured()
+    client.cookies.set(COOKIE_NAME, store.original.session_id)
+    proof = client.get("/api/customer/session/csrf").json()["csrf_token"]
+    rotate = store.rotate
+
+    def rotate_then_change(token: str):
+        """Apply a valid rotation, then change the independent account state."""
+        successor = rotate(token)
+        store.directory.account_id = account_id
+        return successor
+
+    with patch.object(store, "rotate", side_effect=rotate_then_change):
+        response = client.post("/api/customer/session/renew", headers=headers(proof))
+    assert response.status_code == 503
+    assert "set-cookie" not in response.headers
+    assert "csrf_token" not in response.text
+    assert store.rows[store.original.session_id].revoked
+    successors = [
+        session for sid, session in store.rows.items() if sid != store.original.session_id
+    ]
+    assert len(successors) == 1 and successors[0].revoked
+
+
+def test_revoked_session_can_logout_with_original_hmac_only() -> None:
+    """Revoked accounts retain no read rights but may delete their old cookie."""
+    client, store = configured()
+    token = store.original.session_id
+    client.cookies.set(COOKIE_NAME, token)
+    proof = client.get("/api/customer/session/csrf").json()["csrf_token"]
+    assert store.revoke(token)
+    store.directory.account_id = None
+    assert client.get("/api/customer/session").status_code == 401
+    assert client.get("/api/customer/session/csrf").status_code == 401
+    response = client.post("/api/customer/session/logout", headers=headers(proof))
+    assert response.status_code == 204
+    assert "Max-Age=0" in response.headers["set-cookie"]
+    assert store.rows[token].revoked
+
+
+def test_suspended_account_can_only_revoke_its_own_session() -> None:
+    """Account suspension never blocks authenticated cookie cleanup."""
+    client, store = configured()
+    token = store.original.session_id
+    client.cookies.set(COOKIE_NAME, token)
+    proof = client.get("/api/customer/session/csrf").json()["csrf_token"]
+    store.directory.account_id = None
+    response = client.post("/api/customer/session/logout", headers=headers(proof))
+    assert response.status_code == 204
+    assert store.rows[token].revoked
+    assert client.get("/api/customer/session").status_code == 401
+
+
+def test_revocation_only_logout_rejects_invalid_csrf() -> None:
+    """The cleanup route is not an origin or CSRF bypass."""
+    client, store = configured()
+    token = store.original.session_id
+    client.cookies.set(COOKIE_NAME, token)
+    assert store.revoke(token)
+    response = client.post("/api/customer/session/logout", headers=headers("0" * 64))
+    assert response.status_code == 403
+    assert "set-cookie" not in response.headers
+
+
+def test_router_denies_missing_active_account_registry() -> None:
+    """A host cannot mount customer routes without a live trusted directory."""
+    store = Store()
+    with pytest.raises(ValueError):
+        create_customer_session_router(
+            store=store, directory=object(), policy=POLICY, csrf_secret=SECRET
+        )

@@ -115,37 +115,26 @@ jobs:
             exit 1
           fi
           git diff --exit-code
-      - name: Prequalify ID3G current-account HTTP boundaries with locked tools
+      - name: Qualify committed ID3G current-account HTTP boundaries with locked tools
         id: id3g_http_preflight
         if: ${{ !cancelled() && steps.id3g_authorization_preflight.outcome == 'success' }}
         run: |
           set -euo pipefail
-          # Temporarily overlay the three exact reviewed files in this runner.
-          # Restore all originals even if a quality or regression gate fails.
+          # Fail closed if committed HTTP source diverges from the exact
+          # review-only files qualified with Python 3.12 and pinned tools.
           qa=qualification/id3g/http_route_review
-          scratch="$(mktemp -d)"
           route=backend/src/matchdesk/api/customer_session_routes.py
           browser=backend/src/matchdesk/domain/browser_session_security.py
           tests=backend/tests/test_customer_session_routes.py
-          cp "$route" "$scratch/route.py"
-          cp "$browser" "$scratch/browser.py"
-          cp "$tests" "$scratch/tests.py"
-          restore() {
-            cp "$scratch/route.py" "$route"
-            cp "$scratch/browser.py" "$browser"
-            cp "$scratch/tests.py" "$tests"
-            rm -rf "$scratch"
-          }
-          trap restore EXIT
-          test "$(git hash-object "$route")" = f4ba27b71c324b33e34278eec5a0e9a6e25a5816
-          test "$(git hash-object "$browser")" = 50e0d3e3b0695b9a508abaf43e4b0281cb78a228
-          test "$(git hash-object "$tests")" = f686e9170d663a0e0beb577caf6463dc59a07f43
+          test "$(git hash-object "$route")" = f8ed4f0fc56fb8cdd4c986c477edfd3ea18d0646
+          test "$(git hash-object "$browser")" = bd71b1630ac9731d3ca1df13907a4b7daa35e0d5
+          test "$(git hash-object "$tests")" = f5fc514941621ccc6c0ea82a019b58cbe9bea4dc
           test "$(git hash-object "$qa/customer_session_routes.py")" = f8ed4f0fc56fb8cdd4c986c477edfd3ea18d0646
           test "$(git hash-object "$qa/browser_session_security.py")" = bd71b1630ac9731d3ca1df13907a4b7daa35e0d5
           test "$(git hash-object "$qa/test_customer_session_routes.py")" = f5fc514941621ccc6c0ea82a019b58cbe9bea4dc
-          cp "$qa/customer_session_routes.py" "$route"
-          cp "$qa/browser_session_security.py" "$browser"
-          cp "$qa/test_customer_session_routes.py" "$tests"
+          cmp -s "$qa/customer_session_routes.py" "$route"
+          cmp -s "$qa/browser_session_security.py" "$browser"
+          cmp -s "$qa/test_customer_session_routes.py" "$tests"
           quality=0
           uv run --no-sync ruff check backend scripts || quality=1
           uv run --no-sync ruff format --check backend scripts || quality=1
@@ -156,6 +145,7 @@ jobs:
             uv run --no-sync ruff format --diff backend scripts || true
             exit 1
           fi
+          git diff --exit-code
       - name: Preserve Python results including failures
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # inspected v4

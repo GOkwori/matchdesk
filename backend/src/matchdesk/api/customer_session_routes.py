@@ -18,11 +18,13 @@ from matchdesk.domain.browser_session_security import (
     clear_customer_session_cookie,
     customer_session_cookie,
     issue_customer_csrf,
+    verify_customer_revocation_proof,
 )
+from matchdesk.domain.customer_identity import CustomerAccountDirectory
+from matchdesk.domain.customer_session_authorization import resolve_authorized_customer_session
 from matchdesk.domain.customer_sessions import (
     CustomerSession,
     CustomerSessionStore,
-    resolve_customer_session,
 )
 
 _COOKIE = "__Host-matchdesk_customer"
@@ -95,10 +97,12 @@ def _cookie(request: Request) -> str:
     return found[0]
 
 
-def _active(token: str, store: CustomerLifecycleStore) -> CustomerSession:
-    """Only a persisted and unrevoked customer session grants read access."""
+def _active(
+    token: str, store: CustomerLifecycleStore, directory: CustomerAccountDirectory
+) -> CustomerSession:
+    """Authorize only a live session bound to its currently active account."""
     try:
-        return resolve_customer_session(token, store=store)
+        return resolve_authorized_customer_session(token, store=store, directory=directory)
     except (ValueError, TypeError, PermissionError) as exc:
         raise HTTPException(
             status_code=401,
@@ -121,24 +125,37 @@ def _write(
     store: CustomerLifecycleStore,
     policy: CustomerBrowserPolicy,
     secret: bytes,
+    revocation_only: bool = False,
 ) -> None:
-    """Require one exact Origin and one session-bound CSRF proof before mutation."""
+    """Require exact origin and HMAC; allow cleanup of an already-revoked bearer."""
     origins = request.headers.getlist("origin")
     proofs = request.headers.getlist("x-matchdesk-csrf")
     fetch_sites = request.headers.getlist("sec-fetch-site")
     if len(origins) != 1 or len(proofs) != 1 or len(fetch_sites) > 1:
         raise HTTPException(status_code=403, detail="Customer CSRF verification denied")
     try:
-        authorize_customer_mutation(
-            token,
-            store=store,
-            policy=policy,
-            secret=secret,
-            method=request.method,
-            request_origin=origins[0],
-            csrf_header=proofs[0],
-            fetch_site=fetch_sites[0] if fetch_sites else None,
-        )
+        if revocation_only:
+            # A suspended/revoked session can only request its own sign-out.
+            verify_customer_revocation_proof(
+                token,
+                policy=policy,
+                secret=secret,
+                method=request.method,
+                request_origin=origins[0],
+                csrf_header=proofs[0],
+                fetch_site=fetch_sites[0] if fetch_sites else None,
+            )
+        else:
+            authorize_customer_mutation(
+                token,
+                store=store,
+                policy=policy,
+                secret=secret,
+                method=request.method,
+                request_origin=origins[0],
+                csrf_header=proofs[0],
+                fetch_site=fetch_sites[0] if fetch_sites else None,
+            )
     except (PermissionError, ValueError, TypeError) as exc:
         raise HTTPException(
             status_code=403,
@@ -154,7 +171,11 @@ def _write(
 
 
 def create_customer_session_router(
-    *, store: CustomerLifecycleStore, policy: CustomerBrowserPolicy, csrf_secret: bytes
+    *,
+    store: CustomerLifecycleStore,
+    directory: CustomerAccountDirectory,
+    policy: CustomerBrowserPolicy,
+    csrf_secret: bytes,
 ) -> APIRouter:
     """Construct opt-in routes only for a host that supplies reviewed dependencies."""
     if not isinstance(policy, CustomerBrowserPolicy):
@@ -164,6 +185,8 @@ def create_customer_session_router(
         raise ValueError("A server-only 256-bit CSRF key is required")
     if any(not callable(getattr(store, name, None)) for name in ("load", "rotate", "revoke")):
         raise ValueError("A trusted customer lifecycle store is required")
+    if not callable(getattr(directory, "lookup", None)):
+        raise ValueError("A trusted customer account directory is required")
 
     router = APIRouter(prefix="/api/customer/session", tags=["customer-session"])
 
@@ -171,7 +194,7 @@ def create_customer_session_router(
     def status(request: Request) -> JSONResponse:
         """Expose expiry only; never an email, raw token, identity or role."""
         _browser(request, policy)
-        record = _active(_cookie(request), store)
+        record = _active(_cookie(request), store, directory)
         return JSONResponse(
             {"authenticated": True, "expires_at": record.expires_at.isoformat()},
             headers=_headers(),
@@ -182,9 +205,12 @@ def create_customer_session_router(
         """Issue a same-origin CSRF token after the trusted session lookup."""
         _browser(request, policy)
         token = _cookie(request)
-        _active(token, store)
+        _active(token, store, directory)
         try:
             proof = issue_customer_csrf(token, store=store, policy=policy, secret=csrf_secret)
+            # The signing call re-reads the store; independently recheck the
+            # live account before any CSRF proof leaves this response.
+            _active(token, store, directory)
         except PermissionError as exc:
             raise HTTPException(
                 status_code=401, detail="Customer session unavailable", headers=_headers()
@@ -201,6 +227,7 @@ def create_customer_session_router(
         _browser(request, policy)
         token = _cookie(request)
         _write(request, token, store=store, policy=policy, secret=csrf_secret)
+        original = _active(token, store, directory)
         try:
             successor = store.rotate(token)
         except Exception as exc:
@@ -217,10 +244,20 @@ def create_customer_session_router(
                 status_code=503, detail="Customer renewal unavailable", headers=_headers()
             )
         try:
+            # Rotation must retain the exact broker/account and absolute expiry.
+            # If status changes during rotation, revoke the hidden successor.
+            verified = _active(successor.session_id, store, directory)
+            if (
+                verified.identity != original.identity
+                or verified.account_id != original.account_id
+                or verified.expires_at != original.expires_at
+            ):
+                raise PermissionError("Customer renewal changed its account scope")
             cookie = customer_session_cookie(successor.session_id, store=store, policy=policy)
             proof = issue_customer_csrf(
                 successor.session_id, store=store, policy=policy, secret=csrf_secret
             )
+            _active(successor.session_id, store, directory)
             headers = _headers()
             headers["Set-Cookie"] = cookie
             # Construct the response before leaving the post-commit cleanup guard.
@@ -240,21 +277,58 @@ def create_customer_session_router(
 
     @router.post("/logout")
     def logout(request: Request) -> Response:
-        """Revoke a live customer session before expiring its cookie."""
+        """Revoke or clear a session; never restore a revoked customer's access."""
         _browser(request, policy)
         token = _cookie(request)
-        _write(request, token, store=store, policy=policy, secret=csrf_secret)
+        # Verify the previously issued session-bound CSRF even if the account
+        # is now disabled and PostgreSQL already revoked its old bearer.
+        _write(
+            request,
+            token,
+            store=store,
+            policy=policy,
+            secret=csrf_secret,
+            revocation_only=True,
+        )
         try:
+            # Consult the durable store before mutating it. Do not require an
+            # active account: suspension/revocation must never block logout.
+            # A database outage is not proof of a successful logout.
+            existing = store.load(token)
+            if existing is not None:
+                if not isinstance(existing, CustomerSession) or existing.session_id != token:
+                    raise PermissionError("Customer logout session scope is invalid")
+                existing.__post_init__()
             revoked = store.revoke(token)
+            if type(revoked) is not bool:
+                raise TypeError("Invalid customer revocation result")
+            if not revoked:
+                # A concurrent or trigger-driven revocation is still a safe
+                # sign-out. Never claim logout while this bearer remains active.
+                remaining = store.load(token)
+                if remaining is not None:
+                    if (
+                        not isinstance(remaining, CustomerSession)
+                        or remaining.session_id != token
+                        or not remaining.revoked
+                    ):
+                        raise HTTPException(
+                            status_code=401,
+                            detail="Customer logout denied",
+                            headers=_headers(),
+                        )
+                    remaining.__post_init__()
+        except HTTPException:
+            raise
+        except (PermissionError, ValueError, TypeError) as exc:
+            raise HTTPException(
+                status_code=401, detail="Customer logout denied", headers=_headers()
+            ) from exc
         except Exception as exc:
-            # Never acknowledge a logout if the revocation commit is unknown.
+            # A database error must not pretend to have completed a logout.
             raise HTTPException(
                 status_code=503, detail="Customer logout unavailable", headers=_headers()
             ) from exc
-        if not revoked:
-            raise HTTPException(
-                status_code=401, detail="Customer logout denied", headers=_headers()
-            )
         headers = _headers()
         headers["Set-Cookie"] = clear_customer_session_cookie()
         return Response(status_code=204, headers=headers)
