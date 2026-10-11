@@ -34,3 +34,23 @@ Each prototype is a self-contained concept with inline CSS, SVG and local demo i
 - Human control: AI proposes; verified server-side policy and the authorised human decide; approval is not publication.
 
 **Important:** Visual concepts contain known design-data and accessibility discrepancies; [implementation-guardrails.md](implementation-guardrails.md) is required reading before implementation. The screenshot-only sources are NOT silently replaced with generated alternatives.
+
+## Importing the original approved PNGs
+
+Use the repository's [approved-asset importer](tools/import_approved_assets.py) only with the exact original assets. It accepts the original `MatchDesk_SunsetStudio_Batch2_ReviewPack.zip` and the folder containing `image-gen-1(1).png` to `image-gen-7(1).png`.
+
+From the **repository root**:
+
+```bash
+python docs/design/tools/import_approved_assets.py --batch2-zip /path/to/MatchDesk_SunsetStudio_Batch2_ReviewPack.zip --batch1-dir /path/to/approved-batch1
+```
+
+The default is **dry-run**; inspect the resulting file names and SHA-256 hashes. Add `--write` to write the verified original PNGs under `docs/design/screenshots/` and `docs/design/concepts/` and create `docs/design/asset-checksums.json`. Existing differing files are never overwritten. Batch 1 and Batch 2 may be imported separately; one complete batch must be supplied for each import. No files are staged or committed by this script. Commit exactly the reviewed asset paths only after checking the output and updating the [asset register](asset-register.md).
+
+Run the importer regression suite locally before use:
+
+```bash
+python -m unittest discover -s docs/design/tools -p 'test_*.py' -v
+```
+
+The importer uses only Python's standard library. Local synthetic tests exercise archive-path safety, strict filenames, PNG integrity, missing sources, conflicts, repeat imports and checksum tampering. They do **not** establish that the still-unavailable original PNGs were successfully imported, nor do they replace project CI or human visual review.
