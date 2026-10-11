@@ -472,9 +472,20 @@ jobs:
             psql --no-psqlrc -X -v ON_ERROR_STOP=1 -U matchdesk -d matchdesk \
               < "$candidate" > artifacts/integration/id3h-recovered-catalog.log
           echo "MATCHDESK_ID3H_LEGACY_NEGATIVE_GATES_PASS"
+      - name: Rehearse legacy ID3H receipt reconciliation before migration backfill
+        id: id3h_legacy_receipt
+        if: ${{ !cancelled() && steps.id3h_legacy_negative.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          candidate=qualification/id3h/disposable_legacy_receipt_reconciliation.sh
+          test "$(git hash-object "$candidate")" = 6c431eecf21d399fc4837682ecf82906b59b1093
+          bash -n "$candidate"
+          bash "$candidate" 2>&1 | tee artifacts/integration/id3h-legacy-reconciliation.log
+          grep -Fx "MATCHDESK_ID3H_LEGACY_RECEIPT_CLONE_PASS" \
+            artifacts/integration/id3h-legacy-reconciliation.log >/dev/null
       - name: Qualify ID3H one-time migration candidate in disposable PostgreSQL
         id: id3h_replay_preflight
-        if: ${{ !cancelled() && steps.id3g_revocation_gate.outcome == 'success' && steps.id3h_legacy_catalog.outcome == 'success' && steps.id3h_legacy_negative.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.id3g_revocation_gate.outcome == 'success' && steps.id3h_legacy_catalog.outcome == 'success' && steps.id3h_legacy_negative.outcome == 'success' && steps.id3h_legacy_receipt.outcome == 'success' }}
         run: |
           set -euo pipefail
           candidate=qualification/id3h/005_customer_account_revocation_once_REVIEW_ONLY.sql
@@ -542,17 +553,6 @@ jobs:
           bash "$candidate" 2>&1 | tee artifacts/integration/id3h-backup-restore.log
           grep -Fx "MATCHDESK_ID3H_DISPOSABLE_RESTORE_PASS" \
             artifacts/integration/id3h-backup-restore.log >/dev/null
-      - name: Rehearse legacy ID3H receipt reconciliation on restored clone
-        id: id3h_legacy_receipt
-        if: ${{ !cancelled() && steps.id3h_restore.outcome == 'success' }}
-        run: |
-          set -euo pipefail
-          candidate=qualification/id3h/disposable_legacy_receipt_reconciliation.sh
-          test "$(git hash-object "$candidate")" = 6c431eecf21d399fc4837682ecf82906b59b1093
-          bash -n "$candidate"
-          bash "$candidate" 2>&1 | tee artifacts/integration/id3h-legacy-reconciliation.log
-          grep -Fx "MATCHDESK_ID3H_LEGACY_RECEIPT_CLONE_PASS" \
-            artifacts/integration/id3h-legacy-reconciliation.log >/dev/null
       - name: Install locked browser harness and matching Chromium
         id: browser
         if: ${{ !cancelled() && steps.start.outcome == 'success' }}
