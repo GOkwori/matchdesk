@@ -227,3 +227,85 @@ def test_concurrent_reservations_allow_exactly_one() -> None:
 
     with ThreadPoolExecutor(max_workers=8) as pool:
         assert sum(pool.map(attempt, range(20))) == 1
+
+
+@pytest.mark.parametrize(
+    ("field", "untrusted"),
+    [
+        ("operator_id", 42),
+        ("operator_id", None),
+        ("tenant_fingerprint", b"2" * 64),
+        ("source_commit", ["3" * 40]),
+        ("migration_sha256", True),
+    ],
+)
+def test_untyped_observed_facts_fail_closed(field: str, untrusted: object) -> None:
+    """Malformed host observations deny rather than escaping with TypeError."""
+    key = Ed25519PrivateKey.generate()
+    observed = replace(FACTS, **{field: untrusted})
+    with pytest.raises(ReleaseDenied, match="qualification approval denied"):
+        verify(signed(key, claims()), key, facts=observed)
+
+
+def test_wrong_observation_object_denied() -> None:
+    """A forged fact provider result is not interchangeable with host facts."""
+    key = Ed25519PrivateKey.generate()
+    with pytest.raises(ReleaseDenied):
+        reserve_disposable_release_approval(
+            signed(key, claims()),
+            observed={"operator_id": FACTS.operator_id},
+            trusted_public_key=key.public_key(),
+            reservation_store=ReservationStore(),
+            now=NOW,
+        )
+
+
+def test_duck_typed_signature_verifier_is_never_authoritative() -> None:
+    """A malicious no-op verifier cannot replace the pinned Ed25519 key."""
+
+    class FakeVerifier:
+        """Mimic a verifier with no cryptographic checks."""
+
+        def verify(self, signature: bytes, data: bytes) -> None:
+            """Wrongly accept everything without validating the signature."""
+            del signature, data
+
+    key = Ed25519PrivateKey.generate()
+    with pytest.raises(ReleaseDenied):
+        reserve_disposable_release_approval(
+            signed(key, claims()),
+            observed=FACTS,
+            trusted_public_key=FakeVerifier(),
+            reservation_store=ReservationStore(),
+            now=NOW,
+        )
+
+
+@pytest.mark.parametrize("answer", [1, "approved", object(), None])
+def test_non_boolean_reservation_result_is_denied(answer: object) -> None:
+    """Only an explicit atomic True can represent a consumed grant."""
+
+    class NonBooleanStore:
+        """Return an untrusted, truthy-but-invalid reservation result."""
+
+        def reserve_once(self, approval_id: str, expires_at: int) -> object:
+            """Return the chosen non-Boolean value without reserving any grant."""
+            del approval_id, expires_at
+            return answer
+
+    key = Ed25519PrivateKey.generate()
+    with pytest.raises(ReleaseDenied):
+        reserve_disposable_release_approval(
+            signed(key, claims()),
+            observed=FACTS,
+            trusted_public_key=key.public_key(),
+            reservation_store=NonBooleanStore(),
+            now=NOW,
+        )
+
+
+def test_invalid_unicode_envelope_is_a_generic_denial() -> None:
+    """Unpaired Unicode surrogates cannot crash the signature boundary."""
+    key = Ed25519PrivateKey.generate()
+    with pytest.raises(ReleaseDenied, match="qualification approval denied"):
+        verify("unpaired-\ud800", key)

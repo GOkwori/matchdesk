@@ -152,7 +152,16 @@ def reserve_disposable_release_approval(
     """
     if not isinstance(now, datetime) or now.tzinfo is None or now.utcoffset() is None:
         raise ReleaseDenied(DENIAL)
+    # Host facts and pinned verification keys are NOT supplied by the caller.
+    # Reject malformed dependency values instead of allowing a type error or
+    # duck-typed "verifier" to bypass cryptographic signature checks.
+    if type(observed) is not ObservedReleaseFacts or not isinstance(
+        trusted_public_key, Ed25519PublicKey
+    ):
+        raise ReleaseDenied(DENIAL)
     expected = _observed_fields(observed)
+    if any(type(value) is not str for value in expected.values()):
+        raise ReleaseDenied(DENIAL)
     if (
         expected["action"] != ACTION
         or expected["environment"] != ENVIRONMENT
@@ -173,7 +182,14 @@ def reserve_disposable_release_approval(
         )
     ):
         raise ReleaseDenied(DENIAL)
-    if not isinstance(envelope_text, str) or len(envelope_text.encode("utf-8")) > _MAX_TOKEN_BYTES:
+    if not isinstance(envelope_text, str):
+        raise ReleaseDenied(DENIAL)
+    try:
+        token_size = len(envelope_text.encode("utf-8"))
+    except UnicodeError:
+        # Non-UTF-8 encodable input must not crash an approval host.
+        raise ReleaseDenied(DENIAL) from None
+    if token_size > _MAX_TOKEN_BYTES:
         raise ReleaseDenied(DENIAL)
 
     try:
@@ -234,7 +250,8 @@ def reserve_disposable_release_approval(
     try:
         # A check-then-write read would permit concurrent replay. The external
         # reservation must be atomic and durable BEFORE a future host acts.
-        if not reservation_store.reserve_once(approval_id, expires):
+        if reservation_store.reserve_once(approval_id, expires) is not True:
+            # Only an exact, durable Boolean success is acceptable.
             raise ReleaseDenied(DENIAL)
     except Exception:
         # Treat unavailable, non-atomic, failed and duplicate reservations as
