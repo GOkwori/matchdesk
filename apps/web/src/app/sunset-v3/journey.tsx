@@ -186,7 +186,7 @@ export function AIIntelligenceWorkspace({
     {score}
     <section className="mdv3-panel mdv3-journey-process" aria-label="Illustrative AI workflow">
       <div className="mdv3-head"><h2>From event to human decision</h2><span className="mdv3-status mdv3-warning">! No agent execution</span></div>
-      <ol className="mdv3-journey-steps">{stages.map((stage, index) =>
+      <ol className="mdv3-journey-steps" aria-label="Illustrative AI workflow">{stages.map((stage, index) =>
         <li key={stage}><span aria-hidden="true">{String(index + 1).padStart(2, "0")}</span><strong>{stage}</strong><small>{index === 4 ? "Human gate · unavailable" : "Illustrative · not run"}</small></li>
       )}</ol>
     </section>
