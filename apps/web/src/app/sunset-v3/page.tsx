@@ -1,7 +1,7 @@
 /** Sunset Studio v3 screens 01–02, synthetic-only read-only frontend. */
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { editorial, fixture, latestMoments, matchStatistics } from "./demo-data";
 import "./sunset.css";
@@ -59,6 +59,44 @@ export default function SunsetStudioPreview() {
   const [notice, setNotice] = useState<Notice | null>(null);
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [showDialog, setShowDialog] = useState(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  /** Keep keyboard focus inside a modal and restore it to its opener on close. */
+  useEffect(() => {
+    if (!showDialog) return;
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const dialog = dialogRef.current;
+    const buttons = Array.from(dialog?.querySelectorAll<HTMLButtonElement>("button:not(:disabled)") ?? []);
+    buttons[0]?.focus();
+
+    function onDialogKey(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setShowDialog(false);
+        return;
+      }
+      if (event.key !== "Tab" || buttons.length === 0 || !dialog) return;
+      const first = buttons[0];
+      const last = buttons[buttons.length - 1];
+      // A blocked action must never allow focus to leak behind its dialog.
+      if (!dialog.contains(document.activeElement)) {
+        event.preventDefault();
+        first.focus();
+      } else if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+    document.addEventListener("keydown", onDialogKey);
+    return () => {
+      document.removeEventListener("keydown", onDialogKey);
+      opener?.focus();
+    };
+  }, [showDialog]);
+
   const attention = [
     { icon: "✦", label: "AI insights", number: String(editorial.insightsNeedingReview), state: "Needs human review", kind: "warning" as const },
     { icon: "◇", label: "Verification queue", number: String(editorial.pendingClaims), state: "1 pending claim", kind: "warning" as const },
@@ -71,11 +109,11 @@ export default function SunsetStudioPreview() {
         <Link href="/sunset-v3" className="mdv3-logo" aria-label="MatchDesk Sunset Studio home">Match<span>Desk</span><sup>™</sup></Link>
         <span className="mdv3-side-label">WORKSPACES</span>
         <nav>{nav.map((label, index) => {
-          const available = index === 0 || index === 1;
+          const available = index === 0;
           return available
-            ? <button key={label} type="button" className={`mdv3-nav ${(index === 0 && page === "overview") || (index === 1 && page === "welcome") ? "active" : ""}`}
-                aria-current={(index === 0 && page === "overview") || (index === 1 && page === "welcome") ? "page" : undefined}
-                onClick={() => setPage(index === 0 ? "overview" : "welcome")}><span aria-hidden="true">{index === 0 ? "⌂" : "◈"}</span>{label}</button>
+            ? <button key={label} type="button" className={`mdv3-nav ${index === 0 && page === "overview" ? "active" : ""}`}
+                aria-current={index === 0 && page === "overview" ? "page" : undefined}
+                onClick={() => setPage("overview")}><span aria-hidden="true">{index === 0 ? "⌂" : "◈"}</span>{label}</button>
             : <div key={label} className="mdv3-nav mdv3-nav-unavailable"><span aria-hidden="true">○</span>{label}
                 <span className="mdv3-nav-tag">{index >= 7 ? "Planned" : "Preview"}</span></div>;
         })}</nav>
@@ -100,7 +138,7 @@ export default function SunsetStudioPreview() {
               <span className="mdv3-muted">Illustrative fixture · {fixture.eventCount.toLocaleString("en-GB")} synthetic events · No live connectivity</span>
             </div><div className="mdv3-hero-graphic" aria-label="Abstract tactical pitch illustration, not player tracking">
               <div className="mdv3-pitch-outline"><div className="mdv3-centre-circle"/><i className="mdv3-node one"/><i className="mdv3-node two"/><i className="mdv3-node three"/><svg viewBox="0 0 320 180" aria-hidden="true"><path d="M55 135 Q105 45 157 100 T270 36" fill="none" stroke="#ff9159" strokeWidth="2" strokeDasharray="6 5"/><path d="M80 58 L178 35 L245 115" fill="none" stroke="#70d8a9" strokeWidth="1.5" opacity=".7"/></svg></div>
-              <div className="mdv3-visual-caption">Synthetic event intelligence <span>· Not tracking data</span></div>
+              <div className="mdv3-visual-caption">Synthetic event intelligence <span>· No tracking data</span></div>
             </div></section>
           <ScoreHeader/>
           <section className="mdv3-process" aria-label="The human-governed workflow">{[
@@ -127,7 +165,7 @@ export default function SunsetStudioPreview() {
             </section>
           </div><div className="mdv3-grid"><Statistics/><section className="mdv3-panel"><div className="mdv3-head"><h2>Producer workflow</h2><Status kind="planned" label="No publication enabled"/></div>
             <div className="mdv3-draft"><span className="mdv3-mono">{editorial.blockedDraft}</span><strong>Okafor double restores Northbridge lead</strong><Status kind="warning" label="Not eligible"/></div>
-            <div className="mdv3-draft"><span className="mdv3-mono">{editorial.eligibleDraft}</span><strong>Lindqvist levels for Riverside before the break</strong><Status kind="success" label="Eligible · not approved"/></div>
+            <div className="mdv3-draft"><span className="mdv3-mono">{editorial.eligibleDraft}</span><strong>Lindqvist levels for Riverside before the break</strong><Status kind="success" label="Eligible · not approved · not published"/></div>
             <p className="mdv3-muted">Eligibility is illustrative. A backend-authorised producer is required before any approval or publication.</p>
             <button type="button" disabled className="mdv3-secondary">🔒 Approve (Planned)</button></section></div>
         </div>}
@@ -135,7 +173,7 @@ export default function SunsetStudioPreview() {
       </main>
     </div>
     <nav className="mdv3-mobile-nav" aria-label="Mobile demo navigation"><button type="button" aria-current={page==="welcome"?"page":undefined} onClick={()=>setPage("welcome")}>⌂<small>Welcome</small></button><button type="button" aria-current={page==="overview"?"page":undefined} onClick={()=>setPage("overview")}>◈<small>Overview</small></button><button type="button" disabled>◇<small>Timeline<br/>Planned</small></button><button type="button" disabled>▦<small>Producer<br/>Planned</small></button></nav>
-    {showDialog && <div className="mdv3-dialog-backdrop" role="presentation"><div className="mdv3-dialog" role="dialog" aria-modal="true" aria-labelledby="mdv3-dialog-title" aria-describedby="mdv3-dialog-desc">
+    {showDialog && <div className="mdv3-dialog-backdrop" role="presentation"><div className="mdv3-dialog" ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="mdv3-dialog-title" aria-describedby="mdv3-dialog-desc">
       <h2 id="mdv3-dialog-title">Approval blocked</h2><p id="mdv3-dialog-desc">{editorial.blockingReason}</p><p>Your work hasn’t been lost. <code>ref: req-7f3a</code></p>
       <div className="mdv3-actions"><button type="button" className="mdv3-primary" onClick={()=>{setShowDialog(false);setNotice("warning");}}>Understood</button><button type="button" className="mdv3-secondary" onClick={()=>setShowDialog(false)}>Close</button></div>
     </div></div>}
