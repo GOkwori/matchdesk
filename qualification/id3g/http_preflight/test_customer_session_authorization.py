@@ -3,7 +3,6 @@
 from datetime import datetime, timezone
 
 import pytest
-
 from matchdesk.domain.customer_identity import CustomerIdentityKey
 from matchdesk.domain.customer_session_authorization import resolve_authorized_customer_session
 from matchdesk.domain.customer_sessions import new_customer_session

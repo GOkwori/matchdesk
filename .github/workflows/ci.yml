@@ -97,17 +97,24 @@ jobs:
           test ! -e "$target_src"
           test ! -e "$target_test"
           test "$(git hash-object "$source_dir/customer_session_authorization.py")" = 35e138310b9b4e7bb47f76d406ffdc904589d071
-          test "$(git hash-object "$source_dir/test_customer_session_authorization.py")" = 2a3999f8a3383b1bb67a1b4b3519033abe413e12
+          test "$(git hash-object "$source_dir/test_customer_session_authorization.py")" = fd18e8caa86c9f16c62000d06bfd6085f33ccd4f
           trap 'rm -f "$target_src" "$target_test"' EXIT
           cp "$source_dir/customer_session_authorization.py" "$target_src"
           cp "$source_dir/test_customer_session_authorization.py" "$target_test"
           cmp -s "$source_dir/customer_session_authorization.py" "$target_src"
           cmp -s "$source_dir/test_customer_session_authorization.py" "$target_test"
           # The exact locked quality versions come from uv sync above.
-          uv run --no-sync ruff check backend scripts
-          uv run --no-sync ruff format --check backend scripts
-          uv run --no-sync mypy backend/src/matchdesk
-          uv run --no-sync python -m pytest -q backend/tests/test_customer_session_authorization.py backend/tests/test_customer_sessions.py
+          # Collect the locked diagnostics without rewriting the reviewed blobs.
+          quality_status=0
+          uv run --no-sync ruff check backend scripts || quality_status=1
+          uv run --no-sync ruff format --check backend scripts || quality_status=1
+          uv run --no-sync mypy backend/src/matchdesk || quality_status=1
+          uv run --no-sync python -m pytest -q backend/tests/test_customer_session_authorization.py backend/tests/test_customer_sessions.py || quality_status=1
+          if test "$quality_status" -ne 0; then
+            uv run --no-sync ruff check --diff backend scripts || true
+            uv run --no-sync ruff format --diff backend scripts || true
+            exit 1
+          fi
           git diff --exit-code
       - name: Preserve Python results including failures
         if: ${{ !cancelled() }}
