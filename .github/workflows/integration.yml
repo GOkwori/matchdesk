@@ -579,10 +579,26 @@ jobs:
             -e CI=true -e "PGPASSWORD=$role_password" api \
             /app/.venv/bin/python - < e2e/id3j-catalog-psycopg.py \
             2>&1 | tee artifacts/integration/id3j-catalog.log
+          # ID3L tests BOTH independently signed synthetic identities against
+          # one actual restricted physical PostgreSQL session. No live IdP or
+          # write-time execution claim is made; keys exist only inside CI.
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$role_password" api \
+            /app/.venv/bin/python - < e2e/id3l-principal-postgres-psycopg.py \
+            2>&1 | tee artifacts/integration/id3l-principal-postgres.log
+          grep -Fx 'MATCHDESK_ID3L_REAL_POSTGRESQL_DUAL_PRINCIPAL_PASS' \
+            artifacts/integration/id3l-principal-postgres.log >/dev/null
           # A real newly added database CREATE capability must be detected.
           docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
             psql --no-psqlrc -X -v ON_ERROR_STOP=1 -U matchdesk -d postgres \
             -c 'GRANT CREATE ON DATABASE matchdesk_id3j_ci TO matchdesk_id3j_reader_ci'
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$role_password" \
+            -e ID3L_EXPECT_ELEVATION_DENIAL=true api \
+            /app/.venv/bin/python - < e2e/id3l-principal-postgres-psycopg.py \
+            2>&1 | tee artifacts/integration/id3l-elevated-role-rejected.log
+          grep -Fx 'MATCHDESK_ID3L_ELEVATED_ROLE_REJECTED' \
+            artifacts/integration/id3l-elevated-role-rejected.log >/dev/null
           if docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
               -e CI=true -e "PGPASSWORD=$role_password" api \
               /app/.venv/bin/python - < e2e/id3j-catalog-psycopg.py \
@@ -599,6 +615,12 @@ jobs:
             -e CI=true -e "PGPASSWORD=$role_password" api \
             /app/.venv/bin/python - < e2e/id3j-catalog-psycopg.py \
             2>&1 | tee -a artifacts/integration/id3j-catalog.log
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$role_password" api \
+            /app/.venv/bin/python - < e2e/id3l-principal-postgres-psycopg.py \
+            2>&1 | tee -a artifacts/integration/id3l-principal-postgres.log
+          grep -cFx 'MATCHDESK_ID3L_REAL_POSTGRESQL_DUAL_PRINCIPAL_PASS' \
+            artifacts/integration/id3l-principal-postgres.log | grep -Fx '2'
           echo 'MATCHDESK_ID3J_REAL_POSTGRESQL_NEGATIVE_PASS'
       - name: Install locked browser harness and matching Chromium
         id: browser
