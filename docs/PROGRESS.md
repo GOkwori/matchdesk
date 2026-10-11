@@ -10,6 +10,25 @@ history-secrets, codeql-python and codeql-javascript-typescript. The dedicated
 [Phase 0 closure record](evidence/phase0-closure-20261008.md) contains the exact
 merge SHAs, workflow run IDs, controls and remaining boundaries.
 
+## ID3L real-session disposable identity/catalog binding — 11 October 2026
+
+**TESTED — actual disposable PostgreSQL session and synthetic JWTs only.**
+Exact source `4004a3e54eb91bb080c2a89e7257b09ce860c3d8` passed all
+four required workflow groups: Foundation CI 38166677483 (1,123
+Python tests; 95.84% total coverage; ID3K at 85%), Foundation
+integration 38166677532 (same `pg_backend_pid()` before/after dual
+principal catalog inspection, actual CREATE privilege rejection and
+recovery; 36 browser tests; native-image verdict), Source security
+38166677468 and Dependency audit 38166677556. The CI harness runs
+negative probes for forged/no-MFA/wrong-audience tokens, revoked
+host entitlement and elevated PostgreSQL grants.
+
+[ID3L exact-source qualification](evidence/id3l-real-session-principal-qualification-20261011.md).
+No live Entra sign-in, independent MFA/workload federation, attested
+production cluster, mutation approval or execution authority is
+qualified. Production/customer migrations, paid resources and
+publication remain **BLOCKED**.
+
 ## ID3K offline dual-principal catalog binding — 11 October 2026
 
 **TESTED in synthetic, non-executing CI only.** Exact source

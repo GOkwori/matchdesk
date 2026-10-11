@@ -8,6 +8,27 @@
 Results are tied to source commits and execution environments. A passing build is not
 an approval to deploy, and evidence from one source is not relabelled as another.
 
+## ID3L real-session principal/catalog qualification — 11 October 2026
+
+- [ID3L exact-source qualification](id3l-real-session-principal-qualification-20261011.md)
+  captures two separately signed disposable human/workload JWTs, the
+  same physical restricted PostgreSQL connection, host-supplied
+  entitlement revocation, forged/MFA/audience rejection, real database
+  CREATE-grant escalation denial and post-revocation recovery.
+- Exact `4004a3e54eb91bb080c2a89e7257b09ce860c3d8`:
+  Foundation CI [38166677483](https://github.com/GOkwori/matchdesk/actions/runs/38166677483)
+  (1,123 tests, 95.84% total coverage), Foundation integration
+  [38166677532](https://github.com/GOkwori/matchdesk/actions/runs/38166677532)
+  (36 Chromium tests, real disposable DB and native-image PASS),
+  Source security
+  [38166677468](https://github.com/GOkwori/matchdesk/actions/runs/38166677468)
+  and Dependency audit
+  [38166677556](https://github.com/GOkwori/matchdesk/actions/runs/38166677556)
+  **all passed on exactly this implementation**.
+- Offline keys, MFA claim, synthetic entitlements and single-host
+  connection are NOT live Entra authentication or write-time release
+  authorisation; no customer migration or production promotion is permitted.
+
 ## ID3K disposable dual-principal catalog binding — 11 October 2026
 
 - [ID3K exact-source qualification](id3k-principal-catalog-qualification-20261011.md)
