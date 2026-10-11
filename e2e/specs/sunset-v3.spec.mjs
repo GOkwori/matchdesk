@@ -18,6 +18,11 @@ test('welcome identifies a synthetic replay and does not enable real sign-in', a
   await expect(page.getByRole('heading', { name: 'Verify' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Approve' })).toBeVisible();
   await expect(page.getByText(/No tracking data/)).toBeVisible();
+  const illustration = page.getByRole('group', { name: /Illustrative pitch and recorded synthetic event/ });
+  await expect(illustration).toContainText('M-05 · E-1366 · 58:17');
+  await expect(illustration).toContainText('No tracking data');
+  // The pitch is a schematic; fabricated spatial markers must never be rendered.
+  await expect(illustration.locator('.mdv3-node')).toHaveCount(0);
   // The nav must not route an unfinished Matches feature to the Welcome page.
   await expect(page.getByRole('button', { name: 'Matches', exact: true })).toHaveCount(0);
 });

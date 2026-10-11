@@ -7,10 +7,13 @@
  */
 import { test, expect } from '@playwright/test';
 
-/** WCAG relative luminance computed directly from six-digit CSS hex tokens. */
+/** WCAG luminance for valid CSS #RGB or #RRGGBB tokens, with no weaker threshold. */
 function luminance(hex) {
-  expect(hex, 'Only explicit six-digit palette tokens are accepted').toMatch(/^#[0-9a-fA-F]{6}$/);
-  const channels = [1, 3, 5].map(index => Number.parseInt(hex.slice(index, index + 2), 16) / 255);
+  expect(hex, 'Only explicit hex palette tokens are accepted').toMatch(/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/);
+  const normalized = hex.length === 4
+    ? '#' + [...hex.slice(1)].map(channel => channel + channel).join('')
+    : hex;
+  const channels = [1, 3, 5].map(index => Number.parseInt(normalized.slice(index, index + 2), 16) / 255);
   const linear = channels.map(value =>
     value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4
   );
@@ -22,6 +25,11 @@ function contrast(first, second) {
   const a = luminance(first), b = luminance(second);
   return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
 }
+
+test('CSS hex shorthand expands without altering WCAG ratios', () => {
+  expect(contrast('#fff', '#000')).toBeCloseTo(21, 8);
+  expect(contrast('#fff', '#23303c')).toBeCloseTo(contrast('#ffffff', '#23303c'), 8);
+});
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/sunset-v3');

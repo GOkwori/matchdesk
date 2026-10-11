@@ -109,7 +109,7 @@ export default function SunsetStudioPreview() {
     <a className="mdv3-skip-link" href="#mdv3-main">Skip to main content</a>
     <div className="mdv3-shell">
       <aside className="mdv3-side" aria-label="Main navigation">
-        <Link href="/sunset-v3" className="mdv3-logo" aria-label="MatchDesk Sunset Studio home">Match<span>Desk</span><sup>™</sup></Link>
+        <Link href="/sunset-v3" className="mdv3-logo" aria-label="MatchDesk Sunset Studio home"><span className="mdv3-brand-emblem" aria-hidden="true">⌃</span>Match<span>Desk</span><sup>™</sup></Link>
         <span className="mdv3-side-label">WORKSPACES</span>
         <nav>{nav.map((label, index) => {
           const available = index === 0 || index === 2 || index === 4;
@@ -124,7 +124,7 @@ export default function SunsetStudioPreview() {
       </aside>
       <main id="mdv3-main" className="mdv3-main" tabIndex={-1}>
         <header className="mdv3-top">
-          <div className="mdv3-top-left"><strong className="mdv3-mobile-brand">Match<span>Desk</span></strong><span>FOOTBALL INTELLIGENCE. EXPLAINED. VERIFIED. READY FOR BROADCAST.</span></div>
+          <div className="mdv3-top-left"><strong className="mdv3-mobile-brand"><span className="mdv3-brand-emblem" aria-hidden="true">⌃</span>Match<span>Desk</span></strong><span>FOOTBALL INTELLIGENCE. EXPLAINED. VERIFIED. READY FOR BROADCAST.</span></div>
           <div className="mdv3-top-right"><span className="mdv3-demo-dot" aria-hidden="true"/>Demo · {fixture.replayDate}
             <label className="mdv3-theme-label">Theme <select aria-label="Display theme" value={theme} onChange={e => setTheme(e.target.value === "light" ? "light" : "dark")}><option value="dark">Dark</option><option value="light">Light</option></select></label></div>
         </header>
@@ -139,25 +139,38 @@ export default function SunsetStudioPreview() {
               <div className="mdv3-actions"><button className="mdv3-primary" type="button" onClick={() => {setPage("overview"); setNotice("information");}}>▶ Explore synthetic demo <span aria-hidden="true">→</span></button>
                 <button className="mdv3-secondary" type="button" disabled title="Authentication is not enabled">🔒 Sign in (Planned)</button></div>
               <span className="mdv3-muted">Illustrative fixture · {fixture.eventCount.toLocaleString("en-GB")} synthetic events · No live connectivity</span>
-            </div><div className="mdv3-hero-graphic" aria-label="Abstract tactical pitch illustration, not player tracking">
-              <div className="mdv3-pitch-outline"><div className="mdv3-centre-circle"/><i className="mdv3-node one"/><i className="mdv3-node two"/><i className="mdv3-node three"/><svg viewBox="0 0 320 180" aria-hidden="true"><path d="M55 135 Q105 45 157 100 T270 36" fill="none" stroke="#ff9159" strokeWidth="2" strokeDasharray="6 5"/><path d="M80 58 L178 35 L245 115" fill="none" stroke="#70d8a9" strokeWidth="1.5" opacity=".7"/></svg></div>
-              <div className="mdv3-visual-caption">Synthetic event intelligence <span>· No tracking data</span></div>
+            </div><div className="mdv3-hero-graphic" role="group" aria-label="Illustrative pitch and recorded synthetic event; no tracking data">
+              <div className="mdv3-graphic-heading"><span className="mdv3-kicker">SOURCE-LED INTELLIGENCE</span><span className="mdv3-graphic-clock">{fixture.clock} · REPLAY</span></div>
+              <div className="mdv3-pitch-outline" aria-hidden="true">
+                <div className="mdv3-centre-circle"/>
+                <div className="mdv3-pitch-end mdv3-pitch-end-left"/>
+                <div className="mdv3-pitch-end mdv3-pitch-end-right"/>
+              </div>
+              {latestMoments.filter(moment => moment.id === "M-05").map(moment => <div className="mdv3-hero-event" key={moment.id}>
+                <span className="mdv3-hero-event-icon" aria-hidden="true">↗</span>
+                <div><span className="mdv3-kicker">RECORDED MATCH EVENT</span><strong>{moment.id} · {moment.event} · {moment.clock}</strong><small>{moment.title}</small></div>
+              </div>)}
+              <div className="mdv3-visual-caption"><span><strong>Illustrative pitch</strong> · No tracking data, player positions or shot coordinates</span><span className="mdv3-illustration-chip">SYNTHETIC</span></div>
             </div></section>
           <ScoreHeader/>
           <section className="mdv3-process" aria-label="The human-governed workflow">{[
             {label:"Detect",number:"01",detail:"Inspect recorded synthetic match events"},
             {label:"Verify",number:"02",detail:"Recompute claims from event evidence"},
             {label:"Approve",number:"03",detail:"Reserved for authorised human producers · Planned"},
-          ].map(s=><article className="mdv3-panel" key={s.label}><span className="mdv3-kicker">STEP {s.number}</span><h2>{s.label}</h2><p>{s.detail}</p>{s.label==="Approve" && <Status label="Planned" kind="planned"/>}</article>)}</section>
+          ].map(step => <article className="mdv3-panel mdv3-step" key={step.number}>
+            <span className="mdv3-step-number" aria-hidden="true">{step.number}</span>
+            <div><span className="mdv3-kicker">STEP {step.number}</span><h2>{step.label}</h2><p>{step.detail}</p>
+              {step.label === "Approve" && <Status label="Planned" kind="planned"/>}</div>
+          </article>)}</section>
           <div className="mdv3-control-note"><strong>AI-assisted. Verified. Human-led.</strong><p>AI suggestions are not evidence. Publishing and privileged decisions are disabled in this demo.</p></div>
         </div>: <div className="mdv3-content">
           <div className="mdv3-page-heading"><div><span className="mdv3-kicker">MATCH INTELLIGENCE · PREVIEW</span><h1>Intelligence Overview</h1><p>Key events, editorial attention and recorded statistics — all from one synthetic fixture.</p></div>
             <button type="button" className="mdv3-secondary" onClick={()=>setNotice("success")}>↻ Refresh demo view</button></div>
           <ScoreHeader/>
           <div className="mdv3-summary"><span><b>{fixture.eventCount.toLocaleString("en-GB")}</b> Synthetic events</span><span><b>{fixture.latestEvent}</b> Latest at {fixture.latestEventClock}</span><span><Status label="Replay · Not live" kind="warning"/></span></div>
-          <div className="mdv3-attention">{attention.map(a=><article className="mdv3-panel mdv3-attention-card" key={a.label}><div className="mdv3-atten-icon" aria-hidden="true">{a.icon}</div><h2>{a.label}</h2><strong className="mdv3-count">{a.number}</strong><Status label={a.state} kind={a.kind}/></article>)}</div>
+          <div className="mdv3-attention">{attention.map(a=><article className={`mdv3-panel mdv3-attention-card mdv3-attention-${a.kind}`} key={a.label}><div className="mdv3-atten-icon" aria-hidden="true">{a.icon}</div><h2>{a.label}</h2><strong className="mdv3-count">{a.number}</strong><Status label={a.state} kind={a.kind}/></article>)}</div>
           <div className="mdv3-grid">
-            <section className="mdv3-panel"><div className="mdv3-head"><h2>Attention now</h2><Status label="Human action required" kind="warning"/></div>
+            <section className="mdv3-panel mdv3-editorial-watch"><div className="mdv3-head"><h2>Attention now</h2><Status label="Human action required" kind="warning"/></div>
               <div className="mdv3-alert-row"><span>1</span><div><strong>Verification pending · CL-0215</strong><p>Riverside’s best spell is an interpretation awaiting producer review.</p></div></div>
               <div className="mdv3-alert-row"><span>2</span><div><strong>Evidence unavailable · CL-0216</strong><p>The event log does not establish Okafor’s first brace of the season.</p></div></div>
               <div className="mdv3-alert-row"><span>3</span><div><strong>{editorial.blockedDraft} · Not eligible</strong><p>{editorial.blockingReason}</p></div></div>
