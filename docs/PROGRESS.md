@@ -10,6 +10,22 @@ history-secrets, codeql-python and codeql-javascript-typescript. The dedicated
 [Phase 0 closure record](evidence/phase0-closure-20261008.md) contains the exact
 merge SHAs, workflow run IDs, controls and remaining boundaries.
 
+## ID3H disposable evidence-bound qualification — 11 October 2026
+
+**TESTED, offline/disposable CI only.** Development source
+`c3a166be953c4c9ae60d0e9fe6d84a10379f255c` passed all four hosted
+workflow groups: Foundation CI 38138748717 (1,058 Python tests),
+Foundation integration 38138748713 (runtime-browser and native-images),
+Source security 38138748691 and Dependency audit 38138748809.
+Regression coverage includes seven file digests, signed one-use approval,
+actor mismatch, replay denial, post-reservation drift, and a receipt that
+grants no execution authority.
+
+[Qualification record](evidence/id3h-disposable-qualification-20261011.md).
+Live actor authentication, real target/migration provenance, restore
+verification, approval enforcement and execution-host isolation remain
+**NOT QUALIFIED**. No production or recurring-cost authorization follows.
+
 ## Phase 1 progress
 
 P1-01, the deterministic synthetic match engine, is TESTED on development source

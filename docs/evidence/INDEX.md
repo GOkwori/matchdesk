@@ -3,6 +3,16 @@
 Results are tied to source commits and execution environments. A passing build is not
 an approval to deploy, and evidence from one source is not relabelled as another.
 
+## ID3H offline evidence-bound qualification — 11 October 2026
+
+- [Exact-source ID3H CI qualification](id3h-disposable-qualification-20261011.md)
+  records passing end-to-end non-execution approval and seven-file evidence
+  checks, retained failed candidates, and remaining live trust-boundary blockers.
+- Qualified source `c3a166be953c4c9ae60d0e9fe6d84a10379f255c`:
+  Foundation CI 38138748717 (1,058 tests), Foundation integration
+  38138748713, Source security 38138748691 and Dependency audit 38138748809
+  all **PASS**. An offline receipt authorizes no migration.
+
 ## Phase 3F restricted Psycopg and independently reconciled audit
 
 - [Phase 3F exact-source qualification](phase3f-real-psycopg-audit-20261010.md)
