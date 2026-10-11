@@ -3,6 +3,24 @@
 Results are tied to source commits and execution environments. A passing build is not
 an approval to deploy, and evidence from one source is not relabelled as another.
 
+## ID3J real disposable PostgreSQL catalog qualification — 11 October 2026
+
+- [ID3J exact-source qualification](id3j-postgres-catalog-qualification-20261011.md)
+  documents the actual restricted PostgreSQL role, effective privilege checks,
+  real CREATE-grant escalation denial, restoration and prior retained failures.
+- Qualified development source `22e25bd2f19d98357751b0b110ee30d999b54867`: Foundation CI
+  [38164404494](https://github.com/GOkwori/matchdesk/actions/runs/38164404494)
+  (1,099 tests, 96.11% overall coverage, 100% ID3J module), Foundation
+  integration [38164404479](https://github.com/GOkwori/matchdesk/actions/runs/38164404479)
+  (24 browser tests, native image security), Source security
+  [38164404495](https://github.com/GOkwori/matchdesk/actions/runs/38164404495),
+  and Dependency audit
+  [38164404507](https://github.com/GOkwori/matchdesk/actions/runs/38164404507):
+  **all PASS on the same exact source**.
+- A real restricted catalog reader is **not** a verified live host identity
+  or migration executor. Human/workload attestation and release authority
+  remain **NOT QUALIFIED**.
+
 ## ID3I disposable read-only host preflight — 11 October 2026
 
 - [ID3I exact-source qualification](id3i-read-only-host-qualification-20261011.md)

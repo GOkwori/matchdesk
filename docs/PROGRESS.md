@@ -10,6 +10,23 @@ history-secrets, codeql-python and codeql-javascript-typescript. The dedicated
 [Phase 0 closure record](evidence/phase0-closure-20261008.md) contains the exact
 merge SHAs, workflow run IDs, controls and remaining boundaries.
 
+## ID3J disposable PostgreSQL catalog qualification — 11 October 2026
+
+**TESTED for real PostgreSQL privilege inspection in disposable CI only.**
+Exact development source `22e25bd2f19d98357751b0b110ee30d999b54867` passed all four required hosted
+workflow groups: Foundation CI 38164404494 (1,099 tests, 96.11% package coverage;
+100% ID3J module), Foundation integration 38164404479 (real restricted-role
+positive / actual CREATE-grant denial / post-revocation pass, 24 browser tests,
+native-image verdict), Source security 38164404495 and Dependency audit
+38164404507. The planner-dependent `pg_statistic` / SQLSTATE 42809 defect
+and earlier Ruff failure remain documented, not waived.
+
+[ID3J exact-source qualification](evidence/id3j-postgres-catalog-qualification-20261011.md).
+This qualifies only a read-only CI catalog inspector. Independent human/workload
+identity, live database/tenant attestation, protected migration provenance,
+human release approval, recovery/cost governance and write-time enforcement
+remain **BLOCKED**. No production release authority follows.
+
 ## ID3H disposable evidence-bound qualification — 11 October 2026
 
 **TESTED, offline/disposable CI only.** Development source
