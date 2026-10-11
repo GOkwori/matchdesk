@@ -553,6 +553,53 @@ jobs:
           bash "$candidate" 2>&1 | tee artifacts/integration/id3h-backup-restore.log
           grep -Fx "MATCHDESK_ID3H_DISPOSABLE_RESTORE_PASS" \
             artifacts/integration/id3h-backup-restore.log >/dev/null
+      - name: Qualify ID3J effective privileges on a real disposable PostgreSQL role
+        id: id3j_catalog
+        if: ${{ !cancelled() && steps.id3h_restore.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          # A separate transient database prevents this probe from mutating any
+          # previously qualified customer sessions or migration ledger.
+          role_password="$(openssl rand -hex 32)"
+          echo "::add-mask::$role_password"
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+            psql --no-psqlrc -X -v ON_ERROR_STOP=1 -U matchdesk -d postgres \
+            -c 'CREATE DATABASE matchdesk_id3j_ci'
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+            psql --no-psqlrc -X -v ON_ERROR_STOP=1 -U matchdesk -d postgres \
+            -v role_password="$role_password" <<'SQL'
+          REVOKE CREATE, TEMP ON DATABASE matchdesk_id3j_ci FROM PUBLIC;
+          CREATE ROLE matchdesk_id3j_reader_ci LOGIN NOINHERIT
+            NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS
+            PASSWORD :'role_password';
+          GRANT CONNECT ON DATABASE matchdesk_id3j_ci TO matchdesk_id3j_reader_ci;
+          SQL
+          # The runtime-tested API image already has the pinned psycopg driver.
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$role_password" api \
+            /app/.venv/bin/python - < e2e/id3j-catalog-psycopg.py \
+            2>&1 | tee artifacts/integration/id3j-catalog.log
+          # A real newly added database CREATE capability must be detected.
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+            psql --no-psqlrc -X -v ON_ERROR_STOP=1 -U matchdesk -d postgres \
+            -c 'GRANT CREATE ON DATABASE matchdesk_id3j_ci TO matchdesk_id3j_reader_ci'
+          if docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+              -e CI=true -e "PGPASSWORD=$role_password" api \
+              /app/.venv/bin/python - < e2e/id3j-catalog-psycopg.py \
+              > artifacts/integration/id3j-elevated-role-rejected.log 2>&1; then
+            echo "ID3J ERROR: elevated role unexpectedly qualified" >&2
+            exit 1
+          fi
+          grep -F 'ID3J disposable catalog preflight denied' \
+            artifacts/integration/id3j-elevated-role-rejected.log >/dev/null
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+            psql --no-psqlrc -X -v ON_ERROR_STOP=1 -U matchdesk -d postgres \
+            -c 'REVOKE CREATE ON DATABASE matchdesk_id3j_ci FROM matchdesk_id3j_reader_ci'
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$role_password" api \
+            /app/.venv/bin/python - < e2e/id3j-catalog-psycopg.py \
+            2>&1 | tee -a artifacts/integration/id3j-catalog.log
+          echo 'MATCHDESK_ID3J_REAL_POSTGRESQL_NEGATIVE_PASS'
       - name: Install locked browser harness and matching Chromium
         id: browser
         if: ${{ !cancelled() && steps.start.outcome == 'success' }}
