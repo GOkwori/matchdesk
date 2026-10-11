@@ -4,13 +4,16 @@ import hashlib
 from pathlib import Path
 
 import pytest
-from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from matchdesk.domain.id3h_ci_evidence import (
     DisposableCIFileEvidenceReader,
     EvidenceBoundCIHostSource,
 )
-from matchdesk.domain.id3h_release_approval import ReleaseDenied
-from test_id3h_qualification_host import StubbedCITrust
+from matchdesk.domain.id3h_release_approval import (
+    ACTION,
+    ENVIRONMENT,
+    ObservedReleaseFacts,
+    ReleaseDenied,
+)
 
 NAMES = (
     "tenant.identity",
@@ -46,11 +49,33 @@ def test_changed_evidence_denied(tmp_path: Path) -> None:
     """An altered file cannot satisfy a previously observed release fingerprint."""
     directory = fixtures(tmp_path)
     reader = DisposableCIFileEvidenceReader(directory)
-    source = StubbedCITrust(Ed25519PrivateKey.generate())
-    from dataclasses import replace
-    from test_id3h_qualification_host import FACTS
-
     observed = reader.snapshot()
+
+    class SyntheticSource:
+        """Supply test-only actor, key, clock and observed evidence."""
+
+        def __init__(self) -> None:
+            """Bind a synthetic, independently constructed CI observation."""
+            self.facts = ObservedReleaseFacts(
+                action=ACTION,
+                environment=ENVIRONMENT,
+                operator_id="ci-workload:alice",
+                tenant_fingerprint=observed.tenant_fingerprint,
+                database_fingerprint=observed.database_fingerprint,
+                source_commit="3" * 40,
+                migration_sha256=observed.migration_sha256,
+                historical_evidence_sha256=observed.historical_evidence_sha256,
+                backup_evidence_sha256=observed.backup_evidence_sha256,
+                catalog_evidence_sha256=observed.catalog_evidence_sha256,
+                cost_decision_sha256=observed.cost_decision_sha256,
+                change_id="ci-change:alpha",
+            )
+
+        def observe_release(self) -> ObservedReleaseFacts:
+            """Return the synthetic host observation."""
+            return self.facts
+
+    source = SyntheticSource()
     source.facts = replace(
         FACTS, **{name: getattr(observed, name) for name in observed.__dataclass_fields__}
     )
@@ -94,9 +119,8 @@ def test_public_evidence_denied(tmp_path: Path, mode: int) -> None:
 
 def test_untrusted_reader_denied(tmp_path: Path) -> None:
     """A caller-provided fake digest source cannot replace the pinned reader."""
-    source = StubbedCITrust(Ed25519PrivateKey.generate())
     with pytest.raises(ReleaseDenied):
-        EvidenceBoundCIHostSource(delegate=source, reader=object())
+        EvidenceBoundCIHostSource(delegate=object(), reader=object())
 
 
 def test_empty_evidence_denied(tmp_path: Path) -> None:
