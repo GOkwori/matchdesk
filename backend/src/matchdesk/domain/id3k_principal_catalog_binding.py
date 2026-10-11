@@ -115,9 +115,7 @@ def _verified_claims(
         issuer=policy.issuer,
         audience=audience,
         options={
-            "require": [
-                "iss", "aud", "tid", "sub", "oid", "azp", "jti", "iat", "nbf", "exp"
-            ],
+            "require": ["iss", "aud", "tid", "sub", "oid", "azp", "jti", "iat", "nbf", "exp"],
             # Test clock comes from the host; PyJWT's implicit system clock
             # would make deterministic offline samples non-reproducible.
             "verify_exp": False,
@@ -144,8 +142,7 @@ def _verified_claims(
             <= policy.max_token_age_seconds + policy.clock_leeway_seconds
         )
         or any(
-            type(claims.get(field)) is not str
-            or not 1 <= len(claims[field]) <= 128
+            type(claims.get(field)) is not str or not 1 <= len(claims[field]) <= 128
             for field in ("sub", "oid", "azp", "jti")
         )
     ):

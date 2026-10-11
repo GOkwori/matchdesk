@@ -81,7 +81,9 @@ class Entitlements:
         if self.revoke_after_first and self.calls > 1:
             return False
         return self.allowed and (tenant_id, human_oid, database) == (
-            TENANT, HUMAN, "matchdesk_id3j_ci"
+            TENANT,
+            HUMAN,
+            "matchdesk_id3j_ci",
         )
 
 
@@ -90,17 +92,24 @@ def prepared():
     """Generate disposable RSA keys with a pinned issuer and signing ID."""
     private = rsa.generate_private_key(public_exponent=65537, key_size=2048)
     n = private.public_key().public_numbers()
+
     def b64(x):
         """Encode unsigned RSA limbs for a synthetic public JWK."""
-        return jwt.utils.base64url_encode(
-            x.to_bytes((x.bit_length() + 7) // 8, "big")
-        ).decode()
-    jwk = PyJWK.from_dict({
-        "kty": "RSA", "alg": "RS256", "use": "sig",
-        "kid": "ci-key", "n": b64(n.n), "e": b64(n.e),
-    })
+        return jwt.utils.base64url_encode(x.to_bytes((x.bit_length() + 7) // 8, "big")).decode()
+
+    jwk = PyJWK.from_dict(
+        {
+            "kty": "RSA",
+            "alg": "RS256",
+            "use": "sig",
+            "kid": "ci-key",
+            "n": b64(n.n),
+            "e": b64(n.e),
+        }
+    )
     policy = DisposablePrincipalPolicy(
-        tenant_id=TENANT, issuer=ISSUER,
+        tenant_id=TENANT,
+        issuer=ISSUER,
         human_audience="api://id3k-human-ci",
         workload_audience="api://id3k-workload-ci",
         human_client_id="ci-human-client",
@@ -113,17 +122,30 @@ def prepared():
 def make_tokens(private, policy, *, human_changes=None, workload_changes=None):
     """Sign distinct delegated and app-only CI scopes using fresh test keys."""
     common = dict(
-        iss=ISSUER, tid=TENANT, iat=1800000000,
-        nbf=1800000000, exp=1800000200, jti="ci-unique",
+        iss=ISSUER,
+        tid=TENANT,
+        iat=1800000000,
+        nbf=1800000000,
+        exp=1800000200,
+        jti="ci-unique",
     )
     human = {
-        **common, "aud": policy.human_audience, "sub": "ci-human",
-        "oid": HUMAN, "azp": policy.human_client_id, "idtyp": "user",
-        "scp": "MatchDesk.Catalog.Inspect", "amr": ["pwd", "mfa"],
+        **common,
+        "aud": policy.human_audience,
+        "sub": "ci-human",
+        "oid": HUMAN,
+        "azp": policy.human_client_id,
+        "idtyp": "user",
+        "scp": "MatchDesk.Catalog.Inspect",
+        "amr": ["pwd", "mfa"],
     }
     workload = {
-        **common, "aud": policy.workload_audience, "sub": "ci-workload",
-        "oid": WORKLOAD, "azp": policy.workload_client_id, "idtyp": "app",
+        **common,
+        "aud": policy.workload_audience,
+        "sub": "ci-workload",
+        "oid": WORKLOAD,
+        "azp": policy.workload_client_id,
+        "idtyp": "app",
         "roles": ["MatchDesk.Catalog.ReadOnly"],
     }
     human.update(human_changes or {})
@@ -141,8 +163,13 @@ def inspect(prepared, *, human_changes=None, workload_changes=None, grants=None,
         private, policy, human_changes=human_changes, workload_changes=workload_changes
     )
     return inspect_disposable_principal_binding(
-        db or Connection(), human_token=human, workload_token=workload,
-        policy=policy, keys=keys, entitlements=grants or Entitlements(), clock=lambda: NOW,
+        db or Connection(),
+        human_token=human,
+        workload_token=workload,
+        policy=policy,
+        keys=keys,
+        entitlements=grants or Entitlements(),
+        clock=lambda: NOW,
     )
 
 
@@ -157,35 +184,41 @@ def test_valid_separate_signatures_and_catalog_deny_execution(prepared):
     assert db.sql.count("SET TRANSACTION READ ONLY") == 2
 
 
-@pytest.mark.parametrize("field,value", [
-    ("aud", "api://id3k-workload-ci"),
-    ("iss", "https://login.microsoftonline.com/common/v2.0"),
-    ("tid", "ffffffff-ffff-ffff-ffff-ffffffffffff"),
-    ("scp", "MatchDesk.Producer.Access"),
-    ("amr", ["pwd"]),
-    ("idtyp", "app"),
-    ("exp", 1800000000),
-    ("exp", 1800000900),
-    ("iat", "1800000000"),
-    ("oid", WORKLOAD),
-    ("azp", "rogue-client"),
-])
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("aud", "api://id3k-workload-ci"),
+        ("iss", "https://login.microsoftonline.com/common/v2.0"),
+        ("tid", "ffffffff-ffff-ffff-ffff-ffffffffffff"),
+        ("scp", "MatchDesk.Producer.Access"),
+        ("amr", ["pwd"]),
+        ("idtyp", "app"),
+        ("exp", 1800000000),
+        ("exp", 1800000900),
+        ("iat", "1800000000"),
+        ("oid", WORKLOAD),
+        ("azp", "rogue-client"),
+    ],
+)
 def test_wrong_human_claims_fail_closed(prepared, field, value):
     """Cross-realm, no MFA, expiry and wrong delegated scope must be denied."""
     with pytest.raises(ReleaseDenied):
         inspect(prepared, human_changes={field: value})
 
 
-@pytest.mark.parametrize("field,value", [
-    ("aud", "api://id3k-human-ci"),
-    ("idtyp", "user"),
-    ("azp", "rogue-app"),
-    ("oid", HUMAN),
-    ("roles", ["MatchDesk.Catalog.Admin"]),
-    ("roles", ["MatchDesk.Catalog.ReadOnly", "Owner"]),
-    ("scp", "MatchDesk.Catalog.Inspect"),
-    ("exp", 1800000000),
-])
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("aud", "api://id3k-human-ci"),
+        ("idtyp", "user"),
+        ("azp", "rogue-app"),
+        ("oid", HUMAN),
+        ("roles", ["MatchDesk.Catalog.Admin"]),
+        ("roles", ["MatchDesk.Catalog.ReadOnly", "Owner"]),
+        ("scp", "MatchDesk.Catalog.Inspect"),
+        ("exp", 1800000000),
+    ],
+)
 def test_wrong_workload_claims_fail_closed(prepared, field, value):
     """An app-only workload cannot borrow human scopes or elevated roles."""
     with pytest.raises(ReleaseDenied):
@@ -219,13 +252,20 @@ def test_untrusted_signature_and_unavailable_key_denied(prepared):
     rogue = rsa.generate_private_key(public_exponent=65537, key_size=2048)
     rogue_token = jwt.encode(
         jwt.decode(human, options={"verify_signature": False}),
-        rogue, algorithm="RS256", headers={"kid": "ci-key"},
+        rogue,
+        algorithm="RS256",
+        headers={"kid": "ci-key"},
     )
     _, keys, _ = prepared
     with pytest.raises(ReleaseDenied):
         inspect_disposable_principal_binding(
-            Connection(), human_token=rogue_token, workload_token=workload,
-            policy=policy, keys=keys, entitlements=Entitlements(), clock=lambda: NOW,
+            Connection(),
+            human_token=rogue_token,
+            workload_token=workload,
+            policy=policy,
+            keys=keys,
+            entitlements=Entitlements(),
+            clock=lambda: NOW,
         )
 
 
@@ -234,8 +274,11 @@ def test_identity_policy_denies_confused_audiences(prepared):
     _, _, policy = prepared
     with pytest.raises(ValueError):
         DisposablePrincipalPolicy(
-            tenant_id=policy.tenant_id, issuer=policy.issuer,
-            human_audience="same", workload_audience="same",
-            human_client_id="human", workload_client_id="app",
+            tenant_id=policy.tenant_id,
+            issuer=policy.issuer,
+            human_audience="same",
+            workload_audience="same",
+            human_client_id="human",
+            workload_client_id="app",
             workload_oid=WORKLOAD,
         )
