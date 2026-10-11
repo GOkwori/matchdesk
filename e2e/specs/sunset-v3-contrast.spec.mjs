@@ -31,6 +31,13 @@ test('CSS hex shorthand expands without altering WCAG ratios', () => {
   expect(contrast('#fff', '#23303c')).toBeCloseTo(contrast('#ffffff', '#23303c'), 8);
 });
 
+/** Probe computed UI colours, as tokens alone can conceal hard-coded failures. */
+function rgbToHex(value) {
+  const channels = value.match(/\\d+/g)?.slice(0, 3).map(Number);
+  expect(channels, 'Expected three computed RGB channels').toHaveLength(3);
+  return '#' + channels.map(c => c.toString(16).padStart(2, '0')).join('');
+}
+
 test.beforeEach(async ({ page }) => {
   await page.goto('/sunset-v3');
 });
@@ -64,6 +71,10 @@ test('both themes meet semantic text and control contrast thresholds', async ({ 
       contrast(palette['on-accent'], palette.accent),
       `${theme}: text on primary button must reach 4.5:1`
     ).toBeGreaterThanOrEqual(4.5);
+    const button = await page.getByRole('button', { name: /Explore synthetic demo/ })
+      .evaluate(el => ({ text: getComputedStyle(el).color, fill: getComputedStyle(el).backgroundColor }));
+    expect(contrast(rgbToHex(button.text), rgbToHex(button.fill)),
+      `${theme}: actual rendered primary action text must reach 4.5:1`).toBeGreaterThanOrEqual(4.5);
   }
 });
 
