@@ -1,6 +1,6 @@
 # Current progress
 
-Date: 10 October 2026. Stage: Phase 2 VERIFIED / COMPLETED; Phase 3 producer control and audience delivery in progress.
+Date: 11 October 2026. Stage: Phase 2 VERIFIED / COMPLETED; Phase 3 producer control and audience delivery in progress.
 Phase 0 gate: **VERIFIED / COMPLETED**.
 
 The engineering foundation was merged through the protected `main` path and the
@@ -25,6 +25,25 @@ grants no execution authority.
 Live actor authentication, real target/migration provenance, restore
 verification, approval enforcement and execution-host isolation remain
 **NOT QUALIFIED**. No production or recurring-cost authorization follows.
+
+## ID3I disposable read-only host preflight — 11 October 2026
+
+**TESTED for the synthetic, non-executing CI boundary only.** Source
+cbb384528fe31f0e392359a3fcc48a30cea22821 passed all four workflows:
+Foundation CI 38156941471 (1,074 Python tests, 96.08% coverage;
+100% on the ID3I module), Foundation integration 38156941472,
+Source security 38156941497 and Dependency audit 38156941475.
+Read-only catalog-role restrictions, separate synthetic human/workload
+identities, target binding, signed reviewer separation, one-use replay denial
+and post-reservation drift controls passed their offline regressions.
+The previous e9f0612 formatting failure remains in the qualification record.
+
+[ID3I exact-source evidence](evidence/id3i-read-only-host-qualification-20261011.md).
+There is **no genuine live identity provider, SQL catalog privilege
+inspection, migration executor or write-time authorization** in ID3I.
+Human authorization, production database/migration provenance, backup restore
+acceptance and cost review remain BLOCKED. ID3I receipts explicitly authorize
+neither execution nor database writes. Main is not promoted.
 
 ## Phase 1 progress
 

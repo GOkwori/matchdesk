@@ -3,6 +3,20 @@
 Results are tied to source commits and execution environments. A passing build is not
 an approval to deploy, and evidence from one source is not relabelled as another.
 
+## ID3I disposable read-only host preflight — 11 October 2026
+
+- [ID3I exact-source qualification](id3i-read-only-host-qualification-20261011.md)
+  records dual synthetic identity checks, read-only role and target binding,
+  replay prevention, late-drift denial and the explicit non-execution receipt.
+- Qualified development source cbb384528fe31f0e392359a3fcc48a30cea22821:
+  Foundation CI 38156941471 (1,074 tests, 96.08% coverage; 100% ID3I module),
+  Foundation integration 38156941472, Source security 38156941497 and
+  Dependency audit 38156941475 all **PASS**.
+- The earlier e9f0612 candidate passed tests but failed Ruff formatting;
+  the precise formatting-only repair is retained in Git history.
+  Real tenant identity, database privileges and mutation authority remain
+  **UNVERIFIED / BLOCKED**.
+
 ## ID3H offline evidence-bound qualification — 11 October 2026
 
 - [Exact-source ID3H CI qualification](id3h-disposable-qualification-20261011.md)
