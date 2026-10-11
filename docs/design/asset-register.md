@@ -1,8 +1,8 @@
 # Sunset Studio - screen and asset register
 
-**Status as at archival commit:** 7 of 14 screen concepts have their original review HTML source checked in. **No PNG renders or Batch 1 raster pages are checked in.** This is not a complete visual-asset handoff.
+**Archive status (11 October 2026):** Batch 2 is COMPLETE: seven original design HTML prototypes and 14 original PNG renders for screens 08-14 are committed. All 14 PNGs are byte-identical to the supplied review pack and listed in [asset-checksums.json](asset-checksums.json). Batch 1 screens 01-07 are still **pending exact original PNG import**. Overall archive remains PARTIAL.
 
-| Screen | Approved surface | Git source | Original visual files outside Git |
+| Screen | Approved surface | Git source | Approved visual files and import status |
 |---|---|---|---|
 | 01 | Welcome & Access | Not committed (approved raster concept) | `image-gen-1(1).png` - **identified visually; pending raw import** |
 | 02 | Intelligence Overview | Not committed (approved raster concept) | `image-gen-2(1).png` - **identified visually; pending raw import** |
@@ -11,18 +11,18 @@
 | 05 | Moments & Timeline | Not committed (approved raster concept) | `image-gen-5(1).png` - **identified visually; pending raw import** |
 | 06 | AI Intelligence Workspace | Not committed (approved raster concept) | `image-gen-6(1).png` - **identified visually; pending raw import** |
 | 07 | Evidence Verification Explorer | Not committed (approved raster concept) | `image-gen-7(1).png` - **identified visually; pending raw import** |
-| 08 | Producer Review Queue | [HTML prototype](prototypes/08-producer-review-queue.html) (committed) | `08-producer-review-queue-desktop.png` / `08-producer-review-queue-mobile.png` - **pending raw import** |
-| 09 | Story & Commentary Composer | [HTML prototype](prototypes/09-story-commentary-composer.html) (committed) | `09-story-commentary-composer-desktop.png` / `09-story-commentary-composer-mobile.png` - **pending raw import** |
-| 10 | Review & Publication Journey (Future State) | [HTML prototype](prototypes/10-review-publication-future-state.html) (committed) | `10-review-publication-future-state-desktop.png` / `10-review-publication-future-state-mobile.png` - **pending raw import** |
-| 11 | Audience Experience | [HTML prototype](prototypes/11-audience-experience.html) (committed) | `11-audience-experience-desktop.png` / `11-audience-experience-mobile.png` - **pending raw import** |
-| 12 | Activity, Audit & Settings | [HTML prototype](prototypes/12-activity-audit-settings.html) (committed) | `12-activity-audit-settings-desktop.png` / `12-activity-audit-settings-mobile.png` - **pending raw import** |
-| 13 | Notification & Dialogue Library | [HTML prototype](prototypes/13-notification-dialogue-library.html) (committed) | `13-notification-dialogue-library-desktop.png` / `13-notification-dialogue-library-mobile.png` - **pending raw import** |
-| 14 | Defensive States | [HTML prototype](prototypes/14-defensive-states.html) (committed) | `14-defensive-states-desktop.png` / `14-defensive-states-mobile.png` - **pending raw import** |
+| 08 | Producer Review Queue | [HTML prototype](prototypes/08-producer-review-queue.html) (committed) | [desktop PNG](screenshots/08-producer-review-queue-desktop.png) / [mobile PNG](screenshots/08-producer-review-queue-mobile.png) - **imported, SHA-256 verified** |
+| 09 | Story & Commentary Composer | [HTML prototype](prototypes/09-story-commentary-composer.html) (committed) | [desktop PNG](screenshots/09-story-commentary-composer-desktop.png) / [mobile PNG](screenshots/09-story-commentary-composer-mobile.png) - **imported, SHA-256 verified** |
+| 10 | Review & Publication Journey (Future State) | [HTML prototype](prototypes/10-review-publication-future-state.html) (committed) | [desktop PNG](screenshots/10-review-publication-future-state-desktop.png) / [mobile PNG](screenshots/10-review-publication-future-state-mobile.png) - **imported, SHA-256 verified** |
+| 11 | Audience Experience | [HTML prototype](prototypes/11-audience-experience.html) (committed) | [desktop PNG](screenshots/11-audience-experience-desktop.png) / [mobile PNG](screenshots/11-audience-experience-mobile.png) - **imported, SHA-256 verified** |
+| 12 | Activity, Audit & Settings | [HTML prototype](prototypes/12-activity-audit-settings.html) (committed) | [desktop PNG](screenshots/12-activity-audit-settings-desktop.png) / [mobile PNG](screenshots/12-activity-audit-settings-mobile.png) - **imported, SHA-256 verified** |
+| 13 | Notification & Dialogue Library | [HTML prototype](prototypes/13-notification-dialogue-library.html) (committed) | [desktop PNG](screenshots/13-notification-dialogue-library-desktop.png) / [mobile PNG](screenshots/13-notification-dialogue-library-mobile.png) - **imported, SHA-256 verified** |
+| 14 | Defensive States | [HTML prototype](prototypes/14-defensive-states.html) (committed) | [desktop PNG](screenshots/14-defensive-states-desktop.png) / [mobile PNG](screenshots/14-defensive-states-mobile.png) - **imported, SHA-256 verified** |
 
 ## Source locations to recover
 
 - Project: ChatGPT **Microsoft Competition** Library, 11 October 2026.
-- Batch 2 pack: `MatchDesk_SunsetStudio_Batch2_ReviewPack.zip` (7 HTML files plus 14 desktop/mobile PNGs).
+- Batch 2 pack: `MatchDesk_SunsetStudio_Batch2_ReviewPack.zip` (seven original HTML references plus 14 original desktop/mobile PNGs). All 14 PNGs are now committed and SHA-256 recorded. Source archive SHA-256: `b99b29667d7f088536b041ed50a3b3244612826599543f5da2a973772a8fe959`. Original archive review notes are historically labelled review-only, before subsequent owner design approval.
 - Batch 1: the seven confirmed Sunset Studio desktop-and-mobile concept boards are named `image-gen-1(1).png` through `image-gen-7(1).png` (literal parentheses included). They have been visually inspected and mapped to screens 01-07. These are composite visual concepts, **not** individually exportable desktop/mobile screenshots and **not** production-valid match data. The earlier `image-gen-1.png` is a separate *Final Design Review* board and is not screen 01. The `image-gen-2.png` through `image-gen-7.png` series has not been substituted for the approved individual source files.
 - Later review-only engineering candidate: `MatchDesk_UI01_SunsetStudio_ReviewOnly.zip` - **not** an approved design-asset replacement or a production commit.
 
@@ -45,7 +45,7 @@ Original files remain in the Microsoft Competition Library. File sizes below wer
 
 ## Batch 2 exact screenshot filenames
 
-These are the 14 **original** PNG exports in `MatchDesk_SunsetStudio_Batch2_ReviewPack.zip`; all remain pending exact-byte import.
+These are the 14 **original** PNG exports from `MatchDesk_SunsetStudio_Batch2_ReviewPack.zip`; all are now committed at `docs/design/screenshots/` with matching Git blob identity. Their checksums and dimensions are listed in [asset-checksums.json](asset-checksums.json).
 
 | Screen | Desktop PNG | Mobile PNG |
 |---|---|---|

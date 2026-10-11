@@ -2,7 +2,7 @@
 
 **Approved visual direction:** Sunset Studio (Colour Option F), 11 October 2026.
 **Scope:** 14 responsive screen designs (desktop and mobile review).
-**Archive state:** PARTIAL - seven Batch 2 interactive HTML prototypes are committed here; the original PNG renders and seven Batch 1 raster screens have not yet been imported.
+**Archive state:** PARTIAL OVERALL - Batch 2 is fully archived (seven design HTML prototypes and 14 byte-verified original desktop/mobile PNGs). Seven approved Batch 1 concept PNGs for screens 01-07 remain pending exact-byte import.
 
 This is the authoritative *approved visual direction* for future MatchDesk front-end work. Approval of the mock-ups is not approval to enable production login, producer mutations, publishing, or other privileged features. The present API and security boundaries remain authoritative.
 
@@ -24,6 +24,22 @@ This is the authoritative *approved visual direction* for future MatchDesk front
 - [14 Defensive States](prototypes/14-defensive-states.html)
 
 Each prototype is a self-contained concept with inline CSS, SVG and local demo interactions. Open a trusted local copy to review; do not deploy these HTML files directly to the Next.js application. Interactions, fixture values and badges are illustrative and must not be mistaken for verified backend state.
+
+## Original approved Batch 2 PNGs
+
+The exact 14 desktop/mobile PNG files from the attached approved review pack are now archived under [screenshots](screenshots/) with original bytes intact. [SHA-256 manifest](asset-checksums.json) records dimensions, exact byte counts and digests.
+
+| Screen | Desktop original | Mobile original |
+|---|---|---|
+| 08 Producer Review Queue | [1440px](screenshots/08-producer-review-queue-desktop.png) | [390px](screenshots/08-producer-review-queue-mobile.png) |
+| 09 Story & Commentary Composer | [1440px](screenshots/09-story-commentary-composer-desktop.png) | [390px](screenshots/09-story-commentary-composer-mobile.png) |
+| 10 Review & Publication Journey | [1440px](screenshots/10-review-publication-future-state-desktop.png) | [390px](screenshots/10-review-publication-future-state-mobile.png) |
+| 11 Audience Experience | [1440px](screenshots/11-audience-experience-desktop.png) | [390px](screenshots/11-audience-experience-mobile.png) |
+| 12 Activity, Audit & Settings | [1440px](screenshots/12-activity-audit-settings-desktop.png) | [390px](screenshots/12-activity-audit-settings-mobile.png) |
+| 13 Notification & Dialogue Library | [1440px](screenshots/13-notification-dialogue-library-desktop.png) | [390px](screenshots/13-notification-dialogue-library-mobile.png) |
+| 14 Defensive States | [1440px](screenshots/14-defensive-states-desktop.png) | [390px](screenshots/14-defensive-states-mobile.png) |
+
+Original source pack: `MatchDesk_SunsetStudio_Batch2_ReviewPack.zip`; SHA-256: `b99b29667d7f088536b041ed50a3b3244612826599543f5da2a973772a8fe959`. The archived screen designs remain visual references only, not certified functionality or verified live match data. Batch 1 source files remain uncommitted until supplied.
 
 ## Preserved design language
 
@@ -53,4 +69,4 @@ Run the importer regression suite locally before use:
 python -m unittest discover -s docs/design/tools -p 'test_*.py' -v
 ```
 
-The importer uses only Python's standard library. Local synthetic tests exercise archive-path safety, strict filenames, PNG integrity, missing sources, conflicts, repeat imports and checksum tampering. They do **not** establish that the still-unavailable original PNGs were successfully imported, nor do they replace project CI or human visual review.
+The importer uses only Python's standard library. Local synthetic tests exercise archive-path safety, strict filenames, PNG integrity, missing sources, conflicts, repeat imports and checksum tampering. The 14 **Batch 2 originals** have additionally passed actual source-file inspection and exact Git blob identity checks. The seven **Batch 1 originals** remain unavailable for byte validation. None of these checks replaces application CI, human design review or the production security gates.

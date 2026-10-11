@@ -1,0 +1,132 @@
+{
+  "schema_version": 1,
+  "design": "Sunset Studio (Colour Option F)",
+  "items": [
+    {
+      "path": "screenshots/08-producer-review-queue-desktop.png",
+      "source_name": "08-producer-review-queue-desktop.png",
+      "sha256": "a70e69131a3476fa3c98b077b7db23bc867aa6c66a56b9716a9a61ca23bbbf15",
+      "size_bytes": 370097,
+      "width": 1440,
+      "height": 1095,
+      "source_batch": "batch2"
+    },
+    {
+      "path": "screenshots/08-producer-review-queue-mobile.png",
+      "source_name": "08-producer-review-queue-mobile.png",
+      "sha256": "33d3e868ba2d031943cb22774ca5b12d9c0091748f5b681a866f0e7f144108b8",
+      "size_bytes": 235086,
+      "width": 390,
+      "height": 2081,
+      "source_batch": "batch2"
+    },
+    {
+      "path": "screenshots/09-story-commentary-composer-desktop.png",
+      "source_name": "09-story-commentary-composer-desktop.png",
+      "sha256": "6db9ccfc347b7b9c9dd954e5198cc993888d6a7cbee3413fe40115b303d2a13d",
+      "size_bytes": 374416,
+      "width": 1440,
+      "height": 1076,
+      "source_batch": "batch2"
+    },
+    {
+      "path": "screenshots/09-story-commentary-composer-mobile.png",
+      "source_name": "09-story-commentary-composer-mobile.png",
+      "sha256": "77657f071fc37d0e4f172c288b81a8e61d6a8c359e1fde8785ea763a9c469936",
+      "size_bytes": 235139,
+      "width": 390,
+      "height": 1767,
+      "source_batch": "batch2"
+    },
+    {
+      "path": "screenshots/10-review-publication-future-state-desktop.png",
+      "source_name": "10-review-publication-future-state-desktop.png",
+      "sha256": "b8dac91a21131b36bc0a1cf63739e216c51eacc7a84e07867c9bbc6ec36e76cf",
+      "size_bytes": 405166,
+      "width": 1440,
+      "height": 1172,
+      "source_batch": "batch2"
+    },
+    {
+      "path": "screenshots/10-review-publication-future-state-mobile.png",
+      "source_name": "10-review-publication-future-state-mobile.png",
+      "sha256": "3e40d92e3a46de34091e5b279243407924083c2d97f9d86ee5f7ead487a45ac9",
+      "size_bytes": 236412,
+      "width": 390,
+      "height": 1762,
+      "source_batch": "batch2"
+    },
+    {
+      "path": "screenshots/11-audience-experience-desktop.png",
+      "source_name": "11-audience-experience-desktop.png",
+      "sha256": "57ee197111e53c0758c922d4ea1c54335f1211d06f618be6f4b048625a04ffda",
+      "size_bytes": 414150,
+      "width": 1440,
+      "height": 1092,
+      "source_batch": "batch2"
+    },
+    {
+      "path": "screenshots/11-audience-experience-mobile.png",
+      "source_name": "11-audience-experience-mobile.png",
+      "sha256": "bbc22fa3e813017d826a4df4037810282e9ccac1ca6c0b66d305304656172010",
+      "size_bytes": 258602,
+      "width": 390,
+      "height": 1678,
+      "source_batch": "batch2"
+    },
+    {
+      "path": "screenshots/12-activity-audit-settings-desktop.png",
+      "source_name": "12-activity-audit-settings-desktop.png",
+      "sha256": "af7ec5f0628a766f2689c552ab52b32c889080ac84594562ba5b5e67be58863e",
+      "size_bytes": 323817,
+      "width": 1440,
+      "height": 910,
+      "source_batch": "batch2"
+    },
+    {
+      "path": "screenshots/12-activity-audit-settings-mobile.png",
+      "source_name": "12-activity-audit-settings-mobile.png",
+      "sha256": "e8eb7d64e2a950a41cc7a260665490c6760a809f83da788848a8e764b753ef53",
+      "size_bytes": 193431,
+      "width": 390,
+      "height": 2083,
+      "source_batch": "batch2"
+    },
+    {
+      "path": "screenshots/13-notification-dialogue-library-desktop.png",
+      "source_name": "13-notification-dialogue-library-desktop.png",
+      "sha256": "59f288ad88bc0a9c84928d0fba1c13ed497ffce3ecc1dfa29af2d4b13bb56c67",
+      "size_bytes": 370046,
+      "width": 1440,
+      "height": 1296,
+      "source_batch": "batch2"
+    },
+    {
+      "path": "screenshots/13-notification-dialogue-library-mobile.png",
+      "source_name": "13-notification-dialogue-library-mobile.png",
+      "sha256": "def5f665b30d9b795b0aa931dc6addf80ffc78df6ebe65a1f40c8bf9b38b5ae3",
+      "size_bytes": 253093,
+      "width": 390,
+      "height": 2292,
+      "source_batch": "batch2"
+    },
+    {
+      "path": "screenshots/14-defensive-states-desktop.png",
+      "source_name": "14-defensive-states-desktop.png",
+      "sha256": "bbf05df3164332a2230b68c1942fbd696b3f80d0ced020da41a9db18233b33bc",
+      "size_bytes": 306436,
+      "width": 1440,
+      "height": 1112,
+      "source_batch": "batch2"
+    },
+    {
+      "path": "screenshots/14-defensive-states-mobile.png",
+      "source_name": "14-defensive-states-mobile.png",
+      "sha256": "a5c19fe8ccabeeba8e3d6c2e4e422b69e4fc5500de46edb4b2f728d2239c263b",
+      "size_bytes": 231148,
+      "width": 390,
+      "height": 1995,
+      "source_batch": "batch2"
+    }
+  ]
+}
