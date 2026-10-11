@@ -135,9 +135,7 @@ def test_valid_evidence_bound_grant_produces_non_execution_receipt(tmp_path: Pat
 
 
 @pytest.mark.parametrize("field", [name for name, _ in FILES])
-def test_each_tampered_evidence_file_denies_before_reservation(
-    tmp_path: Path, field: str
-) -> None:
+def test_each_tampered_evidence_file_denies_before_reservation(tmp_path: Path, field: str) -> None:
     """All seven evidence inputs must be re-read, not copied from the grant."""
     root, facts = fixture(tmp_path)
     key = Ed25519PrivateKey.generate()
