@@ -31,3 +31,9 @@
 8. Presentation and release-readiness evidence.
 
 **A phase stops on failing CI or absent evidence.** The attached brief's target metrics remain acceptance goals, not observed test results.
+
+## AA palette and label acceptance (11 October 2026)
+
+The delivered v3 uses the design's source palette except for one **accessibility-bound text swatch**: the dark `--md-subtle` value from the original brief (`#768898`) measures approximately **3.68:1 against `#23303c` raised panels** and **4.39:1 against `#19222d` panels**. It cannot satisfy the brief's 4.5:1 text requirement. The implementation uses `#8b9bac` (approximately **4.73:1** against the raised panel) and records the divergence rather than pretending exact colour compliance. Decorative `--md-line` remains unchanged; a new `--md-ui-stroke` token distinguishes essential control boundaries at or above 3:1 on each theme's backgrounds. Secondary labels, metadata, chips and mobile navigation are raised to a **12px minimum**.
+
+New Playwright checks sample the actual rendered custom-property values for both themes, all three surfaces, legible foreground tokens and essential UI outlines. They are automated contrast/typography checks, **not** a replacement for an axe pass or manual screen-reader/zoom testing.

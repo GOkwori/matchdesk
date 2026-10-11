@@ -4,9 +4,10 @@
   --md-panel: #19222d;
   --md-raised: #23303c;
   --md-line: #32404e;
+  --md-ui-stroke: #91a1ae; /* Required control boundary, >= 3:1 on all three dark surfaces. */
   --md-text: #f5f7fa;
   --md-muted: #a7b4c2;
-  --md-subtle: #768898;
+  --md-subtle: #8b9bac; /* AA text contrast on a raised panel: 4.73:1; source swatch was 3.68:1. */
   --md-accent: #ff9159;
   --md-accent-soft: #ffc084;
   --md-on-accent: #22140c;
@@ -24,6 +25,7 @@
   --md-panel: #ffffff;
   --md-raised: #e9edf0;
   --md-line: #9aaab7;
+  --md-ui-stroke: #677b89; /* Visible form controls on warm light surfaces. */
   --md-text: #14202c;
   --md-muted: #344858;
   --md-subtle: #435362;
@@ -42,6 +44,8 @@
     --md-panel: Canvas;
     --md-raised: Canvas;
     --md-line: CanvasText;
+    --md-ui-stroke: CanvasText;
+    --md-subtle: CanvasText;
     --md-text: CanvasText;
     --md-muted: CanvasText;
     --md-accent: Highlight;

@@ -50,3 +50,30 @@
 .mdv3 .mdv3-skip-link{position:fixed;z-index:100;left:16px;top:-100px;padding:10px 16px;border:2px solid var(--md-accent);border-radius:var(--md-radius);background:var(--md-panel);color:var(--md-text)}
 .mdv3 .mdv3-skip-link:focus{top:12px}
 .mdv3 #mdv3-main:focus{outline:none}
+
+/* Phase 1 accessibility gate: metadata and state labels have a 12px floor. */
+.mdv3 .mdv3-side-label,
+.mdv3 .mdv3-kicker,
+.mdv3 .mdv3-nav-tag,
+.mdv3 .mdv3-top-left > span,
+.mdv3 .mdv3-score-mid small,
+.mdv3 .mdv3-team small,
+.mdv3 .mdv3-status,
+.mdv3 .mdv3-event-type,
+.mdv3 .mdv3-feed-button small,
+.mdv3 .mdv3-aggregate-grid span,
+.mdv3 .mdv3-aggregate-grid small,
+.mdv3 .mdv3-footer,
+.mdv3 .mdv3-mobile-nav small {
+  font-size: 12px;
+}
+/* Decorative divider strokes are intentionally quieter than control outlines. */
+.mdv3 .mdv3-secondary,
+.mdv3 .mdv3-theme-label select,
+.mdv3 .mdv3-tactical-filters select {
+  border-color: var(--md-ui-stroke);
+}
+.mdv3 #mdv3-main:focus {
+  outline: 2px solid var(--md-accent);
+  outline-offset: 3px;
+}
