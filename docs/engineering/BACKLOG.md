@@ -104,7 +104,8 @@ P3-05: [producer PostgreSQL SQL-boundary qualification](../evidence/phase3e-prod
 |---|---|---|
 | P3-05-ID1: workforce issuer, signature and host entitlements | IN PROGRESS | Offline JWT denial and cross-realm regression tests; exact-head CI |
 | P3-05-ID2: customer broker, provider federation and identity mapping | PLANNED | External ID issuer/audience separation, account-link consent and collision tests |
-| P3-05-ID3: protected browser/BFF sessions | PLANNED | Code+PKCE, state, CSRF, MFA, logout, replay and revocation |
+| P3-05-ID3: protected browser/BFF sessions | IN PROGRESS | Offline OIDC flow and session boundaries tested; live provider, BFF deployment, workforce MFA and complete sandbox UAT remain blocked |
+| P3-05-ID3H: controlled customer migration | IN PROGRESS | Disposable replay, legacy catalog, negative-path, restore and receipt-clone tests; historical target proof and enforced human release approval outstanding; [operator hold points](../operations/id3h-controlled-release.md) |
 | P3-05-ID4: provider activation | PLANNED | Provider-by-provider real sandbox UAT; cost and secret governance |
 | P3-05-ID5: authenticated producer commands | PLANNED | Workforce MFA, session grants, atomic audit, end-to-end security and human approval |
 
