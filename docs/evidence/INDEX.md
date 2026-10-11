@@ -3,6 +3,26 @@
 Results are tied to source commits and execution environments. A passing build is not
 an approval to deploy, and evidence from one source is not relabelled as another.
 
+## ID3K disposable dual-principal catalog binding — 11 October 2026
+
+- [ID3K exact-source qualification](id3k-principal-catalog-qualification-20261011.md)
+  covers separate synthetic delegated-human and app-only workload JWTs,
+  host-owned inspection entitlements, fail-closed identity/drift checks,
+  receipt non-execution and explicit real-identity/DB integration blockers.
+- Qualified source `8d970252c71920edbb8fe96dd1a699b0cbc7fd60`:
+  Foundation CI [38165623514](https://github.com/GOkwori/matchdesk/actions/runs/38165623514)
+  (1,123 tests, 95.84% global coverage; 85% ID3K module),
+  Foundation integration [38165623452](https://github.com/GOkwori/matchdesk/actions/runs/38165623452)
+  (real **ID3J**, 24 browser tests, image-security verdict), Source security
+  [38165623486](https://github.com/GOkwori/matchdesk/actions/runs/38165623486)
+  and Dependency audit
+  [38165623494](https://github.com/GOkwori/matchdesk/actions/runs/38165623494)
+  **all passed on the same source**.
+- ID3K's database cursor and keys are still synthetic. Neither live Entra
+  MFA nor combined end-to-end identity-bound PostgreSQL nor write-time
+  authorization has been qualified. The earlier Ruff formatting failure
+  remains recorded.
+
 ## ID3J real disposable PostgreSQL catalog qualification — 11 October 2026
 
 - [ID3J exact-source qualification](id3j-postgres-catalog-qualification-20261011.md)

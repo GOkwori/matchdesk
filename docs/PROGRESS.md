@@ -10,6 +10,25 @@ history-secrets, codeql-python and codeql-javascript-typescript. The dedicated
 [Phase 0 closure record](evidence/phase0-closure-20261008.md) contains the exact
 merge SHAs, workflow run IDs, controls and remaining boundaries.
 
+## ID3K offline dual-principal catalog binding — 11 October 2026
+
+**TESTED in synthetic, non-executing CI only.** Exact source
+`8d970252c71920edbb8fe96dd1a699b0cbc7fd60` passed Foundation CI
+38165623514 (1,123 Python tests, 95.84% package coverage; 85% ID3K
+module), Foundation integration 38165623452 (existing real ID3J
+PostgreSQL role checks, 24 browser tests, native-image verdict),
+Source security 38165623486 and Dependency audit 38165623494.
+The original `ed9b1dc` Ruff formatting failure is retained.
+
+ID3K verifies two independently scoped, **synthetically signed** JWT
+principals, host-supplied read-only entitlements and two ID3J catalog
+inspection results, returning a non-execution receipt. Its unit
+database is mocked; no real Entra/MFA, federation, combined real
+database binding or live execution authority has been qualified.
+[ID3K exact-source qualification](evidence/id3k-principal-catalog-qualification-20261011.md).
+All production releases, existing-database mutations, customer-provider
+activation and unapproved spend remain **BLOCKED**.
+
 ## ID3J disposable PostgreSQL catalog qualification — 11 October 2026
 
 **TESTED for real PostgreSQL privilege inspection in disposable CI only.**
