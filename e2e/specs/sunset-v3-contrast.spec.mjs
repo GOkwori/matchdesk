@@ -33,7 +33,7 @@ test('CSS hex shorthand expands without altering WCAG ratios', () => {
 
 /** Probe computed UI colours, as tokens alone can conceal hard-coded failures. */
 function rgbToHex(value) {
-  const channels = value.match(/\\d+/g)?.slice(0, 3).map(Number);
+  const channels = value.match(/[0-9]+/g)?.slice(0, 3).map(Number);
   expect(channels, 'Expected three computed RGB channels').toHaveLength(3);
   return '#' + channels.map(c => c.toString(16).padStart(2, '0')).join('');
 }
