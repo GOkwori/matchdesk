@@ -84,23 +84,22 @@ jobs:
           uv run --no-sync ruff check --select I --fix backend scripts
           uv run --no-sync ruff format backend scripts
           git diff --binary -- backend scripts > artifacts/python/formatting-suggestion.patch
-      - name: Prequalify uncommitted ID3G authorization helper with locked tooling
+      - name: Qualify committed ID3G authorization helper with locked tooling
         id: id3g_authorization_preflight
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: |
           set -euo pipefail
-          # Only stage temporary copies on this runner; the application tree
-          # remains unchanged in the Git repository until qualification passes.
+          # Check the exact previously qualified source and tests at runtime paths;
+          # reject divergence from their reviewed qualification copies.
           source_dir=qualification/id3g/http_preflight
           target_src=backend/src/matchdesk/domain/customer_session_authorization.py
           target_test=backend/tests/test_customer_session_authorization.py
-          test ! -e "$target_src"
-          test ! -e "$target_test"
+          test -f "$target_src"
+          test -f "$target_test"
           test "$(git hash-object "$source_dir/customer_session_authorization.py")" = 35e138310b9b4e7bb47f76d406ffdc904589d071
           test "$(git hash-object "$source_dir/test_customer_session_authorization.py")" = fd18e8caa86c9f16c62000d06bfd6085f33ccd4f
-          trap 'rm -f "$target_src" "$target_test"' EXIT
-          cp "$source_dir/customer_session_authorization.py" "$target_src"
-          cp "$source_dir/test_customer_session_authorization.py" "$target_test"
+          test "$(git hash-object "$target_src")" = 35e138310b9b4e7bb47f76d406ffdc904589d071
+          test "$(git hash-object "$target_test")" = fd18e8caa86c9f16c62000d06bfd6085f33ccd4f
           cmp -s "$source_dir/customer_session_authorization.py" "$target_src"
           cmp -s "$source_dir/test_customer_session_authorization.py" "$target_test"
           # The exact locked quality versions come from uv sync above.
