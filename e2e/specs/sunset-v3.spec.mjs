@@ -65,8 +65,8 @@ test('custom approval-blocked dialog traps and restores keyboard focus', async (
   await expect(opener).toBeFocused();
 });
 
-test('responsive screens remain usable at mobile, tablet and desktop breakpoints', async ({ page }) => {
-  for (const width of [390, 768, 1280, 1440]) {
+test('responsive screens remain usable at mobile, tablet and desktop breakpoints', async ({ page }, testInfo) => {
+  for (const width of [390, 768, 1024, 1280, 1440]) {
     await page.setViewportSize({ width, height: width < 800 ? 844 : 1000 });
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
@@ -76,4 +76,24 @@ test('responsive screens remain usable at mobile, tablet and desktop breakpoints
   await page.getByRole('button', { name: /Explore synthetic demo/ }).click();
   await expect(page.getByRole('heading', { name: 'Intelligence Overview' })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+
+  // Review captures, not approved pixel baselines: both themes and 3 widths.
+  for (const width of [390, 1024, 1440]) {
+    await page.setViewportSize({ width, height: width === 390 ? 844 : 1000 });
+    for (const theme of ['dark', 'light']) {
+      await page.goto('/sunset-v3');
+      await page.getByLabel('Display theme').selectOption(theme);
+      await expect(page.getByRole('heading', { level: 1 })).toContainText('Turn football');
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      await testInfo.attach(`sunset-v3-welcome-${theme}-${width}px`, {
+        body: await page.screenshot({ fullPage: true }), contentType: 'image/png',
+      });
+      await page.getByRole('button', { name: /Explore synthetic demo/ }).click();
+      await expect(page.getByRole('heading', { name: 'Intelligence Overview' })).toBeVisible();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      await testInfo.attach(`sunset-v3-overview-${theme}-${width}px`, {
+        body: await page.screenshot({ fullPage: true }), contentType: 'image/png',
+      });
+    }
+  }
 });
