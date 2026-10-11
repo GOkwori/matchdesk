@@ -531,6 +531,17 @@ jobs:
           grep -F "ID3H legacy preflight expects no existing receipt ledger" \
             artifacts/integration/id3h-receipt-rejected.log >/dev/null
           echo "MATCHDESK_ID3H_REPLAY_PROTECTION_PASS"
+      - name: Rehearse ID3H isolated backup, restore, and clone revocation
+        id: id3h_restore
+        if: ${{ !cancelled() && steps.id3h_replay_preflight.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          candidate=qualification/id3h/disposable_backup_restore.sh
+          test "$(git hash-object "$candidate")" = 20fcd1caf52c664d9e6409386a120280e2c4c353
+          bash -n "$candidate"
+          bash "$candidate" 2>&1 | tee artifacts/integration/id3h-backup-restore.log
+          grep -Fx "MATCHDESK_ID3H_DISPOSABLE_RESTORE_PASS" \
+            artifacts/integration/id3h-backup-restore.log >/dev/null
       - name: Install locked browser harness and matching Chromium
         id: browser
         if: ${{ !cancelled() && steps.start.outcome == 'success' }}
