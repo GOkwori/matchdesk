@@ -33,6 +33,18 @@ jobs:
           git rev-parse HEAD > artifacts/python/source-commit.txt
           python --version > artifacts/python/python-version.txt
           sha256sum pyproject.toml uv.lock > artifacts/python/dependency-hashes.txt
+      # Design-reference imports are intentionally offline. Run their stdlib-only
+      # regressions on every commit, not just in an untracked developer checkout.
+      # Keep this before dependency installation so the check stays independent.
+      - name: Validate approved Sunset Studio asset importer
+        run: |
+          set -euo pipefail
+          test -f docs/design/tools/import_approved_assets.py
+          test -f docs/design/tools/test_import_approved_assets.py
+          python -m unittest discover -s docs/design/tools -p 'test_*.py' -v 2>&1 | tee artifacts/python/design-asset-importer.log
+          # An accidentally empty test suite must not result in a green gate.
+          grep -Eq '^Ran [1-9][0-9]* tests? in ' artifacts/python/design-asset-importer.log
+          grep -qx 'OK' artifacts/python/design-asset-importer.log
       - name: Require reviewed dependency locks
         run: test -f uv.lock && test -f apps/web/package-lock.json
       - name: Install the pinned package manager
