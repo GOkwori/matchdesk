@@ -414,6 +414,54 @@ jobs:
         if: ${{ !cancelled() && steps.directory_gate.outcome == 'success' && steps.id3g_role_probe.outcome == 'success' }}
         run: |
           test "${{ steps.id3g_revocation_qa.outcome }}" = success
+      - name: Qualify ID3H one-time migration candidate in disposable PostgreSQL
+        id: id3h_replay_preflight
+        if: ${{ !cancelled() && steps.id3g_revocation_gate.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          candidate=qualification/id3h/005_customer_account_revocation_once_REVIEW_ONLY.sql
+          test "$(git hash-object "$candidate")" = 52e2f4c4730fc2ae12f8bae180a895f193d59784
+          # The original migration has already been qualified in this isolated
+          # database. The candidate is evaluated here only, never on a live DB.
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+            psql --no-psqlrc -X -v ON_ERROR_STOP=1 -U matchdesk -d matchdesk \
+              < "$candidate" > artifacts/integration/id3h-first-application.log
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+            psql --no-psqlrc -X -v ON_ERROR_STOP=1 -U matchdesk -d matchdesk <<'SQL'
+          -- This new session exists only AFTER the protected application.
+          INSERT INTO public.matchdesk_customer_sessions
+            (token_hash, issuer, tenant_id, subject, account_id, realm,
+             created_at, expires_at, last_seen_at, revoked)
+          VALUES
+            (repeat('d', 64),
+             'https://ci.ciamlogin.com/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/v2.0',
+             'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+             'ci-registered', 'ci-1', 'customer',
+             now(), now() + interval '1 hour', now(), FALSE);
+          SQL
+          # An expected error must never be suppressed as a false PASS.
+          if docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+               psql --no-psqlrc -X -v ON_ERROR_STOP=1 -U matchdesk -d matchdesk \
+               < "$candidate" > artifacts/integration/id3h-replay.log 2>&1; then
+            echo "ID3H ERROR: replay unexpectedly succeeded" >&2
+            exit 1
+          fi
+          grep -F "Customer revocation migration already applied" \
+            artifacts/integration/id3h-replay.log >/dev/null
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+            psql --no-psqlrc -X -v ON_ERROR_STOP=1 -U matchdesk -d matchdesk <<'SQL'
+          DO $assert$
+          BEGIN
+            IF (SELECT COUNT(*) FROM public.matchdesk_customer_security_migrations
+                WHERE migration_id = 'P3-05-ID3G-005') <> 1
+               OR (SELECT COUNT(*) FROM public.matchdesk_customer_sessions
+                   WHERE token_hash = repeat('d', 64) AND revoked = FALSE) <> 1 THEN
+              RAISE EXCEPTION 'ID3H replay altered receipt or valid session';
+            END IF;
+          END;
+          $assert$;
+          SQL
+          echo "MATCHDESK_ID3H_REPLAY_PROTECTION_PASS"
       - name: Install locked browser harness and matching Chromium
         id: browser
         if: ${{ !cancelled() && steps.start.outcome == 'success' }}
