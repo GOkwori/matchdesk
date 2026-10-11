@@ -1,0 +1,45 @@
+/* Screens 05–07: source-grounded, read-only editorial journey. */
+.mdv3 .mdv3-journey-summary{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:15px 0;padding:15px 18px;background:var(--raised);border:1px solid var(--md-ui-stroke);border-radius:10px}
+.mdv3 .mdv3-journey-summary span{flex:1;min-width:220px;color:var(--muted)}
+.mdv3 .mdv3-journey-layout{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,.9fr);gap:15px;margin:16px 0}
+.mdv3 .mdv3-journey-stack{display:grid;align-content:start;gap:15px;min-width:0}
+.mdv3 .mdv3-journey-filter{display:grid;gap:6px;margin:15px 0;color:var(--muted);font-size:13px}
+.mdv3 .mdv3-journey-filter select{background:var(--raised);border:1px solid var(--md-ui-stroke);border-radius:8px;padding:11px;color:var(--text);min-height:44px;max-width:100%}
+.mdv3 .mdv3-timeline{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.mdv3 .mdv3-timeline li{min-width:0}
+.mdv3 .mdv3-timeline-entry{display:grid;grid-template-columns:32px 95px minmax(0,1fr);gap:10px;width:100%;text-align:left;align-items:center;padding:12px 10px;background:var(--raised);color:var(--text);border:1px solid var(--border);border-radius:10px;min-height:60px}
+.mdv3 .mdv3-timeline-selected{border-color:var(--accent);box-shadow:inset 3px 0 var(--accent)}
+.mdv3 .mdv3-timeline-marker{display:grid;place-items:center;color:var(--accent);font-size:18px}
+.mdv3 .mdv3-timeline-clock{font-family:ui-monospace,monospace;font-weight:700}
+.mdv3 .mdv3-timeline-clock small,.mdv3 .mdv3-timeline-title small{display:block;color:var(--muted);font-size:12px;font-weight:400;overflow-wrap:anywhere}
+.mdv3 .mdv3-timeline-title{min-width:0;overflow-wrap:anywhere}
+.mdv3 .mdv3-journey-stack h3,.mdv3 .mdv3-insight-card h3{font-size:16px;margin:14px 0 7px}
+.mdv3 .mdv3-proof-list{list-style:none;margin:13px 0;padding:0;display:grid;gap:8px}
+.mdv3 .mdv3-proof-list li{display:grid;grid-template-columns:minmax(100px,.65fr) minmax(0,1.7fr);gap:12px;border:1px solid var(--border);background:var(--raised);padding:12px;border-radius:8px}
+.mdv3 .mdv3-proof-list li span{overflow-wrap:anywhere;color:var(--muted)}
+.mdv3 .mdv3-journey-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:17px}
+.mdv3 .mdv3-journey-limits,.mdv3 .mdv3-journey-issue{border-left:3px solid var(--md-info)}
+.mdv3 .mdv3-journey-issue{border-left-color:var(--md-warn)}
+.mdv3 .mdv3-journey-retry{padding:10px;border:1px solid var(--md-ui-stroke);background:var(--raised);border-radius:8px}
+.mdv3 .mdv3-journey-steps{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px;list-style:none;padding:0;margin:12px 0 0}
+.mdv3 .mdv3-journey-steps li{display:grid;align-content:start;gap:5px;border:1px solid var(--border);background:var(--raised);border-radius:8px;padding:12px;min-width:0}
+.mdv3 .mdv3-journey-steps li>span{color:var(--accent);font-family:ui-monospace,monospace}
+.mdv3 .mdv3-journey-steps small{color:var(--muted);font-size:12px}
+.mdv3 .mdv3-insight-card{padding:16px 0;border-bottom:1px solid var(--border)}
+.mdv3 .mdv3-claim-scroll{max-width:100%;overflow-x:auto}
+.mdv3 .mdv3-claims-table{border-collapse:collapse;width:100%;min-width:640px;text-align:left}
+.mdv3 .mdv3-claims-table th,.mdv3 .mdv3-claims-table td{padding:13px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+.mdv3 .mdv3-claims-table th[scope=row] small{display:block;color:var(--muted);font-size:12px;font-weight:400}
+.mdv3 .mdv3-claims-table tr[data-selected=true]{background:var(--raised)}
+.mdv3 .mdv3-claims-table th[scope=col]{color:var(--muted);font-size:12px}
+.mdv3 .mdv3-failure{color:var(--md-error)}
+.mdv3 .mdv3-journey-evidence{margin:16px 0}
+.mdv3 .mdv3-proof-calculation{font-family:ui-monospace,monospace;font-size:12px}
+.mdv3 .mdv3-verdict-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:15px}
+.mdv3 .mdv3-verdict-grid>div{display:grid;gap:8px;padding:15px;border:1px solid var(--md-ui-stroke);border-radius:9px}
+.mdv3 .mdv3-verdict-grid span,.mdv3 .mdv3-journey-limitation{color:var(--muted)}
+.mdv3 .mdv3-mobile-nav{overflow-x:auto;grid-auto-flow:column;grid-auto-columns:minmax(70px,1fr);grid-template-columns:none;overscroll-behavior-inline:contain}
+.mdv3 .mdv3-mobile-nav button{min-width:70px}
+.mdv3 .mdv3-mobile-nav small{font-size:12px}
+@media(max-width:1000px){.mdv3 .mdv3-journey-layout{grid-template-columns:1fr}.mdv3 .mdv3-journey-steps{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:700px){.mdv3 .mdv3-journey-steps{grid-template-columns:repeat(2,minmax(0,1fr))}.mdv3 .mdv3-proof-list li{grid-template-columns:1fr;gap:5px}.mdv3 .mdv3-verdict-grid{grid-template-columns:1fr}.mdv3 .mdv3-timeline-entry{grid-template-columns:25px 72px minmax(0,1fr);gap:6px;padding:10px 7px}}

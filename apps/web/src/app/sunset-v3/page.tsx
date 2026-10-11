@@ -7,6 +7,7 @@ import { CommandCentre, TacticalAnalysis } from "./dashboard";
 import { editorial, fixture, latestMoments, matchStatistics } from "./demo-data";
 import "./tokens.css";
 import "./sunset.css";
+import "./journey.css";
 
 type Page = "welcome" | "overview" | "command" | "tactical";
 type Notice = "success" | "information" | "warning";
