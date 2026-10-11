@@ -21,3 +21,9 @@ This is a **design decision**, not evidence of:
 - approval or publication endpoints, permissions or delivery.
 
 The applicable engineering, security, evidence, change-control and release gates still apply.
+
+## Subsequent enhancement approval — Sunset Studio v3
+
+On 11 October 2026, the owner separately approved the **Sunset Studio v3** enhancement as the MatchDesk **frontend implementation baseline** for 14 screens. This supersedes the historical visual implementation direction while preserving the exact earlier approved source-image archive. It is not authorization for live data, production sign-in, publishing or protected-branch promotion.
+
+Screens 01 and 02 are implemented in the isolated Next.js `/sunset-v3` synthetic route. Their exact-source CI/browser evidence is [the v3 acceptance record](sunset-v3-implementation-acceptance-20261011.md). The remaining screens are design requirements only. Batch 1 originals are SHA-256 verified outside Git but cannot be described as committed until their exact PNG blobs and 21-entry manifest are in the repo.

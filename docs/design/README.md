@@ -6,6 +6,14 @@
 
 This is the authoritative *approved visual direction* for future MatchDesk front-end work. Approval of the mock-ups is not approval to enable production login, producer mutations, publishing, or other privileged features. The present API and security boundaries remain authoritative.
 
+## Sunset Studio v3 implementation baseline — 11 October 2026
+
+The owner explicitly approved the Sunset Studio v3 enhancement as the **14-screen frontend implementation baseline**. This supersedes the earlier approval **for future implementation guidance**, not historical asset provenance: existing approved raster originals remain immutable and cannot be silently replaced.
+
+[Exact-source v3 screens 01–02 browser and security acceptance](sunset-v3-implementation-acceptance-20261011.md) confirms 4/4 PASS on `489b7cf4084ce90f4ddc549dd515fdc6eee5b1c5` (36 Playwright tests across desktop/tablet/mobile; includes 12 new v3 checks). Only the `/sunset-v3` synthetic read-only route is implemented. No real authentication, editor approval, publishing or cloud release is enabled.
+
+The original Batch 1 concept PNGs have been byte-verified outside Git and a binary import patch has passed offline roundtrip; **the seven actual source images are still missing from this Git repository**. Overall original-image archive status is **PARTIAL** until they and the 21-image manifest are committed. Treat the v3 review pack as approved design requirements, not as evidence that screens 03–14 have React implementations.
+
 ## Start here
 
 - [Approval and design provenance](design-approval.md)

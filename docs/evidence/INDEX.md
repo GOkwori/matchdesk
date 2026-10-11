@@ -1,5 +1,10 @@
 # Evidence index
 
+## Sunset Studio v3 frontend screens 01–02 — 11 October 2026
+
+- [Exact-source UI qualification and implementation approval](../design/sunset-v3-implementation-acceptance-20261011.md): implementation commit `489b7cf4084ce90f4ddc549dd515fdc6eee5b1c5` passed Foundation CI `38165967495`, Foundation integration `38165967490`, Source security `38165967516`, and Dependency audit `38165967501`. Playwright: 36 passed, including 12 new synthetic-only v3 tests at three viewport projects. No production authority.
+- Batch 1 original PNGs remain **uncommitted** despite exact local SHA-256/byte checks and a tested binary patch. Archive status remains partial until seven PNG blobs and combined 21-entry manifest exist in Git.
+
 Results are tied to source commits and execution environments. A passing build is not
 an approval to deploy, and evidence from one source is not relabelled as another.
 
