@@ -36,10 +36,17 @@ def _diagnose_disposable_denial(connection: psycopg.Connection) -> None:
             flush=True,
         )
     except Exception as exc:
+        # The SQL is a constant over a fresh disposable database and contains
+        # no credentials. Bound the server's primary message and never dump
+        # parameter values, connection strings or full diagnostic context.
+        primary = ""
+        if isinstance(exc, psycopg.Error):
+            primary = " ".join((exc.diag.message_primary or "").split())[:160]
         print(
             "MATCHDESK_ID3J_CI_DIAG query_error "
             f"class={type(exc).__name__} "
-            f"sqlstate={getattr(exc, 'sqlstate', None)}",
+            f"sqlstate={getattr(exc, 'sqlstate', None)} "
+            f"primary={primary}",
             flush=True,
         )
 
