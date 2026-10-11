@@ -51,6 +51,10 @@ Original source pack: `MatchDesk_SunsetStudio_Batch2_ReviewPack.zip`; SHA-256: `
 
 **Important:** Visual concepts contain known design-data and accessibility discrepancies; [implementation-guardrails.md](implementation-guardrails.md) is required reading before implementation. The screenshot-only sources are NOT silently replaced with generated alternatives.
 
+## Batch 1 original-file archival policy
+
+**Owner decision (11 October 2026): Option B — strict per-screen originals.** The seven previously supplied paired review-board images are references only and **must not** be cropped, relabelled or substituted as the seven approved Batch 1 originals. The archive remains PARTIAL until the exact `image-gen-1(1).png` through `image-gen-7(1).png` files are imported byte-for-byte with SHA-256 proof. See [the Batch 1 decision and import gate](asset-register.md#batch-1-archive-decision--option-b-11-october-2026).
+
 ## Importing the original approved PNGs
 
 Use the repository's [approved-asset importer](tools/import_approved_assets.py) only with the exact original assets. It accepts the original `MatchDesk_SunsetStudio_Batch2_ReviewPack.zip` and the folder containing `image-gen-1(1).png` to `image-gen-7(1).png`.

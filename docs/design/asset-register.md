@@ -57,6 +57,17 @@ These are the 14 **original** PNG exports from `MatchDesk_SunsetStudio_Batch2_Re
 | 13 | `13-notification-dialogue-library-desktop.png` | `13-notification-dialogue-library-mobile.png` |
 | 14 | `14-defensive-states-desktop.png` | `14-defensive-states-mobile.png` |
 
+## Batch 1 archive decision — Option B (11 October 2026)
+
+The owner explicitly selected **Option B: strict per-screen original archive**. Seven supplied paired review boards spanning pages 01–14 can help confirm the visual direction, but **do not** satisfy Batch 1's original-file requirement and are not to be recorded as original per-screen exports.
+
+- Require precisely the seven approved original PNG files `image-gen-1(1).png` through `image-gen-7(1).png`, in the established screen order 01–07. Preserve each file's original encoded bytes, exact filename and full composition (desktop and mobile may appear together in the original concept image).
+- **Do not** crop/split paired review boards, rename another variant into the original name, redraw, regenerate or transcode a concept image to satisfy the archive requirement. If an exact original is unavailable, keep that screen **PENDING**.
+- Before import, independently inspect the source PNG for the correct screen, verify signature, chunk integrity, dimensions and the reference byte count in the table below; compute SHA-256 from its actual bytes.
+- Store the exact imported files under `docs/design/concepts/`, append those verified SHA-256 entries to `docs/design/asset-checksums.json` while preserving Batch 2's existing entries, and confirm the corresponding Git blobs match.
+- Set status to **COMPLETE** only after all seven originals are present and the final manifest contains 21 verified PNGs. The already-archived Batch 2 images must not be modified. Never infer that visual sign-off means implemented or release-tested UI.
+
+Source location: ChatGPT Library → Microsoft Competition. If the originals cannot be exported from the Library, the repository waits for an owner-supplied ZIP containing the **seven original files**, not the paired review-board series.
 ## Raw-file import requirements
 
 1. Retrieve the original approved image files through an authorised download, owner-provided upload or other supported raw-file export.
