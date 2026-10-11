@@ -76,9 +76,6 @@ def test_changed_evidence_denied(tmp_path: Path) -> None:
             return self.facts
 
     source = SyntheticSource()
-    source.facts = replace(
-        FACTS, **{name: getattr(observed, name) for name in observed.__dataclass_fields__}
-    )
     bound = EvidenceBoundCIHostSource(delegate=source, reader=reader)
     assert bound.observe_release() == source.facts
     (directory / "backup.json").write_bytes(b"changed")
