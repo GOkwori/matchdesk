@@ -291,6 +291,14 @@ def create_customer_session_router(
             revocation_only=True,
         )
         try:
+            # Consult the durable store before mutating it. Do not require an
+            # active account: suspension/revocation must never block logout.
+            # A database outage is not proof of a successful logout.
+            existing = store.load(token)
+            if existing is not None:
+                if not isinstance(existing, CustomerSession) or existing.session_id != token:
+                    raise PermissionError("Customer logout session scope is invalid")
+                existing.__post_init__()
             revoked = store.revoke(token)
             if type(revoked) is not bool:
                 raise TypeError("Invalid customer revocation result")
@@ -312,7 +320,7 @@ def create_customer_session_router(
                     remaining.__post_init__()
         except HTTPException:
             raise
-        except (ValueError, TypeError) as exc:
+        except (PermissionError, ValueError, TypeError) as exc:
             raise HTTPException(
                 status_code=401, detail="Customer logout denied", headers=_headers()
             ) from exc

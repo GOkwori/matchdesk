@@ -140,9 +140,9 @@ jobs:
           test "$(git hash-object "$route")" = f4ba27b71c324b33e34278eec5a0e9a6e25a5816
           test "$(git hash-object "$browser")" = 50e0d3e3b0695b9a508abaf43e4b0281cb78a228
           test "$(git hash-object "$tests")" = f686e9170d663a0e0beb577caf6463dc59a07f43
-          test "$(git hash-object "$qa/customer_session_routes.py")" = f488df7249f964b93a3580a528cf270557917f93
-          test "$(git hash-object "$qa/browser_session_security.py")" = c11a2e51df6040bfc500c4de600917fcfc8d795b
-          test "$(git hash-object "$qa/test_customer_session_routes.py")" = c40b0514d603135f231cfe65eaefa7875d1abda5
+          test "$(git hash-object "$qa/customer_session_routes.py")" = f8ed4f0fc56fb8cdd4c986c477edfd3ea18d0646
+          test "$(git hash-object "$qa/browser_session_security.py")" = bd71b1630ac9731d3ca1df13907a4b7daa35e0d5
+          test "$(git hash-object "$qa/test_customer_session_routes.py")" = f5fc514941621ccc6c0ea82a019b58cbe9bea4dc
           cp "$qa/customer_session_routes.py" "$route"
           cp "$qa/browser_session_security.py" "$browser"
           cp "$qa/test_customer_session_routes.py" "$tests"

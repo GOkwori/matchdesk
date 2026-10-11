@@ -17,7 +17,6 @@ COOKIE_NAME = "__Host-matchdesk_customer"
 POLICY = CustomerBrowserPolicy(public_origin=ORIGIN)
 
 
-
 class Directory:
     """A separate server-owned active-account registry for the exact identity."""
 
@@ -500,6 +499,7 @@ def test_response_construction_failure_revokes_unexposed_successor() -> None:
     assert "private serialization detail" not in response.text
     assert all(session.revoked for session in store.rows.values())
     assert response.headers["Cache-Control"].startswith("no-store")
+
 
 @pytest.mark.parametrize("account_id", [None, "a-different-account"])
 def test_suspended_or_reassigned_account_cannot_read_or_renew(

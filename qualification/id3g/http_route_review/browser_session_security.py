@@ -157,6 +157,7 @@ def authorize_customer_mutation(
         raise PermissionError("Customer CSRF proof does not match this session")
     return record
 
+
 def verify_customer_revocation_proof(
     token: str,
     *,
