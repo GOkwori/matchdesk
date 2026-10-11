@@ -95,9 +95,7 @@ class PinnedEntraHttpsTransport:
             raise PermissionError(_DENIED)
         conn: HTTPSConnection | None = None
         try:
-            conn = HTTPSConnection(
-                _HOST, timeout=5.0, context=ssl.create_default_context()
-            )
+            conn = HTTPSConnection(_HOST, timeout=5.0, context=ssl.create_default_context())
             conn.request(
                 "GET",
                 path,
@@ -110,12 +108,8 @@ class PinnedEntraHttpsTransport:
             )
             response = conn.getresponse()
             headers = response.getheaders()
-            content_types = [
-                value for name, value in headers if name.lower() == "content-type"
-            ]
-            encodings = [
-                value for name, value in headers if name.lower() == "content-encoding"
-            ]
+            content_types = [value for name, value in headers if name.lower() == "content-type"]
+            encodings = [value for name, value in headers if name.lower() == "content-encoding"]
             if (
                 response.status != 200
                 or len(content_types) != 1

@@ -6,7 +6,6 @@ from datetime import datetime, timezone
 import jwt
 import pytest
 from cryptography.hazmat.primitives.asymmetric import rsa
-
 from matchdesk.domain.id3m_workforce_keys import (
     ExplicitWorkforceKeyResolver,
     PinnedEntraHttpsTransport,
@@ -19,7 +18,8 @@ from matchdesk.domain.producer_identity import (
 
 TENANT = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
 POLICY = WorkforceMetadataPolicy(tenant_id=TENANT, max_cache_seconds=300)
-NOW = datetime.fromtimestamp(1800000100, timezone.utc)
+# The existing producer verifier checks real wall-clock validity through PyJWT.
+NOW = datetime.now(timezone.utc)
 
 
 class Clock:
@@ -93,9 +93,7 @@ def prepared():
     private, key = rsa_keys()
     transport = FakeTransport(raw_json(metadata()), raw_json({"keys": [key]}))
     clock = Clock()
-    resolver = ExplicitWorkforceKeyResolver(
-        policy=POLICY, transport=transport, monotonic=clock
-    )
+    resolver = ExplicitWorkforceKeyResolver(policy=POLICY, transport=transport, monotonic=clock)
     return private, key, transport, clock, resolver
 
 
@@ -107,7 +105,10 @@ def test_cold_cache_requires_explicit_refresh_and_never_fetches_from_kid(prepare
     assert resolver.refresh() == 1
     assert resolver.resolve(issuer=POLICY.issuer, kid=key["kid"]) is not None
     assert resolver.resolve(issuer=POLICY.issuer, kid="unknown-ci-key") is None
-    assert resolver.resolve(issuer="https://login.microsoftonline.com/common/v2.0", kid=key["kid"]) is None
+    assert (
+        resolver.resolve(issuer="https://login.microsoftonline.com/common/v2.0", kid=key["kid"])
+        is None
+    )
     assert len(transport.calls) == 2
     clock.value += POLICY.max_cache_seconds
     assert resolver.resolve(issuer=POLICY.issuer, kid=key["kid"]) is None
@@ -140,9 +141,7 @@ def test_refresh_keys_validate_a_real_signed_producer_token(prepared):
         "nbf": timestamp - 30,
         "exp": timestamp + 180,
     }
-    token = jwt.encode(
-        claims, private, algorithm="RS256", headers={"kid": "reviewed-ci-key"}
-    )
+    token = jwt.encode(claims, private, algorithm="RS256", headers={"kid": "reviewed-ci-key"})
     actor = verify_producer_access_token(
         token,
         policy=ProducerIdentityPolicy(
@@ -256,7 +255,9 @@ def test_transport_outage_revokes_previously_cached_keys(prepared):
     assert resolver.resolve(issuer=POLICY.issuer, kid=key["kid"]) is None
 
 
-@pytest.mark.parametrize("tenant", ["common", "organizations", "consumers", TENANT.upper(), "aaaa/../evil", ""])
+@pytest.mark.parametrize(
+    "tenant", ["common", "organizations", "consumers", TENANT.upper(), "aaaa/../evil", ""]
+)
 def test_generic_or_malformed_tenant_policy_is_never_accepted(tenant):
     """The cache is permanently scoped to one concrete workforce tenant."""
     with pytest.raises(ValueError):
@@ -281,7 +282,12 @@ def test_pinned_https_transport_rejects_urls_and_unpinned_paths_without_network(
 
     monkeypatch.setattr("matchdesk.domain.id3m_workforce_keys.HTTPSConnection", forbid)
     transport = PinnedEntraHttpsTransport(POLICY)
-    for path in ("https://evil.example/keys", "//evil.example/", POLICY.keys_path + "?x=1", POLICY.metadata_path + "/"):
+    for path in (
+        "https://evil.example/keys",
+        "//evil.example/",
+        POLICY.keys_path + "?x=1",
+        POLICY.metadata_path + "/",
+    ):
         with pytest.raises(PermissionError):
             transport.get(path, 262144)
     with pytest.raises(PermissionError):
