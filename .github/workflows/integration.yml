@@ -429,9 +429,52 @@ jobs:
             artifacts/integration/id3h-legacy-catalog.log >/dev/null
           # The isolated legacy database must still lack the later receipt.
           echo "MATCHDESK_ID3H_LEGACY_READ_ONLY_PREFLIGHT_PASS"
+      - name: Prove ID3H legacy preflight denies trigger and privilege tampering
+        id: id3h_legacy_negative
+        if: ${{ !cancelled() && steps.id3h_legacy_catalog.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          candidate=qualification/id3h/legacy_catalog_preflight_REVIEW_ONLY.sql
+          test "$(git hash-object "$candidate")" = 6240a844c80c662a8303211d41dac4cec585255a
+          # The CI topology is disposable. Restore every temporary DDL mutation
+          # on all exit paths, including an unexpected acceptance or DB fault.
+          mutate() {
+            docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+              psql --no-psqlrc -X -v ON_ERROR_STOP=1 -U matchdesk -d matchdesk \
+                -c "$1" >/dev/null
+          }
+          restore() {
+            mutate "ALTER TABLE public.matchdesk_customer_accounts ENABLE TRIGGER matchdesk_revoke_sessions_customer_update;" || :
+            mutate "REVOKE EXECUTE ON FUNCTION public.matchdesk_revoke_sessions_for_customer_change() FROM PUBLIC;" || :
+          }
+          trap restore EXIT
+          expect_refused() {
+            local error_text="$1"
+            local evidence_file="$2"
+            if docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+                 psql --no-psqlrc -X -v ON_ERROR_STOP=1 -U matchdesk -d matchdesk \
+                   < "$candidate" > "$evidence_file" 2>&1; then
+              echo "ID3H ERROR: unsafe catalog was accepted" >&2
+              exit 1
+            fi
+            grep -F "$error_text" "$evidence_file" >/dev/null
+          }
+          mutate "ALTER TABLE public.matchdesk_customer_accounts DISABLE TRIGGER matchdesk_revoke_sessions_customer_update;"
+          expect_refused "ID3H legacy catalog trigger fingerprint failed" \
+            artifacts/integration/id3h-disabled-trigger-rejected.log
+          mutate "ALTER TABLE public.matchdesk_customer_accounts ENABLE TRIGGER matchdesk_revoke_sessions_customer_update;"
+          mutate "GRANT EXECUTE ON FUNCTION public.matchdesk_revoke_sessions_for_customer_change() TO PUBLIC;"
+          expect_refused "ID3H legacy PUBLIC definer execution grant detected" \
+            artifacts/integration/id3h-public-execute-rejected.log
+          mutate "REVOKE EXECUTE ON FUNCTION public.matchdesk_revoke_sessions_for_customer_change() FROM PUBLIC;"
+          # A recovered catalog must pass without creating any receipt.
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+            psql --no-psqlrc -X -v ON_ERROR_STOP=1 -U matchdesk -d matchdesk \
+              < "$candidate" > artifacts/integration/id3h-recovered-catalog.log
+          echo "MATCHDESK_ID3H_LEGACY_NEGATIVE_GATES_PASS"
       - name: Qualify ID3H one-time migration candidate in disposable PostgreSQL
         id: id3h_replay_preflight
-        if: ${{ !cancelled() && steps.id3g_revocation_gate.outcome == 'success' && steps.id3h_legacy_catalog.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.id3g_revocation_gate.outcome == 'success' && steps.id3h_legacy_catalog.outcome == 'success' && steps.id3h_legacy_negative.outcome == 'success' }}
         run: |
           set -euo pipefail
           candidate=qualification/id3h/005_customer_account_revocation_once_REVIEW_ONLY.sql
@@ -476,6 +519,17 @@ jobs:
           END;
           $assert$;
           SQL
+          # Once a receipt exists, a legacy-only catalog verification must be
+          # refused rather than silently treating a protected DB as legacy.
+          if docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+               psql --no-psqlrc -X -v ON_ERROR_STOP=1 -U matchdesk -d matchdesk \
+                 < qualification/id3h/legacy_catalog_preflight_REVIEW_ONLY.sql \
+                   > artifacts/integration/id3h-receipt-rejected.log 2>&1; then
+            echo "ID3H ERROR: receipt-bearing DB accepted as legacy" >&2
+            exit 1
+          fi
+          grep -F "ID3H legacy preflight expects no existing receipt ledger" \
+            artifacts/integration/id3h-receipt-rejected.log >/dev/null
           echo "MATCHDESK_ID3H_REPLAY_PROTECTION_PASS"
       - name: Install locked browser harness and matching Chromium
         id: browser
