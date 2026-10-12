@@ -55,3 +55,18 @@ for (const width of [390, 768, 1280, 1440]) {
     await expect(page.getByRole("button", { name: "Approve · Unavailable" })).toBeDisabled();
   });
 }
+
+/** At phone width, preserve the approved card presentation and table semantics. */
+test("producer review mobile draft cards retain accessible row/inspect controls", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await openProducer(page);
+  const queue = page.getByRole("table", { name: "Synthetic producer review queue" });
+  const rows = queue.getByRole("row").filter({ has: page.locator("button") });
+  await expect(rows).toHaveCount(2);
+  await expect(queue.getByRole("rowheader")).toHaveCount(2);
+  await expect(rows.first()).toHaveCSS("display", "grid");
+  await expect(rows.first().getByRole("button", { name: "Inspect D-031 v3" })).toBeVisible();
+  await queue.getByRole("button", { name: "Inspect D-029 v2" }).click();
+  await expect(page.getByRole("region", { name: "Selected draft inspection" })).toContainText("D-029 v2");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});

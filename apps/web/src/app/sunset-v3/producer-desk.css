@@ -39,3 +39,19 @@
 .mdv3 .mdv3-producer-empty{padding:25px 12px;text-align:center;border:1px dashed var(--md-ui-stroke);border-radius:8px;color:var(--muted)}
 @media(max-width:1100px){.mdv3 .mdv3-producer-grid{grid-template-columns:minmax(0,1fr)}}
 @media(max-width:620px){.mdv3 .mdv3-producer-summary{grid-template-columns:minmax(0,1fr)}.mdv3 .mdv3-producer-selection{align-items:flex-start}.mdv3 .mdv3-producer-claims li{grid-template-columns:minmax(0,1fr)}}
+
+/* The signed-off mobile reference uses full-width draft cards, not a clipped table.
+ * Preserve table/row/column semantics with explicit roles in the component. */
+@media(max-width:700px){
+  .mdv3 .mdv3-producer-table-scroll{overflow-x:visible}
+  .mdv3 .mdv3-producer-table{display:block;min-width:0;width:100%;border-collapse:separate}
+  .mdv3 .mdv3-producer-table thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);clip-path:inset(50%);white-space:nowrap}
+  .mdv3 .mdv3-producer-table tbody{display:grid;gap:12px}
+  .mdv3 .mdv3-producer-table tbody tr{display:grid;grid-template-columns:minmax(0,1fr);gap:0;min-width:0;padding:13px;border:1px solid var(--md-ui-stroke);border-radius:11px;background:var(--panel)}
+  .mdv3 .mdv3-producer-table tbody tr[data-selected=true]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 9%,var(--panel));box-shadow:inset 3px 0 var(--accent)}
+  .mdv3 .mdv3-producer-table tbody th,.mdv3 .mdv3-producer-table tbody td{display:block;min-width:0;width:100%;padding:9px 0;border-bottom:1px solid var(--border);overflow-wrap:anywhere}
+  .mdv3 .mdv3-producer-table tbody th{padding-top:0}
+  .mdv3 .mdv3-producer-table tbody td:last-child{border-bottom:0;padding-bottom:0}
+  .mdv3 .mdv3-producer-table tbody td[data-label]::before{content:attr(data-label);display:block;color:var(--muted);font-size:12px;font-weight:650;margin-bottom:4px}
+  .mdv3 .mdv3-producer-table tbody td .mdv3-secondary{width:auto;max-width:100%}
+}

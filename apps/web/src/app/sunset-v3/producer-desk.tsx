@@ -160,15 +160,15 @@ export function ProducerReviewQueue({
         {visible.length === 0 ? <p className="mdv3-producer-empty" role="status">
           No reviewed drafts are supplied by this synthetic fixture. Nothing has been approved.
         </p> : <div className="mdv3-producer-table-scroll">
-          <table className="mdv3-producer-table" aria-label="Synthetic producer review queue">
-            <thead><tr><th scope="col">Draft</th><th scope="col">Verification reference</th>
-              <th scope="col">Eligibility</th><th scope="col">Inspect</th></tr></thead>
-            <tbody>{visible.map(draft => <tr key={draft.key} data-selected={selected?.key === draft.key}>
-              <th scope="row"><strong>{draft.key}</strong>
+          <table className="mdv3-producer-table" role="table" aria-label="Synthetic producer review queue">
+            <thead role="rowgroup"><tr role="row"><th scope="col" role="columnheader">Draft</th><th scope="col" role="columnheader">Verification reference</th>
+              <th scope="col" role="columnheader">Eligibility</th><th scope="col" role="columnheader">Inspect</th></tr></thead>
+            <tbody role="rowgroup">{visible.map(draft => <tr role="row" key={draft.key} data-selected={selected?.key === draft.key}>
+              <th scope="row" role="rowheader"><strong>{draft.key}</strong>
                 <span>{draft.title}</span></th>
-              <td>{draft.summary}</td>
-              <td><ReferencePill eligibility={draft.eligibility}/></td>
-              <td><button type="button" className="mdv3-secondary"
+              <td role="cell" data-label="Verification reference">{draft.summary}</td>
+              <td role="cell" data-label="Eligibility"><ReferencePill eligibility={draft.eligibility}/></td>
+              <td role="cell" data-label="Action"><button type="button" className="mdv3-secondary"
                 aria-label={`Inspect ${draft.key}`}
                 onClick={() => setSelectedKey(draft.key)}>Inspect</button></td>
             </tr>)}</tbody>
