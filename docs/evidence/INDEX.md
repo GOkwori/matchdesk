@@ -1,5 +1,9 @@
 # Evidence index
 
+## Sunset Studio v3 screens 05–07 — 11 October 2026
+
+- [Exact-source qualification and visual review](../design/sunset-v3-screens05-07-qualification-20261011.md): `40c8719` passed all 4 required workflows, 69 Playwright tests and 18 dark/light screenshots at 390/1024/1440px. Visual parity, manual accessibility and original Batch 1 archival remain open; no live execution authority.
+
 ## Sunset Studio v3 frontend screens 01–02 — 11 October 2026
 
 - [Exact-source UI qualification and implementation approval](../design/sunset-v3-implementation-acceptance-20261011.md): implementation commit `489b7cf4084ce90f4ddc549dd515fdc6eee5b1c5` passed Foundation CI `38165967495`, Foundation integration `38165967490`, Source security `38165967516`, and Dependency audit `38165967501`. Playwright: 36 passed, including 12 new synthetic-only v3 tests at three viewport projects. No production authority.
