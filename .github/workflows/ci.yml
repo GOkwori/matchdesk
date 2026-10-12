@@ -2,7 +2,7 @@
 name: Foundation CI
 on:
   push:
-    branches: [development, main]
+    branches: [development, main, feat/sunset-v3-producer-08]
   pull_request:
     branches: [development, main]
 permissions:
