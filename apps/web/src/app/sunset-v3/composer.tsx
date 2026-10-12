@@ -25,8 +25,9 @@ const composerTabs: readonly { id: ComposerTab; label: string }[] = [
 ];
 
 /** Nothing in this component reaches the producer API or persistence layer. */
-export function StoryCommentaryComposer({ score, onOpenEvidence, onOpenQueue }:{
+export function StoryCommentaryComposer({ score, onOpenEvidence, onOpenQueue, onOpenPublication }:{
   score: ReactNode; onOpenEvidence: () => void; onOpenQueue: () => void;
+  onOpenPublication: () => void;
 }) {
   const [headline, setHeadline] = useState(INITIAL_HEADLINE);
   const [text, setText] = useState(INITIAL_STORY);
@@ -35,6 +36,7 @@ export function StoryCommentaryComposer({ score, onOpenEvidence, onOpenQueue }:{
   const [preview, setPreview] = useState<SessionPreview | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [discardOpen, setDiscardOpen] = useState(false);
+  const [publicationAfterDiscard, setPublicationAfterDiscard] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
 
   // Never promote reference claim statuses to the new local content/version.
@@ -53,6 +55,7 @@ export function StoryCommentaryComposer({ score, onOpenEvidence, onOpenQueue }:{
     function onKey(event: KeyboardEvent) {
       if (event.key === "Escape") {
         event.preventDefault();
+        setPublicationAfterDiscard(false);
         setDiscardOpen(false);
         return;
       }
@@ -83,12 +86,23 @@ export function StoryCommentaryComposer({ score, onOpenEvidence, onOpenQueue }:{
   }
 
   function confirmDiscard() {
+    const navigateToPublication = publicationAfterDiscard;
+    setPublicationAfterDiscard(false);
     setHeadline(INITIAL_HEADLINE);
     setText(INITIAL_STORY);
     setIncluded(originalClaims);
     setPreview(null);
     setDiscardOpen(false);
     setNotice("Local edits discarded and reference D-031 v3 restored. No server data changed.");
+    // A confirmed discard is a local navigation, not approval or publication.
+    if (navigateToPublication) onOpenPublication();
+  }
+
+  /** Prevent this new navigation route from silently losing ephemeral edits. */
+  function openPublicationPreview() {
+    if (!changed) { onOpenPublication(); return; }
+    setPublicationAfterDiscard(true);
+    setDiscardOpen(true);
   }
 
   function onTabKey(event: ReactKeyboardEvent<HTMLButtonElement>) {
@@ -149,7 +163,7 @@ export function StoryCommentaryComposer({ score, onOpenEvidence, onOpenQueue }:{
             </li>)}
           </ul>
           <div className="mdv3-journey-actions mdv3-composer-actions">
-            <button type="button" className="mdv3-secondary" disabled={!changed} onClick={() => setDiscardOpen(true)}>Discard local changes</button>
+            <button type="button" className="mdv3-secondary" disabled={!changed} onClick={() => {setPublicationAfterDiscard(false);setDiscardOpen(true);}}>Discard local changes</button>
             <button type="button" className="mdv3-secondary" onClick={() => setNotice(
               "No server verification performed. Changes are local and will be lost on refresh. Eligibility cannot be upgraded by editing this preview."
             )}>Check demo limitations</button>
@@ -201,6 +215,7 @@ export function StoryCommentaryComposer({ score, onOpenEvidence, onOpenQueue }:{
         <div className="mdv3-journey-actions">
           <button type="button" className="mdv3-secondary" onClick={onOpenEvidence}>Inspect reference evidence →</button>
           <button type="button" className="mdv3-secondary" onClick={onOpenQueue}>Back to review queue →</button>
+          <button type="button" className="mdv3-secondary" onClick={openPublicationPreview}>View future publication journey</button>
           <button type="button" className="mdv3-secondary" disabled>Approve (Planned)</button>
           <button type="button" className="mdv3-secondary" disabled>Publish (Planned)</button>
         </div>
@@ -216,7 +231,7 @@ export function StoryCommentaryComposer({ score, onOpenEvidence, onOpenQueue }:{
         <h2 id="mdv3-compose-discard-title">Discard your changes?</h2>
         <p id="mdv3-compose-discard-desc">This will discard local edits and browser-only preview snapshots. No server changes will occur.</p>
         <div className="mdv3-composer-dialog-actions">
-          <button type="button" className="mdv3-secondary" onClick={() => setDiscardOpen(false)}>Continue editing</button>
+          <button type="button" className="mdv3-secondary" onClick={() => {setPublicationAfterDiscard(false);setDiscardOpen(false);}}>Continue editing</button>
           <button type="button" className="mdv3-composer-danger" onClick={confirmDiscard}>Discard local edits</button>
         </div>
       </div>

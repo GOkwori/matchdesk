@@ -1,4 +1,4 @@
-/** Sunset Studio v3 screens 01–02, synthetic-only read-only frontend. */
+/** Sunset Studio v3 screens 01–10: synthetic-only, independently gated frontend. */
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -7,14 +7,16 @@ import { CommandCentre, TacticalAnalysis } from "./dashboard";
 import { AIIntelligenceWorkspace, EvidenceVerificationExplorer, MomentsTimeline } from "./journey";
 import { ProducerReviewQueue } from "./producer-desk";
 import { StoryCommentaryComposer } from "./composer";
+import { ReviewPublicationJourney } from "./publication";
 import { editorial, fixture, latestMoments, matchStatistics } from "./demo-data";
 import "./tokens.css";
 import "./sunset.css";
 import "./journey.css";
 import "./producer-desk.css";
 import "./composer.css";
+import "./publication.css";
 
-type Page = "welcome" | "overview" | "command" | "tactical" | "moments" | "ai" | "evidence" | "producer" | "composer";
+type Page = "welcome" | "overview" | "command" | "tactical" | "moments" | "ai" | "evidence" | "producer" | "composer" | "publication";
 type Notice = "success" | "information" | "warning";
 
 const nav = [
@@ -48,6 +50,7 @@ const mobileDestinations: readonly { label: string; target: Page }[] = [
   { label: "Evidence Verification", target: "evidence" },
   { label: "Producer Review Queue", target: "producer" },
   { label: "Story & Commentary Composer", target: "composer" },
+  { label: "Review & Publication Journey", target: "publication" },
 ];
 
 /** Surface a status label with its icon; do not rely on colour alone. */
@@ -180,8 +183,8 @@ export default function SunsetStudioPreview() {
           const destination = demoDestinations[label];
           return destination
             ? <button key={label} type="button" aria-label={label}
-                className={`mdv3-nav ${page === destination ? "active" : ""}`}
-                aria-current={page === destination ? "page" : undefined}
+                className={`mdv3-nav ${page === destination || (page === "publication" && destination === "composer") ? "active" : ""}`}
+                aria-current={page === destination || (page === "publication" && destination === "composer") ? "page" : undefined}
                 onClick={() => setPage(destination)}>
                 <span aria-hidden="true">{label === "Overview" ? "⌂" : "◈"}</span>{label}
               </button>
@@ -201,7 +204,8 @@ export default function SunsetStudioPreview() {
         {notice && <div className={`mdv3-inapp mdv3-${notice}`} role="status"><strong>{notice === "success" ? "Demo view updated" : notice === "warning" ? "Approval unavailable" : "Read-only preview"}</strong>
           <span>{notice === "warning" ? "A verified, authenticated producer workflow is required. No change was made." : "These are design-only synthetic values. No server data changed."}</span>
           <button type="button" onClick={() => setNotice(null)} aria-label="Dismiss message">×</button></div>}
-        {page === "composer" ? <StoryCommentaryComposer score={<ScoreHeader/>} onOpenEvidence={() => setPage("evidence")} onOpenQueue={() => setPage("producer")}/> : page === "moments" ? <MomentsTimeline score={<ScoreHeader/>}
+        {page === "publication" ? <ReviewPublicationJourney score={<ScoreHeader/>} onBackToComposer={() => setPage("composer")}/>
+          : page === "composer" ? <StoryCommentaryComposer score={<ScoreHeader/>} onOpenEvidence={() => setPage("evidence")} onOpenQueue={() => setPage("producer")} onOpenPublication={() => setPage("publication")}/> : page === "moments" ? <MomentsTimeline score={<ScoreHeader/>}
           onOpenIntelligence={() => setPage("ai")} onOpenEvidence={() => setPage("evidence")}/>
           : page === "ai" ? <AIIntelligenceWorkspace score={<ScoreHeader/>}
             onOpenEvidence={() => setPage("evidence")} onOpenTimeline={() => setPage("moments")}/>
