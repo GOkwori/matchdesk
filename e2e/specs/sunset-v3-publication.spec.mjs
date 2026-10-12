@@ -60,7 +60,15 @@ test("a new composer-to-publication transition confirms discarding unsaved edits
   page.on("request", req => {
     if (new URL(req.url()).pathname.startsWith("/api/")) calls.push(req.url());
   });
-  await page.getByRole("button", { name: "Editorial Review", exact: true }).click();
+  // On phones the desktop Editorial Review sidebar is intentionally hidden.
+  if (page.viewportSize()?.width < 640) {
+    await page.getByRole("navigation", { name: "Mobile demo navigation" })
+      .locator(".mdv3-mobile-more-trigger").click();
+    await page.getByRole("region", { name: "More demo destinations" })
+      .getByRole("button", { name: /Story & Commentary Composer/ }).click();
+  } else {
+    await page.getByRole("button", { name: "Editorial Review", exact: true }).click();
+  }
   const headline = page.getByRole("textbox", { name: "Headline" });
   await headline.fill("Unsaved local draft for review");
   await page.getByRole("button", { name: "View future publication journey" }).click();
