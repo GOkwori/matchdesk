@@ -3,7 +3,7 @@ import { test, expect } from "@playwright/test";
 
 async function openComposer(page) {
   if (page.viewportSize()?.width < 640) {
-    await page.getByRole("button", { name: "More" }).click();
+    await page.locator(".mdv3-mobile-more-trigger").click();
     await page.getByRole("region", { name: "More demo destinations" })
       .getByRole("button", { name: /Story & Commentary Composer/ }).click();
   } else {
