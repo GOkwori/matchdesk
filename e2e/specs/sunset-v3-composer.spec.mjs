@@ -97,3 +97,20 @@ test("composer captures only a transient local preview and does not create an ap
   await expect(page.getByRole("button", { name: "Capture session preview" })).toBeDisabled();
   expect(requests).toEqual([]);
 });
+
+/** The reference mock-up uses readable normal-weight prose, not bold textarea text. */
+test("editor text keeps regular font weight in both themes and viewport sizes", async ({ page }) => {
+  for (const width of [390, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/sunset-v3");
+    await openComposer(page);
+    for (const theme of ["dark", "light"]) {
+      await page.getByLabel("Display theme").selectOption(theme);
+      for (const textbox of ["Headline", "Story text (local exploration only)"]) {
+        const field = page.getByRole("textbox", { name: textbox });
+        const weight = await field.evaluate(element => Number.parseInt(getComputedStyle(element).fontWeight, 10));
+        expect(weight, `${theme} ${width}px ${textbox} should have legible regular text weight`).toBeLessThanOrEqual(500);
+      }
+    }
+  }
+});

@@ -62,5 +62,7 @@
 .mdv3 .mdv3-composer-dialog p{line-height:1.6;margin:0 0 18px}
 .mdv3 .mdv3-composer-dialog-actions{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:10px}
 .mdv3 .mdv3-composer-danger{min-height:44px;border:1px solid var(--md-error);background:var(--md-panel);color:var(--md-error);border-radius:9px;padding:10px 15px;font-weight:750}
+/* Form text stays regular-weight; label emphasis must not leak into editable prose. */
+.mdv3 .mdv3-composer-field input,.mdv3 .mdv3-composer-field textarea{font-weight:400}
 .mdv3 .mdv3-composer button:disabled{opacity:.6;cursor:not-allowed}
 @media(max-width:700px){.mdv3 .mdv3-composer-layout{grid-template-columns:minmax(0,1fr)}.mdv3 .mdv3-composer-workspace,.mdv3 .mdv3-composer-comparison{padding:14px}.mdv3 .mdv3-composer-verdicts li{align-items:flex-start}.mdv3 .mdv3-composer-dialog-actions button{flex:1}.mdv3 .mdv3-composer-field textarea{min-height:160px}}
