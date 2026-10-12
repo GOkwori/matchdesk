@@ -1,0 +1,62 @@
+/* Sunset Studio v3 Screen 11: mobile-first audience explanation concept.
+ * This module uses the shared contrast-tested themes and no fabricated metrics.
+ */
+.mdv3 .mdv3-audience-stamp{display:inline-flex;flex:none;align-items:center;padding:8px 11px;border:1px solid var(--md-accent);background:var(--md-raised);color:var(--md-accent);border-radius:8px;font-size:12px;font-weight:750}
+.mdv3 .mdv3-audience-layout{display:grid;grid-template-columns:minmax(0,1.47fr) minmax(285px,1fr);gap:15px;align-items:stretch;margin:16px 0}
+.mdv3 .mdv3-audience-layout>.mdv3-panel{min-width:0;padding:18px}
+.mdv3 .mdv3-audience-story{background:linear-gradient(125deg,color-mix(in srgb,var(--md-raised) 36%,var(--md-panel)),var(--md-panel))}
+.mdv3 .mdv3-audience-story h2{font-size:clamp(27px,2.7vw,40px);line-height:1.15;letter-spacing:-.03em;font-weight:825;margin:18px 0 12px;max-width:640px}
+.mdv3 .mdv3-audience-story h2 em{display:block;font-style:normal;color:var(--md-accent)}
+.mdv3 .mdv3-audience-lede{font-size:clamp(14px,1.25vw,17px);line-height:1.62;margin:0 0 18px;color:var(--md-text)}
+.mdv3 .mdv3-audience-pills{display:flex;gap:7px;align-items:center;flex-wrap:wrap;border-bottom:1px solid var(--md-line);padding-bottom:15px;margin-bottom:15px}
+.mdv3 .mdv3-audience-pill{border:1px solid currentColor;padding:5px 9px;border-radius:999px;font-size:12px;line-height:1.3;font-weight:700}
+.mdv3 .mdv3-audience-source{color:var(--md-success);background:color-mix(in srgb,var(--md-success) 8%,var(--md-panel))}
+.mdv3 .mdv3-audience-future{color:var(--md-muted);background:var(--md-raised)}
+.mdv3 .mdv3-audience-score{display:grid;grid-template-columns:minmax(0,1fr) minmax(90px,.72fr) minmax(0,1fr);gap:6px;align-items:center;padding:13px 11px;border:1px solid var(--md-line);background:var(--md-raised);border-radius:10px;margin:0 0 18px}
+.mdv3 .mdv3-audience-team{display:flex;align-items:center;gap:8px;min-width:0}
+.mdv3 .mdv3-audience-team>span:last-child,.mdv3 .mdv3-audience-away>span:first-child{display:grid;min-width:0;gap:3px}
+.mdv3 .mdv3-audience-team strong{font-size:12px;line-height:1.25;overflow-wrap:anywhere}
+.mdv3 .mdv3-audience-team small{font-size:11px;color:var(--md-muted);line-height:1.25}
+.mdv3 .mdv3-audience-crest{display:grid;flex:none;place-items:center;width:31px;height:38px;background:var(--md-accent);color:var(--md-on-accent);font-weight:800;clip-path:polygon(50% 0%,94% 21%,94% 74%,50% 100%,6% 74%,6% 21%)}
+.mdv3 .mdv3-audience-away-crest{background:var(--md-info);color:var(--md-bg)}
+.mdv3 .mdv3-audience-away{justify-content:flex-end;text-align:right}
+.mdv3 .mdv3-audience-score-middle{display:grid;justify-items:center;gap:1px;text-align:center;min-width:0}
+.mdv3 .mdv3-audience-score-middle strong{font-size:clamp(21px,2vw,28px);letter-spacing:-.025em;white-space:nowrap;line-height:1.18}
+.mdv3 .mdv3-audience-score-middle small{color:var(--md-muted);font-size:10px;line-height:1.3}
+.mdv3 .mdv3-audience-clock{border:1px solid var(--md-accent);border-radius:6px;padding:2px 9px;color:var(--md-accent);font-size:12px;line-height:1.3}
+.mdv3 .mdv3-audience-pitch{position:relative;display:grid;place-items:center;isolation:isolate;min-height:230px;background:repeating-linear-gradient(90deg,#094136 0%,#094136 10%,#0e4b3f 10%,#0e4b3f 20%);border:10px solid #083e34;border-radius:12px;overflow:hidden}
+.mdv3 .mdv3-audience-pitch svg{display:block;width:100%;max-height:280px;color:#84b79d;stroke:currentColor;stroke-width:1.4;fill:none;pointer-events:none}
+.mdv3 .mdv3-audience-pitch-caption{position:absolute;inset:auto 10px 13px;display:grid;justify-items:center;gap:2px;padding:6px 10px;border-radius:7px;border:1px solid #9fc7b4;background:#0b2e29;color:#e7f8ef;font-size:12px;line-height:1.35;text-align:center;max-width:230px}
+.mdv3 .mdv3-audience-pitch-caption span{font-size:11px;color:#d1e7df}
+.mdv3 .mdv3-audience-moment{display:grid;justify-items:start;gap:1px;margin-top:0;border-left:3px solid var(--md-accent);padding:10px 15px 10px;background:var(--md-raised);border-radius:0 0 8px 0}
+.mdv3 .mdv3-audience-moment>strong{font-size:30px;color:var(--md-accent);line-height:1.1}
+.mdv3 .mdv3-audience-moment>span{font-weight:750;font-size:14px}
+.mdv3 .mdv3-audience-moment small{color:var(--md-muted);font-size:12px;line-height:1.35}
+.mdv3 .mdv3-audience-evidence .mdv3-head h2{font-size:18px}
+.mdv3 .mdv3-audience-source-intro{display:flex;align-items:center;gap:8px;margin-top:18px;color:var(--md-success);font-size:14px}
+.mdv3 .mdv3-audience-source-intro span{font-size:21px;line-height:1}
+.mdv3 .mdv3-audience-evidence-copy{font-size:13px;line-height:1.7;color:var(--md-text);margin:13px 0 17px}
+.mdv3 .mdv3-audience-checklist{border-top:1px solid var(--md-line);border-bottom:1px solid var(--md-line);padding:8px 0;margin:12px 0}
+.mdv3 .mdv3-audience-checklist>div{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 0}
+.mdv3 .mdv3-audience-checklist dt{font-size:14px;min-width:0}
+.mdv3 .mdv3-audience-checklist dd{margin:0;flex:none}
+.mdv3 .mdv3-audience-status{display:inline-flex;align-items:center;padding:5px 9px;border-radius:999px;border:1px solid currentColor;font-size:12px;font-weight:750;line-height:1.25}
+.mdv3 .mdv3-audience-recorded{color:var(--md-success);background:color-mix(in srgb,var(--md-success) 8%,var(--md-panel))}
+.mdv3 .mdv3-audience-unsupported{color:var(--md-warn);background:color-mix(in srgb,var(--md-warn) 9%,var(--md-panel))}
+.mdv3 .mdv3-audience-info{display:flex;align-items:flex-start;gap:10px;border:1px solid var(--md-info);border-radius:9px;padding:13px 14px;background:color-mix(in srgb,var(--md-info) 8%,var(--md-panel));margin:16px 0}
+.mdv3 .mdv3-audience-info>span{flex:none;color:var(--md-info);font-size:18px;line-height:1.2}
+.mdv3 .mdv3-audience-info strong{display:block;color:var(--md-info);font-size:13px}
+.mdv3 .mdv3-audience-info p{margin:4px 0 0;color:var(--md-text);font-size:12px;line-height:1.55}
+.mdv3 .mdv3-audience-boundary{color:var(--md-muted);font-size:12px;line-height:1.55;margin:14px 0;border-bottom:1px solid var(--md-line);padding-bottom:15px}
+.mdv3 .mdv3-audience-detail-button{display:flex;justify-content:center;align-items:center;gap:8px;width:100%;min-height:44px}
+.mdv3 .mdv3-audience-detail-panel{margin-top:12px;border:1px solid var(--md-ui-stroke);background:var(--md-raised);padding:14px;border-radius:9px;min-width:0}
+.mdv3 .mdv3-audience-detail-panel h3{font-size:16px;margin:0 0 8px}
+.mdv3 .mdv3-audience-detail-panel p{font-size:12px;color:var(--md-muted);margin:0 0 10px}
+.mdv3 .mdv3-audience-detail-panel dl{margin:10px 0 16px}
+.mdv3 .mdv3-audience-detail-panel dl>div{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px 12px;border-bottom:1px solid var(--md-line);padding:9px 0;font-size:12px}
+.mdv3 .mdv3-audience-detail-panel dt{color:var(--md-muted)}
+.mdv3 .mdv3-audience-detail-panel dd{margin:0;font-weight:700;text-align:right}
+.mdv3 .mdv3-audience-detail-panel button{min-height:44px;width:100%}
+@media(max-width:1050px){.mdv3 .mdv3-audience-layout{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:700px){.mdv3 .mdv3-audience .mdv3-page-heading{align-items:flex-start;flex-wrap:wrap}.mdv3 .mdv3-audience-layout>.mdv3-panel{padding:14px}.mdv3 .mdv3-audience-story h2{font-size:clamp(29px,8vw,37px)}.mdv3 .mdv3-audience-lede{font-size:16px}.mdv3 .mdv3-audience-score{grid-template-columns:minmax(0,1fr) minmax(70px,.82fr) minmax(0,1fr);padding:10px 8px;gap:6px}.mdv3 .mdv3-audience-team{gap:5px}.mdv3 .mdv3-audience-team strong{font-size:11px}.mdv3 .mdv3-audience-team small{font-size:10px}.mdv3 .mdv3-audience-crest{width:22px;height:28px;font-size:12px}.mdv3 .mdv3-audience-score-middle small{font-size:9px}.mdv3 .mdv3-audience-pitch{min-height:160px;border-width:7px}.mdv3 .mdv3-audience-evidence-copy{font-size:14px}}
+@media(forced-colors:active){.mdv3 .mdv3-audience-pitch{border:2px solid CanvasText;background:Canvas}.mdv3 .mdv3-audience-pitch svg{color:CanvasText}.mdv3 .mdv3-audience-pitch-caption{border-color:CanvasText;background:Canvas;color:CanvasText}.mdv3 .mdv3-audience-pitch-caption span{color:CanvasText}}

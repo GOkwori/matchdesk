@@ -1,4 +1,4 @@
-/** Read-only visual acceptance captures for Sunset Studio v3 screens 05–10.
+/** Read-only visual acceptance captures for Sunset Studio v3 screens 05–11.
  *
  * Captures are review evidence, never automatic proof of mock-up equivalence
  * or WCAG compliance. Use one browser project and explicitly set all three
@@ -43,9 +43,15 @@ const screenCases = [
     desktop: 'Editorial Review',
     mobile: 'Review & Publication Journey',
   },
+  {
+    id: '11-audience',
+    heading: 'Audience Experience',
+    desktop: 'Audience Outputs',
+    mobile: 'Audience Experience',
+  },
 ];
 
-test('capture screens 05–10 in both themes at 390, 1024 and 1440 pixels', async ({ page }, testInfo) => {
+test('capture screens 05–11 in both themes at 390, 1024 and 1440 pixels', async ({ page }, testInfo) => {
   // Run once in each existing browser project; avoid screenshot duplication.
   const viewportByProject = {
     desktop: { width: 1440, height: 1000 },
@@ -70,7 +76,7 @@ test('capture screens 05–10 in both themes at 390, 1024 and 1440 pixels', asyn
       await expect(page.locator('.mdv3')).toHaveAttribute('data-theme', theme);
 
       for (const screen of screenCases) {
-        if (width === 390 && ['08-producer', '09-composer', '10-publication'].includes(screen.id)) {
+        if (width === 390 && ['08-producer', '09-composer', '10-publication', '11-audience'].includes(screen.id)) {
           // Later screens are reached through the accessible mobile More panel.
           await page.getByRole('navigation', { name: 'Mobile demo navigation' })
             .locator('.mdv3-mobile-more-trigger').click();
@@ -97,6 +103,10 @@ test('capture screens 05–10 in both themes at 390, 1024 and 1440 pixels', asyn
           await expect(page.getByRole('button', { name: /Confirm approval unavailable/ })).toBeDisabled();
           await expect(page.getByRole('button', { name: 'Confirm · Future state' })).toBeDisabled();
           await expect(page.getByText('Not computed', { exact: true })).toBeVisible();
+        }
+        if (screen.id === '11-audience') {
+          await expect(page.getByText('No tracking or event-position data')).toBeVisible();
+          await expect(page.getByRole('button', { name: 'View source details' })).toBeVisible();
         }
         await expect(page.getByText(/Synthetic replay/i).first()).toBeVisible();
         expect(
