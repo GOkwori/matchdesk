@@ -100,9 +100,10 @@ test('mobile More exposes all implemented screens without privileged actions', a
   await expect(more).toHaveAttribute('aria-expanded', 'true');
   const destinations = page.getByRole('region', { name: 'More demo destinations' });
   await expect(destinations).toBeVisible();
-  // Screen 08 adds a real read-only destination; assert its identity as well as the count.
+  // Screen 09 adds the in-memory composer. Every rendered destination must be discoverable.
   await expect(destinations.locator('.mdv3-mobile-more-options button')).toHaveCount(9);
   await expect(destinations.getByRole('button', { name: /Producer Review Queue/ })).toBeVisible();
+  await expect(destinations.getByRole('button', { name: /Story & Commentary Composer/ })).toBeVisible();
   await expect(destinations).toContainText('Producer approvals, publishing and live data are not available');
   await page.keyboard.press('Escape');
   await expect(destinations).toHaveCount(0);

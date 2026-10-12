@@ -1,4 +1,4 @@
-/** Read-only visual acceptance captures for Sunset Studio v3 screens 05–08.
+/** Read-only visual acceptance captures for Sunset Studio v3 screens 05–09.
  *
  * Captures are review evidence, never automatic proof of mock-up equivalence
  * or WCAG compliance. Use one browser project and explicitly set all three
@@ -31,9 +31,15 @@ const screenCases = [
     desktop: 'Producer Desk',
     mobile: 'Producer Review Queue',
   },
+  {
+    id: '09-composer',
+    heading: 'Story & Commentary Composer',
+    desktop: 'Editorial Review',
+    mobile: 'Story & Commentary Composer',
+  },
 ];
 
-test('capture screens 05–08 in both themes at 390, 1024 and 1440 pixels', async ({ page }, testInfo) => {
+test('capture screens 05–09 in both themes at 390, 1024 and 1440 pixels', async ({ page }, testInfo) => {
   // Run once in each existing browser project; avoid screenshot duplication.
   const viewportByProject = {
     desktop: { width: 1440, height: 1000 },
@@ -58,12 +64,12 @@ test('capture screens 05–08 in both themes at 390, 1024 and 1440 pixels', asyn
       await expect(page.locator('.mdv3')).toHaveAttribute('data-theme', theme);
 
       for (const screen of screenCases) {
-        if (width === 390 && screen.id === '08-producer') {
+        if (width === 390 && (screen.id === '08-producer' || screen.id === '09-composer')) {
           // Screen 08 is reached through the deliberately discoverable mobile More panel.
           await page.getByRole('navigation', { name: 'Mobile demo navigation' })
             .locator('.mdv3-mobile-more-trigger').click();
           await page.getByRole('region', { name: 'More demo destinations' })
-            .getByRole('button', { name: /Producer Review Queue/ }).click();
+            .getByRole('button', { name: screen.mobile }).click();
         } else if (width === 390) {
           await page.getByRole('navigation', { name: 'Mobile demo navigation' })
             .getByRole('button', { name: screen.mobile }).click();
@@ -73,6 +79,10 @@ test('capture screens 05–08 in both themes at 390, 1024 and 1440 pixels', asyn
         await expect(page.getByRole('heading', { level: 1, name: screen.heading })).toBeVisible();
         if (screen.id === '08-producer') {
           await expect(page.getByRole('button', { name: 'Approve · Unavailable' })).toBeDisabled();
+        }
+        if (screen.id === '09-composer') {
+          await expect(page.getByRole('button', { name: 'Save version (Planned)' })).toBeDisabled();
+          await expect(page.getByRole('button', { name: 'Publish (Planned)' })).toBeDisabled();
         }
         await expect(page.getByText(/Synthetic replay/i).first()).toBeVisible();
         expect(
