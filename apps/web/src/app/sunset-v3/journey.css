@@ -43,3 +43,162 @@
 .mdv3 .mdv3-mobile-nav small{font-size:12px}
 @media(max-width:1000px){.mdv3 .mdv3-journey-layout{grid-template-columns:1fr}.mdv3 .mdv3-journey-steps{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:700px){.mdv3 .mdv3-journey-steps{grid-template-columns:repeat(2,minmax(0,1fr))}.mdv3 .mdv3-proof-list li{grid-template-columns:1fr;gap:5px}.mdv3 .mdv3-verdict-grid{grid-template-columns:1fr}.mdv3 .mdv3-timeline-entry{grid-template-columns:25px 72px minmax(0,1fr);gap:6px;padding:10px 7px}}
+
+
+/* Vertical match timeline and persistent mobile More, Sunset Studio v3 review.
+ * Only source-provided moment times are drawn: the rail has no inferred
+ * tracking/velocity scale and no fabricated player-position markers.
+ */
+.mdv3 .mdv3-timeline {
+  position:relative;display:grid;gap:0;
+  padding:0 0 0 36px;margin:0;list-style:none;
+}
+.mdv3 .mdv3-timeline::before {
+  content:"";position:absolute;left:15px;top:23px;bottom:24px;width:2px;
+  background:linear-gradient(to bottom,var(--md-ui-stroke),var(--accent));
+  opacity:.8;pointer-events:none;
+}
+.mdv3 .mdv3-timeline li {position:relative;min-width:0;margin:0 0 13px}
+.mdv3 .mdv3-timeline-phase {
+  display:inline-flex;align-items:center;
+  color:var(--muted);font-size:12px;font-weight:750;
+  letter-spacing:.045em;text-transform:uppercase;
+  margin:4px 0 10px;padding:3px 9px;
+  border-radius:6px;border:1px solid var(--md-ui-stroke);
+  background:var(--panel);
+}
+.mdv3 .mdv3-timeline-entry {
+  position:relative;display:grid;
+  grid-template-columns:minmax(75px,95px) minmax(0,1fr);
+  gap:12px;align-items:center;
+  min-height:86px;width:100%;
+  padding:14px 16px;text-align:left;
+  border:1px solid var(--border);
+  border-radius:10px;background:var(--panel);
+  color:var(--text);
+}
+.mdv3 .mdv3-timeline-entry:hover {
+  background:color-mix(in srgb,var(--accent) 5%,var(--raised));
+}
+.mdv3 .mdv3-timeline-selected {
+  border-color:var(--accent);
+  box-shadow:inset 3px 0 0 var(--accent);
+  background:color-mix(in srgb,var(--accent) 8%,var(--panel));
+}
+.mdv3 .mdv3-timeline-entry:focus-visible {
+  outline:2px solid var(--accent);outline-offset:3px;
+}
+.mdv3 .mdv3-timeline-marker {
+  position:absolute;left:-38px;top:25px;
+  width:34px;height:34px;display:grid;place-items:center;
+  background:var(--panel);border:2px solid var(--accent);
+  border-radius:50%;color:var(--accent);
+  font-size:17px;z-index:1;
+}
+.mdv3 .mdv3-timeline-phase + .mdv3-timeline-entry .mdv3-timeline-marker {top:25px}
+.mdv3 .mdv3-timeline-entry[data-kind="Yellow card"] .mdv3-timeline-marker {
+  border-color:var(--md-warn);color:var(--md-warn);
+}
+.mdv3 .mdv3-timeline-entry[data-kind="Substitution"] .mdv3-timeline-marker {
+  border-color:var(--md-info);color:var(--md-info);
+}
+.mdv3 .mdv3-timeline-clock {
+  color:var(--text);font:750 15px/1.4 ui-monospace,SFMono-Regular,monospace;
+}
+.mdv3 .mdv3-timeline-clock small {
+  color:var(--muted);font:400 12px/1.4 ui-monospace,SFMono-Regular,monospace;
+}
+.mdv3 .mdv3-timeline-title {display:grid;gap:5px;min-width:0}
+.mdv3 .mdv3-timeline-title strong {font-size:14px;line-height:1.45}
+.mdv3 .mdv3-timeline-title small {font-size:12px;color:var(--muted)}
+.mdv3 .mdv3-timeline-kind {
+  display:inline-flex;justify-self:start;
+  width:max-content;max-width:100%;
+  border-radius:5px;padding:3px 7px;
+  border:1px solid var(--md-ui-stroke);
+  color:var(--text);font-size:12px;line-height:1.25;
+  background:var(--raised);
+}
+.mdv3 .mdv3-timeline-entry[data-kind="Goal"] .mdv3-timeline-kind {
+  border-color:var(--md-success);color:var(--md-success);
+}
+.mdv3 .mdv3-timeline-entry[data-kind="Yellow card"] .mdv3-timeline-kind {
+  border-color:var(--md-warn);color:var(--md-warn);
+}
+.mdv3 .mdv3-timeline-entry[data-kind="Substitution"] .mdv3-timeline-kind {
+  border-color:var(--md-info);color:var(--md-info);
+}
+.mdv3 .mdv3-mobile-more-panel {display:none}
+@media(max-width:700px) {
+  /* The scrollable existing shortcuts remain for regression compatibility,
+   * while More is always visible and lists all implemented destinations.
+   */
+  .mdv3 .mdv3-mobile-nav {
+    display:flex;grid-template-columns:none;
+    grid-auto-flow:initial;overflow:visible;
+    align-items:stretch;
+  }
+  .mdv3 .mdv3-mobile-nav-scroll {
+    display:flex;flex:1;min-width:0;
+    overflow-x:auto;overscroll-behavior-x:contain;
+    scroll-snap-type:x proximity;scrollbar-width:thin;
+    scrollbar-color:var(--md-ui-stroke) var(--panel);
+  }
+  .mdv3 .mdv3-mobile-nav-scroll button {
+    min-width:72px;flex:0 0 72px;
+    scroll-snap-align:start;
+  }
+  .mdv3 .mdv3-mobile-more-trigger {
+    display:grid;place-items:center;
+    width:72px;min-width:72px;flex:0 0 72px;
+    border-left:1px solid var(--md-ui-stroke);
+    background:var(--raised);color:var(--text);
+  }
+  .mdv3 .mdv3-mobile-more-trigger[aria-expanded="true"] {
+    color:var(--accent);box-shadow:inset 0 3px 0 var(--accent);
+  }
+  .mdv3 .mdv3-mobile-more-panel {
+    display:grid;gap:10px;position:fixed;
+    z-index:14;left:12px;right:12px;bottom:calc(68px + env(safe-area-inset-bottom));
+    max-width:420px;margin:0 0 0 auto;
+    max-height:min(68vh,480px);overflow-y:auto;
+    border:1px solid var(--md-ui-stroke);border-radius:12px;
+    padding:15px;background:var(--panel);
+    box-shadow:0 12px 38px #0007;
+    color:var(--text);
+  }
+  .mdv3 .mdv3-mobile-more-heading {
+    display:flex;justify-content:space-between;align-items:center;
+    gap:12px;font-size:15px;
+  }
+  .mdv3 .mdv3-mobile-more-heading span {font-size:12px;color:var(--muted)}
+  .mdv3 .mdv3-mobile-more-options {display:grid;gap:4px}
+  .mdv3 .mdv3-mobile-more-options button {
+    display:flex;justify-content:space-between;align-items:center;
+    gap:15px;width:100%;min-height:44px;padding:10px 12px;
+    border:1px solid var(--border);border-radius:8px;
+    text-align:left;background:var(--raised);color:var(--text);
+    font-size:13px;
+  }
+  .mdv3 .mdv3-mobile-more-options button[aria-current="page"] {
+    border-color:var(--accent);
+  }
+  .mdv3 .mdv3-mobile-more-options button span {font-size:12px;color:var(--muted)}
+  .mdv3 .mdv3-mobile-more-panel p {
+    font-size:12px;color:var(--muted);margin:2px 0 0;
+  }
+  .mdv3 .mdv3-timeline {
+    padding-left:28px;
+  }
+  .mdv3 .mdv3-timeline::before{left:12px}
+  .mdv3 .mdv3-timeline-entry {
+    grid-template-columns:minmax(62px,76px) minmax(0,1fr);
+    gap:8px;padding:12px 10px;min-height:82px;
+  }
+  .mdv3 .mdv3-timeline-marker {
+    left:-31px;top:24px;width:29px;height:29px;
+    font-size:15px;
+  }
+  .mdv3 .mdv3-timeline-clock {font-size:13px}
+  .mdv3 .mdv3-timeline-title strong {font-size:13px}
+}

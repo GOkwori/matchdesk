@@ -60,3 +60,55 @@ test('new screens retain responsive page width and accessible mobile navigation'
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   }
 });
+
+
+test('timeline uses an actual vertical rail with source-derived half labels', async ({ page }) => {
+  await openScreen(page, 'Moments & Timeline', 'Moments');
+  const timeline = page.getByRole('list', { name: 'Seven canonical moments' });
+  await expect(timeline.getByRole('button')).toHaveCount(7);
+  await expect(timeline.getByText('First half')).toHaveCount(1);
+  await expect(timeline.getByText('Second half')).toHaveCount(1);
+  await expect(timeline.getByRole('button', { name: /M-05/ })).toHaveAttribute('data-kind', 'Goal');
+
+  // A real CSS rail remains rendered when there is no location or tracking data.
+  const rail = await timeline.evaluate(element => {
+    const base = getComputedStyle(element);
+    const before = getComputedStyle(element, '::before');
+    return { position: base.position, railWidth: before.width, railPosition: before.position };
+  });
+  expect(rail.position).toBe('relative');
+  expect(rail.railPosition).toBe('absolute');
+  expect(rail.railWidth).toBe('2px');
+  await page.getByRole('combobox', { name: 'Timeline event type' }).selectOption('goals');
+  await expect(timeline.getByRole('button')).toHaveCount(3);
+  await expect(timeline.getByText('First half')).toHaveCount(1);
+  await expect(timeline.getByText('Second half')).toHaveCount(1);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});
+
+test('mobile More exposes all implemented screens without privileged actions', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const calls = [];
+  page.on('request', request => {
+    if (new URL(request.url()).pathname.startsWith('/api/')) calls.push(request.url());
+  });
+  const mobile = page.getByRole('navigation', { name: 'Mobile demo navigation' });
+  const more = mobile.locator('.mdv3-mobile-more-trigger');
+  await expect(more).toBeVisible();
+  await expect(more).toHaveAttribute('aria-expanded', 'false');
+  await more.click();
+  await expect(more).toHaveAttribute('aria-expanded', 'true');
+  const destinations = page.getByRole('region', { name: 'More demo destinations' });
+  await expect(destinations).toBeVisible();
+  await expect(destinations.locator('.mdv3-mobile-more-options button')).toHaveCount(7);
+  await expect(destinations).toContainText('Producer approvals, publishing and live data are not available');
+  await page.keyboard.press('Escape');
+  await expect(destinations).toHaveCount(0);
+  await expect(more).toHaveAttribute('aria-expanded', 'false');
+  await more.click();
+  await destinations.getByRole('button', { name: /AI Intelligence Workspace/ }).click();
+  await expect(page.getByRole('heading', { name: 'AI Intelligence Workspace' })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Run agent.*Approve/ })).toBeDisabled();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  expect(calls).toEqual([]);
+});

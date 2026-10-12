@@ -102,6 +102,10 @@ export function MomentsTimeline({
   const [selectedId, setSelectedId] = useState("M-05");
   const visible = moments.filter(item => matchesFilter(item, filter));
   const selected = visible.find(item => item.id === selectedId) ?? visible[0];
+  // Half labels come only from the seven named event clocks, never inferred
+  // match intervals, player coordinates or unprovided intermediate events.
+  const firstPeriodEventId = visible.find(item => Number(item.clock.split(":")[0]) < 45)?.id;
+  const secondPeriodEventId = visible.find(item => Number(item.clock.split(":")[0]) >= 45)?.id;
 
   return <div className="mdv3-content">
     <div className="mdv3-page-heading"><div>
@@ -124,11 +128,15 @@ export function MomentsTimeline({
         </label>
         <ol className="mdv3-timeline" aria-label="Seven canonical moments">
           {visible.map(item => <li key={item.id}>
-            <button type="button" className={`mdv3-timeline-entry${selected?.id === item.id ? " mdv3-timeline-selected" : ""}`}
+            {(item.id === firstPeriodEventId || item.id === secondPeriodEventId) &&
+              <span className="mdv3-timeline-phase">{item.id === firstPeriodEventId ? "First half" : "Second half"}</span>}
+            <button type="button" data-kind={item.kind}
+              className={`mdv3-timeline-entry${selected?.id === item.id ? " mdv3-timeline-selected" : ""}`}
               aria-pressed={selected?.id === item.id} onClick={() => setSelectedId(item.id)}>
               <span className="mdv3-timeline-marker" aria-hidden="true">{item.kind === "Goal" ? "⚽" : item.kind === "Yellow card" ? "▣" : item.kind === "Corner" ? "↗" : "⇄"}</span>
               <span className="mdv3-timeline-clock">{item.clock}<small>{item.id} · {item.event}</small></span>
-              <span className="mdv3-timeline-title"><strong>{item.title}</strong><small>{item.kind} · Score {item.scoreAfter}</small></span>
+              <span className="mdv3-timeline-title"><span className="mdv3-timeline-kind">{item.kind}</span>
+                <strong>{item.title}</strong><small>Score {item.scoreAfter} · Recorded event</small></span>
             </button>
           </li>)}
         </ol>

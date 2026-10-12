@@ -31,6 +31,17 @@ const demoDestinations: Partial<Record<(typeof nav)[number], Page>> = {
   "AI Intelligence Workspace": "ai",
 };
 
+/** Every quick destination is an implemented local synthetic-only screen. */
+const mobileDestinations: readonly { label: string; target: Page }[] = [
+  { label: "Welcome & Access", target: "welcome" },
+  { label: "Intelligence Overview", target: "overview" },
+  { label: "Match Intelligence", target: "command" },
+  { label: "Moments & Timeline", target: "moments" },
+  { label: "Tactical Analysis", target: "tactical" },
+  { label: "AI Intelligence Workspace", target: "ai" },
+  { label: "Evidence Verification", target: "evidence" },
+];
+
 /** Surface a status label with its icon; do not rely on colour alone. */
 function Status({ label, kind }: { label: string; kind: "success" | "warning" | "planned" }) {
   const sign = kind === "success" ? "✓" : kind === "warning" ? "!" : "○";
@@ -76,6 +87,38 @@ export default function SunsetStudioPreview() {
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [showDialog, setShowDialog] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const moreTriggerRef = useRef<HTMLButtonElement>(null);
+  const morePanelRef = useRef<HTMLElement>(null);
+
+  /** Dismiss the optional navigation region on Escape or outside click.
+   * It is not modal: background navigation is still available.
+   */
+  useEffect(() => {
+    if (!moreOpen) return;
+    morePanelRef.current?.querySelector<HTMLButtonElement>("button")?.focus();
+    function onEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setMoreOpen(false);
+      }
+    }
+    function onOutside(event: PointerEvent) {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      if (!morePanelRef.current?.contains(target) && !moreTriggerRef.current?.contains(target)) {
+        setMoreOpen(false);
+      }
+    }
+    document.addEventListener("keydown", onEscape);
+    document.addEventListener("pointerdown", onOutside);
+    return () => {
+      document.removeEventListener("keydown", onEscape);
+      document.removeEventListener("pointerdown", onOutside);
+      // A dismissed menu must not strand the keyboard focus.
+      if (document.activeElement === document.body) moreTriggerRef.current?.focus();
+    };
+  }, [moreOpen]);
 
   /** Keep keyboard focus inside a modal and restore it to its opener on close. */
   useEffect(() => {
@@ -212,10 +255,32 @@ export default function SunsetStudioPreview() {
         <footer className="mdv3-footer"><span>MatchDesk · Synthetic demo · Football intelligence platform</span><span>Analyse · Verify · Create · Inform</span><Link href="/">Original event workbench ↗</Link></footer>
       </main>
     </div>
-    <nav className="mdv3-mobile-nav" aria-label="Mobile demo navigation"><button type="button" aria-current={page==="welcome"?"page":undefined} onClick={()=>setPage("welcome")}>⌂<small>Welcome</small></button><button type="button" aria-current={page==="overview"?"page":undefined} onClick={()=>setPage("overview")}>◈<small>Overview</small></button><button type="button" aria-current={page==="command"?"page":undefined} onClick={()=>setPage("command")}>◇<small>Command</small></button><button type="button" aria-current={page==="tactical"?"page":undefined} onClick={()=>setPage("tactical")}>▦<small>Tactical</small></button>
+    <nav className="mdv3-mobile-nav" aria-label="Mobile demo navigation">
+      <div className="mdv3-mobile-nav-scroll" aria-label="Swipeable demo shortcuts">
+        <button type="button" aria-current={page==="welcome"?"page":undefined} onClick={()=>setPage("welcome")}>⌂<small>Welcome</small></button><button type="button" aria-current={page==="overview"?"page":undefined} onClick={()=>setPage("overview")}>◈<small>Overview</small></button><button type="button" aria-current={page==="command"?"page":undefined} onClick={()=>setPage("command")}>◇<small>Command</small></button><button type="button" aria-current={page==="tactical"?"page":undefined} onClick={()=>setPage("tactical")}>▦<small>Tactical</small></button>
       <button type="button" aria-current={page==="moments"?"page":undefined} onClick={()=>setPage("moments")}>◷<small>Moments</small></button>
       <button type="button" aria-current={page==="ai"?"page":undefined} onClick={()=>setPage("ai")}>✦<small>AI Desk</small></button>
-      <button type="button" aria-current={page==="evidence"?"page":undefined} onClick={()=>setPage("evidence")}>◇<small>Evidence</small></button></nav>
+      <button type="button" aria-current={page==="evidence"?"page":undefined} onClick={()=>setPage("evidence")}>◇<small>Evidence</small></button>
+      </div>
+      <button type="button" className="mdv3-mobile-more-trigger" ref={moreTriggerRef}
+        aria-expanded={moreOpen} aria-controls="mdv3-mobile-more-panel"
+        onClick={() => setMoreOpen(open => !open)}>
+        <span aria-hidden="true">⋯</span><small>More</small>
+      </button>
+    </nav>
+    {moreOpen && <section id="mdv3-mobile-more-panel" role="region"
+      aria-label="More demo destinations" className="mdv3-mobile-more-panel" ref={morePanelRef}>
+      <div className="mdv3-mobile-more-heading"><strong>Explore MatchDesk</strong>
+        <span>Read-only demo</span></div>
+      <div className="mdv3-mobile-more-options">
+        {mobileDestinations.map(destination => <button type="button" key={destination.target}
+          aria-current={page === destination.target ? "page" : undefined}
+          onClick={() => {setPage(destination.target); setMoreOpen(false);}}>
+          {destination.label}<span>{page === destination.target ? "Current" : "Open"}</span>
+        </button>)}
+      </div>
+      <p>Producer approvals, publishing and live data are not available in this synthetic preview.</p>
+    </section>}
     {showDialog && <div className="mdv3-dialog-backdrop" role="presentation"><div className="mdv3-dialog" ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="mdv3-dialog-title" aria-describedby="mdv3-dialog-desc">
       <h2 id="mdv3-dialog-title">Approval blocked</h2><p id="mdv3-dialog-desc">{editorial.blockingReason}</p><p>Your work hasn’t been lost. <code>ref: req-7f3a</code></p>
       <div className="mdv3-actions"><button type="button" className="mdv3-primary" onClick={()=>{setShowDialog(false);setNotice("warning");}}>Understood</button><button type="button" className="mdv3-secondary" onClick={()=>setShowDialog(false)}>Close</button></div>
