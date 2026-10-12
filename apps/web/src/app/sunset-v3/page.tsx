@@ -5,12 +5,14 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { CommandCentre, TacticalAnalysis } from "./dashboard";
 import { AIIntelligenceWorkspace, EvidenceVerificationExplorer, MomentsTimeline } from "./journey";
+import { ProducerReviewQueue } from "./producer-desk";
 import { editorial, fixture, latestMoments, matchStatistics } from "./demo-data";
 import "./tokens.css";
 import "./sunset.css";
 import "./journey.css";
+import "./producer-desk.css";
 
-type Page = "welcome" | "overview" | "command" | "tactical" | "moments" | "ai" | "evidence";
+type Page = "welcome" | "overview" | "command" | "tactical" | "moments" | "ai" | "evidence" | "producer";
 type Notice = "success" | "information" | "warning";
 
 const nav = [
@@ -29,6 +31,7 @@ const demoDestinations: Partial<Record<(typeof nav)[number], Page>> = {
   "Tactical Analysis": "tactical",
   "Evidence & Verification": "evidence",
   "AI Intelligence Workspace": "ai",
+  "Producer Desk": "producer",
 };
 
 /** Every quick destination is an implemented local synthetic-only screen. */
@@ -40,6 +43,7 @@ const mobileDestinations: readonly { label: string; target: Page }[] = [
   { label: "Tactical Analysis", target: "tactical" },
   { label: "AI Intelligence Workspace", target: "ai" },
   { label: "Evidence Verification", target: "evidence" },
+  { label: "Producer Review Queue", target: "producer" },
 ];
 
 /** Surface a status label with its icon; do not rely on colour alone. */
@@ -199,6 +203,7 @@ export default function SunsetStudioPreview() {
             onOpenEvidence={() => setPage("evidence")} onOpenTimeline={() => setPage("moments")}/>
           : page === "evidence" ? <EvidenceVerificationExplorer score={<ScoreHeader/>}
             onOpenTimeline={() => setPage("moments")}/>
+          : page === "producer" ? <ProducerReviewQueue score={<ScoreHeader/>} onOpenEvidence={() => setPage("evidence")}/>
           : page === "command" ? <CommandCentre score={<ScoreHeader/>}/> : page === "tactical" ? <TacticalAnalysis score={<ScoreHeader/>} onOpenCommand={() => setPage("command")}/> : page === "welcome" ? <div className="mdv3-content">
           <section className="mdv3-hero"><div className="mdv3-hero-copy"><span className="mdv3-kicker">MATCHDESK · SUNSET STUDIO V3 · SYNTHETIC DEMO</span>
               <h1>Turn football<br/>moments into<br/><em>verifiable stories.</em></h1>
