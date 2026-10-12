@@ -101,11 +101,12 @@ test('mobile More exposes all implemented screens without privileged actions', a
   const destinations = page.getByRole('region', { name: 'More demo destinations' });
   await expect(destinations).toBeVisible();
   // Screen 11 adds a source-labelled future audience experience.
-  await expect(destinations.locator('.mdv3-mobile-more-options button')).toHaveCount(11);
+  await expect(destinations.locator('.mdv3-mobile-more-options button')).toHaveCount(12);
   await expect(destinations.getByRole('button', { name: /Producer Review Queue/ })).toBeVisible();
   await expect(destinations.getByRole('button', { name: /Story & Commentary Composer/ })).toBeVisible();
   await expect(destinations.getByRole('button', { name: /Review & Publication Journey/ })).toBeVisible();
   await expect(destinations.getByRole('button', { name: /Audience Experience/ })).toBeVisible();
+  await expect(destinations.getByRole('button', { name: /Activity, Audit & Settings/ })).toBeVisible();
   await expect(destinations).toContainText('Producer approvals, publishing and live data are not available');
   await page.keyboard.press('Escape');
   await expect(destinations).toHaveCount(0);
