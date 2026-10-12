@@ -69,7 +69,7 @@ test('capture screens 05–09 in both themes at 390, 1024 and 1440 pixels', asyn
           await page.getByRole('navigation', { name: 'Mobile demo navigation' })
             .locator('.mdv3-mobile-more-trigger').click();
           await page.getByRole('region', { name: 'More demo destinations' })
-            .getByRole('button', { name: screen.mobile, exact: true }).click();
+            .getByRole('button', { name: screen.mobile }).click();
         } else if (width === 390) {
           await page.getByRole('navigation', { name: 'Mobile demo navigation' })
             .getByRole('button', { name: screen.mobile }).click();
