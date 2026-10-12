@@ -6,13 +6,15 @@ import Link from "next/link";
 import { CommandCentre, TacticalAnalysis } from "./dashboard";
 import { AIIntelligenceWorkspace, EvidenceVerificationExplorer, MomentsTimeline } from "./journey";
 import { ProducerReviewQueue } from "./producer-desk";
+import { StoryCommentaryComposer } from "./composer";
 import { editorial, fixture, latestMoments, matchStatistics } from "./demo-data";
 import "./tokens.css";
 import "./sunset.css";
 import "./journey.css";
 import "./producer-desk.css";
+import "./composer.css";
 
-type Page = "welcome" | "overview" | "command" | "tactical" | "moments" | "ai" | "evidence" | "producer";
+type Page = "welcome" | "overview" | "command" | "tactical" | "moments" | "ai" | "evidence" | "producer" | "composer";
 type Notice = "success" | "information" | "warning";
 
 const nav = [
@@ -32,6 +34,7 @@ const demoDestinations: Partial<Record<(typeof nav)[number], Page>> = {
   "Evidence & Verification": "evidence",
   "AI Intelligence Workspace": "ai",
   "Producer Desk": "producer",
+  "Editorial Review": "composer",
 };
 
 /** Every quick destination is an implemented local synthetic-only screen. */
@@ -44,6 +47,7 @@ const mobileDestinations: readonly { label: string; target: Page }[] = [
   { label: "AI Intelligence Workspace", target: "ai" },
   { label: "Evidence Verification", target: "evidence" },
   { label: "Producer Review Queue", target: "producer" },
+  { label: "Story & Commentary Composer", target: "composer" },
 ];
 
 /** Surface a status label with its icon; do not rely on colour alone. */
@@ -197,7 +201,7 @@ export default function SunsetStudioPreview() {
         {notice && <div className={`mdv3-inapp mdv3-${notice}`} role="status"><strong>{notice === "success" ? "Demo view updated" : notice === "warning" ? "Approval unavailable" : "Read-only preview"}</strong>
           <span>{notice === "warning" ? "A verified, authenticated producer workflow is required. No change was made." : "These are design-only synthetic values. No server data changed."}</span>
           <button type="button" onClick={() => setNotice(null)} aria-label="Dismiss message">×</button></div>}
-        {page === "moments" ? <MomentsTimeline score={<ScoreHeader/>}
+        {page === "composer" ? <StoryCommentaryComposer score={<ScoreHeader/>} onOpenEvidence={() => setPage("evidence")} onOpenQueue={() => setPage("producer")}/> : page === "moments" ? <MomentsTimeline score={<ScoreHeader/>}
           onOpenIntelligence={() => setPage("ai")} onOpenEvidence={() => setPage("evidence")}/>
           : page === "ai" ? <AIIntelligenceWorkspace score={<ScoreHeader/>}
             onOpenEvidence={() => setPage("evidence")} onOpenTimeline={() => setPage("moments")}/>
