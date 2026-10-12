@@ -37,3 +37,63 @@ for (const width of [390, 768, 1280, 1440]) {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   });
 }
+
+/** Custom confirmation remains accessible and cannot accidentally discard edits. */
+test("composer discard dialog traps focus, cancels, restores and confirms locally", async ({ page }) => {
+  await openComposer(page);
+  const headline = page.getByRole("textbox", { name: "Headline" });
+  await headline.fill("Local editorial headline");
+  const discardButton = page.getByRole("button", { name: "Discard local changes" });
+  await discardButton.click();
+  const dialog = page.getByRole("dialog", { name: "Discard your changes?" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Continue editing" })).toBeFocused();
+  await page.keyboard.press("Shift+Tab");
+  await expect(dialog.getByRole("button", { name: "Discard local edits" })).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+  await expect(discardButton).toBeFocused();
+  await expect(headline).toHaveValue("Local editorial headline");
+
+  await discardButton.click();
+  await dialog.getByRole("button", { name: "Discard local edits" }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(headline).toHaveValue("Okafor double restores Northbridge lead");
+  await expect(discardButton).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Save version (Planned)" })).toBeDisabled();
+});
+
+test("composer tabs expose real comparison and honest evidence limitations", async ({ page }) => {
+  await openComposer(page);
+  await page.getByRole("tab", { name: "Version history" }).click();
+  await expect(page.getByRole("tabpanel", { name: "Version history" })).toContainText("prior design excerpt");
+  await page.getByRole("tab", { name: "Version history" }).press("ArrowRight");
+  await expect(page.getByRole("tab", { name: "Claim evidence" })).toHaveAttribute("aria-selected", "true");
+  const claims = page.getByRole("tabpanel", { name: "Claim evidence" });
+  await expect(claims).toContainText("Season history unavailable");
+  await claims.getByRole("checkbox", { name: /CL-0216/ }).uncheck();
+  await page.getByRole("tab", { name: "Edit draft" }).click();
+  await expect(page.getByRole("button", { name: "Discard local changes" })).toBeEnabled();
+  await expect(page.getByRole("region", { name: "Composer security boundary" })).toContainText("cannot approve");
+  await expect(page.getByRole("button", { name: "Publish (Planned)" })).toBeDisabled();
+});
+
+test("composer captures only a transient local preview and does not create an approved version", async ({ page }) => {
+  const requests = [];
+  page.on("request", request => {
+    if (new URL(request.url()).pathname.startsWith("/api/")) requests.push(request.url());
+  });
+  await openComposer(page);
+  await expect(page.getByRole("button", { name: "Capture session preview" })).toBeDisabled();
+  await page.getByRole("textbox", { name: "Headline" }).fill("A new local headline");
+  await page.getByRole("button", { name: "Capture session preview" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Local preview r1" }).first()).toBeVisible();
+  await expect(page.getByRole("button", { name: "Save version (Planned)" })).toBeDisabled();
+  await page.getByRole("tab", { name: "Version history" }).click();
+  await expect(page.getByRole("tabpanel", { name: "Version history" })).toContainText("Local preview r1");
+  await page.reload();
+  await openComposer(page);
+  await expect(page.getByRole("textbox", { name: "Headline" })).toHaveValue("Okafor double restores Northbridge lead");
+  await expect(page.getByRole("button", { name: "Capture session preview" })).toBeDisabled();
+  expect(requests).toEqual([]);
+});
