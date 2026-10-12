@@ -2,7 +2,7 @@
 name: Foundation integration
 on:
   push:
-    branches: [development, main, feat/sunset-v3-producer-08]
+    branches: [development, main, 'feat/sunset-v3-*']
   pull_request:
     branches: [development, main]
 permissions:
