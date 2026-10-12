@@ -5,7 +5,7 @@ on:
   push:
     branches: [development, main]
   pull_request:
-    branches: [main]
+    branches: [development, main]
 permissions:
   contents: read
 concurrency:
