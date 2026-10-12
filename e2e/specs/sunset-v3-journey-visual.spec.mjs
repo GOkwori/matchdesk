@@ -1,4 +1,4 @@
-/** Read-only visual acceptance captures for Sunset Studio v3 screens 05–09.
+/** Read-only visual acceptance captures for Sunset Studio v3 screens 05–10.
  *
  * Captures are review evidence, never automatic proof of mock-up equivalence
  * or WCAG compliance. Use one browser project and explicitly set all three
@@ -37,9 +37,15 @@ const screenCases = [
     desktop: 'Editorial Review',
     mobile: 'Story & Commentary Composer',
   },
+  {
+    id: '10-publication',
+    heading: 'Review & Publication Journey',
+    desktop: 'Editorial Review',
+    mobile: 'Review & Publication Journey',
+  },
 ];
 
-test('capture screens 05–09 in both themes at 390, 1024 and 1440 pixels', async ({ page }, testInfo) => {
+test('capture screens 05–10 in both themes at 390, 1024 and 1440 pixels', async ({ page }, testInfo) => {
   // Run once in each existing browser project; avoid screenshot duplication.
   const viewportByProject = {
     desktop: { width: 1440, height: 1000 },
@@ -64,8 +70,8 @@ test('capture screens 05–09 in both themes at 390, 1024 and 1440 pixels', asyn
       await expect(page.locator('.mdv3')).toHaveAttribute('data-theme', theme);
 
       for (const screen of screenCases) {
-        if (width === 390 && (screen.id === '08-producer' || screen.id === '09-composer')) {
-          // Screen 08 is reached through the deliberately discoverable mobile More panel.
+        if (width === 390 && ['08-producer', '09-composer', '10-publication'].includes(screen.id)) {
+          // Later screens are reached through the accessible mobile More panel.
           await page.getByRole('navigation', { name: 'Mobile demo navigation' })
             .locator('.mdv3-mobile-more-trigger').click();
           await page.getByRole('region', { name: 'More demo destinations' })
@@ -75,6 +81,9 @@ test('capture screens 05–09 in both themes at 390, 1024 and 1440 pixels', asyn
             .getByRole('button', { name: screen.mobile }).click();
         } else {
           await page.getByRole('button', { name: screen.desktop, exact: true }).click();
+          if (screen.id === '10-publication') {
+            await page.getByRole('button', { name: 'View future publication journey' }).click();
+          }
         }
         await expect(page.getByRole('heading', { level: 1, name: screen.heading })).toBeVisible();
         if (screen.id === '08-producer') {
@@ -83,6 +92,11 @@ test('capture screens 05–09 in both themes at 390, 1024 and 1440 pixels', asyn
         if (screen.id === '09-composer') {
           await expect(page.getByRole('button', { name: 'Save version (Planned)' })).toBeDisabled();
           await expect(page.getByRole('button', { name: 'Publish (Planned)' })).toBeDisabled();
+        }
+        if (screen.id === '10-publication') {
+          await expect(page.getByRole('button', { name: /Confirm approval unavailable/ })).toBeDisabled();
+          await expect(page.getByRole('button', { name: 'Confirm · Future state' })).toBeDisabled();
+          await expect(page.getByText('Not computed', { exact: true })).toBeVisible();
         }
         await expect(page.getByText(/Synthetic replay/i).first()).toBeVisible();
         expect(
