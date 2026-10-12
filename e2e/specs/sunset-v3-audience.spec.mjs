@@ -100,3 +100,28 @@ for (const width of [390, 768, 1280, 1440]) {
     }
   });
 }
+
+/** Prevent tiny secondary text returning to the mobile score strip. */
+test("secondary audience labels stay at least 12px in both themes", async ({ page }) => {
+  for (const width of [390, 768, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/sunset-v3");
+    await openAudience(page);
+    for (const theme of ["dark", "light"]) {
+      await page.getByLabel("Display theme").selectOption(theme);
+      for (const selector of [
+        ".mdv3-audience .mdv3-kicker",
+        ".mdv3-audience-team strong",
+        ".mdv3-audience-team small",
+        ".mdv3-audience-score-middle small",
+        ".mdv3-audience-pitch-caption span",
+      ]) {
+        const fontSize = await page.locator(selector).first().evaluate(
+          element => Number.parseFloat(getComputedStyle(element).fontSize)
+        );
+        expect(fontSize, selector + " 12px floor at " + width + "px / " + theme).toBeGreaterThanOrEqual(12);
+      }
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    }
+  }
+});

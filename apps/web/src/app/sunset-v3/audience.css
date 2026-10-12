@@ -60,3 +60,11 @@
 @media(max-width:1050px){.mdv3 .mdv3-audience-layout{grid-template-columns:minmax(0,1fr)}}
 @media(max-width:700px){.mdv3 .mdv3-audience .mdv3-page-heading{align-items:flex-start;flex-wrap:wrap}.mdv3 .mdv3-audience-layout>.mdv3-panel{padding:14px}.mdv3 .mdv3-audience-story h2{font-size:clamp(29px,8vw,37px)}.mdv3 .mdv3-audience-lede{font-size:16px}.mdv3 .mdv3-audience-score{grid-template-columns:minmax(0,1fr) minmax(70px,.82fr) minmax(0,1fr);padding:10px 8px;gap:6px}.mdv3 .mdv3-audience-team{gap:5px}.mdv3 .mdv3-audience-team strong{font-size:11px}.mdv3 .mdv3-audience-team small{font-size:10px}.mdv3 .mdv3-audience-crest{width:22px;height:28px;font-size:12px}.mdv3 .mdv3-audience-score-middle small{font-size:9px}.mdv3 .mdv3-audience-pitch{min-height:160px;border-width:7px}.mdv3 .mdv3-audience-evidence-copy{font-size:14px}}
 @media(forced-colors:active){.mdv3 .mdv3-audience-pitch{border:2px solid CanvasText;background:Canvas}.mdv3 .mdv3-audience-pitch svg{color:CanvasText}.mdv3 .mdv3-audience-pitch-caption{border-color:CanvasText;background:Canvas;color:CanvasText}.mdv3 .mdv3-audience-pitch-caption span{color:CanvasText}}
+
+/* Accessibility: the approved concept used 9–11px labels. Preserve the
+ * score-strip composition but enforce 12px minimum at all widths. */
+.mdv3 .mdv3-audience .mdv3-kicker,
+.mdv3 .mdv3-audience-team strong,
+.mdv3 .mdv3-audience-team small,
+.mdv3 .mdv3-audience-score-middle small,
+.mdv3 .mdv3-audience-pitch-caption span{font-size:12px}
