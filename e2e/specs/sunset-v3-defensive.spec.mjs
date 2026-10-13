@@ -56,5 +56,10 @@ test('dark and light layouts remain inside viewport', async ({ page }) => {
     await page.getByRole('combobox', { name: 'Display theme' }).selectOption(theme);
     await expect(page.locator('.mdv3')).toHaveAttribute('data-theme', theme);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    // The unsaved two-row example must not create a large empty editor panel.
+    const noteHeight = await page.getByRole('textbox', { name: 'Unsaved local example note' })
+      .evaluate(element => element.getBoundingClientRect().height);
+    expect(noteHeight).toBeGreaterThanOrEqual(72);
+    expect(noteHeight).toBeLessThanOrEqual(100);
   }
 });
