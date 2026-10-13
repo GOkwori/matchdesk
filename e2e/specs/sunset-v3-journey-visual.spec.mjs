@@ -1,4 +1,4 @@
-/** Read-only visual acceptance captures for Sunset Studio v3 screens 05–13.
+/** Read-only visual acceptance captures for Sunset Studio v3 screens 05–14.
  *
  * Captures are review evidence, never automatic proof of mock-up equivalence
  * or WCAG compliance. Use one browser project and explicitly set all three
@@ -61,9 +61,15 @@ const screenCases = [
     desktop: 'Settings & Help',
     mobile: 'Notification & Dialogue Library',
   },
+  {
+    id: '14-defensive',
+    heading: 'Defensive States',
+    desktop: 'Settings & Help',
+    mobile: 'Defensive States',
+  },
 ];
 
-test('capture screens 05–13 in both themes at 390, 1024 and 1440 pixels @visual-capture', async ({ page }, testInfo) => {
+test('capture screens 05–14 in both themes at 390, 1024 and 1440 pixels @visual-capture', async ({ page }, testInfo) => {
   // Run once in each existing browser project; avoid screenshot duplication.
   const viewportByProject = {
     desktop: { width: 1440, height: 1000 },
@@ -88,7 +94,7 @@ test('capture screens 05–13 in both themes at 390, 1024 and 1440 pixels @visua
       await expect(page.locator('.mdv3')).toHaveAttribute('data-theme', theme);
 
       for (const screen of screenCases) {
-        if (width === 390 && ['08-producer', '09-composer', '10-publication', '11-audience', '12-activity', '13-notifications'].includes(screen.id)) {
+        if (width === 390 && ['08-producer', '09-composer', '10-publication', '11-audience', '12-activity', '13-notifications', '14-defensive'].includes(screen.id)) {
           // Later screens are reached through the accessible mobile More panel.
           await page.getByRole('navigation', { name: 'Mobile demo navigation' })
             .locator('.mdv3-mobile-more-trigger').click();
@@ -101,6 +107,9 @@ test('capture screens 05–13 in both themes at 390, 1024 and 1440 pixels @visua
           await page.getByRole('button', { name: screen.desktop, exact: true }).click();
           if (screen.id === '10-publication') {
             await page.getByRole('button', { name: 'View future publication journey' }).click();
+          }
+          if (screen.id === '14-defensive') {
+            await page.getByRole('button', { name: 'Defensive States' }).click();
           }
         }
         await expect(page.getByRole('heading', { level: 1, name: screen.heading })).toBeVisible();
@@ -128,6 +137,10 @@ test('capture screens 05–13 in both themes at 390, 1024 and 1440 pixels @visua
             await expect(page.locator('.mdv3-notice-card.mdv3-notice-' + kind)).toBeVisible();
           }
         }
+        if (screen.id === '14-defensive') {
+          await expect(page.locator('.mdv3-defensive-card')).toHaveCount(16);
+          await expect(page.getByRole('button', { name: 'Execute privileged recovery · Unavailable' })).toBeDisabled();
+        }
         await expect(page.getByText(/Synthetic replay/i).first()).toBeVisible();
         expect(
           await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
@@ -137,6 +150,19 @@ test('capture screens 05–13 in both themes at 390, 1024 and 1440 pixels @visua
           body: await page.screenshot({ fullPage: true }),
           contentType: 'image/png',
         });
+        if (screen.id === '14-defensive' && width === 390) {
+          // A full-page screenshot can place fixed navigation at the previous
+          // scroll offset. Capture the *actual* first viewport separately and
+          // assert that the keyboard-only skip link is not shown unexpectedly.
+          await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+          await expect(page.getByRole('link', { name: 'Skip to main content' })).not.toBeInViewport();
+          await expect(page.getByRole('navigation', { name: 'Mobile demo navigation' })).toBeVisible();
+          await expect(page.getByRole('region', { name: 'More demo destinations' })).toHaveCount(0);
+          await testInfo.attach(`sunset-v3-14-${theme}-390px-viewport`, {
+            body: await page.screenshot({ fullPage: false }),
+            contentType: 'image/png',
+          });
+        }
         if (screen.id === '13-notifications') {
           await page.locator('.mdv3-notice-dialog-card').filter({ has: page.getByRole('heading', { name: 'Approve draft?' }) })
             .getByRole('button', { name: 'Inspect safe dialogue' }).click();

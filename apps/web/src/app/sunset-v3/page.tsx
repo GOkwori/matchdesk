@@ -1,4 +1,4 @@
-/** Sunset Studio v3 screens 01–13: synthetic-only, independently gated frontend. */
+/** Sunset Studio v3 screens 01–14: synthetic-only, independently gated frontend. */
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -11,6 +11,7 @@ import { ReviewPublicationJourney } from "./publication";
 import { AudienceExperience } from "./audience";
 import { ActivityAuditSettings } from "./activity";
 import { NotificationDialogueLibrary } from "./notifications";
+import { DefensiveStates } from "./defensive";
 import { editorial, fixture, latestMoments, matchStatistics } from "./demo-data";
 import "./tokens.css";
 import "./sunset.css";
@@ -21,8 +22,9 @@ import "./publication.css";
 import "./audience.css";
 import "./activity.css";
 import "./notifications.css";
+import "./defensive.css";
 
-type Page = "welcome" | "overview" | "command" | "tactical" | "moments" | "ai" | "evidence" | "producer" | "composer" | "publication" | "audience" | "activity" | "notifications";
+type Page = "welcome" | "overview" | "command" | "tactical" | "moments" | "ai" | "evidence" | "producer" | "composer" | "publication" | "audience" | "activity" | "notifications" | "defensive";
 type Notice = "success" | "information" | "warning";
 
 const nav = [
@@ -63,6 +65,7 @@ const mobileDestinations: readonly { label: string; target: Page }[] = [
   { label: "Audience Experience", target: "audience" },
   { label: "Activity, Audit & Settings", target: "activity" },
   { label: "Notification & Dialogue Library", target: "notifications" },
+  { label: "Defensive States", target: "defensive" },
 ];
 
 /** Surface a status label with its icon; do not rely on colour alone. */
@@ -216,7 +219,8 @@ export default function SunsetStudioPreview() {
         {notice && <div className={`mdv3-inapp mdv3-${notice}`} role="status"><strong>{notice === "success" ? "Demo view updated" : notice === "warning" ? "Approval unavailable" : "Read-only preview"}</strong>
           <span>{notice === "warning" ? "A verified, authenticated producer workflow is required. No change was made." : "These are design-only synthetic values. No server data changed."}</span>
           <button type="button" onClick={() => setNotice(null)} aria-label="Dismiss message">×</button></div>}
-        {page === "notifications" ? <NotificationDialogueLibrary/>
+        {page === "defensive" ? <DefensiveStates onOpenNotifications={() => setPage("notifications")}/>
+          : page === "notifications" ? <NotificationDialogueLibrary onOpenDefensive={() => setPage("defensive")}/>
           : page === "activity" ? <ActivityAuditSettings theme={theme} onThemeChange={setTheme}/>
           : page === "audience" ? <AudienceExperience onOpenEvidence={() => setPage("evidence")}/>
           : page === "publication" ? <ReviewPublicationJourney score={<ScoreHeader/>} onBackToComposer={() => setPage("composer")}/>
