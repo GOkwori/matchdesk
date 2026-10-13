@@ -1,0 +1,91 @@
+/* Screen 12: synthetic activity/audit review and genuinely local preferences.
+ * Shared dark/light palette remains authoritative. Activity events are NOT a
+ * production audit trail and preferences never touch server account settings.
+ */
+.mdv3 .mdv3-activity-stamp{display:inline-flex;align-items:center;flex:none;padding:8px 11px;border:1px solid var(--md-accent);border-radius:8px;color:var(--md-accent);background:var(--md-raised);font-size:12px;font-weight:750}
+.mdv3 .mdv3-activity-tabs{display:flex;flex-wrap:wrap;gap:9px;margin:15px 0}
+.mdv3 .mdv3-activity-tabs button{min-height:44px;padding:10px 13px;border:1px solid var(--md-ui-stroke);border-radius:8px;background:var(--md-raised);color:var(--md-text);font-size:13px;font-weight:750}
+.mdv3 .mdv3-activity-tabs button.active{border-color:var(--md-accent);color:var(--md-on-accent);background:var(--md-accent)}
+.mdv3 .mdv3-activity-layout{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(290px,1.03fr);gap:15px;align-items:stretch;margin:15px 0}
+.mdv3 .mdv3-activity-layout>.mdv3-panel{min-width:0}
+.mdv3 .mdv3-activity-layout .mdv3-head h2{font-size:17px;line-height:1.35}
+.mdv3 .mdv3-activity-primary>p.mdv3-muted{font-size:12px;line-height:1.55;margin:0 0 12px}
+.mdv3 .mdv3-activity-table-scroll{max-width:100%;overflow-x:auto}
+.mdv3 .mdv3-activity-table{width:100%;min-width:580px;border-collapse:collapse;text-align:left;table-layout:auto}
+.mdv3 .mdv3-activity-table th,.mdv3 .mdv3-activity-table td{padding:12px 10px;border-bottom:1px solid var(--md-line);vertical-align:middle;font-size:13px}
+.mdv3 .mdv3-activity-table thead th{color:var(--md-muted);font-size:12px;font-weight:700;background:var(--md-raised)}
+.mdv3 .mdv3-activity-table tbody th{color:var(--md-text);font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-weight:650}
+.mdv3 .mdv3-activity-table tbody td strong{font-size:13px;font-weight:750;display:block;line-height:1.45}
+.mdv3 .mdv3-activity-table tbody td small{display:block;font-size:12px;line-height:1.45;color:var(--md-muted)}
+.mdv3 .mdv3-activity-table tbody tr[data-selected=true]{background:color-mix(in srgb,var(--md-accent) 8%,var(--md-panel))}
+.mdv3 .mdv3-activity-table button{min-height:44px;padding:9px 12px;font-size:12px}
+.mdv3 .mdv3-activity-category{display:inline-flex;min-width:0;max-width:100%;padding:5px 9px;border:1px solid var(--md-info);border-radius:100px;color:var(--md-info);background:color-mix(in srgb,var(--md-info) 8%,var(--md-panel));font-size:12px;font-weight:700;overflow-wrap:anywhere}
+.mdv3 .mdv3-activity-detail{margin:15px 0 0;padding:14px;border:1px solid var(--md-accent);border-radius:9px;background:var(--md-raised)}
+.mdv3 .mdv3-activity-detail .mdv3-head{margin:0 0 9px}
+.mdv3 .mdv3-activity-detail .mdv3-head h3{font-size:16px;margin:0}
+.mdv3 .mdv3-activity-detail button{min-height:44px}
+.mdv3 .mdv3-activity-detail dl{margin:0}
+.mdv3 .mdv3-activity-detail dl>div{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;padding:9px 0;border-bottom:1px solid var(--md-line)}
+.mdv3 .mdv3-activity-detail dt,.mdv3 .mdv3-activity-detail dd{font-size:12px;line-height:1.45;min-width:0;overflow-wrap:anywhere}
+.mdv3 .mdv3-activity-detail dt{color:var(--md-muted)}
+.mdv3 .mdv3-activity-detail dd{margin:0;max-width:68%;text-align:right;font-weight:700}
+.mdv3 .mdv3-activity-detail p{font-size:12px;line-height:1.6;margin:12px 0 0;color:var(--md-muted)}
+.mdv3 .mdv3-activity-info{display:flex;align-items:flex-start;gap:12px;margin-top:20px;padding:13px 15px;border:1px solid var(--md-info);border-radius:9px;background:color-mix(in srgb,var(--md-info) 8%,var(--md-panel))}
+.mdv3 .mdv3-activity-info>span{flex:none;color:var(--md-info);font-size:19px}
+.mdv3 .mdv3-activity-info strong{font-size:13px;color:var(--md-info)}
+.mdv3 .mdv3-activity-info p{font-size:12px;line-height:1.55;margin:4px 0 0}
+.mdv3 .mdv3-activity-empty{display:grid;gap:11px;padding:21px;border:1px dashed var(--md-ui-stroke);border-radius:10px;background:var(--md-raised)}
+.mdv3 .mdv3-activity-empty>strong{font-size:16px}
+.mdv3 .mdv3-activity-empty p{font-size:13px;line-height:1.6;margin:0}
+.mdv3 .mdv3-activity-reference{display:grid;gap:8px}
+.mdv3 .mdv3-activity-reference>span{border:1px solid var(--md-line);border-radius:7px;background:var(--md-panel);padding:9px;font-size:12px;font-weight:700}
+.mdv3 .mdv3-activity-primary[role=tabpanel]>p{font-size:13px;line-height:1.65}
+.mdv3 .mdv3-activity-current{margin-top:16px}
+.mdv3 .mdv3-activity-current>div{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:10px 0;border-bottom:1px solid var(--md-line);font-size:13px}
+.mdv3 .mdv3-activity-current dt{color:var(--md-muted)}
+.mdv3 .mdv3-activity-current dd{margin:0;font-weight:700}
+.mdv3 .mdv3-activity-preferences .mdv3-head{margin-bottom:17px}
+.mdv3 .mdv3-activity-appearance{padding:0;margin:0 0 12px;border:0;border-bottom:1px solid var(--md-line)}
+.mdv3 .mdv3-activity-appearance legend{padding:0;margin-bottom:8px;font-size:12px;font-weight:700;color:var(--md-muted)}
+.mdv3 .mdv3-activity-choice{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:0 0 16px}
+.mdv3 .mdv3-activity-choice button{min-height:44px;padding:9px 12px;border:1px solid var(--md-ui-stroke);border-radius:8px;background:var(--md-raised);color:var(--md-text);font-size:12px;font-weight:700}
+.mdv3 .mdv3-activity-choice button.active{border-color:var(--md-accent);background:var(--md-accent);color:var(--md-on-accent)}
+.mdv3 .mdv3-activity-setting{display:flex;justify-content:space-between;align-items:center;gap:14px;min-height:70px;padding:11px 0}
+.mdv3 .mdv3-activity-setting+ .mdv3-activity-setting{border-top:1px solid var(--md-line)}
+.mdv3 .mdv3-activity-setting>div{min-width:0;flex:1}
+/* Keep settings names legible on both dark and light panels. */
+.mdv3 .mdv3-activity-setting strong,.mdv3 .mdv3-activity-setting label{font-size:14px;font-weight:750;color:var(--md-text)}
+.mdv3 .mdv3-activity-setting p{margin:3px 0 0;font-size:12px;line-height:1.45;color:var(--md-muted)}
+.mdv3 .mdv3-activity-setting input[type=checkbox]{flex:none;width:22px;height:22px;accent-color:var(--md-accent)}
+.mdv3 .mdv3-activity-setting select{min-width:110px;max-width:48%;background:var(--md-raised);color:var(--md-text);border:1px solid var(--md-ui-stroke);border-radius:8px;min-height:44px;padding:9px;font-size:14px}
+.mdv3 .mdv3-activity-pill{display:inline-flex;flex:none;align-items:center;max-width:48%;overflow-wrap:anywhere;padding:5px 9px;border:1px solid currentColor;border-radius:100px;font-size:12px;font-weight:700;text-align:center;line-height:1.3}
+.mdv3 .mdv3-activity-required{color:var(--md-success)}
+.mdv3 .mdv3-activity-unavailable{color:var(--md-muted)}
+.mdv3 .mdv3-activity-preferences-note{font-size:12px;line-height:1.55;margin:19px 0 0}
+.mdv3 .mdv3-activity[data-text-size=large] .mdv3-activity-primary p,
+.mdv3 .mdv3-activity[data-text-size=large] .mdv3-activity-primary dt,
+.mdv3 .mdv3-activity[data-text-size=large] .mdv3-activity-primary dd,
+.mdv3 .mdv3-activity[data-text-size=large] .mdv3-activity-table th,
+.mdv3 .mdv3-activity[data-text-size=large] .mdv3-activity-table td,
+.mdv3 .mdv3-activity[data-text-size=large] .mdv3-activity-table small,
+.mdv3 .mdv3-activity[data-text-size=large] .mdv3-activity-setting p{font-size:16px}
+.mdv3 .mdv3-activity[data-reduce-motion=on] *,
+.mdv3 .mdv3-activity[data-reduce-motion=on] *::before,
+.mdv3 .mdv3-activity[data-reduce-motion=on] *::after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+@media(prefers-reduced-motion:reduce){.mdv3 .mdv3-activity *, .mdv3 .mdv3-activity *::before,.mdv3 .mdv3-activity *::after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+@media(max-width:1100px){.mdv3 .mdv3-activity-layout{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:700px){
+  .mdv3 .mdv3-activity .mdv3-page-heading{align-items:flex-start;flex-wrap:wrap}
+  .mdv3 .mdv3-activity-layout>.mdv3-panel{padding:14px}
+  .mdv3 .mdv3-activity-table-scroll{overflow-x:visible}
+  .mdv3 .mdv3-activity-table{display:block;width:100%;min-width:0}
+  .mdv3 .mdv3-activity-table thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);clip-path:inset(50%);white-space:nowrap}
+  .mdv3 .mdv3-activity-table tbody{display:grid;gap:11px}
+  .mdv3 .mdv3-activity-table tbody tr{display:grid;min-width:0;padding:12px;border:1px solid var(--md-ui-stroke);border-radius:9px;background:var(--md-raised)}
+  .mdv3 .mdv3-activity-table tbody tr[data-selected=true]{border-color:var(--md-accent)}
+  .mdv3 .mdv3-activity-table tbody th,.mdv3 .mdv3-activity-table tbody td{display:block;width:100%;min-width:0;padding:9px 0;border-bottom:1px solid var(--md-line);overflow-wrap:anywhere}
+  .mdv3 .mdv3-activity-table tbody td:last-child{border-bottom:0}
+  .mdv3 .mdv3-activity-table tbody [data-label]:not([data-label="Replay clock"])::before{content:attr(data-label);display:block;margin-bottom:4px;color:var(--md-muted);font-size:12px;font-weight:700}
+  .mdv3 .mdv3-activity-tabs button{font-size:12px}
+}
+@media(forced-colors:active){.mdv3 .mdv3-activity-info,.mdv3 .mdv3-activity-empty,.mdv3 .mdv3-activity-table tbody tr{border-color:CanvasText}}

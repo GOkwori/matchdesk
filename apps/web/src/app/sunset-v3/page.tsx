@@ -1,4 +1,4 @@
-/** Sunset Studio v3 screens 01–11: synthetic-only, independently gated frontend. */
+/** Sunset Studio v3 screens 01–12: synthetic-only, independently gated frontend. */
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -9,6 +9,7 @@ import { ProducerReviewQueue } from "./producer-desk";
 import { StoryCommentaryComposer } from "./composer";
 import { ReviewPublicationJourney } from "./publication";
 import { AudienceExperience } from "./audience";
+import { ActivityAuditSettings } from "./activity";
 import { editorial, fixture, latestMoments, matchStatistics } from "./demo-data";
 import "./tokens.css";
 import "./sunset.css";
@@ -17,8 +18,9 @@ import "./producer-desk.css";
 import "./composer.css";
 import "./publication.css";
 import "./audience.css";
+import "./activity.css";
 
-type Page = "welcome" | "overview" | "command" | "tactical" | "moments" | "ai" | "evidence" | "producer" | "composer" | "publication" | "audience";
+type Page = "welcome" | "overview" | "command" | "tactical" | "moments" | "ai" | "evidence" | "producer" | "composer" | "publication" | "audience" | "activity";
 type Notice = "success" | "information" | "warning";
 
 const nav = [
@@ -40,6 +42,7 @@ const demoDestinations: Partial<Record<(typeof nav)[number], Page>> = {
   "Producer Desk": "producer",
   "Editorial Review": "composer",
   "Audience Outputs": "audience",
+  "Activity & Audit": "activity",
 };
 
 /** Every quick destination is an implemented local synthetic-only screen. */
@@ -55,6 +58,7 @@ const mobileDestinations: readonly { label: string; target: Page }[] = [
   { label: "Story & Commentary Composer", target: "composer" },
   { label: "Review & Publication Journey", target: "publication" },
   { label: "Audience Experience", target: "audience" },
+  { label: "Activity, Audit & Settings", target: "activity" },
 ];
 
 /** Surface a status label with its icon; do not rely on colour alone. */
@@ -208,7 +212,8 @@ export default function SunsetStudioPreview() {
         {notice && <div className={`mdv3-inapp mdv3-${notice}`} role="status"><strong>{notice === "success" ? "Demo view updated" : notice === "warning" ? "Approval unavailable" : "Read-only preview"}</strong>
           <span>{notice === "warning" ? "A verified, authenticated producer workflow is required. No change was made." : "These are design-only synthetic values. No server data changed."}</span>
           <button type="button" onClick={() => setNotice(null)} aria-label="Dismiss message">×</button></div>}
-        {page === "audience" ? <AudienceExperience onOpenEvidence={() => setPage("evidence")}/>
+        {page === "activity" ? <ActivityAuditSettings theme={theme} onThemeChange={setTheme}/>
+          : page === "audience" ? <AudienceExperience onOpenEvidence={() => setPage("evidence")}/>
           : page === "publication" ? <ReviewPublicationJourney score={<ScoreHeader/>} onBackToComposer={() => setPage("composer")}/>
           : page === "composer" ? <StoryCommentaryComposer score={<ScoreHeader/>} onOpenEvidence={() => setPage("evidence")} onOpenQueue={() => setPage("producer")} onOpenPublication={() => setPage("publication")}/> : page === "moments" ? <MomentsTimeline score={<ScoreHeader/>}
           onOpenIntelligence={() => setPage("ai")} onOpenEvidence={() => setPage("evidence")}/>
