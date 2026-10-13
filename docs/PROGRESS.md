@@ -1,5 +1,13 @@
 # Current progress
 
+## Sunset Studio v3 frontend — 14-screen development milestone (13 October 2026)
+
+**CI-QUALIFIED ON DEVELOPMENT FOR SYNTHETIC READ-ONLY SCOPE.** All 14 screens are implemented in the existing `/sunset-v3` Next.js demo. Screen 13 PR #46 was owner-approved and merged; its first post-merge integration run failed on screenshot capture (206/207 tests), then PR #47 separated functional and visual browser processes and was independently qualified and merged. Owner-approved Screen 14 PR #48 was squash-merged at `4039ccb214ff999290a826df4e4a185718e65be4`.
+
+Exact development source passed Foundation CI 38429583258, Foundation integration 38429583212, Source security 38429583220 and Dependency audit 38429583268. The integration recorded **213 functional + 3 visual Playwright tests passed**, along with runtime-browser and native-image PASS.
+
+[Full exact-source qualification](evidence/sunset-v3-14-screen-development-qualification-20261013.md). Outstanding: seven exact Batch 1 originals and 21-image manifest, independent WCAG 2.2 AA review, and all genuine identity/approval/publication/production release gates. No `main` promotion, production deployment, paid infrastructure or live privilege is authorised.
+
 Date: 11 October 2026. Stage: Phase 2 VERIFIED / COMPLETED; Phase 3 producer control and audience delivery in progress.
 Phase 0 gate: **VERIFIED / COMPLETED**.
 
