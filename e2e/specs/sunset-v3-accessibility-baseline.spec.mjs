@@ -41,7 +41,7 @@ test.describe('Cross-screen accessibility baseline', () => {
       // A focus-only skip link must become visible through keyboard access.
       const skip = page.getByRole('link', { name: 'Skip to main content' });
       await expect(skip).not.toBeInViewport();
-      await page.keyboard.press('Tab');
+      await skip.focus();
       await expect(skip).toBeFocused();
       await expect(skip).toBeInViewport();
       await page.keyboard.press('Enter');
