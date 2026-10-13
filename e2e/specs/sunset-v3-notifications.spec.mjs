@@ -75,3 +75,31 @@ test("light and dark themes retain responsive readable status labels", async ({ 
     await expect(warning).toBeInViewport();
   }
 });
+
+
+test("modal backdrop covers viewport, prevents background interaction and survives zoom", async ({ page }) => {
+  await openLibrary(page);
+  const opener = page.getByRole("button", { name: "Try local discard" });
+  await opener.click();
+  const dialog = page.getByRole("dialog", { name: "Discard changes?" });
+  await expect(dialog).toBeVisible();
+  await page.evaluate(() => { document.documentElement.style.zoom = "2"; });
+  const geometry = await page.evaluate(() => {
+    const backdrop = document.querySelector(".mdv3-notice-backdrop").getBoundingClientRect();
+    const modal = document.querySelector(".mdv3-notice-modal").getBoundingClientRect();
+    return {
+      backdrop: { left: backdrop.left, top: backdrop.top, right: backdrop.right, bottom: backdrop.bottom },
+      modal: { left: modal.left, top: modal.top, right: modal.right, bottom: modal.bottom },
+      viewport: { width: window.innerWidth, height: window.innerHeight },
+    };
+  });
+  expect(geometry.backdrop.left).toBeLessThanOrEqual(1);
+  expect(geometry.backdrop.top).toBeLessThanOrEqual(1);
+  expect(geometry.backdrop.right).toBeGreaterThanOrEqual(geometry.viewport.width - 1);
+  expect(geometry.backdrop.bottom).toBeGreaterThanOrEqual(geometry.viewport.height - 1);
+  expect(geometry.modal.left).toBeGreaterThanOrEqual(-1);
+  expect(geometry.modal.right).toBeLessThanOrEqual(geometry.viewport.width + 1);
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+  await expect(opener).toBeFocused();
+});
