@@ -39,7 +39,7 @@ test('filter, keyboard focus, and local notes behave without persistence claims'
   await expect(cards).toHaveCount(6);
   // A newly filtered list must never leave stale detail from a hidden state.
   await expect(cards.first()).toHaveAttribute('aria-pressed', 'true');
-  await expect(page.getByRole('heading', { name: 'Inspect a safe recovery response' }).locator('..')).toContainText('Offline');
+  await expect(page.locator('.mdv3-defensive-inspection')).toContainText('Offline');
   await cards.first().focus();
   await page.keyboard.press('Enter');
   await expect(cards.first()).toHaveAttribute('aria-pressed', 'true');
