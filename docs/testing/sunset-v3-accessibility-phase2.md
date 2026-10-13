@@ -1,21 +1,21 @@
 # Sunset Studio v3 — accessibility Phase 2 qualification protocol
 
-**Baseline:** \`development\` squash commit \`0d003ca72a1fa0b8c07533f8740e946d6510dc63\` (PR #50).
+**Baseline:** `development` squash commit `0d003ca72a1fa0b8c07533f8740e946d6510dc63` (PR #50).
 **Scope:** Fourteen implemented synthetic-only demo screens, dark and light themes.
 **Status as authored:** Automated Phase 2 checks proposed; manual checks **NOT RUN**. No WCAG 2.2 AA conformance statement or independent accessibility certification is authorised.
-**Promotion boundary:** Work through a reviewed PR into \`development\` only. \`main\`, production, identity, producer mutation, publishing and deployment gates do not change.
+**Promotion boundary:** Work through a reviewed PR into `development` only. `main`, production, identity, producer mutation, publishing and deployment gates do not change.
 
 ## What the automated subset can establish
 
-- The pre-existing \`sunset-v3-accessibility-baseline.spec.mjs\` asserts one main and H1, skip-link focus/activation, no document overflow at 390/768/1280/1440 CSS px, and no browser exceptions on every screen in both themes.
-- The pre-existing \`sunset-v3-contrast.spec.mjs\` validates semantic colour tokens against the three designated surfaces, an essential control-outline token, primary button computed contrast and selected minimum label sizes. It **does not measure every rendered pixel, graphic, icon or transparency blend**.
-- The Phase 2 \`sunset-v3-keyboard-reflow.spec.mjs\` adds keyboard-only sequential Tab/Enter navigation, Escape and custom-dialog focus restoration, measured mobile-menu targets, and document-width reflow at **320 CSS px** for all fourteen screens and both themes.
+- The pre-existing `sunset-v3-accessibility-baseline.spec.mjs` asserts one main and H1, skip-link focus/activation, no document overflow at 390/768/1280/1440 CSS px, and no browser exceptions on every screen in both themes.
+- The pre-existing `sunset-v3-contrast.spec.mjs` validates semantic colour tokens against the three designated surfaces, an essential control-outline token, primary button computed contrast and selected minimum label sizes. It **does not measure every rendered pixel, graphic, icon or transparency blend**.
+- The Phase 2 `sunset-v3-keyboard-reflow.spec.mjs` adds keyboard-only sequential Tab/Enter navigation, Escape and custom-dialog focus restoration, measured mobile-menu targets, and document-width reflow at **320 CSS px** for all fourteen screens and both themes.
 - A 320 CSS px viewport approximates the **width** requirement of WCAG 2.2 SC 1.4.10 for a desktop viewport starting at 1280 CSS px and magnified 400%. It **does not certify actual browser zoom**, text-spacing overrides, viewport-height reflow, every interactive state, or screen-reader experience.
 - All automated checks must pass at the exact PR head under existing Foundation CI, Foundation integration, Source security and Dependency audit. Retries must not suppress failed evidence. Retain CI artifacts, screenshots and traces as applicable.
 
 ## Manual execution prerequisites (do not pre-mark as PASS)
 
-Record the tested git SHA, PR number, reviewer name, date/time, browser version, OS, display/viewport dimensions, zoom, locale and assistive-technology version. Test the actual running \`/sunset-v3\` demo on an isolated trusted environment. Do not enable login, approvals, publishing, system notifications or other unsupported features to perform accessibility tests.
+Record the tested git SHA, PR number, reviewer name, date/time, browser version, OS, display/viewport dimensions, zoom, locale and assistive-technology version. Test the actual running `/sunset-v3` demo on an isolated trusted environment. Do not enable login, approvals, publishing, system notifications or other unsupported features to perform accessibility tests.
 
 | Test environment | State | Required evidence |
 |---|---|---|
@@ -32,7 +32,7 @@ If a listed platform is unavailable, record **BLOCKED** with reason; never relab
 
 1. Reload each of the fourteen screens from its actual mobile More destination where applicable. Starting from the browser's normal focus position, use only **Tab**, **Shift+Tab**, **Enter**, **Space**, arrow keys when applicable and **Escape**; do not programmatically focus controls or click.
 2. Confirm the first reachable skip link is visible when focused; Enter places visible keyboard focus on the main landmark. Inspect the sequence through the theme selector, navigation, links, action controls, filters, claim inspection and any safe local-note field. No unexpectedly skipped, invisible or disconnected focus stops.
-3. Open the persistent mobile More menu by keyboard. Confirm \`aria-expanded\` is reflected in screen-reader state, all fourteen options are reachable and named, and selecting a destination lands in the expected view. Escape dismisses the menu and restores focus to its opener. Focus must never be lost to the document body.
+3. Open the persistent mobile More menu by keyboard. Confirm `aria-expanded` is reflected in screen-reader state, all fourteen options are reachable and named, and selecting a destination lands in the expected view. Escape dismisses the menu and restores focus to its opener. Focus must never be lost to the document body.
 4. Open the Notification & Dialogue Library's safe local discard dialog using keyboard only. Confirm initial focus, Tab/Shift+Tab containment, Escape/cancel, focus restoration, name/description announcement and that the background cannot be activated. Repeat with the **disabled** producer approval/rejection/publication examples; none may execute backend actions.
 5. Inspect focus indicators against both themes, high contrast/forced-colour settings and when content is scrolled. A focused control should not be wholly obscured by the fixed mobile navigation or dialogs (WCAG 2.2 SC 2.4.11).
 6. Record every unique failure with screen, exact keystrokes, expected versus observed focus target, computed CSS selector/label, severity and trace/screenshot location. Do not silently reorder controls or remove keyboard access to make tests pass.
@@ -81,12 +81,12 @@ Use one row per test/device/theme/zoom combination; these fourteen rows are the 
 
 For each run capture:
 
-- \`run_id\`, \`git_sha\`, \`screen\`, \`theme\`, \`browser\`, \`os\`, \`assistive_technology\`, \`zoom\`, \`effective_css_viewport\`, \`method\` (automated/manual), \`reviewer\`, \`timestamp\`.
-- \`expected\`, \`actual\`, \`status\` (PASS/FAIL/BLOCKED/NOT RUN), \`wcag_sc\`, \`severity\`, \`evidence_paths\`, \`issue_url\`, \`remediation_sha\`, \`retest_run_id\`.
+- `run_id`, `git_sha`, `screen`, `theme`, `browser`, `os`, `assistive_technology`, `zoom`, `effective_css_viewport`, `method` (automated/manual), `reviewer`, `timestamp`.
+- `expected`, `actual`, `status` (PASS/FAIL/BLOCKED/NOT RUN), `wcag_sc`, `severity`, `evidence_paths`, `issue_url`, `remediation_sha`, `retest_run_id`.
 - A reviewer-approved final summary, explicit exceptions, known failures and business impact. Keep any user screenshots, speech recordings and logs free of credentials, personal data and unapproved production information.
 
-**Automatic-gate outcome:** only \`AUTOMATED BASELINE PASS\` after all exact-head workflows are green.  
-**Manual outcome:** retain \`MANUAL VALIDATION OUTSTANDING\` until genuinely performed and signed off.  
-**Conformance outcome:** do not claim \`WCAG 2.2 AA compliant/certified\` from these probes or a self-authored checklist. Independent qualified assessment and evidence-backed remediation remain separate gates.
+**Automatic-gate outcome:** only `AUTOMATED BASELINE PASS` after all exact-head workflows are green.  
+**Manual outcome:** retain `MANUAL VALIDATION OUTSTANDING` until genuinely performed and signed off.  
+**Conformance outcome:** do not claim `WCAG 2.2 AA compliant/certified` from these probes or a self-authored checklist. Independent qualified assessment and evidence-backed remediation remain separate gates.
 
 A failed or unavailable manual test never silently becomes a passed requirement, and no automated check grants authorisation to deploy, publish or alter a production environment.
