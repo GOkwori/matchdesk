@@ -36,6 +36,16 @@ export function DefensiveStates({ onOpenNotifications }: { onOpenNotifications: 
   const active = examples.find(example => example.id === selected) ?? examples[0];
   const visible = examples.filter(example => filter === "all" || example.level === filter);
 
+  /** Keep the selected detail inside the currently visible state set. */
+  function changeFilter(next: "all" | Level) {
+    setFilter(next);
+    setSelected(current => {
+      const currentExample = examples.find(example => example.id === current);
+      if (next === "all" || currentExample?.level === next) return current;
+      return examples.find(example => example.level === next)?.id ?? examples[0].id;
+    });
+  }
+
   return <div className="mdv3-content mdv3-defensive">
     <header className="mdv3-page-heading">
       <div><span className="mdv3-kicker">SUNSET STUDIO V3 · SCREEN 14 · SYNTHETIC PREVIEW</span>
@@ -47,7 +57,7 @@ export function DefensiveStates({ onOpenNotifications }: { onOpenNotifications: 
     <section className="mdv3-panel mdv3-defensive-panel" aria-label="Defensive interface scenarios">
       <div className="mdv3-head"><h2>Defensive interface scenarios · 16 states</h2>
         <label className="mdv3-defensive-filter">Show states
-          <select aria-label="Filter defensive states" value={filter} onChange={event => setFilter(event.target.value as "all" | Level)}>
+          <select aria-label="Filter defensive states" value={filter} onChange={event => changeFilter(event.target.value as "all" | Level)}>
             <option value="all">All 16</option><option value="information">Information</option>
             <option value="attention">Attention</option><option value="blocked">Blocked</option>
           </select>
