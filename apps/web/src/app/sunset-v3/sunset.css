@@ -304,6 +304,17 @@
   .mdv3 .mdv3-attention-card {min-height:145px;padding:13px}
   .mdv3 .mdv3-count {font-size:28px}
 }
+/* On narrow/400%-equivalent reflow widths, the 190px minimum height
+ * must not imply a 351px minimum width through the pitch aspect ratio.
+ * Preserve the full-size readable empty state instead of clipping the page. */
+@media(max-width:400px) {
+  .mdv3 .mdv3-pitch {
+    aspect-ratio:auto;
+    width:100%;
+    min-width:0;
+  }
+}
+
 @media(max-width:360px) {
   .mdv3 .mdv3-attention {grid-template-columns:minmax(0,1fr)}
   .mdv3 .mdv3-graphic-heading {align-items:flex-start;flex-direction:column}
