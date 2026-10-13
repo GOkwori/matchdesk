@@ -4,6 +4,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { editorial } from "./demo-data";
+import { isolateModalBackground } from "./modal-isolation";
 type Kind = "success" | "information" | "warning" | "error";
 type DialogKind = "discard" | "reject" | "approve" | "publish";
 const banners: readonly { kind: Kind; title: string; detail: string }[] = [
@@ -32,6 +33,7 @@ export function NotificationDialogueLibrary({ onOpenDefensive }: { onOpenDefensi
     if (!active) return;
     const panel = dialog.current;
     const focusables = () => Array.from(panel?.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), textarea:not(:disabled)') ?? []);
+    const restoreBackground = panel ? isolateModalBackground(panel) : () => {};
     focusables()[0]?.focus();
     function keydown(event: KeyboardEvent) {
       if (event.key === "Escape") { event.preventDefault(); close(); return; }
@@ -43,7 +45,7 @@ export function NotificationDialogueLibrary({ onOpenDefensive }: { onOpenDefensi
       else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
     }
     document.addEventListener("keydown", keydown);
-    return () => { document.removeEventListener("keydown", keydown); opener.current?.focus(); };
+    return () => { document.removeEventListener("keydown", keydown); restoreBackground(); opener.current?.focus(); };
   }, [active]);
   return <div className="mdv3-content mdv3-notifications">
     <header className="mdv3-page-heading"><div><span className="mdv3-kicker">SUNSET STUDIO V3 · SCREEN 13 · SYNTHETIC PREVIEW</span><h1>Notification &amp; Dialogue Library</h1><p>Branded, accessible in-app feedback. No browser alerts or operating-system notifications.</p></div><button type="button" className="mdv3-secondary" onClick={onOpenDefensive}>Defensive States</button></header>

@@ -12,6 +12,7 @@ import { AudienceExperience } from "./audience";
 import { ActivityAuditSettings } from "./activity";
 import { NotificationDialogueLibrary } from "./notifications";
 import { DefensiveStates } from "./defensive";
+import { isolateModalBackground } from "./modal-isolation";
 import { editorial, fixture, latestMoments, matchStatistics } from "./demo-data";
 import "./tokens.css";
 import "./sunset.css";
@@ -151,6 +152,7 @@ export default function SunsetStudioPreview() {
     if (!showDialog) return;
     const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const dialog = dialogRef.current;
+    const restoreBackground = dialog ? isolateModalBackground(dialog) : () => {};
     const buttons = Array.from(dialog?.querySelectorAll<HTMLButtonElement>("button:not(:disabled)") ?? []);
     buttons[0]?.focus();
 
@@ -178,6 +180,7 @@ export default function SunsetStudioPreview() {
     document.addEventListener("keydown", onDialogKey);
     return () => {
       document.removeEventListener("keydown", onDialogKey);
+      restoreBackground();
       opener?.focus();
     };
   }, [showDialog]);

@@ -103,3 +103,81 @@ test("modal backdrop covers viewport, prevents background interaction and surviv
   await expect(dialog).toHaveCount(0);
   await expect(opener).toBeFocused();
 });
+
+/** Both custom modal implementations must make background controls inert,
+ * preventing real DOM focus or pointer interaction. The inert property belongs
+ * on an ancestor, so an inert descendant need not carry that property itself.
+ * Playwright role-locator matching alone does not prove the browser's native
+ * inert/focus semantics; this subset cannot replace issue #52 AT testing.
+ */
+async function expectBackgroundFocusBlocked(control) {
+  const outcome = await control.evaluate(element => {
+    const hasInertAncestor = Boolean(element.closest('[inert]'));
+    element.focus();
+    return { hasInertAncestor, receivedFocus: document.activeElement === element };
+  });
+  expect(outcome).toEqual({ hasInertAncestor: true, receivedFocus: false });
+}
+
+test("notification modal makes background inert and restores it after Escape", async ({ page }) => {
+  await openLibrary(page);
+  const opener = page.getByRole("button", { name: "Try local discard" });
+  // The panel is a sibling of the backdrop; its nested button grid is inert
+  // through inheritance rather than by having an inert property itself.
+  const background = page.locator(".mdv3-notice-dialog-grid").locator("xpath=..");
+  const mobileNavigation = page.locator(".mdv3-mobile-nav");
+  await opener.click();
+  const dialog = page.getByRole("dialog", { name: "Discard changes?" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toHaveAttribute("aria-modal", "true");
+  await expect(background).toHaveJSProperty("inert", true);
+  await expect(mobileNavigation).toHaveJSProperty("inert", true);
+  await expectBackgroundFocusBlocked(opener);
+  await expect(dialog.getByRole("button", { name: "Continue editing" })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+  await expect(background).toHaveJSProperty("inert", false);
+  await expect(mobileNavigation).toHaveJSProperty("inert", false);
+  await expect(opener).toBeFocused();
+  await opener.click();
+  await expect(background).toHaveJSProperty("inert", true);
+  await expectBackgroundFocusBlocked(opener);
+  await dialog.getByRole("button", { name: "Continue editing" }).click();
+  await expect(background).toHaveJSProperty("inert", false);
+  await expect(mobileNavigation).toHaveJSProperty("inert", false);
+  await expect(opener).toBeFocused();
+});
+
+test("blocked approval modal isolates whole application background and restores focus", async ({ page }) => {
+  // Desktop/tablet show the sidebar; mobile uses a persistent bottom nav.
+  // Exercise both pathways, instead of clicking a hidden desktop control.
+  if (page.viewportSize().width <= 700) {
+    await page.getByRole("navigation", { name: "Mobile demo navigation" })
+      .getByRole("button", { name: /Overview/ }).click();
+  } else {
+    await page.getByRole("button", { name: "Overview", exact: true }).click();
+  }
+  const opener = page.getByRole("button", { name: "Why is approval blocked?" });
+  const background = page.locator(".mdv3-shell");
+  const mobileNavigation = page.locator(".mdv3-mobile-nav");
+  await opener.click();
+  const dialog = page.getByRole("dialog", { name: "Approval blocked" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toHaveAttribute("aria-modal", "true");
+  await expect(background).toHaveJSProperty("inert", true);
+  await expect(mobileNavigation).toHaveJSProperty("inert", true);
+  await expectBackgroundFocusBlocked(opener);
+  await expect(dialog.getByRole("button", { name: "Understood" })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+  await expect(background).toHaveJSProperty("inert", false);
+  await expect(mobileNavigation).toHaveJSProperty("inert", false);
+  await expect(opener).toBeFocused();
+  await opener.click();
+  await expect(background).toHaveJSProperty("inert", true);
+  await expectBackgroundFocusBlocked(opener);
+  await dialog.getByRole("button", { name: "Understood" }).click();
+  await expect(background).toHaveJSProperty("inert", false);
+  await expect(mobileNavigation).toHaveJSProperty("inert", false);
+  await expect(opener).toBeFocused();
+});
