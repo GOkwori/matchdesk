@@ -63,7 +63,7 @@ const screenCases = [
   },
 ];
 
-test('capture screens 05–13 in both themes at 390, 1024 and 1440 pixels', async ({ page }, testInfo) => {
+test('capture screens 05–13 in both themes at 390, 1024 and 1440 pixels @visual-capture', async ({ page }, testInfo) => {
   // Run once in each existing browser project; avoid screenshot duplication.
   const viewportByProject = {
     desktop: { width: 1440, height: 1000 },
