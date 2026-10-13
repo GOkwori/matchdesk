@@ -45,8 +45,7 @@ test('filter, keyboard focus, and local notes behave without persistence claims'
   await expect(note).toHaveValue('Local-only edit');
   await page.getByRole('button', { name: 'View notification library' }).click();
   await expect(page.getByRole('heading', { name: 'Notification & Dialogue Library' })).toBeVisible();
-  await page.getByRole('button', { name: 'Settings & Help' }).click();
-  await page.getByRole('button', { name: 'Defensive States' }).click();
+  await openDefensive(page);
   await expect(page.getByRole('textbox', { name: 'Unsaved local example note' }))
     .toHaveValue('Local note only — not saved to an account');
 });
