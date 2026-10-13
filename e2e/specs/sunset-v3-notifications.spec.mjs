@@ -35,7 +35,7 @@ test("safe discard dialog traps focus, cancels with Escape and only clears local
   await opener.click();
   const dialog = page.getByRole("dialog", { name: "Discard changes?" });
   await expect(dialog).toBeVisible();
-  await expect(dialog.getByRole("button", { name: "Continue editing" })).toBeFocused();
+  await expect(dialog.getByRole("textbox", { name: "Local example edit" })).toBeFocused();
   await page.keyboard.press("Shift+Tab");
   await expect(dialog.getByRole("button", { name: "Discard local example" })).toBeFocused();
   await page.keyboard.press("Escape");
@@ -71,6 +71,7 @@ test("light and dark themes retain responsive readable status labels", async ({ 
     await expect(page.locator(".mdv3")).toHaveAttribute("data-theme", theme);
     const warning = page.locator(".mdv3-notice-card.mdv3-notice-warning");
     await expect(warning).toContainText("Warning");
+    await warning.scrollIntoViewIfNeeded();
     await expect(warning).toBeInViewport();
   }
 });
