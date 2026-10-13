@@ -103,3 +103,48 @@ test("modal backdrop covers viewport, prevents background interaction and surviv
   await expect(dialog).toHaveCount(0);
   await expect(opener).toBeFocused();
 });
+
+/** Both custom modal implementations must remove background controls from
+ * keyboard and accessibility queries while they are open, then restore them.
+ * This does not replace real screen-reader acceptance in issue #52.
+ */
+test("notification modal makes background inert and restores it after Escape", async ({ page }) => {
+  await openLibrary(page);
+  const opener = page.getByRole("button", { name: "Try local discard" });
+  const background = page.locator(".mdv3-notice-dialog-grid");
+  await opener.click();
+  const dialog = page.getByRole("dialog", { name: "Discard changes?" });
+  await expect(dialog).toBeVisible();
+  await expect(background).toHaveJSProperty("inert", true);
+  await expect(page.getByRole("button", { name: "Try local discard" })).toHaveCount(0);
+  await expect(dialog.getByRole("button", { name: "Continue editing" })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+  await expect(background).toHaveJSProperty("inert", false);
+  await expect(opener).toBeFocused();
+  await opener.click();
+  await expect(background).toHaveJSProperty("inert", true);
+  await dialog.getByRole("button", { name: "Continue editing" }).click();
+  await expect(background).toHaveJSProperty("inert", false);
+  await expect(opener).toBeFocused();
+});
+
+test("blocked approval modal isolates whole application background and restores focus", async ({ page }) => {
+  await page.getByRole("button", { name: "Overview", exact: true }).click();
+  const opener = page.getByRole("button", { name: "Why is approval blocked?" });
+  const background = page.locator(".mdv3-shell");
+  await opener.click();
+  const dialog = page.getByRole("dialog", { name: "Approval blocked" });
+  await expect(dialog).toBeVisible();
+  await expect(background).toHaveJSProperty("inert", true);
+  await expect(page.getByRole("button", { name: "Why is approval blocked?" })).toHaveCount(0);
+  await expect(dialog.getByRole("button", { name: "Understood" })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+  await expect(background).toHaveJSProperty("inert", false);
+  await expect(opener).toBeFocused();
+  await opener.click();
+  await dialog.getByRole("button", { name: "Understood" }).click();
+  await expect(background).toHaveJSProperty("inert", false);
+  await expect(opener).toBeFocused();
+});
