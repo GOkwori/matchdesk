@@ -1,0 +1,29 @@
+/* Screen 14: design-only defensive states, using Sunset Studio theme tokens. */
+.mdv3 .mdv3-defensive{display:grid;gap:18px}
+.mdv3 .mdv3-defensive-panel{padding:20px;min-width:0}
+.mdv3 .mdv3-defensive-filter{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px;color:var(--md-text)}
+.mdv3 .mdv3-defensive-filter select{min-height:44px;padding:8px 10px;border:1px solid var(--md-ui-stroke);border-radius:8px;color:var(--md-text);background:var(--md-raised)}
+.mdv3 .mdv3-defensive-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.mdv3 .mdv3-defensive-card{display:flex;flex-direction:column;text-align:left;gap:10px;min-width:0;min-height:166px;padding:15px;border:1px solid var(--md-ui-stroke);border-radius:10px;color:var(--md-text);background:var(--md-raised);cursor:pointer;font:inherit}
+.mdv3 .mdv3-defensive-card[aria-pressed="true"]{outline:2px solid var(--md-accent);outline-offset:2px}
+.mdv3 .mdv3-defensive-card-title{display:flex;align-items:center;gap:9px;font-size:14px}
+.mdv3 .mdv3-defensive-card-title>span{font-size:20px;line-height:1;color:var(--md-accent)}
+.mdv3 .mdv3-defensive-description{font-size:13px;line-height:1.55;flex:1;color:var(--md-muted)}
+.mdv3 .mdv3-defensive-tag{font-size:12px;font-weight:750;color:var(--md-text);border:1px solid var(--md-ui-stroke);border-radius:20px;padding:5px 9px;width:max-content;max-width:100%}
+.mdv3 .mdv3-defensive-information .mdv3-defensive-tag{border-color:var(--md-info)}
+.mdv3 .mdv3-defensive-attention .mdv3-defensive-tag{border-color:var(--md-warn)}
+.mdv3 .mdv3-defensive-blocked .mdv3-defensive-tag{border-color:var(--md-error)}
+.mdv3 .mdv3-defensive-inspection{border:1px solid var(--md-ui-stroke);border-left:4px solid var(--md-info);background:var(--md-raised);color:var(--md-text);padding:18px;border-radius:10px;line-height:1.6}
+.mdv3 .mdv3-defensive-inspection.mdv3-defensive-attention{border-left-color:var(--md-warn)}
+.mdv3 .mdv3-defensive-inspection.mdv3-defensive-blocked{border-left-color:var(--md-error)}
+.mdv3 .mdv3-defensive-inspection p{margin:8px 0 14px}
+.mdv3 .mdv3-defensive-inspection button:disabled{opacity:.58}
+.mdv3 .mdv3-defensive-note{display:grid;gap:9px;margin-top:18px;color:var(--md-text);font-weight:700}
+.mdv3 .mdv3-defensive-note textarea{background:var(--md-raised);border:1px solid var(--md-ui-stroke);color:var(--md-text);padding:12px;border-radius:9px;font:inherit;resize:vertical;max-width:100%}
+.mdv3 .mdv3-defensive-principles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.mdv3 .mdv3-defensive-principles article{border:1px solid var(--md-ui-stroke);border-radius:9px;padding:16px;min-width:0;color:var(--md-text);background:var(--md-raised)}
+.mdv3 .mdv3-defensive-principles p{color:var(--md-muted);line-height:1.6;font-size:13px}
+@media(max-width:1180px){.mdv3 .mdv3-defensive-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){.mdv3 .mdv3-defensive-principles{grid-template-columns:1fr}.mdv3 .mdv3-defensive-panel{padding:14px}}
+@media(max-width:520px){.mdv3 .mdv3-defensive-grid{grid-template-columns:1fr}.mdv3 .mdv3-defensive-card{min-height:136px}}
+@media(forced-colors:active){.mdv3 .mdv3-defensive-card[aria-pressed="true"]{outline-color:Highlight}}
