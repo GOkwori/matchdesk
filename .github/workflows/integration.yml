@@ -630,10 +630,25 @@ jobs:
           set -euo pipefail
           npm ci --ignore-scripts --no-audit --no-fund
           npx --no-install playwright install --with-deps chromium
-      - name: Run browser regressions without retrying failures away
+      # Execute functional and screenshot-heavy reviews in separate browser
+      # processes. Preserve both exit codes, with zero retries and separate
+      # report directories; an evidence capture failure remains a CI failure.
+      - name: Run functional browser regressions without retrying failures away
         if: ${{ !cancelled() && steps.browser.outcome == 'success' }}
         working-directory: e2e
-        run: npm test 2>&1 | tee ../artifacts/integration/browser.log
+        env:
+          MATCHDESK_E2E_SUITE: functional
+        run: |
+          set -euo pipefail
+          npm test -- --grep-invert '@visual-capture' 2>&1 | tee ../artifacts/integration/browser-functional.log
+      - name: Run isolated visual evidence captures without retries
+        if: ${{ !cancelled() && steps.browser.outcome == 'success' }}
+        working-directory: e2e
+        env:
+          MATCHDESK_E2E_SUITE: visual
+        run: |
+          set -euo pipefail
+          npm test -- --grep '@visual-capture' 2>&1 | tee ../artifacts/integration/browser-visual.log
       - name: Install the verified native-image scanner and current database
         id: scanner
         if: ${{ !cancelled() && steps.runtime.outcome == 'success' && steps.producer_storage.outcome == 'success' && steps.psycopg_storage.outcome == 'success' && steps.customer_sessions_storage.outcome == 'success' && steps.oidc_storage.outcome == 'success' && steps.account_directory.outcome == 'success' && steps.directory_gate.outcome == 'success' && steps.id3g_role_probe.outcome == 'success' && steps.id3g_revocation_qa.outcome == 'success' && steps.id3g_revocation_gate.outcome == 'success' }}

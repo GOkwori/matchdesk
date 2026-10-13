@@ -1,6 +1,15 @@
 /** Test the built Compose application, never a separately spawned dev server. */
 import { defineConfig } from '@playwright/test';
 
+// Keep separate Playwright processes and evidence namespaces for behavioural
+// regressions and screenshot-heavy visual reviews. Default local runs retain
+// the existing combined artifact locations.
+const suite = process.env.MATCHDESK_E2E_SUITE;
+if (suite && !['functional', 'visual'].includes(suite)) {
+  throw new Error('Unrecognised MatchDesk browser-evidence suite');
+}
+const artifactName = suite ? `browser-${suite}` : 'browser';
+
 export default defineConfig({
   testDir: './specs',
   timeout: 30000,
@@ -8,12 +17,12 @@ export default defineConfig({
   forbidOnly: true,
   retries: 0, // Failures remain visible; reruns are separate recorded executions.
   workers: 1,
-  outputDir: '../artifacts/integration/browser-results',
+  outputDir: `../artifacts/integration/${artifactName}-results`,
   reporter: [
     ['list'],
-    ['junit', { outputFile: '../artifacts/integration/browser-junit.xml' }],
-    ['json', { outputFile: '../artifacts/integration/browser-results.json' }],
-    ['html', { outputFolder: '../artifacts/integration/browser-report', open: 'never' }],
+    ['junit', { outputFile: `../artifacts/integration/${artifactName}-junit.xml` }],
+    ['json', { outputFile: `../artifacts/integration/${artifactName}-results.json` }],
+    ['html', { outputFolder: `../artifacts/integration/${artifactName}-report`, open: 'never' }],
   ],
   use: {
     baseURL: 'http://127.0.0.1:3000',
