@@ -30,10 +30,11 @@ async function visitDestination(page, label) {
 
 /** Only one Chromium project performs the multi-width cross-screen audit. */
 test.describe('Cross-screen accessibility baseline', () => {
-  test.skip(({ }, info) => info.project.name !== 'desktop', 'One browser project explicitly tests all target widths.');
-
   for (const label of destinations) {
-    test(`${label}: landmark, heading, keyboard skip link, responsive reflow`, async ({ page }) => {
+    test(`${label}: landmark, heading, keyboard skip link, responsive reflow`, async ({ page }, testInfo) => {
+      // Only the desktop project performs all four viewport sizes; other
+      // browser projects skip deliberately rather than duplicating evidence.
+      test.skip(testInfo.project.name !== 'desktop', 'Viewport matrix already covered by desktop project.');
       const errors = [];
       page.on('pageerror', e => errors.push(e.message));
       await visitDestination(page, label);
