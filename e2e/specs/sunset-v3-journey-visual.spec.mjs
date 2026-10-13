@@ -150,6 +150,19 @@ test('capture screens 05–14 in both themes at 390, 1024 and 1440 pixels @visua
           body: await page.screenshot({ fullPage: true }),
           contentType: 'image/png',
         });
+        if (screen.id === '14-defensive' && width === 390) {
+          // A full-page screenshot can place fixed navigation at the previous
+          // scroll offset. Capture the *actual* first viewport separately and
+          // assert that the keyboard-only skip link is not shown unexpectedly.
+          await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+          await expect(page.getByRole('link', { name: 'Skip to main content' })).not.toBeInViewport();
+          await expect(page.getByRole('navigation', { name: 'Mobile demo navigation' })).toBeVisible();
+          await expect(page.getByRole('region', { name: 'More demo destinations' })).toHaveCount(0);
+          await testInfo.attach(`sunset-v3-14-${theme}-390px-viewport`, {
+            body: await page.screenshot({ fullPage: false }),
+            contentType: 'image/png',
+          });
+        }
         if (screen.id === '13-notifications') {
           await page.locator('.mdv3-notice-dialog-card').filter({ has: page.getByRole('heading', { name: 'Approve draft?' }) })
             .getByRole('button', { name: 'Inspect safe dialogue' }).click();
