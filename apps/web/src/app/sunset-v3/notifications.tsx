@@ -18,7 +18,7 @@ const dialogues: readonly { id: DialogKind; title: string; description: string; 
   { id: "approve", title: "Approve draft?", description: "Approval requires a verified actor, policy and evidence. No approval service is connected.", safe: "Review again", blocked: "Approve · Unavailable" },
   { id: "publish", title: "Confirm publication?", description: "Publication requires a separately authorised human decision. No destination is connected.", safe: "Cancel", blocked: "Publish · Unavailable" },
 ];
-export function NotificationDialogueLibrary() {
+export function NotificationDialogueLibrary({ onOpenDefensive }: { onOpenDefensive: () => void }) {
   const [dismissed, setDismissed] = useState<Kind[]>([]);
   const [active, setActive] = useState<DialogKind | null>(null);
   const [example, setExample] = useState("Unsaved example");
@@ -46,7 +46,7 @@ export function NotificationDialogueLibrary() {
     return () => { document.removeEventListener("keydown", keydown); opener.current?.focus(); };
   }, [active]);
   return <div className="mdv3-content mdv3-notifications">
-    <header className="mdv3-page-heading"><div><span className="mdv3-kicker">SUNSET STUDIO V3 · SCREEN 13 · SYNTHETIC PREVIEW</span><h1>Notification &amp; Dialogue Library</h1><p>Branded, accessible in-app feedback. No browser alerts or operating-system notifications.</p></div></header>
+    <header className="mdv3-page-heading"><div><span className="mdv3-kicker">SUNSET STUDIO V3 · SCREEN 13 · SYNTHETIC PREVIEW</span><h1>Notification &amp; Dialogue Library</h1><p>Branded, accessible in-app feedback. No browser alerts or operating-system notifications.</p></div><button type="button" className="mdv3-secondary" onClick={onOpenDefensive}>Defensive States</button></header>
     <div className="mdv3-notice-grid">
       <section className="mdv3-panel"><div className="mdv3-head"><h2>Custom in-app notification banners</h2></div>
         <div className="mdv3-notice-stack">{banners.filter(item => !dismissed.includes(item.kind)).map(item =>
