@@ -1,4 +1,4 @@
-/** Read-only visual acceptance captures for Sunset Studio v3 screens 05–12.
+/** Read-only visual acceptance captures for Sunset Studio v3 screens 05–13.
  *
  * Captures are review evidence, never automatic proof of mock-up equivalence
  * or WCAG compliance. Use one browser project and explicitly set all three
@@ -55,9 +55,15 @@ const screenCases = [
     desktop: 'Activity & Audit',
     mobile: 'Activity, Audit & Settings',
   },
+  {
+    id: '13-notifications',
+    heading: 'Notification & Dialogue Library',
+    desktop: 'Settings & Help',
+    mobile: 'Notification & Dialogue Library',
+  },
 ];
 
-test('capture screens 05–12 in both themes at 390, 1024 and 1440 pixels', async ({ page }, testInfo) => {
+test('capture screens 05–13 in both themes at 390, 1024 and 1440 pixels', async ({ page }, testInfo) => {
   // Run once in each existing browser project; avoid screenshot duplication.
   const viewportByProject = {
     desktop: { width: 1440, height: 1000 },
@@ -82,7 +88,7 @@ test('capture screens 05–12 in both themes at 390, 1024 and 1440 pixels', asyn
       await expect(page.locator('.mdv3')).toHaveAttribute('data-theme', theme);
 
       for (const screen of screenCases) {
-        if (width === 390 && ['08-producer', '09-composer', '10-publication', '11-audience', '12-activity'].includes(screen.id)) {
+        if (width === 390 && ['08-producer', '09-composer', '10-publication', '11-audience', '12-activity', '13-notifications'].includes(screen.id)) {
           // Later screens are reached through the accessible mobile More panel.
           await page.getByRole('navigation', { name: 'Mobile demo navigation' })
             .locator('.mdv3-mobile-more-trigger').click();
@@ -117,6 +123,11 @@ test('capture screens 05–12 in both themes at 390, 1024 and 1440 pixels', asyn
         if (screen.id === '12-activity') {
           await expect(page.getByRole('table', { name: 'Named synthetic fixture events' })).toBeVisible();
         }
+        if (screen.id === '13-notifications') {
+          for (const kind of ['success', 'information', 'warning', 'error']) {
+            await expect(page.locator('.mdv3-notice-card.mdv3-notice-' + kind)).toBeVisible();
+          }
+        }
         await expect(page.getByText(/Synthetic replay/i).first()).toBeVisible();
         expect(
           await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
@@ -126,6 +137,18 @@ test('capture screens 05–12 in both themes at 390, 1024 and 1440 pixels', asyn
           body: await page.screenshot({ fullPage: true }),
           contentType: 'image/png',
         });
+        if (screen.id === '13-notifications') {
+          await page.locator('.mdv3-notice-dialog-card').filter({ has: page.getByRole('heading', { name: 'Approve draft?' }) })
+            .getByRole('button', { name: 'Inspect safe dialogue' }).click();
+          const preview = page.getByRole('dialog', { name: 'Approve draft?' });
+          await expect(preview.getByRole('button', { name: 'Approve · Unavailable' })).toBeDisabled();
+          await testInfo.attach(`sunset-v3-13-approve-disabled-${theme}-${width}px`, {
+            body: await page.screenshot({ fullPage: true }),
+            contentType: 'image/png',
+          });
+          await page.keyboard.press('Escape');
+          await expect(preview).toHaveCount(0);
+        }
       }
   }
 
