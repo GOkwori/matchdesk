@@ -61,3 +61,40 @@ for (const width of [390, 768, 1280, 1440]) {
     }
   });
 }
+
+/** Contrast is computed from the rendered panel and label colours, not a
+ * hard-coded theme guess. Both approved themes must meet WCAG AA normal text.
+ */
+test("preference label colours meet WCAG AA in both themes", async ({ page }) => {
+  for (const width of [390, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/sunset-v3");
+    await openActivity(page);
+    for (const theme of ["dark", "light"]) {
+      await page.getByLabel("Display theme").selectOption(theme);
+      for (const id of ["mdv3-activity-motion", "mdv3-activity-text-size"]) {
+        const ratio = await page.locator('label[for="' + id + '"]').evaluate(element => {
+          const panel = element.closest(".mdv3-activity-preferences");
+          if (!panel) throw new Error("The expected settings panel is missing");
+          const fg = getComputedStyle(element).color;
+          const bg = getComputedStyle(panel).backgroundColor;
+          const rgb = value => (value.match(/[0-9]+(?:[.][0-9]+)?/g) ?? [])
+            .slice(0, 3).map(Number);
+          const luminance = value => {
+            const channels = rgb(value).map(c => {
+              const v = c / 255;
+              return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+            });
+            if (channels.length !== 3) throw new Error("Unparseable computed RGB colour");
+            return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
+          };
+          const high = Math.max(luminance(fg), luminance(bg));
+          const low = Math.min(luminance(fg), luminance(bg));
+          return (high + 0.05) / (low + 0.05);
+        });
+        expect(ratio, id + " at " + width + "px / " + theme)
+          .toBeGreaterThanOrEqual(4.5);
+      }
+    }
+  }
+});
