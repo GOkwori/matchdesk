@@ -46,6 +46,9 @@
 @media(max-width:1050px){.mdv3 .mdv3-command-layout{grid-template-columns:1fr}.mdv3 .mdv3-column-stack{grid-template-columns:repeat(2,minmax(0,1fr))}.mdv3 .mdv3-column-stack> :first-child{grid-column:1/-1}}
 @media(max-width:700px){.mdv3 .mdv3-command-layout{grid-template-columns:minmax(0,1fr)}.mdv3 .mdv3-column-stack{grid-template-columns:1fr}.mdv3 .mdv3-column-stack> :first-child{grid-column:auto}.mdv3 .mdv3-feed-button{grid-template-columns:48px minmax(0,1fr);padding:9px 7px;gap:6px}.mdv3 .mdv3-feed-button .mdv3-event-type{grid-column:2;justify-self:start}.mdv3 .mdv3-tactical-filters{display:grid;grid-template-columns:minmax(0,1fr)}.mdv3 .mdv3-tactical-filters label:nth-child(2) select{min-width:0}.mdv3 .mdv3-aggregate-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.mdv3 .mdv3-aggregate-grid>div{padding:9px 6px}.mdv3 .mdv3-aggregate-grid strong{font-size:15px}.mdv3 .mdv3-pitch{min-height:190px}}
 
+/* Keep the main grid item inside its allocated track: the evidence table's
+ * 640px intrinsic width must scroll inside its panel, not enlarge the page. */
+.mdv3 .mdv3-main{width:100%}
 /* Keyboard skip-link is the first focusable demo control. */
 .mdv3 .mdv3-skip-link{position:fixed;z-index:100;left:16px;top:-100px;padding:10px 16px;border:2px solid var(--md-accent);border-radius:var(--md-radius);background:var(--md-panel);color:var(--md-text)}
 .mdv3 .mdv3-skip-link:focus{top:12px}
