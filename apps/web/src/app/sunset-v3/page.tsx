@@ -220,7 +220,7 @@ export default function SunsetStudioPreview() {
           <span>{notice === "warning" ? "A verified, authenticated producer workflow is required. No change was made." : "These are design-only synthetic values. No server data changed."}</span>
           <button type="button" onClick={() => setNotice(null)} aria-label="Dismiss message">×</button></div>}
         {page === "defensive" ? <DefensiveStates onOpenNotifications={() => setPage("notifications")}/>
-          : page === "notifications" ? <NotificationDialogueLibrary/>
+          : page === "notifications" ? <NotificationDialogueLibrary onOpenDefensive={() => setPage("defensive")}/>
           : page === "activity" ? <ActivityAuditSettings theme={theme} onThemeChange={setTheme}/>
           : page === "audience" ? <AudienceExperience onOpenEvidence={() => setPage("evidence")}/>
           : page === "publication" ? <ReviewPublicationJourney score={<ScoreHeader/>} onBackToComposer={() => setPage("composer")}/>
