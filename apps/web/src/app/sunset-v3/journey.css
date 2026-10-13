@@ -26,7 +26,10 @@
 .mdv3 .mdv3-journey-steps li>span{color:var(--accent);font-family:ui-monospace,monospace}
 .mdv3 .mdv3-journey-steps small{color:var(--muted);font-size:12px}
 .mdv3 .mdv3-insight-card{padding:16px 0;border-bottom:1px solid var(--border)}
-.mdv3 .mdv3-claim-scroll{max-width:100%;overflow-x:auto}
+/* At tablet widths the 640px claim table must scroll inside its own panel,
+ * never expand the page's grid track or induce document-level overflow. */
+.mdv3 .mdv3-claim-scroll{display:block;width:100%;min-width:0;max-width:100%;overflow-x:auto;overscroll-behavior-inline:contain}
+.mdv3 .mdv3-claim-scroll .mdv3-claims-table{min-width:640px}
 .mdv3 .mdv3-claims-table{border-collapse:collapse;width:100%;min-width:640px;text-align:left}
 .mdv3 .mdv3-claims-table th,.mdv3 .mdv3-claims-table td{padding:13px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
 .mdv3 .mdv3-claims-table th[scope=row] small{display:block;color:var(--muted);font-size:12px;font-weight:400}
