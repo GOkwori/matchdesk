@@ -21,8 +21,11 @@ async function visitDestination(page, label) {
   await page.goto('/sunset-v3');
   const navigation = page.getByRole('navigation', { name: 'Mobile demo navigation' });
   await navigation.locator('.mdv3-mobile-more-trigger').click();
+  // Destination buttons also contain a visible “Open” / “Current” suffix.
+  // Target the unique labelled option without relying on a truncated
+  // accessible name or hiding the actual UI text from assistive technology.
   await page.getByRole('region', { name: 'More demo destinations' })
-    .getByRole('button', { name: label, exact: true }).click();
+    .locator('.mdv3-mobile-more-options button').filter({ hasText: label }).click();
 }
 
 /** Only one Chromium project performs the multi-width cross-screen audit. */
