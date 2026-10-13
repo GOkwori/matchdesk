@@ -1,5 +1,9 @@
 # Evidence index
 
+## Sunset Studio v3 — 14-screen development closure — 13 October 2026
+
+- [Exact-source development qualification](sunset-v3-14-screen-development-qualification-20261013.md): all 14 synthetic-only frontend screens merged to `development` at `4039ccb214ff999290a826df4e4a185718e65be4`. Four post-merge workflows passed, with 213 functional and 3 visual Playwright tests and independent native-image checks. The Screen 13 screenshot-capture failure and repair are preserved. Batch 1 originals, independent WCAG 2.2 AA assessment, live permissions and production release remain outstanding.
+
 ## Sunset Studio v3 screens 05–07 — 11 October 2026
 
 - [Exact-source qualification and visual review](../design/sunset-v3-screens05-07-qualification-20261011.md): `40c8719` passed all 4 required workflows, 69 Playwright tests and 18 dark/light screenshots at 390/1024/1440px. Visual parity, manual accessibility and original Batch 1 archival remain open; no live execution authority.
