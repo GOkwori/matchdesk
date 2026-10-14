@@ -27,6 +27,24 @@ docker compose -p matchdesk-a11y-review up --build
 
 If a different code SHA is tested, record that SHA and independently qualify it before attributing any result to that revision. Do not silently transfer PR #54's passing results to newer source.
 
+### Physical Android TalkBack access without changing loopback bindings
+
+The computer's `127.0.0.1` is **not** the phone's `127.0.0.1`. For the Android Chrome + TalkBack option, a tester with a trusted, physically connected Android phone can use a temporary **USB-only ADB reverse tunnel**, keeping the host's Compose web port bound to localhost. Only enable USB debugging with the device owner's consent, confirm the device identity, and use a trusted cable/computer.
+
+```bash
+adb devices
+adb reverse tcp:3000 tcp:3000
+```
+
+Open `http://127.0.0.1:3000/sunset-v3` in Chrome **on that phone**, then enable TalkBack and follow the mobile assistive-technology protocol. Confirm the phone displays the same pinned, clearly labelled synthetic preview. After the manual session, remove this exact tunnel and revoke temporary debugging trust as appropriate:
+
+```bash
+adb reverse --remove tcp:3000
+```
+
+Do not expose the web service on `0.0.0.0`, use `adb tcpip`, open a LAN/firewall port, create a public tunnel, or connect a privileged account to make phone testing work. An iOS Safari + VoiceOver device needs a separately reviewed private access method; this Android-only USB path is **not** an iOS workaround. Without a working trusted mobile connection and an actual human tester, mark mobile AT **BLOCKED / NOT RUN**, not PASS.
+
+
 ## 2. Minimum device and assistive-technology matrix
 
 | Environment | Test objective | Status |
