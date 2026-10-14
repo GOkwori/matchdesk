@@ -117,6 +117,8 @@ export default function SunsetStudioPreview() {
   const [moreOpen, setMoreOpen] = useState(false);
   const moreTriggerRef = useRef<HTMLButtonElement>(null);
   const morePanelRef = useRef<HTMLElement>(null);
+  const mainRef = useRef<HTMLElement>(null);
+  const previousScreenRef = useRef<Page>(page);
 
   /** Dismiss the optional navigation region on Escape or outside click.
    * It is not modal: background navigation is still available.
@@ -146,6 +148,17 @@ export default function SunsetStudioPreview() {
       if (document.activeElement === document.body) moreTriggerRef.current?.focus();
     };
   }, [moreOpen]);
+
+  /** A client-side destination change does not trigger the browser's ordinary
+   * page-load focus announcement. Move focus to the named main landmark only
+   * after a genuine screen change; keep initial skip-link focus untouched.
+   * The mobile More menu's cleanup completes before the new focus is placed.
+   */
+  useEffect(() => {
+    if (previousScreenRef.current === page) return;
+    previousScreenRef.current = page;
+    mainRef.current?.focus({ preventScroll: true });
+  }, [page]);
 
   /** Keep keyboard focus inside a modal and restore it to its opener on close. */
   useEffect(() => {
@@ -212,7 +225,8 @@ export default function SunsetStudioPreview() {
         })}</nav>
         <div className="mdv3-side-bottom">✧<p>AI-assisted.<br/>Verified.<br/>Human-led.</p></div>
       </aside>
-      <main id="mdv3-main" className="mdv3-main" tabIndex={-1}>
+      <main id="mdv3-main" ref={mainRef} className="mdv3-main" tabIndex={-1}
+        aria-label={mobileDestinations.find(destination => destination.target === page)?.label ?? "MatchDesk synthetic demo"}>
         <header className="mdv3-top">
           <div className="mdv3-top-left"><strong className="mdv3-mobile-brand"><span className="mdv3-brand-emblem" aria-hidden="true">⌃</span>Match<span>Desk</span></strong><span>FOOTBALL INTELLIGENCE. EXPLAINED. VERIFIED. READY FOR BROADCAST.</span></div>
           <div className="mdv3-top-right"><span className="mdv3-demo-dot" aria-hidden="true"/>Demo · {fixture.replayDate}
