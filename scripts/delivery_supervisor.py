@@ -129,9 +129,7 @@ class Supervisor:
             self.conn.rollback()
             raise
 
-    def release(
-        self, task_id: str, worker: str, state: str, *, receipt: str | None = None
-    ) -> None:
+    def release(self, task_id: str, worker: str, state: str, *, receipt: str | None = None) -> None:
         """Checkpoint a review-only worker outcome, never acceptance or approval."""
         if state not in ("QUEUED", "BLOCKED", "REVIEW_REQUIRED"):
             raise ValueError("Cannot certify task by a worker result")
