@@ -125,11 +125,7 @@ def task_state(task: dict[str, Any], issue: dict[str, Any] | None) -> str:
         return "CLOSED_AWAITING_EVIDENCE_REVIEW"
     if issue.get("state") != "open":
         return "UNVERIFIED"
-    labels = {
-        label.get("name")
-        for label in issue.get("labels", [])
-        if isinstance(label, dict)
-    }
+    labels = {label.get("name") for label in issue.get("labels", []) if isinstance(label, dict)}
     if "delivery/blocked" in labels or "delivery/hold" in labels:
         return "BLOCKED"
     if task["kind"] == "human":
@@ -164,8 +160,11 @@ def exact_head_checks(
             continue
         run = matching[0]
         verdicts[name] = (
-            "PASS" if run.get("status") == "completed" and run.get("conclusion") == "success"
-            else "FAIL" if run.get("status") == "completed" else "PENDING"
+            "PASS"
+            if run.get("status") == "completed" and run.get("conclusion") == "success"
+            else "FAIL"
+            if run.get("status") == "completed"
+            else "PENDING"
         )
         evidence[name] = str(run.get("html_url") or "")
     for name in required_jobs:
@@ -176,9 +175,11 @@ def exact_head_checks(
         else:
             check = matching[0]
             verdicts[name] = (
-                "PASS" if check.get("status") == "completed"
-                and check.get("conclusion") == "success"
-                else "FAIL" if check.get("status") == "completed" else "PENDING"
+                "PASS"
+                if check.get("status") == "completed" and check.get("conclusion") == "success"
+                else "FAIL"
+                if check.get("status") == "completed"
+                else "PENDING"
             )
             evidence[name] = str(check.get("html_url") or "")
     if all(value == "PASS" for value in verdicts.values()):
@@ -259,9 +260,7 @@ def markdown_summary(plan: dict[str, Any]) -> str:
         "| --- | --- | --- | --- |",
     ]
     for task in plan["tasks"]:
-        lines.append(
-            f"| {task['id']} | {task['phase']} | {task['status']} | {task['url']} |"
-        )
+        lines.append(f"| {task['id']} | {task['phase']} | {task['status']} | {task['url']} |")
     lines.extend(
         [
             "",
