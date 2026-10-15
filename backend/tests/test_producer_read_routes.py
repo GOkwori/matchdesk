@@ -45,7 +45,7 @@ class Reader:
         return None
 
 
-def actor(*, tenant=TENANT, sessions=frozenset({"demo-preview-only"}), roles=frozenset({"producer"})):
+def actor(\n    *, tenant=TENANT, sessions=frozenset({"demo-preview-only"}), roles=frozenset({"producer"})\n):
     """Build a simulated trusted actor; HTTP tests mock only verification."""
     return HostVerifiedActor(
         subject="verified-workforce-actor",
@@ -113,7 +113,7 @@ def test_read_route_requires_explicit_dependencies_and_validated_bearer(monkeypa
     client = TestClient(create_app(producer_read_router=router))
     assert client.get(URL).status_code == 401
     assert client.get(URL, headers={"Cookie": "session=forged"}).status_code == 401
-    assert client.get(URL + "?tenant=" + TENANT, headers={"Authorization": "Bearer demo"}).status_code == 401
+    assert (\n        client.get(URL + "?tenant=" + TENANT, headers={"Authorization": "Bearer demo"}).status_code\n        == 401\n    )
     assert client.get(URL, headers={"Authorization": "Bearer invalid"}).status_code == 403
     assert reader.reads == 0
 
@@ -138,7 +138,7 @@ def test_read_route_requires_explicit_dependencies_and_validated_bearer(monkeypa
         "/api/workforce/producer/sessions/foreign/cases/demo-story-output",
         headers={"Authorization": "Bearer test-only"},
     ).status_code == 403
-    assert client.post(URL, json={}, headers={"Authorization": "Bearer test-only"}).status_code == 405
+    assert (\n        client.post(URL, json={}, headers={"Authorization": "Bearer test-only"}).status_code\n        == 405\n    )
     # The forbidden session is denied before storage lookup, so only the
     # successful authorized inspection can ever reach this reader.
     assert reader.reads == 1
