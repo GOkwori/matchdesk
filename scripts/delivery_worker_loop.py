@@ -128,12 +128,35 @@ def main() -> int:
     parser.add_argument("--cycles", type=int, default=1)
     parser.add_argument("--interval", type=int, default=30)
     parser.add_argument("--reserve", action="store_true")
+    parser.add_argument("--execute-offline", action="store_true")
+    parser.add_argument("--source", type=Path)
+    parser.add_argument("--source-sha")
+    parser.add_argument("--image")
+    parser.add_argument("--evidence-dir", type=Path)
     args = parser.parse_args()
     if not 1 <= args.cycles <= 1440 or not 1 <= args.interval <= 3600:
         parser.error("Cycle and interval budgets must be bounded")
     manifest = json.loads(args.manifest.read_text(encoding="utf-8"))
+    if args.execute_offline:
+        if args.reserve or not all(
+            (args.source, args.source_sha, args.image, args.evidence_dir)
+        ):
+            parser.error("Offline execution requires source, SHA, pinned image and evidence directory")
+        executor = OfflineDockerWorker(
+            source=args.source,
+            source_sha=args.source_sha,
+            image=args.image,
+            evidence_root=args.evidence_dir,
+        )
+    else:
+        if any((args.source, args.source_sha, args.image, args.evidence_dir)):
+            parser.error("Executor arguments require --execute-offline")
+        executor = None
     for cycle in range(args.cycles):
-        outcome = run_cycle(args.db, manifest, args.worker, dry_run=not args.reserve)
+        if executor is not None:
+            outcome = execute_cycle(args.db, manifest, executor)
+        else:
+            outcome = run_cycle(args.db, manifest, args.worker, dry_run=not args.reserve)
         print(json.dumps(outcome, sort_keys=True), flush=True)
         if cycle + 1 < args.cycles:
             time.sleep(args.interval)
