@@ -50,9 +50,7 @@ class ReconciliationTests(unittest.TestCase):
         body = format_alert_body(
             self.alert["issue"], self.alert["fingerprint"], self.alert["detail"]
         )
-        comments = [
-            {"id": n, "body": body, "user": {"login": "approved-bot"}} for n in (7, 8)
-        ]
+        comments = [{"id": n, "body": body, "user": {"login": "approved-bot"}} for n in (7, 8)]
         with self.assertRaises(ValueError):
             identify_comment(
                 comments,
