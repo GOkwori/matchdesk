@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from collections.abc import Callable
 from contextlib import AbstractContextManager
 from typing import Protocol
@@ -81,6 +82,65 @@ VALUES (%s, %s, %s, %s, %s::jsonb, %s)
 """
 
 
+# The physical login is checked inside the same read-only snapshot as the
+# scoped case/audit. Effective DML and role membership count even when granted
+# indirectly through PUBLIC. Token claims never select the database principal.
+_READ_ONLY_ROLE_QUERY = """
+SELECT current_user::text, session_user::text,
+       (
+           r.rolcanlogin
+           AND NOT (
+               r.rolsuper OR r.rolcreatedb OR r.rolcreaterole
+               OR r.rolreplication OR r.rolbypassrls
+           )
+           AND NOT EXISTS (
+               SELECT 1 FROM pg_catalog.pg_auth_members m WHERE m.member = r.oid
+           )
+           AND NOT pg_catalog.has_database_privilege(current_database(), 'CREATE')
+           AND NOT pg_catalog.has_database_privilege(current_database(), 'TEMP')
+           AND NOT EXISTS (
+               SELECT 1 FROM pg_catalog.pg_namespace ns
+               WHERE ns.nspname !~ '^pg_' AND ns.nspname <> 'information_schema'
+                 AND pg_catalog.has_schema_privilege(ns.oid, 'CREATE')
+           )
+           AND NOT EXISTS (
+               SELECT 1 FROM pg_catalog.pg_class c
+               JOIN pg_catalog.pg_namespace ns ON ns.oid = c.relnamespace
+               WHERE ns.nspname !~ '^pg_' AND ns.nspname <> 'information_schema'
+                 AND CASE
+                     WHEN c.relkind IN ('r', 'p', 'v', 'm', 'f') THEN
+                         pg_catalog.has_table_privilege(
+                             c.oid, 'INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER'
+                         )
+                         OR pg_catalog.has_any_column_privilege(
+                             c.oid, 'INSERT, UPDATE, REFERENCES'
+                         )
+                     ELSE FALSE
+                 END
+           )
+           AND NOT EXISTS (
+               SELECT 1 FROM pg_catalog.pg_class c
+               JOIN pg_catalog.pg_namespace ns ON ns.oid = c.relnamespace
+               WHERE ns.nspname !~ '^pg_' AND ns.nspname <> 'information_schema'
+                 AND CASE WHEN c.relkind = 'S'
+                     THEN pg_catalog.has_sequence_privilege(c.oid, 'USAGE, UPDATE')
+                     ELSE FALSE
+                 END
+           )
+           AND NOT EXISTS (
+               SELECT 1 FROM pg_catalog.pg_proc p
+               JOIN pg_catalog.pg_namespace ns ON ns.oid = p.pronamespace
+               WHERE ns.nspname !~ '^pg_' AND ns.nspname <> 'information_schema'
+                 AND pg_catalog.has_function_privilege(p.oid, 'EXECUTE')
+           )
+           AND pg_catalog.has_table_privilege('public.matchdesk_producer_cases', 'SELECT')
+           AND pg_catalog.has_table_privilege('public.matchdesk_producer_audit', 'SELECT')
+       )
+FROM pg_catalog.pg_roles r WHERE r.rolname = current_user
+"""
+_EXPECTED_ROLE = re.compile(r"matchdesk_[a-z][a-z0-9_]{0,54}\Z")
+
+
 def _audit_digest(entries: tuple[ProducerAuditEntry, ...]) -> str:
     """Hash the entire ordered audit history to detect rewritten prior transitions."""
     return hashlib.sha256(_AUDIT.dump_json(entries)).hexdigest()
@@ -127,9 +187,17 @@ class PostgresProducerCaseStore:
     decision point. No driver installation or database creation occurs here.
     """
 
-    def __init__(self, connection_factory: Callable[[], DbConnection]) -> None:
-        """Accept a trusted connection factory without embedding a DSN or credential."""
+    def __init__(
+        self,
+        connection_factory: Callable[[], DbConnection],
+        *,
+        _read_role: str | None = None,
+    ) -> None:
+        """Accept a trusted connection factory and optional physical role pin."""
+        if not callable(connection_factory):
+            raise ValueError("Producer store requires a host-owned connection factory")
         self._connect = connection_factory
+        self._read_role = _read_role
 
     def load(self, tenant_id: str, session_id: str, output_id: str) -> ProducerCase | None:
         """Read the exact scoped generation, then fail closed on invalid stored history."""
@@ -140,6 +208,21 @@ class PostgresProducerCaseStore:
                     # One stable read snapshot avoids a false audit mismatch if a
                     # concurrent transaction commits between the two queries.
                     cursor.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY", ())
+                    if self._read_role is not None:
+                        # Pin a trusted search path before reading application tables.
+                        cursor.execute("SET LOCAL search_path TO pg_catalog, public", ())
+                        cursor.execute(_READ_ONLY_ROLE_QUERY, ())
+                        role = cursor.fetchone()
+                        if (
+                            role is None
+                            or len(role) != 3
+                            or role[0] != self._read_role
+                            or role[1] != self._read_role
+                            or role[2] is not True
+                        ):
+                            raise PermissionError(
+                                "Producer inspection requires a pinned non-writing DB role"
+                            )
                     cursor.execute(_LOAD, (tenant_id, session_id, output_id))
                     row = cursor.fetchone()
                     audit_rows: list[tuple[object, ...]] = []
@@ -244,3 +327,28 @@ class PostgresProducerCaseStore:
             return True
         finally:
             connection.close()
+
+
+class ReadOnlyPostgresProducerReader:
+    """Expose only scoped audited SELECTs through a pinned physical read role.
+
+    The existing PostgreSQL case/audit verifier is reused without exporting its
+    mutators. Role privileges are checked in the same repeatable-read snapshot.
+    Host code must inject isolated credentials; nothing reads HTTP or environment.
+    """
+
+    def __init__(
+        self, connection_factory: Callable[[], DbConnection], *, expected_role: str
+    ) -> None:
+        """Require an explicitly named non-writing MatchDesk database principal."""
+        if (
+            type(expected_role) is not str
+            or _EXPECTED_ROLE.fullmatch(expected_role) is None
+            or not callable(connection_factory)
+        ):
+            raise ValueError("A pinned non-writing MatchDesk DB reader role is required")
+        self.__store = PostgresProducerCaseStore(connection_factory, _read_role=expected_role)
+
+    def load(self, tenant_id: str, session_id: str, output_id: str) -> ProducerCase | None:
+        """Load exact tenant/session/output under one checked read-only snapshot."""
+        return self.__store.load(tenant_id, session_id, output_id)
