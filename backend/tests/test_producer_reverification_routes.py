@@ -137,9 +137,12 @@ def test_default_application_exposes_no_privileged_command():
     """An unconfigured application has no workforce mutation endpoint."""
     client = TestClient(create_app())
     assert client.post(URL, json={}, headers=HEADERS).status_code == 404
-    assert URL.replace("demo-preview-only", "{session_id}").replace(
-        "demo-story-output", "{output_id}"
-    ) not in client.get("/openapi.json").json()["paths"]
+    assert (
+        URL.replace("demo-preview-only", "{session_id}").replace(
+            "demo-story-output", "{output_id}"
+        )
+        not in client.get("/openapi.json").json()["paths"]
+    )
 
 
 def test_valid_token_alone_cannot_write(monkeypatch):
@@ -175,7 +178,7 @@ def test_exact_grant_saves_once_and_replay_fails(monkeypatch):
     [
         {},
         {"Content-Type": "application/json"},
-        {"Authorization": "Bearer offline-token"},
+
         {**HEADERS, "Cookie": "session=forged"},
         {**HEADERS, "Origin": "https://untrusted.example"},
         {**HEADERS, "Referer": "https://untrusted.example"},
@@ -187,6 +190,20 @@ def test_invalid_transport_never_touches_storage(monkeypatch, headers):
     """Bad framing, browser-originated and spoofed requests fail before lookups."""
     client, store, grants = setup(monkeypatch)
     assert client.post(URL, json=body(store), headers=headers).status_code == 401
+    assert store.reads == 0
+    assert store.writes == 0
+    assert grants.calls == 0
+
+
+def test_missing_content_type_rejects_untyped_raw_body(monkeypatch):
+    """An explicitly untyped raw JSON body is denied before storage access."""
+    client, store, grants = setup(monkeypatch)
+    response = client.post(
+        URL,
+        content=b"{}",
+        headers={"Authorization": "Bearer offline-token"},
+    )
+    assert response.status_code == 401
     assert store.reads == 0
     assert store.writes == 0
     assert grants.calls == 0
