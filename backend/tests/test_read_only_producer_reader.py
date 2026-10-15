@@ -3,7 +3,6 @@
 from unittest.mock import MagicMock
 
 import pytest
-
 from matchdesk.domain.postgres_producer_store import (
     _READ_ONLY_ROLE_QUERY,
     ReadOnlyPostgresProducerReader,
