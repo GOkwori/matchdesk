@@ -7,13 +7,13 @@ import argparse
 import json
 import re
 import time
+import uuid
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
+from delivery_agent_loop import OfflineDockerWorker, WorkerResult
 from delivery_orchestrator import DEFAULT_MANIFEST
 from delivery_supervisor import Supervisor
-from delivery_agent_loop import OfflineDockerWorker, WorkerResult
-from concurrent.futures import ThreadPoolExecutor
-import uuid
 
 WORKER_ID = re.compile(r"[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}\Z")
 
@@ -53,7 +53,6 @@ def run_cycle(db: Path, manifest: dict, worker: str, *, dry_run: bool = True) ->
         }
     finally:
         supervisor.close()
-
 
 
 def execute_cycle(
@@ -105,13 +104,16 @@ def execute_cycle(
                 supervisor.release(task_id, identity, state, receipt=receipt)
                 if state == "BLOCKED":
                     supervisor.request_input(
-                        task_id, "Offline executor blocked; inspect local evidence and sandbox configuration."
+                        task_id,
+                        "Offline executor blocked; inspect local evidence and sandbox configuration.",
                     )
                 current = next(
                     item for item in supervisor.status()["tasks"] if item["id"] == task_id
                 )
                 if state == "QUEUED" and current["attempts"] >= 3:
-                    supervisor.request_input(task_id, "Execution retry limit reached; investigate before resuming.")
+                    supervisor.request_input(
+                        task_id, "Execution retry limit reached; investigate before resuming."
+                    )
         return supervisor.status()
     finally:
         supervisor.close()
