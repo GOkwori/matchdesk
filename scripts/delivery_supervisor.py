@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sqlite3
 import time
 from pathlib import Path
@@ -128,17 +129,32 @@ class Supervisor:
             self.conn.rollback()
             raise
 
-    def release(self, task_id: str, worker: str, state: str) -> None:
-        """Record a bounded worker outcome without manufacturing acceptance."""
+    def release(self, task_id: str, worker: str, state: str, *, receipt: str | None = None) -> None:
+        """Checkpoint a review-only worker outcome, never acceptance or approval."""
         if state not in ("QUEUED", "BLOCKED", "REVIEW_REQUIRED"):
             raise ValueError("Cannot certify task by a worker result")
+        if receipt is not None:
+            if state != "REVIEW_REQUIRED" or not 1 <= len(receipt) <= 4096:
+                raise ValueError("Only reviewed proposal outcomes may carry a bounded receipt")
+            try:
+                details = json.loads(receipt)
+            except (ValueError, TypeError) as exc:
+                raise ValueError("Malformed proposal receipt") from exc
+            if (
+                type(details) is not dict
+                or details.get("authority") != "PATCH_REVIEW_ONLY"
+                or details.get("task_id") != task_id
+                or type(details.get("patch_sha256")) is not str
+                or re.fullmatch(r"[0-9a-f]{64}", details["patch_sha256"]) is None
+            ):
+                raise ValueError("Untrusted or unbound proposal receipt")
         self.conn.execute("BEGIN IMMEDIATE")
         try:
             result = self.conn.execute(
-                """UPDATE tasks SET status=?,owner=NULL,lease_until=NULL,
+                """UPDATE tasks SET status=?,receipt=?,owner=NULL,lease_until=NULL,
                 updated_at=? WHERE id=? AND status='LEASED' AND owner=?
                 AND lease_until>?""",
-                (state, self.now, task_id, worker, self.now),
+                (state, receipt, self.now, task_id, worker, self.now),
             )
             if result.rowcount != 1:
                 raise PermissionError("Missing or expired worker reservation")
