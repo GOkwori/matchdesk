@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "repository": "GOkwori/matchdesk",
+  "development_branch": "development",
+  "production_branch": "main",
+  "deadline": "2026-10-26",
+  "epic_issue": 60,
+  "max_parallel": 4,
+  "required_workflows": [
+    "Foundation CI",
+    "Foundation integration",
+    "Source security",
+    "Dependency audit"
+  ],
+  "required_integration_checks": [
+    "runtime-browser",
+    "native-images"
+  ],
+  "tasks": [
+    {
+      "id": "producer",
+      "issue": 61,
+      "kind": "engineering",
+      "phase": "P3-05-ID5",
+      "depends_on": [],
+      "acceptance": "DEV-only authenticated producer commands, exact bindings, durable audit and fail-closed tests"
+    },
+    {
+      "id": "audience",
+      "issue": 62,
+      "kind": "engineering",
+      "phase": "P3-04",
+      "depends_on": [],
+      "acceptance": "Nine persona/language combinations with verified factual integrity, offline first"
+    },
+    {
+      "id": "assurance",
+      "issue": 63,
+      "kind": "engineering",
+      "phase": "P4",
+      "depends_on": [],
+      "acceptance": "Security, recovery and integration qualification without weakening gates"
+    },
+    {
+      "id": "demo",
+      "issue": 64,
+      "kind": "engineering",
+      "phase": "P5",
+      "depends_on": [],
+      "acceptance": "Isolated synthetic local judge session, reproducible reset and competition evidence"
+    },
+    {
+      "id": "owner-input",
+      "issue": 65,
+      "kind": "human",
+      "phase": "Release dependencies",
+      "depends_on": [],
+      "acceptance": "Actual original PNGs, real identity/cost decisions and exact-source release sign-off"
+    },
+    {
+      "id": "accessibility",
+      "issue": 52,
+      "kind": "human",
+      "phase": "Independent WCAG review",
+      "depends_on": [],
+      "acceptance": "Device-specific independent keyboard, NVDA, VoiceOver and mobile AT observations"
+    }
+  ]
+}
