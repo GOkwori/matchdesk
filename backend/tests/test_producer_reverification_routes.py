@@ -138,9 +138,7 @@ def test_default_application_exposes_no_privileged_command():
     client = TestClient(create_app())
     assert client.post(URL, json={}, headers=HEADERS).status_code == 404
     assert (
-        URL.replace("demo-preview-only", "{session_id}").replace(
-            "demo-story-output", "{output_id}"
-        )
+        URL.replace("demo-preview-only", "{session_id}").replace("demo-story-output", "{output_id}")
         not in client.get("/openapi.json").json()["paths"]
     )
 
@@ -178,7 +176,6 @@ def test_exact_grant_saves_once_and_replay_fails(monkeypatch):
     [
         {},
         {"Content-Type": "application/json"},
-
         {**HEADERS, "Cookie": "session=forged"},
         {**HEADERS, "Origin": "https://untrusted.example"},
         {**HEADERS, "Referer": "https://untrusted.example"},
