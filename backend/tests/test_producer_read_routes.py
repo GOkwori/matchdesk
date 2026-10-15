@@ -139,7 +139,9 @@ def test_read_route_requires_explicit_dependencies_and_validated_bearer(monkeypa
         headers={"Authorization": "Bearer test-only"},
     ).status_code == 403
     assert client.post(URL, json={}, headers={"Authorization": "Bearer test-only"}).status_code == 405
-    assert reader.reads == 2
+    # The forbidden session is denied before storage lookup, so only the
+    # successful authorized inspection can ever reach this reader.
+    assert reader.reads == 1
 
 
 class Resolver:
