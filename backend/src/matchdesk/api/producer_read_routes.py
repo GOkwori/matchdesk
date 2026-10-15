@@ -71,10 +71,14 @@ def create_producer_read_router(
             or not _IDENTIFIER.fullmatch(session_id)
             or not _IDENTIFIER.fullmatch(output_id)
         ):
-            return JSONResponse({"detail": "Producer inspection denied"}, status_code=401, headers=headers)
+            return JSONResponse(
+                {"detail": "Producer inspection denied"}, status_code=401, headers=headers
+            )
         scheme, separator, token = authorization[0].partition(" ")
         if scheme.lower() != "bearer" or separator != " " or not token or token.strip() != token:
-            return JSONResponse({"detail": "Producer inspection denied"}, status_code=401, headers=headers)
+            return JSONResponse(
+                {"detail": "Producer inspection denied"}, status_code=401, headers=headers
+            )
         try:
             actor = verify_producer_access_token(
                 token, policy=policy, keys=keys, entitlements=entitlements
@@ -83,7 +87,9 @@ def create_producer_read_router(
                 reader, actor=actor, session_id=session_id, output_id=output_id
             )
         except (PermissionError, LookupError, ValueError, TypeError):
-            return JSONResponse({"detail": "Producer inspection denied"}, status_code=403, headers=headers)
+            return JSONResponse(
+                {"detail": "Producer inspection denied"}, status_code=403, headers=headers
+            )
         except Exception:
             return JSONResponse(
                 {"detail": "Producer inspection unavailable"}, status_code=503, headers=headers
