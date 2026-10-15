@@ -132,5 +132,38 @@ class SupervisorTests(unittest.TestCase):
         self.s = Supervisor(self.path, manifest(), clock=1000)
 
 
+    def test_exhaustion_blocks_and_queues_one_alert(self):
+        """The third transient failure cannot remain silently queued."""
+        for attempt in range(3):
+            self.assertEqual(self.s.claim("worker-1"), "producer")
+            self.s.release("producer", "worker-1", "QUEUED")
+        state = self.s.status()
+        self.assertEqual(state["tasks"][0]["status"], "BLOCKED")
+        self.assertEqual(state["pending_owner_alerts"], 1)
+        self.assertIsNone(self.s.claim("worker-1"))
+
+    def test_expired_final_lease_escalates_once(self):
+        """Crash recovery cannot bypass the bounded retry budget."""
+        for attempt in range(2):
+            self.s.claim("worker-1", lease_seconds=30)
+            self.s.release("producer", "worker-1", "QUEUED")
+        self.s.claim("worker-3", lease_seconds=30)
+        self.s.now = 1030
+        self.assertEqual(self.s.recover(), 1)
+        self.assertEqual(self.s.status()["tasks"][0]["status"], "BLOCKED")
+        self.assertEqual(self.s.status()["pending_owner_alerts"], 1)
+        self.assertEqual(self.s.recover(), 0)
+
+    def test_delivery_receipt_requires_real_comment_id(self):
+        """The outbox remains pending until a confirmed issue comment exists."""
+        self.s.request_input("review", "Provide original PNGs")
+        record = self.s.pending_alerts()[0]
+        with self.assertRaises(ValueError):
+            self.s.mark_alert_delivered(record["fingerprint"], 0)
+        self.s.mark_alert_delivered(record["fingerprint"], 123)
+        self.assertEqual(self.s.status()["pending_owner_alerts"], 0)
+        self.assertEqual(self.s.pending_alerts(), [])
+
+
 if __name__ == "__main__":
     unittest.main()
