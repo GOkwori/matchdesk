@@ -6,7 +6,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from delivery_worker_loop import run_cycle
+from delivery_worker_loop import execute_cycle, run_cycle
+from delivery_agent_loop import WorkerResult
 from test_delivery_supervisor import manifest
 
 
@@ -37,6 +38,43 @@ class WorkerLoopTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             with self.assertRaises(ValueError):
                 run_cycle(Path(directory) / "state.sqlite3", manifest(), "../worker")
+
+
+    def test_parallel_proposals_are_durable_but_not_accepted(self):
+        """Independent lanes generate review receipts without certification."""
+        class Stub:
+            """Return test-only patch proposals without any subprocess."""
+
+            def execute(self, task_id, identity):
+                """Return a deterministic digest bound to its lane."""
+                return WorkerResult("REVIEW_REQUIRED", "a" * 64, f"/tmp/{identity}")
+
+        with tempfile.TemporaryDirectory() as directory:
+            db = Path(directory) / "state.sqlite3"
+            result = execute_cycle(db, manifest(), Stub(), clock=1000)
+            first = next(item for item in result["tasks"] if item["id"] == "producer")
+            self.assertEqual(first["status"], "REVIEW_REQUIRED")
+            self.assertIn('"authority": "PATCH_REVIEW_ONLY"', first["receipt"])
+            self.assertFalse(result["complete"])
+            second = execute_cycle(db, manifest(), Stub(), clock=1001)
+            self.assertEqual(
+                next(item for item in second["tasks"] if item["id"] == "producer")["attempts"],
+                1,
+            )
+
+    def test_worker_exception_blocks_and_escalates_once(self):
+        """A failing worker cannot strand an active reservation."""
+        class Broken:
+            """Test adapter that fails without returning a result."""
+
+            def execute(self, task_id, identity):
+                """Simulate a broken offline worker."""
+                raise RuntimeError("simulated failure")
+
+        with tempfile.TemporaryDirectory() as directory:
+            result = execute_cycle(Path(directory) / "state.sqlite3", manifest(), Broken(), clock=1000)
+            self.assertEqual(result["tasks"][0]["status"], "BLOCKED")
+            self.assertEqual(result["pending_owner_alerts"], 1)
 
 
 if __name__ == "__main__":
