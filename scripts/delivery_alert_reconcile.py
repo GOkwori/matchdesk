@@ -67,7 +67,14 @@ def read_comments(issue: int, token: str, *, max_pages: int = 10) -> list[dict]:
 
 def reconcile(supervisor: Supervisor, token: str, actor: str) -> dict:
     """Checkpoint only exact remote evidence; do not release uncertain claims."""
-    if not actor or len(actor) > 39 or any(c not in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-" for c in actor):
+    if (
+        not actor
+        or len(actor) > 39
+        or any(
+            c not in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-"
+            for c in actor
+        )
+    ):
         raise ValueError("Expected alert sender login must be verified")
     checked = 0
     confirmed = 0
