@@ -164,16 +164,33 @@ class OfflineDockerWorker:
     def _command(self, source: Path, output: Path, name: str) -> list[str]:
         """Build a command with no network, privileges, credentials or source writes."""
         return [
-            "docker", "run", "--rm", "--pull=never", "--network=none",
-            "--name", name, "--read-only", "--cap-drop=ALL",
-            "--security-opt=no-new-privileges=true", "--pids-limit=64",
-            "--memory=768m", "--cpus=1",
-            "--user", f"{os.getuid()}:{os.getgid()}",
-            "--tmpfs", "/tmp:rw,nosuid,nodev,size=32m",
-            "--mount", f"type=bind,src={source},dst=/source,readonly",
-            "--mount", f"type=bind,src={output},dst=/out",
-            "--workdir", "/source", self.image,
-            "/usr/local/bin/matchdesk-agent", "--work-order", "/out/work-order.json",
+            "docker",
+            "run",
+            "--rm",
+            "--pull=never",
+            "--network=none",
+            "--name",
+            name,
+            "--read-only",
+            "--cap-drop=ALL",
+            "--security-opt=no-new-privileges=true",
+            "--pids-limit=64",
+            "--memory=768m",
+            "--cpus=1",
+            "--user",
+            f"{os.getuid()}:{os.getgid()}",
+            "--tmpfs",
+            "/tmp:rw,nosuid,nodev,size=32m",
+            "--mount",
+            f"type=bind,src={source},dst=/source,readonly",
+            "--mount",
+            f"type=bind,src={output},dst=/out",
+            "--workdir",
+            "/source",
+            self.image,
+            "/usr/local/bin/matchdesk-agent",
+            "--work-order",
+            "/out/work-order.json",
         ]
 
     def execute(self, lane: str, worker_id: str) -> WorkerResult:
@@ -235,13 +252,17 @@ class OfflineDockerWorker:
                 if verified.returncode != 0:
                     return WorkerResult("BLOCKED")
                 (evidence / "receipt.json").write_text(
-                    json.dumps({
-                        "state": "REVIEW_REQUIRED",
-                        "source_sha": self.source_sha,
-                        "lane": lane,
-                        "patch_sha256": digest,
-                        "paths": files,
-                    }, sort_keys=True) + "\n",
+                    json.dumps(
+                        {
+                            "state": "REVIEW_REQUIRED",
+                            "source_sha": self.source_sha,
+                            "lane": lane,
+                            "patch_sha256": digest,
+                            "paths": files,
+                        },
+                        sort_keys=True,
+                    )
+                    + "\n",
                     encoding="utf-8",
                 )
                 return WorkerResult("REVIEW_REQUIRED", digest, str(evidence))
