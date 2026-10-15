@@ -68,14 +68,23 @@ def main() -> int:
         if not args.deliver:
             print(json.dumps({"mode": "DRY_RUN", "alerts": pending}, indent=2))
             return 0
+        delivered = 0
         for alert in pending:
-            issue = int(alert["issue"])
+            fingerprint = str(alert["fingerprint"])
+            if not supervisor.claim_alert_send(fingerprint):
+                continue
+            # The committed send claim survives crashes and ambiguous HTTP outcomes.
+            # An uncertain claim must be reconciled, never automatically retried.
             comment_id = deliver_comment(
-                issue, str(alert["fingerprint"]), str(alert["detail"]),
+                int(alert["issue"]),
+                fingerprint,
+                str(alert["detail"]),
                 os.environ["MATCHDESK_ALERT_GITHUB_TOKEN"],
             )
-            supervisor.mark_alert_delivered(str(alert["fingerprint"]), comment_id)
-        print(json.dumps({"mode": "DELIVERED", "count": len(pending)}))
+            supervisor.mark_alert_delivered(fingerprint, comment_id)
+            delivered += 1
+        print(json.dumps({"mode": "DELIVERY_ATTEMPTED", "count": delivered,
+                          "uncertain": supervisor.claimed_alerts()}))
     finally:
         supervisor.close()
     return 0
