@@ -66,7 +66,9 @@ class Supervisor:
                     "SELECT issue, kind FROM tasks WHERE id=?", (task["id"],)
                 ).fetchone()
                 if row != (task["issue"], task["kind"]):
-                    raise ValueError("Persisted task authority changed; manual reconciliation required")
+                    raise ValueError(
+                        "Persisted task authority changed; manual reconciliation required"
+                    )
             self.conn.commit()
         except Exception:
             self.conn.rollback()
@@ -89,7 +91,7 @@ class Supervisor:
 
     def claim(self, worker: str, *, max_attempts: int = 3, lease_seconds: int = 600) -> str | None:
         """Reserve one dependency-cleared engineering task; no worker is launched."""
-        if not worker or len(worker)>80 or max_attempts<1 or not 30<=lease_seconds<=3600:
+        if not worker or len(worker) > 80 or max_attempts < 1 or not 30 <= lease_seconds <= 3600:
             raise ValueError("Invalid bounded worker claim")
         self.conn.execute("BEGIN IMMEDIATE")
         try:
@@ -105,19 +107,18 @@ class Supervisor:
                 row = self.conn.execute(
                     "SELECT status,attempts FROM tasks WHERE id=?", (task["id"],)
                 ).fetchone()
-                if row[0] != "QUEUED" or row[1]>=max_attempts:
+                if row[0] != "QUEUED" or row[1] >= max_attempts:
                     continue
                 if any(
-                    self.conn.execute(
-                        "SELECT status FROM tasks WHERE id=?", (dep,)
-                    ).fetchone() != ("VERIFIED",)
+                    self.conn.execute("SELECT status FROM tasks WHERE id=?", (dep,)).fetchone()
+                    != ("VERIFIED",)
                     for dep in task["depends_on"]
                 ):
                     continue
                 self.conn.execute(
                     """UPDATE tasks SET status='LEASED',owner=?,lease_until=?,
                     attempts=attempts+1,updated_at=? WHERE id=?""",
-                    (worker,self.now+lease_seconds,self.now,task["id"]),
+                    (worker, self.now + lease_seconds, self.now, task["id"]),
                 )
                 self.conn.commit()
                 return task["id"]
@@ -129,15 +130,15 @@ class Supervisor:
 
     def release(self, task_id: str, worker: str, state: str) -> None:
         """Record a bounded worker outcome without manufacturing acceptance."""
-        if state not in ("QUEUED","BLOCKED","REVIEW_REQUIRED"):
+        if state not in ("QUEUED", "BLOCKED", "REVIEW_REQUIRED"):
             raise ValueError("Cannot certify task by a worker result")
         self.conn.execute("BEGIN IMMEDIATE")
         try:
-            result=self.conn.execute(
+            result = self.conn.execute(
                 """UPDATE tasks SET status=?,owner=NULL,lease_until=NULL,
                 updated_at=? WHERE id=? AND status='LEASED' AND owner=?
                 AND lease_until>?""",
-                (state,self.now,task_id,worker,self.now),
+                (state, self.now, task_id, worker, self.now),
             )
             if result.rowcount != 1:
                 raise PermissionError("Missing or expired worker reservation")
@@ -148,31 +149,31 @@ class Supervisor:
 
     def request_input(self, task_id: str, detail: str) -> bool:
         """Store a deduplicated owner alert locally for external delivery."""
-        if not detail.strip() or len(detail)>2000:
+        if not detail.strip() or len(detail) > 2000:
             raise ValueError("Invalid escalation text")
-        row=self.conn.execute("SELECT status FROM tasks WHERE id=?", (task_id,)).fetchone()
+        row = self.conn.execute("SELECT status FROM tasks WHERE id=?", (task_id,)).fetchone()
         if row is None:
             raise ValueError("Unknown task")
-        fingerprint=__import__("hashlib").sha256(f"{task_id}\0{detail}".encode()).hexdigest()
-        result=self.conn.execute(
+        fingerprint = __import__("hashlib").sha256(f"{task_id}\0{detail}".encode()).hexdigest()
+        result = self.conn.execute(
             "INSERT OR IGNORE INTO alerts(fingerprint,task_id,detail,created_at) VALUES(?,?,?,?)",
-            (fingerprint,task_id,detail,self.now),
+            (fingerprint, task_id, detail, self.now),
         )
-        return result.rowcount==1
+        return result.rowcount == 1
 
     def status(self) -> dict:
         """Report genuine queued/leased/blocked state, never job execution."""
-        tasks=[
-            dict(zip(("id","issue","kind","status","owner","attempts","receipt"),row))
+        tasks = [
+            dict(zip(("id", "issue", "kind", "status", "owner", "attempts", "receipt"), row))
             for row in self.conn.execute(
                 "SELECT id,issue,kind,status,owner,attempts,receipt FROM tasks ORDER BY issue"
             )
         ]
         return {
-            "execution_mode":"SUPERVISOR_RESERVATIONS_ONLY_NO_CODING_EXECUTOR",
-            "complete":all(row["status"]=="VERIFIED" for row in tasks),
-            "tasks":tasks,
-            "pending_owner_alerts":self.conn.execute("SELECT COUNT(*) FROM alerts").fetchone()[0],
+            "execution_mode": "SUPERVISOR_RESERVATIONS_ONLY_NO_CODING_EXECUTOR",
+            "complete": all(row["status"] == "VERIFIED" for row in tasks),
+            "tasks": tasks,
+            "pending_owner_alerts": self.conn.execute("SELECT COUNT(*) FROM alerts").fetchone()[0],
         }
 
     def close(self) -> None:
@@ -182,25 +183,25 @@ class Supervisor:
 
 def main() -> int:
     """Expose non-privileged local commands, with no network side effects."""
-    parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--manifest",type=Path,default=DEFAULT_MANIFEST)
-    parser.add_argument("--db",type=Path,default=Path("artifacts/delivery/state.sqlite3"))
-    parser.add_argument("--at",type=int)
-    parser.add_argument("--worker",help="Reserve work only; does not execute code")
-    parser.add_argument("--recover",action="store_true")
-    args=parser.parse_args()
-    manifest=json.loads(args.manifest.read_text(encoding="utf-8"))
-    supervisor=Supervisor(args.db,manifest,clock=args.at)
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
+    parser.add_argument("--db", type=Path, default=Path("artifacts/delivery/state.sqlite3"))
+    parser.add_argument("--at", type=int)
+    parser.add_argument("--worker", help="Reserve work only; does not execute code")
+    parser.add_argument("--recover", action="store_true")
+    args = parser.parse_args()
+    manifest = json.loads(args.manifest.read_text(encoding="utf-8"))
+    supervisor = Supervisor(args.db, manifest, clock=args.at)
     try:
         if args.recover:
             print(f"Recovered expired reservations: {supervisor.recover()}")
         if args.worker:
             print(f"Reserved work: {supervisor.claim(args.worker) or 'NONE'}")
-        print(json.dumps(supervisor.status(),indent=2))
+        print(json.dumps(supervisor.status(), indent=2))
     finally:
         supervisor.close()
     return 0
 
 
-if __name__=="__main__":
+if __name__ == "__main__":
     raise SystemExit(main())
