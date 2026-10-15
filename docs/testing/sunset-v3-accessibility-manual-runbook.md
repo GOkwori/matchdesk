@@ -1,8 +1,8 @@
 # Sunset Studio v3 — manual accessibility acceptance runbook
 
 **Authority:** This runbook prepares human testing; it is not a completed accessibility audit.  
-**Pinned starting source:** development squash commit `c06890ba04475cd5175c1768b0025f7c9a016a18` (PR #54).  
-**Automated evidence:** PR #54 source `a4507e7cdc188205eca6a6cf290e11d8ac8258cc` passed all four required CI workflows: 268 Chromium functional tests passed, 98 deliberately skipped between viewport projects, three visual evidence tests passed, and the independent native-image job passed. These results **do not certify** screen-reader use, real browser zoom, visual parity or WCAG 2.2 AA conformance.  
+**Pinned application source:** development squash commit `17571e45916af2d8e80e22f45faf51903b9d88b7` (PR #57), including the keyboard focus and scrolled-heading repairs in PRs #56–57. This pinned application SHA is distinct from later documentation commits.  
+**Automated evidence:** PR #57 source `760a67a7516ba04f9700ccc3d7b3107cb1de943b` passed all four mandatory exact-head CI workflows: 277 Chromium browser tests passed, 98 deliberate cross-project skips, three visual evidence checks passed, and the native-image qualification passed. Check the independent post-merge runs on application SHA `17571e4` before declaring the merged source qualified. These automated results **do not certify** real AT use, real browser zoom, visual parity or WCAG 2.2 AA conformance.  
 **Manual status:** **NOT RUN** for all modalities, screens and themes until attributable observed evidence is supplied.  
 **Tracker:** [Issue #52](https://github.com/GOkwori/matchdesk/issues/52).  
 **Test surface:** `http://127.0.0.1:3000/sunset-v3` on a private local build, using synthetic data only.
@@ -13,7 +13,7 @@ Use Git, Docker/Compose, a POSIX shell (WSL2 is suitable on Windows), and access
 
 ```bash
 git fetch origin development
-git worktree add --detach ../matchdesk-a11y-review c06890ba04475cd5175c1768b0025f7c9a016a18
+git worktree add --detach ../matchdesk-a11y-review 17571e45916af2d8e80e22f45faf51903b9d88b7
 cd ../matchdesk-a11y-review
 git rev-parse HEAD
 python -m scripts.create_local_env
@@ -25,7 +25,7 @@ docker compose -p matchdesk-a11y-review up --build
 - Open `http://127.0.0.1:3000/sunset-v3` in the named test browser and confirm it is explicitly labelled as a **synthetic preview**. `/api/ready` is intentionally fail-closed and must not be treated as a reason to enable backend permissions.
 - After the session, stop Compose with Ctrl+C and use `docker compose -p matchdesk-a11y-review down` only if this dedicated project belongs to the test. **Do not use `down -v`, prune, reset, or remove another project's data.** Retain evidence separately from the repo worktree.
 
-If a different code SHA is tested, record that SHA and independently qualify it before attributing any result to that revision. Do not silently transfer PR #54's passing results to newer source.
+If a different code SHA is tested, record and independently qualify it before attributing any result to that revision. Do not transfer PR #57's automated evidence to later commits, including documentation-only merges.
 
 ### Physical Android TalkBack access without changing loopback bindings
 
@@ -85,9 +85,10 @@ Observe both **dark** and **light** modes for each of the fourteen implemented d
 
 1. Reload the preview, then use **Tab** to reach the visible skip link. Press **Enter** and confirm keyboard focus moves to the main content; continue using only Tab/Shift+Tab/Enter/Space and applicable arrows.
 2. Follow each visible interactive control in reading/operating order. Record unexpected skips, duplicate focus, disappearing focus rings, unreachable buttons, invisible actionable elements or traps. No pointer use during this pass.
-3. At 320px and 390px (and normal desktop width), use the **More** destination menu. Check expanded state, all 14 choices, Escape close and returned focus.
+3. At 320px and 390px (and normal desktop width), use the **More** destination menu. Check expanded state, all 14 choices, Escape close and returned focus. When switching destination, observe that keyboard focus reaches the new named main landmark and its heading is visibly presented.
 4. On **Intelligence Overview**, open "Why is approval blocked?". On **Notification & Dialogue Library**, open "Try local discard" and all disabled approval/rejection/publication variants. Verify focus enters the dialog, stays inside while tabbing, Escape/cancel restores the exact opener, and the rest of the interface cannot be reached until close. Do not attempt real publishing.
 5. With the fixed bottom bar visible, tab through controls near the bottom of long screens; a focused control must not be **entirely obscured** by author-created UI (SC 2.4.11). Inspect the visible focus indicator separately (SC 2.4.7).
+6. On mobile at 390 CSS px, open **Evidence Verification** and scroll near the bottom. Select **Overview** using actual keyboard or screen-reader controls. Verify that the new heading is visible near the top, the new main landmark receives focus, and no stale viewport position remains. Repeat in dark and light modes and separately with real 400% desktop browser zoom. Record any unexpected scroll jump or lost focus.
 
 ### B. Real assistive technology
 
