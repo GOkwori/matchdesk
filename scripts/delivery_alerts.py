@@ -83,8 +83,15 @@ def main() -> int:
             )
             supervisor.mark_alert_delivered(fingerprint, comment_id)
             delivered += 1
-        print(json.dumps({"mode": "DELIVERY_ATTEMPTED", "count": delivered,
-                          "uncertain": supervisor.claimed_alerts()}))
+        print(
+            json.dumps(
+                {
+                    "mode": "DELIVERY_ATTEMPTED",
+                    "count": delivered,
+                    "uncertain": supervisor.claimed_alerts(),
+                }
+            )
+        )
     finally:
         supervisor.close()
     return 0
