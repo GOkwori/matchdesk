@@ -6,8 +6,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from delivery_worker_loop import execute_cycle, run_cycle
 from delivery_agent_loop import WorkerResult
+from delivery_worker_loop import execute_cycle, run_cycle
 from test_delivery_supervisor import manifest
 
 
@@ -39,9 +39,9 @@ class WorkerLoopTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 run_cycle(Path(directory) / "state.sqlite3", manifest(), "../worker")
 
-
     def test_parallel_proposals_are_durable_but_not_accepted(self):
         """Independent lanes generate review receipts without certification."""
+
         class Stub:
             """Return test-only patch proposals without any subprocess."""
 
@@ -64,6 +64,7 @@ class WorkerLoopTests(unittest.TestCase):
 
     def test_worker_exception_blocks_and_escalates_once(self):
         """A failing worker cannot strand an active reservation."""
+
         class Broken:
             """Test adapter that fails without returning a result."""
 
@@ -72,7 +73,9 @@ class WorkerLoopTests(unittest.TestCase):
                 raise RuntimeError("simulated failure")
 
         with tempfile.TemporaryDirectory() as directory:
-            result = execute_cycle(Path(directory) / "state.sqlite3", manifest(), Broken(), clock=1000)
+            result = execute_cycle(
+                Path(directory) / "state.sqlite3", manifest(), Broken(), clock=1000
+            )
             self.assertEqual(result["tasks"][0]["status"], "BLOCKED")
             self.assertEqual(result["pending_owner_alerts"], 1)
 
