@@ -67,10 +67,7 @@ def passing_runs() -> list[dict]:
 
 def passing_checks() -> list[dict]:
     """Produce fixtures matching actual integration check names."""
-    return [
-        {"name": name, "status": "completed", "conclusion": "success"}
-        for name in JOBS
-    ]
+    return [{"name": name, "status": "completed", "conclusion": "success"} for name in JOBS]
 
 
 class ManifestValidationTests(unittest.TestCase):
