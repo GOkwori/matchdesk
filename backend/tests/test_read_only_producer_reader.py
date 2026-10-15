@@ -5,8 +5,8 @@ from unittest.mock import MagicMock
 import pytest
 
 from matchdesk.domain.postgres_producer_store import (
-    ReadOnlyPostgresProducerReader,
     _READ_ONLY_ROLE_QUERY,
+    ReadOnlyPostgresProducerReader,
 )
 
 ROLE = "matchdesk_producer_reader"
@@ -58,6 +58,8 @@ def test_denied_or_drifted_database_role_fails_before_case_select(observed):
 def test_valid_role_permits_only_scoped_selects_and_returns_missing_case():
     """A permitted role cannot acquire mutation capability through this reader."""
     connection, cursor = connection_for_role((ROLE, ROLE, True))
+    # Role verification consumes the first row; scoped case lookup is absent.
+    cursor.fetchone.side_effect = [(ROLE, ROLE, True), None]
     reader = ReadOnlyPostgresProducerReader(lambda: connection, expected_role=ROLE)
     assert reader.load("tenant-1", "demo-preview-only", "missing") is None
     sql = [call.args[0] for call in cursor.execute.call_args_list]
@@ -65,8 +67,7 @@ def test_valid_role_permits_only_scoped_selects_and_returns_missing_case():
         i for i, query in enumerate(sql) if "FROM matchdesk_producer_cases" in query
     )
     assert not any(
-        query.lstrip().startswith(("INSERT", "UPDATE", "DELETE", "TRUNCATE"))
-        for query in sql
+        query.lstrip().startswith(("INSERT", "UPDATE", "DELETE", "TRUNCATE")) for query in sql
     )
     assert not hasattr(reader, "create")
     assert not hasattr(reader, "replace_if_generation")
