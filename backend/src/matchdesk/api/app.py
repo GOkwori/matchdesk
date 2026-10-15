@@ -41,6 +41,7 @@ def create_app(
     *,
     customer_session_router: APIRouter | None = None,
     customer_oidc_router: APIRouter | None = None,
+    producer_read_router: APIRouter | None = None,
 ) -> FastAPI:
     """Construct an isolated app for the local workbench and integration tests."""
     app = FastAPI(
@@ -58,6 +59,9 @@ def create_app(
     # OIDC is opt-in and cannot be activated by the default exported app.
     if customer_oidc_router is not None:
         app.include_router(customer_oidc_router)
+    # Producer inspection requires an explicit host-injected workforce router.
+    if producer_read_router is not None:
+        app.include_router(producer_read_router)
 
     @app.exception_handler(RequestValidationError)
     async def invalid_request(request: Request, exc: RequestValidationError) -> JSONResponse:

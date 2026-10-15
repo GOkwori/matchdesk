@@ -64,11 +64,15 @@ class ProducerCase:
     generation: int
 
 
-class ProducerCaseStore(Protocol):
-    """Host-owned storage with atomic compare-and-swap in one DB transaction."""
+class ProducerCaseReader(Protocol):
+    """Least-privilege storage interface for inspecting a scoped producer case."""
 
     def load(self, tenant_id: str, session_id: str, output_id: str) -> ProducerCase | None:
-        """Load the current case from a tenant- and session-scoped record."""
+        """Load only the case addressed by all three server-trusted scope keys."""
+
+
+class ProducerCaseStore(ProducerCaseReader, Protocol):
+    """Host-owned storage with atomic compare-and-swap in one DB transaction."""
 
     def replace_if_generation(
         self,
@@ -263,6 +267,34 @@ def apply_producer_command(
     else:
         raise ValueError("Unsupported producer command")
     return replace(case, review=review, generation=case.generation + 1)
+
+
+def inspect_producer_case(
+    reader: ProducerCaseReader,
+    *,
+    actor: HostVerifiedActor,
+    session_id: str,
+    output_id: str,
+) -> ProducerCase:
+    """Return an integrity-checked case for the actor's exact permitted session.
+
+    This read-only domain boundary does not authenticate HTTP credentials.
+    A trusted HTTP adapter must first verify the actual workforce token and
+    refresh server-owned entitlements; request-supplied tenant IDs never select
+    storage. A corrupt or out-of-scope store response fails closed.
+    """
+    _authorize(actor, actor.tenant_id, session_id)
+    case = reader.load(actor.tenant_id, session_id, output_id)
+    if case is None:
+        raise LookupError("Producer case is unavailable within the authorized session")
+    if (
+        case.tenant_id != actor.tenant_id
+        or case.output.session_id != session_id
+        or case.output.output_id != output_id
+    ):
+        raise PermissionError("Producer store returned an out-of-scope case")
+    _validate_case(case)
+    return case
 
 
 def execute_producer_command(
