@@ -158,6 +158,10 @@ export default function SunsetStudioPreview() {
     if (previousScreenRef.current === page) return;
     previousScreenRef.current = page;
     mainRef.current?.focus({ preventScroll: true });
+    // The main landmark can span multiple viewports. Focusing it alone does
+    // not reveal its heading when the previous long screen was scrolled down.
+    // Restore the start of each new synthetic screen without smooth motion.
+    window.scrollTo(0, 0);
   }, [page]);
 
   /** Keep keyboard focus inside a modal and restore it to its opener on close. */
