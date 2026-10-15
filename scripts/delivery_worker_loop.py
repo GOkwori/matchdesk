@@ -138,10 +138,10 @@ def main() -> int:
         parser.error("Cycle and interval budgets must be bounded")
     manifest = json.loads(args.manifest.read_text(encoding="utf-8"))
     if args.execute_offline:
-        if args.reserve or not all(
-            (args.source, args.source_sha, args.image, args.evidence_dir)
-        ):
-            parser.error("Offline execution requires source, SHA, pinned image and evidence directory")
+        if args.reserve or not all((args.source, args.source_sha, args.image, args.evidence_dir)):
+            parser.error(
+                "Offline execution requires source, SHA, pinned image and evidence directory"
+            )
         executor = OfflineDockerWorker(
             source=args.source,
             source_sha=args.source_sha,
