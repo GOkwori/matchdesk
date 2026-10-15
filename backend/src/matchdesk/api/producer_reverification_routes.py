@@ -111,8 +111,7 @@ def _request_shape(request: Request, session_id: str, output_id: str) -> str | N
         or request.headers.getlist("origin")
         or request.headers.getlist("referer")
         or any(
-            name.lower() == "forwarded"
-            or name.lower().startswith(("x-forwarded-", "x-original-"))
+            name.lower() == "forwarded" or name.lower().startswith(("x-forwarded-", "x-original-"))
             for name in request.headers
         )
         or _IDENTIFIER.fullmatch(session_id) is None
