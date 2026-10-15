@@ -1,0 +1,234 @@
+"""Negative and positive offline checks for opt-in workforce reverification HTTP."""
+
+from __future__ import annotations
+
+from dataclasses import replace
+
+import pytest
+from fastapi.testclient import TestClient
+from matchdesk.api.app import create_app
+from matchdesk.api.producer_reverification_routes import create_producer_reverification_router
+from matchdesk.domain.producer_commands import HostVerifiedActor, open_producer_case
+from matchdesk.domain.producer_identity import ProducerIdentityPolicy
+from matchdesk.domain.producer_preview import build_producer_desk_preview
+
+TENANT = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+POLICY = ProducerIdentityPolicy(
+    issuer=f"https://login.microsoftonline.com/{TENANT}/v2.0",
+    tenant_id=TENANT,
+    audience="api://matchdesk-ci",
+    client_ids=frozenset({"client-1"}),
+)
+URL = "/api/workforce/producer/sessions/demo-preview-only/cases/demo-story-output/reverify"
+HEADERS = {"Authorization": "Bearer offline-token", "Content-Type": "application/json"}
+
+
+def actor() -> HostVerifiedActor:
+    """Provide a simulated trusted identity, not live MFA evidence."""
+    return HostVerifiedActor(
+        subject="workforce-person",
+        tenant_id=TENANT,
+        issuer=POLICY.issuer,
+        roles=frozenset({"producer"}),
+        permitted_sessions=frozenset({"demo-preview-only"}),
+    )
+
+
+def sample():
+    """Prepare an evidence-bound synthetic case requiring re-verification."""
+    preview = build_producer_desk_preview()
+    return open_producer_case(
+        actor=actor(),
+        tenant_id=TENANT,
+        output=preview.output,
+        claims=(preview.claim,),
+        evidence=preview.evidence,
+        accepted_events=preview.events,
+    )
+
+
+class Resolver:
+    """Deny-all trust dependency when the real token verifier is not overridden."""
+
+    def resolve(self, **kwargs):
+        """Do not provide fake signing keys or entitlements by default."""
+        del kwargs
+        return None
+
+
+class Store:
+    """Offline CAS stand-in that preserves the full resulting audit state."""
+
+    def __init__(self):
+        """Create a fresh case and an observable mutation count."""
+        self.case = sample()
+        self.writes = 0
+        self.reads = 0
+        self.conflict = False
+
+    def load(self, tenant_id, session_id, output_id):
+        """Select only the permitted tenant, session and output."""
+        self.reads += 1
+        if (tenant_id, session_id, output_id) == (
+            self.case.tenant_id,
+            self.case.output.session_id,
+            self.case.output.output_id,
+        ):
+            return self.case
+        return None
+
+    def replace_if_generation(self, case, *, expected_generation):
+        """Reject replayed and stale changes without writing."""
+        if self.conflict or self.case.generation != expected_generation:
+            return False
+        self.case = case
+        self.writes += 1
+        return True
+
+
+class Grants:
+    """Simulated secondary host-owned step-up decision, initially deny-all."""
+
+    def __init__(self):
+        """Default to no permission for a privileged decision."""
+        self.allowed = False
+        self.calls = 0
+
+    def authorize(self, *, actor, session_id, output_id, binding, expected_generation):
+        """Grant only a test-specific exact target when explicitly enabled."""
+        self.calls += 1
+        return (
+            self.allowed
+            and actor.subject == "workforce-person"
+            and session_id == "demo-preview-only"
+            and output_id == "demo-story-output"
+            and binding.item_version == 1
+            and expected_generation == 1
+        )
+
+
+def setup(monkeypatch):
+    """Build one explicitly mounted router; verifier mocked only for route tests."""
+    store, grants = Store(), Grants()
+    router = create_producer_reverification_router(
+        policy=POLICY,
+        keys=Resolver(),
+        entitlements=Resolver(),
+        grants=grants,
+        store=store,
+    )
+    client = TestClient(create_app(producer_reverification_router=router))
+    import matchdesk.api.producer_reverification_routes as routes
+
+    monkeypatch.setattr(routes, "verify_producer_access_token", lambda *args, **kwargs: actor())
+    return client, store, grants
+
+
+def body(store):
+    """Bind a client request to every current version and evidence field."""
+    return {
+        "expected_generation": store.case.generation,
+        "binding": store.case.output.binding.model_dump(mode="json"),
+        "reason": "Evidence checked",
+    }
+
+
+def test_default_application_exposes_no_privileged_command():
+    """An unconfigured application has no workforce mutation endpoint."""
+    client = TestClient(create_app())
+    assert client.post(URL, json={}, headers=HEADERS).status_code == 404
+    assert URL.replace("demo-preview-only", "{session_id}").replace(
+        "demo-story-output", "{output_id}"
+    ) not in client.get("/openapi.json").json()["paths"]
+
+
+def test_valid_token_alone_cannot_write(monkeypatch):
+    """A delegated JWT cannot replace independent host action authorization."""
+    client, store, grants = setup(monkeypatch)
+    assert client.post(URL, json=body(store), headers=HEADERS).status_code == 403
+    assert store.writes == 0
+    assert grants.calls == 1
+
+
+def test_exact_grant_saves_once_and_replay_fails(monkeypatch):
+    """A scoped host decision permits one atomic update, never repeated writes."""
+    client, store, grants = setup(monkeypatch)
+    grants.allowed = True
+    request = body(store)
+    good = client.post(URL, json=request, headers=HEADERS)
+    assert good.status_code == 200
+    assert good.json()["review_status"] == "ready_for_decision"
+    assert good.json()["generation"] == 2
+    assert good.json()["approval_enabled"] is False
+    assert good.json()["publication_enabled"] is False
+    assert good.headers["Cache-Control"] == "no-store"
+    assert store.writes == 1
+    assert client.post(URL, json=request, headers=HEADERS).status_code == 409
+    assert store.writes == 1
+    assert len(store.case.review.audit) == 2
+    for command in ("approve", "reject", "publish", "edit"):
+        assert client.post(URL.rsplit("/", 1)[0] + "/" + command, json={}).status_code == 404
+
+
+@pytest.mark.parametrize(
+    "headers",
+    [
+        {},
+        {"Content-Type": "application/json"},
+        {"Authorization": "Bearer offline-token"},
+        {**HEADERS, "Cookie": "session=forged"},
+        {**HEADERS, "Origin": "https://untrusted.example"},
+        {**HEADERS, "Referer": "https://untrusted.example"},
+        {**HEADERS, "X-Forwarded-For": "127.0.0.1"},
+        {**HEADERS, "Authorization": "Basic unsupported"},
+    ],
+)
+def test_invalid_transport_never_touches_storage(monkeypatch, headers):
+    """Bad framing, browser-originated and spoofed requests fail before lookups."""
+    client, store, grants = setup(monkeypatch)
+    assert client.post(URL, json=body(store), headers=headers).status_code == 401
+    assert store.reads == 0
+    assert store.writes == 0
+    assert grants.calls == 0
+
+
+def test_invalid_binding_or_generation_is_a_conflict(monkeypatch):
+    """Changing content binding or generation prevents step-up and CAS."""
+    client, store, grants = setup(monkeypatch)
+    request = body(store)
+    request["binding"]["item_version"] = 2
+    assert client.post(URL, json=request, headers=HEADERS).status_code == 409
+    request = body(store)
+    request["expected_generation"] = 10
+    assert client.post(URL, json=request, headers=HEADERS).status_code == 409
+    assert grants.calls == 0 and store.writes == 0
+
+
+def test_unknown_fields_and_ambiguous_json_fail_closed(monkeypatch):
+    """No body-supplied role, tenant, actor or duplicate key can grant authority."""
+    client, store, grants = setup(monkeypatch)
+    request = body(store)
+    request["roles"] = ["producer"]
+    assert client.post(URL, json=request, headers=HEADERS).status_code == 400
+    duplicate = '{"expected_generation":1,"expected_generation":1,"binding":{},"reason":"x"}'
+    assert client.post(URL, content=duplicate, headers=HEADERS).status_code == 400
+    assert grants.calls == 0 and store.writes == 0
+
+
+def test_concurrent_race_does_not_record_success(monkeypatch):
+    """Compare-and-swap rejection cannot be represented as a successful action."""
+    client, store, grants = setup(monkeypatch)
+    grants.allowed = True
+    store.conflict = True
+    assert client.post(URL, json=body(store), headers=HEADERS).status_code == 409
+    assert store.writes == 0
+
+
+def test_integrity_corruption_blocks_command(monkeypatch):
+    """A corrupt persisted generation cannot be used for a producer command."""
+    client, store, grants = setup(monkeypatch)
+    grants.allowed = True
+    request = body(store)
+    store.case = replace(store.case, generation=3)
+    assert client.post(URL, json=request, headers=HEADERS).status_code == 503
+    assert store.writes == 0
