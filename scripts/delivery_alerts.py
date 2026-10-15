@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
@@ -19,17 +20,28 @@ from delivery_orchestrator import DEFAULT_MANIFEST
 from delivery_supervisor import Supervisor
 
 
-def deliver_comment(issue: int, fingerprint: str, detail: str, token: str) -> int:
-    """Post one exact-issue, bounded escalation and return confirmed comment ID."""
-    if not token or not 1 <= issue <= 100000 or len(detail) > 2000:
-        raise ValueError("Invalid narrowly scoped alert delivery")
-    body = (
+def format_alert_body(issue: int, fingerprint: str, detail: str) -> str:
+    """Render an exact, validated issue-bound alert for later remote reconciliation."""
+    if (
+        not 1 <= issue <= 100000
+        or re.fullmatch(r"[0-9a-f]{64}", fingerprint) is None
+        or not 0 < len(detail.strip()) <= 2000
+    ):
+        raise ValueError("Invalid issue-bound notification identity")
+    return (
         "MatchDesk delivery supervisor — owner action required\n\n"
         + detail
         + f"\n\nTracking issue: #{issue}. "
         + "No permission or production action has been automatically granted.\n\n"
         + f"<!-- matchdesk-owner-alert:{fingerprint} -->"
     )
+
+
+def deliver_comment(issue: int, fingerprint: str, detail: str, token: str) -> int:
+    """Post exactly one owner escalation after its durable send claim exists."""
+    if not token:
+        raise ValueError("Missing alert delivery token")
+    body = format_alert_body(issue, fingerprint, detail)
     request = Request(
         f"https://api.github.com/repos/GOkwori/matchdesk/issues/{issue}/comments",
         data=json.dumps({"body": body}).encode("utf-8"),
