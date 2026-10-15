@@ -14,6 +14,7 @@ on:
       - scripts/delivery_supervisor.py
       - scripts/test_delivery_supervisor.py
       - scripts/delivery_agent_loop.py
+      - scripts/test_delivery_agent_loop.py
       - scripts/delivery_worker_loop.py
       - scripts/test_delivery_worker_loop.py
   pull_request:
@@ -26,6 +27,7 @@ on:
       - scripts/delivery_supervisor.py
       - scripts/test_delivery_supervisor.py
       - scripts/delivery_agent_loop.py
+      - scripts/test_delivery_agent_loop.py
       - scripts/delivery_worker_loop.py
       - scripts/test_delivery_worker_loop.py
   workflow_dispatch:
@@ -58,6 +60,8 @@ jobs:
         run: python3 -m unittest discover -s scripts -p 'test_delivery_supervisor.py' -v
       - name: Verify executor remains fail-closed without an approved coding adapter
         run: python3 -m unittest discover -s scripts -p 'test_delivery_worker_loop.py' -v
+      - name: Validate offline adapter patch and sandbox restrictions
+        run: python3 -m unittest discover -s scripts -p 'test_delivery_agent_loop.py' -v
       - name: Read live delivery state and development checks
         env:
           GITHUB_TOKEN: ${{ github.token }}
