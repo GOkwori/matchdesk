@@ -11,6 +11,8 @@ on:
       - docs/engineering/delivery-workstreams.json
       - scripts/delivery_orchestrator.py
       - scripts/test_delivery_orchestrator.py
+      - scripts/delivery_supervisor.py
+      - scripts/test_delivery_supervisor.py
   pull_request:
     branches: [development]
     paths:
@@ -18,6 +20,8 @@ on:
       - docs/engineering/delivery-workstreams.json
       - scripts/delivery_orchestrator.py
       - scripts/test_delivery_orchestrator.py
+      - scripts/delivery_supervisor.py
+      - scripts/test_delivery_supervisor.py
   workflow_dispatch:
   schedule:
     - cron: '17 */4 * * *'
@@ -44,6 +48,8 @@ jobs:
           persist-credentials: false
       - name: Verify delivery preflight regressions
         run: python3 -m unittest discover -s scripts -p 'test_delivery_orchestrator.py' -v
+      - name: Verify durable supervisor restart and lease recovery
+        run: python3 -m unittest discover -s scripts -p 'test_delivery_supervisor.py' -v
       - name: Read live delivery state and development checks
         env:
           GITHUB_TOKEN: ${{ github.token }}
