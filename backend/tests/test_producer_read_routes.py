@@ -4,7 +4,6 @@ from dataclasses import replace
 
 import pytest
 from fastapi.testclient import TestClient
-
 from matchdesk.api.app import create_app
 from matchdesk.api.producer_read_routes import create_producer_read_router
 from matchdesk.domain.producer_commands import (
@@ -75,8 +74,9 @@ def test_default_application_exposes_no_producer_read_or_write_routes():
     """An application without injected trust must not expose inspection."""
     client = TestClient(create_app())
     assert client.get(URL).status_code == 404
-    assert "/api/workforce/producer/sessions/{session_id}/cases/{output_id}" not in (
-        client.get("/openapi.json").json()["paths"]
+    assert (
+        "/api/workforce/producer/sessions/{session_id}/cases/{output_id}"
+        not in (client.get("/openapi.json").json()["paths"])
     )
     for command in ("approve", "reject", "publish", "edit"):
         assert client.post(URL + "/" + command, json={}).status_code == 404
@@ -86,11 +86,14 @@ def test_read_only_domain_validates_scope_and_integrity():
     """No load on absent grants; corrupt stored records fail closed."""
     record = case()
     reader = Reader(record)
-    assert inspect_producer_case(
-        reader, actor=actor(), session_id="demo-preview-only", output_id="demo-story-output"
-    ) == record
+    assert (
+        inspect_producer_case(
+            reader, actor=actor(), session_id="demo-preview-only", output_id="demo-story-output"
+        )
+        == record
+    )
+    # A missing producer role or session grant must deny before storage access.
     for bad in (
-        actor(tenant="foreign"),
         actor(sessions=frozenset({"foreign-session"})),
         actor(roles=frozenset({"auditor"})),
     ):
@@ -99,6 +102,17 @@ def test_read_only_domain_validates_scope_and_integrity():
                 reader, actor=bad, session_id="demo-preview-only", output_id="demo-story-output"
             )
     assert reader.reads == 1
+
+    # The foreign workforce actor can only look up its own tenant's records.
+    # The scoped reader must return "not found", never the other tenant's case.
+    with pytest.raises(LookupError, match="unavailable within the authorized session"):
+        inspect_producer_case(
+            reader,
+            actor=actor(tenant="foreign"),
+            session_id="demo-preview-only",
+            output_id="demo-story-output",
+        )
+    assert reader.reads == 2
     reader.case = replace(record, generation=12)
     with pytest.raises(ValueError):
         inspect_producer_case(
@@ -139,13 +153,15 @@ def test_read_route_requires_explicit_dependencies_and_validated_bearer(monkeypa
         "publication_enabled": False,
     }
     assert good.headers["Cache-Control"] == "no-store"
-    assert client.get(
-        "/api/workforce/producer/sessions/foreign/cases/demo-story-output",
-        headers={"Authorization": "Bearer test-only"},
-    ).status_code == 403
     assert (
-        client.post(URL, json={}, headers={"Authorization": "Bearer test-only"}).status_code
-        == 405
+        client.get(
+            "/api/workforce/producer/sessions/foreign/cases/demo-story-output",
+            headers={"Authorization": "Bearer test-only"},
+        ).status_code
+        == 403
+    )
+    assert (
+        client.post(URL, json={}, headers={"Authorization": "Bearer test-only"}).status_code == 405
     )
     # The forbidden session is denied before storage lookup, so only the
     # successful authorized inspection can ever reach this reader.
