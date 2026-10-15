@@ -216,9 +216,7 @@ class Supervisor:
             raise ValueError("Invalid escalation text")
         self.conn.execute("BEGIN IMMEDIATE")
         try:
-            row = self.conn.execute(
-                "SELECT status FROM tasks WHERE id=?", (task_id,)
-            ).fetchone()
+            row = self.conn.execute("SELECT status FROM tasks WHERE id=?", (task_id,)).fetchone()
             if row is None:
                 raise ValueError("Unknown task")
             created = self._queue_alert(task_id, detail)
@@ -290,10 +288,7 @@ class Supervisor:
             WHERE d.fingerprint IS NULL ORDER BY c.claimed_at,c.fingerprint LIMIT ?""",
             (limit,),
         ).fetchall()
-        return [
-            dict(zip(("fingerprint", "issue", "detail"), row))
-            for row in rows
-        ]
+        return [dict(zip(("fingerprint", "issue", "detail"), row)) for row in rows]
 
     def mark_alert_delivered(self, fingerprint: str, comment_id: int) -> None:
         """Checkpoint a confirmed external issue comment, not a transport attempt."""
