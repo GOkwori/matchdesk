@@ -9,6 +9,7 @@ operation is an internal reservation, not evidence that work is executing.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import sqlite3
@@ -16,6 +17,8 @@ import time
 from pathlib import Path
 
 from delivery_orchestrator import DEFAULT_MANIFEST, validate_manifest
+
+MAX_ATTEMPTS = 3
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS tasks (
@@ -36,6 +39,11 @@ CREATE TABLE IF NOT EXISTS alerts (
   detail TEXT NOT NULL,
   created_at INTEGER NOT NULL
 );
+CREATE TABLE IF NOT EXISTS alert_deliveries (
+  fingerprint TEXT PRIMARY KEY REFERENCES alerts(fingerprint),
+  comment_id INTEGER NOT NULL CHECK(comment_id > 0),
+  delivered_at INTEGER NOT NULL
+);
 """
 
 
@@ -48,6 +56,7 @@ class Supervisor:
         db.parent.mkdir(parents=True, exist_ok=True)
         self.conn = sqlite3.connect(db, timeout=15, isolation_level=None)
         self.conn.execute("PRAGMA busy_timeout=15000")
+        self.conn.execute("PRAGMA foreign_keys=ON")
         self.conn.executescript(SCHEMA)
         self.now = int(time.time()) if clock is None else clock
         self._init_tasks()
@@ -76,23 +85,32 @@ class Supervisor:
             raise
 
     def recover(self) -> int:
-        """Return expired reservations to the queue, never claiming execution."""
+        """Recover expired leases, escalating exhausted retries atomically."""
         self.conn.execute("BEGIN IMMEDIATE")
         try:
-            result = self.conn.execute(
-                """UPDATE tasks SET status='QUEUED', owner=NULL, lease_until=NULL,
-                    updated_at=? WHERE status='LEASED' AND lease_until<=?""",
-                (self.now, self.now),
-            )
+            expired = self.conn.execute(
+                """SELECT id, attempts FROM tasks
+                WHERE status='LEASED' AND lease_until<=?""",
+                (self.now,),
+            ).fetchall()
+            for task_id, attempts in expired:
+                exhausted = attempts >= MAX_ATTEMPTS
+                self.conn.execute(
+                    """UPDATE tasks SET status=?, owner=NULL, lease_until=NULL,
+                    updated_at=? WHERE id=?""",
+                    ("BLOCKED" if exhausted else "QUEUED", self.now, task_id),
+                )
+                if exhausted:
+                    self._queue_alert(task_id, "Worker lease expired after three attempts.")
             self.conn.commit()
-            return result.rowcount
+            return len(expired)
         except Exception:
             self.conn.rollback()
             raise
 
     def claim(self, worker: str, *, max_attempts: int = 3, lease_seconds: int = 600) -> str | None:
         """Reserve one dependency-cleared engineering task; no worker is launched."""
-        if not worker or len(worker) > 80 or max_attempts < 1 or not 30 <= lease_seconds <= 3600:
+        if not worker or len(worker) > 80 or max_attempts != MAX_ATTEMPTS or not 30 <= lease_seconds <= 3600:
             raise ValueError("Invalid bounded worker claim")
         self.conn.execute("BEGIN IMMEDIATE")
         try:
@@ -150,32 +168,98 @@ class Supervisor:
                 raise ValueError("Untrusted or unbound proposal receipt")
         self.conn.execute("BEGIN IMMEDIATE")
         try:
+            row = self.conn.execute(
+                """SELECT attempts FROM tasks WHERE id=? AND status='LEASED'
+                AND owner=? AND lease_until>?""",
+                (task_id, worker, self.now),
+            ).fetchone()
+            if row is None:
+                raise PermissionError("Missing or expired worker reservation")
+            exhausted = state == "QUEUED" and row[0] >= MAX_ATTEMPTS
+            final_state = "BLOCKED" if exhausted else state
             result = self.conn.execute(
                 """UPDATE tasks SET status=?,receipt=?,owner=NULL,lease_until=NULL,
                 updated_at=? WHERE id=? AND status='LEASED' AND owner=?
                 AND lease_until>?""",
-                (state, receipt, self.now, task_id, worker, self.now),
+                (final_state, receipt, self.now, task_id, worker, self.now),
             )
             if result.rowcount != 1:
                 raise PermissionError("Missing or expired worker reservation")
+            if exhausted:
+                self._queue_alert(task_id, "Execution retry limit reached after three attempts.")
             self.conn.commit()
         except Exception:
             self.conn.rollback()
             raise
 
-    def request_input(self, task_id: str, detail: str) -> bool:
-        """Store a deduplicated owner alert locally for external delivery."""
-        if not detail.strip() or len(detail) > 2000:
-            raise ValueError("Invalid escalation text")
-        row = self.conn.execute("SELECT status FROM tasks WHERE id=?", (task_id,)).fetchone()
-        if row is None:
-            raise ValueError("Unknown task")
-        fingerprint = __import__("hashlib").sha256(f"{task_id}\0{detail}".encode()).hexdigest()
+    def _queue_alert(self, task_id: str, detail: str) -> bool:
+        """Deduplicate an alert inside the caller's current SQLite transaction."""
+        fingerprint = hashlib.sha256(f"{task_id}\0{detail}".encode()).hexdigest()
         result = self.conn.execute(
             "INSERT OR IGNORE INTO alerts(fingerprint,task_id,detail,created_at) VALUES(?,?,?,?)",
             (fingerprint, task_id, detail, self.now),
         )
         return result.rowcount == 1
+
+    def request_input(self, task_id: str, detail: str) -> bool:
+        """Record one justified owner action without automatically contacting them."""
+        if not detail.strip() or len(detail) > 2000:
+            raise ValueError("Invalid escalation text")
+        self.conn.execute("BEGIN IMMEDIATE")
+        try:
+            row = self.conn.execute(
+                "SELECT status FROM tasks WHERE id=?", (task_id,)
+            ).fetchone()
+            if row is None:
+                raise ValueError("Unknown task")
+            created = self._queue_alert(task_id, detail)
+            self.conn.commit()
+            return created
+        except Exception:
+            self.conn.rollback()
+            raise
+
+    def pending_alerts(self, limit: int = 10) -> list[dict[str, object]]:
+        """List only undelivered, bounded notifications with manifest-linked issues."""
+        if not 1 <= limit <= 50:
+            raise ValueError("Alert page size must be between 1 and 50")
+        rows = self.conn.execute(
+            """SELECT a.fingerprint, a.task_id, t.issue, a.detail, a.created_at
+            FROM alerts a JOIN tasks t ON t.id=a.task_id
+            LEFT JOIN alert_deliveries d ON d.fingerprint=a.fingerprint
+            WHERE d.fingerprint IS NULL
+            ORDER BY a.created_at, a.fingerprint LIMIT ?""",
+            (limit,),
+        ).fetchall()
+        return [
+            dict(zip(("fingerprint", "task_id", "issue", "detail", "created_at"), row))
+            for row in rows
+        ]
+
+    def mark_alert_delivered(self, fingerprint: str, comment_id: int) -> None:
+        """Checkpoint a confirmed external issue comment, not a transport attempt."""
+        if (
+            re.fullmatch(r"[0-9a-f]{64}", fingerprint) is None
+            or type(comment_id) is not int
+            or comment_id < 1
+        ):
+            raise ValueError("Malformed alert delivery receipt")
+        self.conn.execute("BEGIN IMMEDIATE")
+        try:
+            known = self.conn.execute(
+                "SELECT 1 FROM alerts WHERE fingerprint=?", (fingerprint,)
+            ).fetchone()
+            if known is None:
+                raise ValueError("Unknown alert fingerprint")
+            self.conn.execute(
+                """INSERT OR IGNORE INTO alert_deliveries
+                (fingerprint,comment_id,delivered_at) VALUES (?,?,?)""",
+                (fingerprint, comment_id, self.now),
+            )
+            self.conn.commit()
+        except Exception:
+            self.conn.rollback()
+            raise
 
     def status(self) -> dict:
         """Report genuine queued/leased/blocked state, never job execution."""
@@ -189,7 +273,10 @@ class Supervisor:
             "execution_mode": "SUPERVISOR_RESERVATIONS_ONLY_NO_CODING_EXECUTOR",
             "complete": all(row["status"] == "VERIFIED" for row in tasks),
             "tasks": tasks,
-            "pending_owner_alerts": self.conn.execute("SELECT COUNT(*) FROM alerts").fetchone()[0],
+            "pending_owner_alerts": self.conn.execute(
+                """SELECT COUNT(*) FROM alerts a LEFT JOIN alert_deliveries d
+                ON a.fingerprint=d.fingerprint WHERE d.fingerprint IS NULL"""
+            ).fetchone()[0],
         }
 
     def close(self) -> None:
