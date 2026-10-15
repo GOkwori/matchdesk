@@ -14,6 +14,8 @@ on:
       - scripts/delivery_supervisor.py
       - scripts/test_delivery_supervisor.py
       - scripts/delivery_alerts.py
+      - scripts/delivery_alert_reconcile.py
+      - scripts/test_delivery_alert_reconcile.py
       - scripts/delivery_agent_loop.py
       - scripts/test_delivery_agent_loop.py
       - scripts/delivery_worker_loop.py
@@ -28,6 +30,8 @@ on:
       - scripts/delivery_supervisor.py
       - scripts/test_delivery_supervisor.py
       - scripts/delivery_alerts.py
+      - scripts/delivery_alert_reconcile.py
+      - scripts/test_delivery_alert_reconcile.py
       - scripts/delivery_agent_loop.py
       - scripts/test_delivery_agent_loop.py
       - scripts/delivery_worker_loop.py
@@ -64,6 +68,8 @@ jobs:
         run: python3 -m unittest discover -s scripts -p 'test_delivery_worker_loop.py' -v
       - name: Validate offline adapter patch and sandbox restrictions
         run: python3 -m unittest discover -s scripts -p 'test_delivery_agent_loop.py' -v
+      - name: Verify crash-safe notification reconciliation regressions
+        run: python3 -m unittest discover -s scripts -p 'test_delivery_alert_reconcile.py' -v
       - name: Read live delivery state and development checks
         env:
           GITHUB_TOKEN: ${{ github.token }}
