@@ -44,6 +44,10 @@ CREATE TABLE IF NOT EXISTS alert_deliveries (
   comment_id INTEGER NOT NULL CHECK(comment_id > 0),
   delivered_at INTEGER NOT NULL
 );
+CREATE TABLE IF NOT EXISTS alert_send_claims (
+  fingerprint TEXT PRIMARY KEY REFERENCES alerts(fingerprint),
+  claimed_at INTEGER NOT NULL
+);
 """
 
 
@@ -110,7 +114,12 @@ class Supervisor:
 
     def claim(self, worker: str, *, max_attempts: int = 3, lease_seconds: int = 600) -> str | None:
         """Reserve one dependency-cleared engineering task; no worker is launched."""
-        if not worker or len(worker) > 80 or max_attempts != MAX_ATTEMPTS or not 30 <= lease_seconds <= 3600:
+        if (
+            not worker
+            or len(worker) > 80
+            or max_attempts != MAX_ATTEMPTS
+            or not 30 <= lease_seconds <= 3600
+        ):
             raise ValueError("Invalid bounded worker claim")
         self.conn.execute("BEGIN IMMEDIATE")
         try:
@@ -236,6 +245,56 @@ class Supervisor:
             for row in rows
         ]
 
+    def claim_alert_send(self, fingerprint: str) -> bool:
+        """Commit an immutable send claim before any non-idempotent GitHub POST.
+
+        A crashed, timed-out or concurrently running sender must never acquire
+        the same claim again. Uncertain claims require remote reconciliation,
+        not automatic reposting or a time-based lease expiry.
+        """
+        if re.fullmatch(r"[0-9a-f]{64}", fingerprint) is None:
+            raise ValueError("Malformed alert fingerprint")
+        self.conn.execute("BEGIN IMMEDIATE")
+        try:
+            known = self.conn.execute(
+                "SELECT 1 FROM alerts WHERE fingerprint=?", (fingerprint,)
+            ).fetchone()
+            if known is None:
+                raise ValueError("Unknown alert fingerprint")
+            delivered = self.conn.execute(
+                "SELECT 1 FROM alert_deliveries WHERE fingerprint=?", (fingerprint,)
+            ).fetchone()
+            if delivered is not None:
+                self.conn.commit()
+                return False
+            result = self.conn.execute(
+                """INSERT OR IGNORE INTO alert_send_claims
+                (fingerprint,claimed_at) VALUES (?,?)""",
+                (fingerprint, self.now),
+            )
+            self.conn.commit()
+            return result.rowcount == 1
+        except Exception:
+            self.conn.rollback()
+            raise
+
+    def claimed_alerts(self, limit: int = 10) -> list[dict[str, object]]:
+        """Expose quarantined sends for safe remote read-only reconciliation."""
+        if not 1 <= limit <= 50:
+            raise ValueError("Claim page size must be between 1 and 50")
+        rows = self.conn.execute(
+            """SELECT a.fingerprint, t.issue, a.detail
+            FROM alert_send_claims c JOIN alerts a ON c.fingerprint=a.fingerprint
+            JOIN tasks t ON a.task_id=t.id
+            LEFT JOIN alert_deliveries d ON d.fingerprint=a.fingerprint
+            WHERE d.fingerprint IS NULL ORDER BY c.claimed_at,c.fingerprint LIMIT ?""",
+            (limit,),
+        ).fetchall()
+        return [
+            dict(zip(("fingerprint", "issue", "detail"), row))
+            for row in rows
+        ]
+
     def mark_alert_delivered(self, fingerprint: str, comment_id: int) -> None:
         """Checkpoint a confirmed external issue comment, not a transport attempt."""
         if (
@@ -246,11 +305,11 @@ class Supervisor:
             raise ValueError("Malformed alert delivery receipt")
         self.conn.execute("BEGIN IMMEDIATE")
         try:
-            known = self.conn.execute(
-                "SELECT 1 FROM alerts WHERE fingerprint=?", (fingerprint,)
+            claimed = self.conn.execute(
+                "SELECT 1 FROM alert_send_claims WHERE fingerprint=?", (fingerprint,)
             ).fetchone()
-            if known is None:
-                raise ValueError("Unknown alert fingerprint")
+            if claimed is None:
+                raise PermissionError("An alert requires a durable send claim before delivery")
             self.conn.execute(
                 """INSERT OR IGNORE INTO alert_deliveries
                 (fingerprint,comment_id,delivered_at) VALUES (?,?,?)""",
@@ -276,6 +335,11 @@ class Supervisor:
             "pending_owner_alerts": self.conn.execute(
                 """SELECT COUNT(*) FROM alerts a LEFT JOIN alert_deliveries d
                 ON a.fingerprint=d.fingerprint WHERE d.fingerprint IS NULL"""
+            ).fetchone()[0],
+            "uncertain_owner_alerts": self.conn.execute(
+                """SELECT COUNT(*) FROM alert_send_claims c
+                LEFT JOIN alert_deliveries d ON c.fingerprint=d.fingerprint
+                WHERE d.fingerprint IS NULL"""
             ).fetchone()[0],
         }
 
