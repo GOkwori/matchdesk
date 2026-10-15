@@ -53,7 +53,9 @@ class AgentLoopTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             with self.assertRaises(ValueError):
                 OfflineDockerWorker(
-                    Path(directory), "a" * 40, "untrusted:latest",
+                    Path(directory),
+                    "a" * 40,
+                    "untrusted:latest",
                     Path(directory).parent / "evidence",
                 )
 
@@ -61,7 +63,8 @@ class AgentLoopTests(unittest.TestCase):
         """Invalid worker authority is denied before any process execution."""
         with tempfile.TemporaryDirectory() as directory:
             worker = OfflineDockerWorker(
-                Path(directory), "a" * 40,
+                Path(directory),
+                "a" * 40,
                 "agent@sha256:" + "b" * 64,
                 Path(directory).parent / "not-under-repo",
             )
