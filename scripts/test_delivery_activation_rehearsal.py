@@ -32,17 +32,9 @@ class OperatorRehearsalTests(unittest.TestCase):
             db = Path(directory) / "state.sqlite3"
             supervisor = Supervisor(db, actual_manifest(), clock=1000)
             try:
-                claims = [
-                    supervisor.claim(f"rehearsal-{i}", lease_seconds=30)
-                    for i in range(5)
-                ]
-                self.assertEqual(
-                    claims, ["producer", "audience", "assurance", "demo", None]
-                )
-                states = {
-                    item["id"]: item["status"]
-                    for item in supervisor.status()["tasks"]
-                }
+                claims = [supervisor.claim(f"rehearsal-{i}", lease_seconds=30) for i in range(5)]
+                self.assertEqual(claims, ["producer", "audience", "assurance", "demo", None])
+                states = {item["id"]: item["status"] for item in supervisor.status()["tasks"]}
                 self.assertEqual(states["owner-input"], "WAITING_INPUT")
                 self.assertEqual(states["accessibility"], "WAITING_INPUT")
                 self.assertFalse(supervisor.status()["complete"])
@@ -67,8 +59,7 @@ class OperatorRehearsalTests(unittest.TestCase):
                 try:
                     self.assertEqual(supervisor.recover(), 1)
                     producer = next(
-                        task for task in supervisor.status()["tasks"]
-                        if task["id"] == "producer"
+                        task for task in supervisor.status()["tasks"] if task["id"] == "producer"
                     )
                     self.assertEqual(
                         producer["status"],
@@ -79,10 +70,7 @@ class OperatorRehearsalTests(unittest.TestCase):
             supervisor = Supervisor(db, actual_manifest(), clock=1093)
             try:
                 result = supervisor.status()
-                producer = next(
-                    task for task in result["tasks"]
-                    if task["id"] == "producer"
-                )
+                producer = next(task for task in result["tasks"] if task["id"] == "producer")
                 self.assertEqual(producer["attempts"], 3)
                 self.assertEqual(result["pending_owner_alerts"], 1)
                 self.assertFalse(result["complete"])
@@ -97,28 +85,18 @@ class OperatorRehearsalTests(unittest.TestCase):
 
             def execute(self, task_id, identity):
                 """Return a fixture that cannot be treated as verified output."""
-                return WorkerResult(
-                    "REVIEW_REQUIRED", "a" * 64, f"/test-only/{identity}"
-                )
+                return WorkerResult("REVIEW_REQUIRED", "a" * 64, f"/test-only/{identity}")
 
         with tempfile.TemporaryDirectory() as directory:
             db = Path(directory) / "state.sqlite3"
-            result = execute_cycle(
-                db, actual_manifest(), FakeSandbox(), clock=1000
-            )
-            review = {
-                task["id"] for task in result["tasks"]
-                if task["status"] == "REVIEW_REQUIRED"
-            }
-            self.assertEqual(
-                review, {"producer", "audience", "assurance", "demo"}
-            )
+            result = execute_cycle(db, actual_manifest(), FakeSandbox(), clock=1000)
+            review = {task["id"] for task in result["tasks"] if task["status"] == "REVIEW_REQUIRED"}
+            self.assertEqual(review, {"producer", "audience", "assurance", "demo"})
             self.assertFalse(result["complete"])
             supervisor = Supervisor(db, actual_manifest(), clock=1001)
             try:
                 human = {
-                    task["id"] for task in supervisor.status()["tasks"]
-                    if task["kind"] == "human"
+                    task["id"] for task in supervisor.status()["tasks"] if task["kind"] == "human"
                 }
                 self.assertEqual(human, {"owner-input", "accessibility"})
                 self.assertFalse(supervisor.status()["complete"])
@@ -134,9 +112,7 @@ class OperatorRehearsalTests(unittest.TestCase):
                 detail = "Operator sign-off required"
                 self.assertTrue(supervisor.request_input("owner-input", detail))
                 self.assertFalse(supervisor.request_input("owner-input", detail))
-                fingerprint = str(
-                    supervisor.pending_alerts()[0]["fingerprint"]
-                )
+                fingerprint = str(supervisor.pending_alerts()[0]["fingerprint"])
                 self.assertTrue(supervisor.claim_alert_send(fingerprint))
             finally:
                 supervisor.close()
@@ -144,12 +120,8 @@ class OperatorRehearsalTests(unittest.TestCase):
             try:
                 self.assertFalse(supervisor.claim_alert_send(fingerprint))
                 self.assertEqual(len(supervisor.claimed_alerts()), 1)
-                self.assertEqual(
-                    supervisor.status()["uncertain_owner_alerts"], 1
-                )
-                self.assertEqual(
-                    supervisor.status()["pending_owner_alerts"], 1
-                )
+                self.assertEqual(supervisor.status()["uncertain_owner_alerts"], 1)
+                self.assertEqual(supervisor.status()["pending_owner_alerts"], 1)
             finally:
                 supervisor.close()
 
