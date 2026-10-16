@@ -65,7 +65,8 @@ function trusted(request: NextRequest): boolean {
     request.nextUrl.port === "3000" &&
     request.nextUrl.search === "" &&
     !h.has("cookie") &&
-    !h.has("referer") &&
+    // An ordinary same-origin browser fetch may include its page referrer.
+    (h.get("referer") === null || h.get("referer")!.startsWith(WEB_ORIGIN + "/")) &&
     !h.has("forwarded") &&
     !h.has("x-forwarded-for") &&
     !h.has("x-forwarded-host") &&
