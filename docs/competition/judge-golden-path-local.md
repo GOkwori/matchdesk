@@ -1,6 +1,6 @@
 # MatchDesk judge golden path — offline synthetic qualification
 
-**State: implemented candidate, not yet CI-qualified or manually demonstrated.**
+**State: implemented offline candidate; verify exact-source CI and post-merge checks on GitHub. Manual demo acceptance and isolated judge sessions are NOT RUN.**
 
 The local runner uses only pre-existing deterministic MatchDesk domain components. It recomputes synthetic events, detects match moments, queries the registered first-half goal metric, binds an evidence-backed commentary claim, deliberately submits a false numerical claim for rejection, and creates nine scripted English/Spanish/French × analyst/casual-fan/caption audience variants.
 
