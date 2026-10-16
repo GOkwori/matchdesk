@@ -90,11 +90,14 @@ def test_two_sessions_cannot_cross_read_or_reset(local_client: TestClient) -> No
     first_url = f"/api/judge/sessions/{first['session_id']}"
     second_auth = _authorization(second["token"])
     assert local_client.get(f"{first_url}/replay", headers=second_auth).status_code == 403
-    assert local_client.post(
-        f"{first_url}/reset",
-        content=b"{}",
-        headers={**second_auth, "Content-Type": "application/json"},
-    ).status_code == 403
+    assert (
+        local_client.post(
+            f"{first_url}/reset",
+            content=b"{}",
+            headers={**second_auth, "Content-Type": "application/json"},
+        ).status_code
+        == 403
+    )
 
 
 @pytest.mark.parametrize(
@@ -139,31 +142,44 @@ def test_remote_peer_cannot_mint_session() -> None:
 
 def test_bad_payload_query_and_auth_fail_closed(local_client: TestClient) -> None:
     """Unknown payloads, query strings and malformed credentials never succeed."""
-    assert local_client.post(
-        "/api/judge/sessions",
-        content=b'{"user":"owner"}',
-        headers={**HEADERS, "Content-Type": "application/json"},
-    ).status_code == 400
-    assert local_client.post(
-        "/api/judge/sessions?debug=1",
-        content=b"{}",
-        headers={**HEADERS, "Content-Type": "application/json"},
-    ).status_code == 403
-    assert local_client.post(
-        "/api/judge/sessions",
-        content=b"{}",
-        headers={**HEADERS, "Content-Type": "application/json", "Authorization": "Bearer x"},
-    ).status_code == 403
+    assert (
+        local_client.post(
+            "/api/judge/sessions",
+            content=b'{"user":"owner"}',
+            headers={**HEADERS, "Content-Type": "application/json"},
+        ).status_code
+        == 400
+    )
+    assert (
+        local_client.post(
+            "/api/judge/sessions?debug=1",
+            content=b"{}",
+            headers={**HEADERS, "Content-Type": "application/json"},
+        ).status_code
+        == 403
+    )
+    assert (
+        local_client.post(
+            "/api/judge/sessions",
+            content=b"{}",
+            headers={**HEADERS, "Content-Type": "application/json", "Authorization": "Bearer x"},
+        ).status_code
+        == 403
+    )
     session = _created(local_client)
     url = f"/api/judge/sessions/{session['session_id']}/replay"
     assert local_client.get(url, headers=HEADERS).status_code == 403
-    assert local_client.get(
-        url, headers={**HEADERS, "Authorization": "Bearer invalid"}
-    ).status_code == 403
-    assert local_client.get(
-        f"{url}?token={session['token']}",
-        headers=_authorization(session["token"]),
-    ).status_code == 403
+    assert (
+        local_client.get(url, headers={**HEADERS, "Authorization": "Bearer invalid"}).status_code
+        == 403
+    )
+    assert (
+        local_client.get(
+            f"{url}?token={session['token']}",
+            headers=_authorization(session["token"]),
+        ).status_code
+        == 403
+    )
 
 
 def test_expiry_and_capacity_are_caught_at_http_boundary() -> None:
@@ -184,10 +200,13 @@ def test_expiry_and_capacity_are_caught_at_http_boundary() -> None:
         assert busy.status_code == 429
         now[0] += 901
         expired = created[0]
-        assert client.get(
-            f"/api/judge/sessions/{expired['session_id']}/replay",
-            headers=_authorization(expired["token"]),
-        ).status_code == 403
+        assert (
+            client.get(
+                f"/api/judge/sessions/{expired['session_id']}/replay",
+                headers=_authorization(expired["token"]),
+            ).status_code
+            == 403
+        )
         assert _created(client)["session_id"] != expired["session_id"]
 
 
