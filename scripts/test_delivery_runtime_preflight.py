@@ -81,6 +81,7 @@ class PreflightTests(unittest.TestCase):
 
     def test_non_rootless_daemon_denied(self):
         """A Docker daemon with elevated privileges cannot execute workers."""
+
         def rootful(cmd, **kwargs):
             """Simulate a Docker daemon without rootless protections."""
             result = self.command(cmd, **kwargs)
@@ -120,7 +121,9 @@ class PreflightTests(unittest.TestCase):
             ]
             with (
                 patch("sys.argv", args),
-                patch("delivery_worker_loop.verify_local_activation", side_effect=ValueError("denied")) as check,
+                patch(
+                    "delivery_worker_loop.verify_local_activation", side_effect=ValueError("denied")
+                ) as check,
                 patch("delivery_worker_loop.OfflineDockerWorker") as docker,
             ):
                 with self.assertRaisesRegex(ValueError, "denied"):
@@ -130,6 +133,7 @@ class PreflightTests(unittest.TestCase):
 
     def test_incorrect_digest_denied(self):
         """A local image tag is not proof of an installed approved digest."""
+
         def wrong_image(cmd, **kwargs):
             """Return empty locally installed digest metadata."""
             result = self.command(cmd, **kwargs)
