@@ -55,8 +55,7 @@ def _local(request: Request) -> bool:
         and not headers.getlist("cookie")
         and not headers.getlist("referer")
         and not any(
-            key.lower() == "forwarded"
-            or key.lower().startswith(("x-forwarded-", "x-original-"))
+            key.lower() == "forwarded" or key.lower().startswith(("x-forwarded-", "x-original-"))
             for key in headers
         )
     )
@@ -108,9 +107,7 @@ def create_judge_local_app(*, sessions: LocalJudgeSessions | None = None) -> Fas
             session = store.create()
         except RuntimeError:
             return _error(429, "Local judge capacity reached")
-        return JSONResponse(
-            _public_session(session), status_code=201, headers=_headers()
-        )
+        return JSONResponse(_public_session(session), status_code=201, headers=_headers())
 
     def authorized(request: Request, session_id: str) -> JudgeSession | None:
         """Check every read/write independently against the current bearer."""
