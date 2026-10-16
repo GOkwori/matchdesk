@@ -91,6 +91,43 @@ class PreflightTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.preflight(runner=rootful)
 
+    def test_worker_entrypoint_enforces_preflight(self):
+        """Execution mode must validate host controls before constructing Docker."""
+        from unittest.mock import patch
+
+        from delivery_worker_loop import main
+
+        with tempfile.TemporaryDirectory() as directory:
+            manifest_file = Path(directory) / "manifest.json"
+            from test_delivery_supervisor import manifest
+
+            manifest_file.write_text(json.dumps(manifest()), encoding="utf-8")
+            args = [
+                "delivery_worker_loop.py",
+                "--manifest",
+                str(manifest_file),
+                "--execute-offline",
+                "--source",
+                str(self.source),
+                "--source-sha",
+                self.sha,
+                "--image",
+                self.image,
+                "--evidence-dir",
+                str(Path(directory) / "evidence"),
+                "--db",
+                str(Path(directory) / "state.sqlite3"),
+            ]
+            with (
+                patch("sys.argv", args),
+                patch("delivery_worker_loop.verify_local_activation", side_effect=ValueError("denied")) as check,
+                patch("delivery_worker_loop.OfflineDockerWorker") as docker,
+            ):
+                with self.assertRaisesRegex(ValueError, "denied"):
+                    main()
+                check.assert_called_once()
+                docker.assert_not_called()
+
     def test_incorrect_digest_denied(self):
         """A local image tag is not proof of an installed approved digest."""
         def wrong_image(cmd, **kwargs):
