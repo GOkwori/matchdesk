@@ -59,6 +59,22 @@ class AgentLoopTests(unittest.TestCase):
                     Path(directory).parent / "evidence",
                 )
 
+    def test_worker_launch_and_cleanup_are_pinned_to_rootless_socket(self):
+        """Both Docker commands must use the same explicit local rootless endpoint."""
+        import os
+
+        with tempfile.TemporaryDirectory() as directory:
+            worker = OfflineDockerWorker(
+                Path(directory),
+                "a" * 40,
+                "agent@sha256:" + "b" * 64,
+                Path(directory).parent / "separate-evidence",
+            )
+            expected = f"unix:///run/user/{os.getuid()}/docker.sock"
+            command = worker._command(Path(directory), Path(directory), "agent-test")
+            self.assertEqual(command[:4], ["docker", "--host", expected, "run"])
+            self.assertEqual(worker._docker_command(), ["docker", "--host", expected])
+
     def test_invalid_worker_never_invokes_container(self):
         """Invalid worker authority is denied before any process execution."""
         with tempfile.TemporaryDirectory() as directory:
