@@ -10,7 +10,7 @@ from __future__ import annotations
 import secrets
 import threading
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Callable
 
 _MAX_SESSIONS = 8
@@ -22,7 +22,7 @@ class JudgeSession:
     """One synthetic judge run identified by a secret handle, not a user identity."""
 
     session_id: str
-    token: str
+    token: str = field(repr=False)
     generation: int
     expires_at: float
 
@@ -60,6 +60,15 @@ class LocalJudgeSessions:
 
     def get(self, session_id: str, token: str) -> JudgeSession:
         """Permit only possession of the exact current unexpired secret."""
+        # Host adapters must never turn malformed/oversized inputs into a
+        # leaking exception or an unbounded bearer-token comparison.
+        if (
+            type(session_id) is not str
+            or type(token) is not str
+            or not 1 <= len(session_id) <= 128
+            or not 1 <= len(token) <= 128
+        ):
+            raise PermissionError("Judge session unavailable")
         with self._lock:
             self._prune(self._clock())
             session = self._sessions.get(session_id)
