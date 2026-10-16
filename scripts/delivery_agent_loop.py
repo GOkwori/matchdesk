@@ -161,10 +161,15 @@ class OfflineDockerWorker:
                     raise ValueError("Source archive exceeds sandbox limit")
             content.extractall(directory, filter="data")
 
+    @staticmethod
+    def _docker_command() -> list[str]:
+        """Bind all Docker actions to this UID's local rootless socket."""
+        return ["docker", "--host", f"unix:///run/user/{os.getuid()}/docker.sock"]
+
     def _command(self, source: Path, output: Path, name: str) -> list[str]:
-        """Build a command with no network, privileges, credentials or source writes."""
+        """Build a pinned-rootless, no-network, non-privileged worker command."""
         return [
-            "docker",
+            *self._docker_command(),
             "run",
             "--rm",
             "--pull=never",
@@ -230,7 +235,7 @@ class OfflineDockerWorker:
                 finally:
                     # A timed-out Docker client may leave a container running.
                     subprocess.run(
-                        ["docker", "rm", "-f", container_name],
+                        [*self._docker_command(), "rm", "-f", container_name],
                         capture_output=True,
                         timeout=20,
                         check=False,
