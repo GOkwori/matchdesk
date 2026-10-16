@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import json
 import os
-import re
 import subprocess
 import sys
 from pathlib import Path
@@ -103,9 +102,7 @@ def verify_local_activation(
         raise ValueError("Local checkout has uncommitted tracked changes")
 
     try:
-        security = json.loads(
-            checked(["docker", "info", "--format", "{{json .SecurityOptions}}"])
-        )
+        security = json.loads(checked(["docker", "info", "--format", "{{json .SecurityOptions}}"]))
         image_digests = json.loads(
             checked(["docker", "image", "inspect", "--format", "{{json .RepoDigests}}", image])
         )
