@@ -47,3 +47,22 @@ def test_invalid_token_cannot_reset_or_close() -> None:
         with pytest.raises(PermissionError):
             action(session.session_id, "wrong-token")
     assert service.get(session.session_id, session.token) == session
+
+
+@pytest.mark.parametrize("bad", ["", "x" * 129, None, 17, True])
+def test_malformed_session_credentials_fail_closed(bad: object) -> None:
+    """Malformed handles never reach token comparison or leak state."""
+    service = LocalJudgeSessions()
+    session = service.create()
+    with pytest.raises(PermissionError, match="unavailable"):
+        service.get(bad, session.token)  # type: ignore[arg-type]
+    with pytest.raises(PermissionError, match="unavailable"):
+        service.get(session.session_id, bad)  # type: ignore[arg-type]
+    assert service.get(session.session_id, session.token) == session
+
+
+def test_secret_is_absent_from_default_representation() -> None:
+    """Diagnostic representations must not expose bearer secrets."""
+    session = LocalJudgeSessions().create()
+    assert session.token not in repr(session)
+    assert "token=" not in repr(session)
