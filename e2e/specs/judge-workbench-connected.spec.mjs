@@ -1,6 +1,9 @@
 /** Actual localhost browser-to-judge HTTP qualification with disposable sessions. */
 import { expect, test } from "@playwright/test";
 
+// Ordinary Compose browser regressions intentionally skip this opt-in suite.
+test.skip(process.env.MATCHDESK_LOCAL_JUDGE_ENABLED !== "1", "Requires the isolated loopback judge hosts");
+
 test("actual judge browser replays, rotates, and revokes a disposable session", async ({ page }, info) => {
   // This suite only runs against the opt-in 127.0.0.1 Python and Next servers.
   expect(process.env.MATCHDESK_LOCAL_JUDGE_ENABLED).toBe("1");
