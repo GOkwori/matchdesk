@@ -63,11 +63,7 @@ class LocalJudgeSessions:
         with self._lock:
             self._prune(self._clock())
             session = self._sessions.get(session_id)
-            if (
-                session is None
-                or not token
-                or not secrets.compare_digest(session.token, token)
-            ):
+            if session is None or not token or not secrets.compare_digest(session.token, token):
                 raise PermissionError("Judge session unavailable")
             return session
 
