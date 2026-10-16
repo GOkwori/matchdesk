@@ -82,6 +82,7 @@ class PreflightTests(unittest.TestCase):
     def test_non_rootless_daemon_denied(self):
         """A Docker daemon with elevated privileges cannot execute workers."""
         def rootful(cmd, **kwargs):
+            """Simulate a Docker daemon without rootless protections."""
             result = self.command(cmd, **kwargs)
             if cmd[:2] == ["docker", "info"]:
                 return subprocess.CompletedProcess(cmd, 0, '["name=seccomp"]', "")
@@ -93,6 +94,7 @@ class PreflightTests(unittest.TestCase):
     def test_incorrect_digest_denied(self):
         """A local image tag is not proof of an installed approved digest."""
         def wrong_image(cmd, **kwargs):
+            """Return empty locally installed digest metadata."""
             result = self.command(cmd, **kwargs)
             if cmd[:3] == ["docker", "image", "inspect"]:
                 return subprocess.CompletedProcess(cmd, 0, "[]", "")
