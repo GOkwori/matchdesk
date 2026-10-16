@@ -79,6 +79,10 @@ function trusted(request: NextRequest): boolean {
 
 /** Forward only fixed, syntactically bounded capabilities to loopback. */
 async function handle(request: NextRequest, context: RouteContext): Promise<Response> {
+  // An explicit operator-only environment opt-in is required even on localhost.
+  if (process.env.MATCHDESK_LOCAL_JUDGE_ENABLED !== "1") {
+    return denied(404, "Local judge adapter is disabled");
+  }
   if (!trusted(request)) return denied(403, "Local judge access denied");
   const { segments } = await context.params;
   const path = backendPath(request.method, segments);
@@ -125,10 +129,24 @@ async function handle(request: NextRequest, context: RouteContext): Promise<Resp
       if (reply.status === 204) {
         return new Response(null, { status: 204, headers: securityHeaders() });
       }
-      const content = await reply.text();
-      if (new TextEncoder().encode(content).byteLength > MAX_RESPONSE_BYTES) {
-        return denied(503, "Synthetic judge response unavailable");
+      // Read a bounded stream; Content-Length alone is never a resource limit.
+      if (!reply.body) return denied(503, "Synthetic judge response unavailable");
+      const reader = reply.body.getReader();
+      const chunks: Uint8Array[] = [];
+      let received = 0;
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        received += value.byteLength;
+        if (received > MAX_RESPONSE_BYTES) {
+          await reader.cancel();
+          return denied(503, "Synthetic judge response unavailable");
+        }
+        chunks.push(value);
       }
+      const content = new TextDecoder("utf-8", { fatal: true }).decode(
+        Uint8Array.from(chunks.flatMap((chunk) => Array.from(chunk))),
+      );
       return new Response(content, {
         status: reply.status,
         headers: { ...securityHeaders(), "Content-Type": "application/json" },
