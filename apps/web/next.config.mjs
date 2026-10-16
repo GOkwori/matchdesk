@@ -5,7 +5,9 @@ const config = {
   async rewrites() {
     // This URL is operator configuration, never a browser-supplied proxy target.
     const origin = process.env.MATCHDESK_API_ORIGIN ?? "http://127.0.0.1:8000";
-    return [{ source: "/api/:path*", destination: `${origin}/api/:path*` }];
+    // Preserve local Next.js API handlers such as the opt-in judge bridge.
+    // The generic Python proxy is a fallback only after filesystem routes.
+    return { fallback: [{ source: "/api/:path*", destination: `${origin}/api/:path*` }] };
   },
 };
 export default config;
