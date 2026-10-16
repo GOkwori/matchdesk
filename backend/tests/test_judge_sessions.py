@@ -1,7 +1,6 @@
 """Disposable judge-session isolation and fail-closed reset regressions."""
 
 import pytest
-
 from matchdesk.domain.judge_sessions import LocalJudgeSessions
 
 
