@@ -13,6 +13,7 @@ from pathlib import Path
 
 from delivery_agent_loop import OfflineDockerWorker, WorkerResult
 from delivery_orchestrator import DEFAULT_MANIFEST
+from delivery_runtime_preflight import verify_local_activation
 from delivery_supervisor import Supervisor
 
 WORKER_ID = re.compile(r"[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}\Z")
@@ -142,6 +143,15 @@ def main() -> int:
             parser.error(
                 "Offline execution requires source, SHA, pinned image and evidence directory"
             )
+        # Gate actual execution, not merely a separate advisory CLI check.
+        # No container runs if source, rootless Docker or image identity fails.
+        verify_local_activation(
+            source=args.source,
+            source_sha=args.source_sha,
+            image=args.image,
+            database=args.db,
+            evidence=args.evidence_dir,
+        )
         executor = OfflineDockerWorker(
             source=args.source,
             source_sha=args.source_sha,
