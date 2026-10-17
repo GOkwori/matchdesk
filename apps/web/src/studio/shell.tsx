@@ -6,23 +6,29 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Icon, type IconName } from "./icons";
 import { Logo } from "./ui";
-import { claims, drafts, moments, STORY_SLUG, tourSteps } from "./data";
+import { claims, drafts, eventCountText, moments, STORY_SLUG, tourSteps } from "./data";
 
 type NavItem = { href: string; label: string; icon: IconName; match: (path: string) => boolean; badge?: string };
 
 const NAV: NavItem[] = [
   { href: "/match/nbr-riv", label: "Overview", icon: "home", match: (p) => p === "/match/nbr-riv" },
+  { href: "/match/nbr-riv/live", label: "Live Intelligence", icon: "globe", match: (p) => p.startsWith("/match/nbr-riv/live") },
   { href: "/match/nbr-riv/moments", label: "Moments & Timeline", icon: "list", match: (p) => p.startsWith("/match/nbr-riv/moments") },
+  { href: "/match/nbr-riv/tactical", label: "Tactical Analysis", icon: "pitch", match: (p) => p.startsWith("/match/nbr-riv/tactical") },
+  { href: "/match/nbr-riv/insights", label: "AI Insights", icon: "sparkle", match: (p) => p.startsWith("/match/nbr-riv/insights") },
   { href: "/match/nbr-riv/evidence/CL-0213", label: "Evidence & Verification", icon: "shield", match: (p) => p.startsWith("/match/nbr-riv/evidence") },
   { href: "/producer/queue", label: "Producer Tools", icon: "monitor", match: (p) => p.startsWith("/producer"), badge: "2" },
   { href: `/story/${STORY_SLUG}`, label: "Audience Story", icon: "phone", match: (p) => p.startsWith("/story") },
+  { href: "/workspace/activity", label: "Activity & Audit", icon: "pulse", match: (p) => p.startsWith("/workspace/activity") },
+  { href: "/workspace/settings", label: "Settings & Help", icon: "grid", match: (p) => p.startsWith("/workspace/settings") },
 ];
 
 const TABS: { href: string; label: string; icon: IconName; match: (p: string) => boolean }[] = [
-  { href: "/match/nbr-riv", label: "Match", icon: "pulse", match: (p) => p === "/match/nbr-riv" || p.startsWith("/match/nbr-riv/moments") },
+  { href: "/match/nbr-riv", label: "Match", icon: "pulse", match: (p) => p.startsWith("/match/nbr-riv") && !p.startsWith("/match/nbr-riv/evidence") },
   { href: "/match/nbr-riv/evidence/CL-0213", label: "Verify", icon: "shield", match: (p) => p.startsWith("/match/nbr-riv/evidence") },
   { href: "/producer/queue", label: "Produce", icon: "pen", match: (p) => p.startsWith("/producer") },
   { href: `/story/${STORY_SLUG}`, label: "Story", icon: "phone", match: (p) => p.startsWith("/story") },
+  { href: "/workspace/settings", label: "More", icon: "grid", match: (p) => p.startsWith("/workspace") || p.startsWith("/design-system") },
 ];
 
 const LAST_PATH_KEY = "md.lastPath";
@@ -64,7 +70,6 @@ export function Shell({ children }: { children: ReactNode }) {
           </ul>
         </nav>
         <div className="md-side-foot">
-          <Link href="/design-system" className="md-side-sys"><Icon name="grid" /> <span className="md-nav-label">Design system</span></Link>
           <div className="md-tagline"><Icon name="wave" size={30} /><span>AI-assisted.<br />Verified.<br />Human-led.</span></div>
         </div>
       </aside>
@@ -100,7 +105,7 @@ export function TopActions({ compact = false }: { compact?: boolean }) {
       </button>
       <div id={id} popover="auto" className="md-popover" role="note">
         <strong>Synthetic replay</strong>
-        <p>Northbridge FC v Riverside United is invented test data replayed from a recorded event log of 1,284 events. It is not a live match, and nothing in this demo is published.</p>
+        <p>Northbridge FC v Riverside United is invented test data replayed from a recorded event log of {eventCountText} events. It is not a live match, and nothing in this demo is published.</p>
       </div>
       <button type="button" className="md-search-btn" onClick={() => window.dispatchEvent(new Event("md:palette"))} aria-label="Search moments, claims and drafts" aria-keyshortcuts="Control+K Meta+K">
         <Icon name="search" size={16} />{!compact && <><span>Search</span><kbd>Ctrl K</kbd></>}
@@ -119,6 +124,13 @@ function CommandPalette() {
   const router = useRouter();
   const items = useMemo<PaletteItem[]>(() => [
     { label: "Overview", hint: "Screen", href: "/match/nbr-riv" },
+    { label: "Live Intelligence", hint: "Screen", href: "/match/nbr-riv/live" },
+    { label: "Tactical Analysis", hint: "Screen", href: "/match/nbr-riv/tactical" },
+    { label: "AI insights", hint: "Screen", href: "/match/nbr-riv/insights" },
+    { label: "Publication journey", hint: "Screen", href: "/producer/publish/D-031" },
+    { label: "Activity & Audit", hint: "Screen", href: "/workspace/activity" },
+    { label: "Settings & Help", hint: "Screen", href: "/workspace/settings" },
+    { label: "How verification works", hint: "Page", href: "/about" },
     { label: "Moments & Timeline", hint: "Screen", href: "/match/nbr-riv/moments" },
     { label: "Review queue", hint: "Screen", href: "/producer/queue" },
     { label: "Fan story", hint: "Screen", href: `/story/${STORY_SLUG}` },

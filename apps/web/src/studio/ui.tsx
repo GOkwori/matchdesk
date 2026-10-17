@@ -113,7 +113,7 @@ export function StatBars() {
         <span className="md-legend"><span><i className="md-sw md-sw-home" />NBR</span><span><i className="md-sw md-sw-away" />RIV</span></span>
       </div>
       {statistics.map((s) => {
-        const suffix = "suffix" in s ? s.suffix : "";
+        const suffix = s.suffix ?? "";
         return (
           <div className="md-stat" key={s.label}>
             <div className="md-stat-row"><strong>{s.home}{suffix}</strong><span>{s.label}</span><strong>{s.away}{suffix}</strong></div>

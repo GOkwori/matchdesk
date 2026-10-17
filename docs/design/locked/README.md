@@ -54,9 +54,9 @@ Screens not drawn here (Live Intelligence, Moments, Tactical, AI insights, Revie
 
 ## 4. Copy and facts (must match exactly)
 
-- **Fixture:** Northbridge FC 2–1 Riverside United, replay clock 67:12, synthetic, 1,284 events.
+- **Fixture:** Northbridge FC 2–1 Riverside United, replay clock 67:12, synthetic, **1,421 events (E-0001…E-1421)**. The mock-ups said 1,284, which cannot coexist with a latest event of E-1421; the generated log is the source of truth (`apps/web/src/studio/generated/nbr-riv.json`).
 - **Goals:** Okafor 34:18 (E-0688), Lindqvist 41:03 (E-0790), Okafor header 58:17 (E-1366) after the corner at 58:03 (E-1359).
-- **D-031:** CL-0213 ✓, CL-0214 ✓ (58.0% = 2,142 s / 3,693 s in-play; replace these figures with the engine export when available), CL-0215 pending interpretation, CL-0216 failed.
+- **D-031:** CL-0213 ✓, CL-0214 ✓ (58.0% = 2,334.5 s / 4,028.0 s attributable possession, computed by possession_time.v1; tolerance ±0.5 pp), CL-0215 pending interpretation, CL-0216 failed.
 - **D-029:** eligible, not approved, not published.
 - **Cast:** Dana Price (DP), Sam Reed, Priya Shah. Dates are 11 Oct 2026.
 - **Not allowed:** real brands, player photos, "Published" states, or white text on orange.

@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { Icon } from "./icons";
 import { GoalPitch, ScoreStrip, VerdictChip } from "./ui";
 import { TourStep } from "./shell";
-import { d031Sentences, draftEligibility, findClaim, verdict, type SentenceState } from "./data";
+import { d031Sentences, draftEligibility, eventCountText, findClaim, statistics, verdict, type SentenceState } from "./data";
 
 const STORE_KEY = "md.d031";
 
@@ -101,7 +101,7 @@ export function ComposerBody() {
             <div className="md-panel-head"><h2 id="md-ev-title">Linked evidence (3)</h2></div>
             <ul className="md-evidence-list">
               <li><GoalPitch variant="header" label="Goal E-1366: header inside the six-yard box after a corner from the right" /><span className="md-ev-text"><strong>Goal · Okafor header</strong><span>E-1366 · 58:17 · after corner E-1359</span></span><VerdictChip verdict="verified" /><Link className="md-btn md-btn-secondary md-btn-sm" href="/match/nbr-riv/moments?moment=M-05">View</Link></li>
-              <li><svg viewBox="0 0 96 58" className="md-pitch" role="img" aria-label="Possession trend, Northbridge averaging 58 percent"><rect width="96" height="58" fill="var(--md-canvas)" /><path d="M4 40 16 36 28 38 40 30 52 32 64 24 76 26 92 18" fill="none" stroke="var(--md-accent)" strokeWidth="2" /></svg><span className="md-ev-text"><strong>Possession · whole match</strong><span>58% vs 42% · computed from 1,284 events</span></span><VerdictChip verdict="verified" /><Link className="md-btn md-btn-secondary md-btn-sm" href="/match/nbr-riv/evidence/CL-0214">View</Link></li>
+              <li><svg viewBox="0 0 96 58" className="md-pitch" role="img" aria-label="Possession trend, Northbridge averaging 58 percent"><rect width="96" height="58" fill="var(--md-canvas)" /><path d="M4 40 16 36 28 38 40 30 52 32 64 24 76 26 92 18" fill="none" stroke="var(--md-accent)" strokeWidth="2" /></svg><span className="md-ev-text"><strong>Possession · whole match</strong><span>{statistics[0].home}% vs {statistics[0].away}% · computed from {eventCountText} events</span></span><VerdictChip verdict="verified" /><Link className="md-btn md-btn-secondary md-btn-sm" href="/match/nbr-riv/evidence/CL-0214">View</Link></li>
               <li><GoalPitch variant="right-foot" label="Goal E-0688: right-footed finish from the edge of the box" /><span className="md-ev-text"><strong>Goal · Okafor right foot</strong><span>E-0688 · 34:18 · open play</span></span><VerdictChip verdict="verified" /><Link className="md-btn md-btn-secondary md-btn-sm" href="/match/nbr-riv/moments?moment=M-02">View</Link></li>
             </ul>
           </section>
@@ -144,7 +144,7 @@ export function ComposerBody() {
             </button>
           </div>
           <p id="md-submit-help" className="md-muted md-small">{elig.eligible ? "A producer approves or rejects it next. Approval and publishing stay with a human." : "Resolve the blocking claims to submit."}</p>
-          <p className="md-locked"><Icon name="lock" size={14} /> Approve · Planned</p>
+          <div className="md-btn-row"><p className="md-locked"><Icon name="lock" size={14} /> Approve · Planned</p><Link href="/producer/publish/D-031" className="md-link">See the publication journey <Icon name="arrow" size={14} /></Link></div>
         </div>
       </div>
     </>
