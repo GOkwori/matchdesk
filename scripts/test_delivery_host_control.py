@@ -80,7 +80,7 @@ class HostControlTests(unittest.TestCase):
             self.verify()
         self.state_dir.chmod(0o700)
         self.assertEqual(self.calls, [])
-        with self.assertRaisesRegex(ValueError, "outside the source checkout"):
+        with self.assertRaisesRegex(ValueError, "inside the source checkout"):
             self.verify(database=self.source / "private" / "state.sqlite3")
         with self.assertRaisesRegex(ValueError, "already exist"):
             self.verify(database=Path(self.temp.name) / "missing" / "state.sqlite3")
