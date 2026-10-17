@@ -7,10 +7,21 @@ test.skip(process.env.MATCHDESK_LOCAL_JUDGE_ENABLED !== "1", "Requires the isola
 test("actual judge browser replays, rotates, and revokes a disposable session", async ({ page }, info) => {
   // This suite only runs against the opt-in 127.0.0.1 Python and Next servers.
   expect(process.env.MATCHDESK_LOCAL_JUDGE_ENABLED).toBe("1");
+  // Capture only HTTP status/route and safe on-page error, never bearer headers or bodies.
+  const httpStatus = [];
+  page.on("response", (response) => {
+    if (response.url().includes("/api/judge-local/")) {
+      httpStatus.push(`${response.request().method()} ${new URL(response.url()).pathname} ${response.status()}`);
+    }
+  });
   await page.goto("/judge");
   await expect(page.getByRole("heading", { name: "No active replay evidence" })).toBeVisible();
   await page.getByRole("button", { name: "Start demo" }).click();
-  await expect(page.getByRole("heading", { name: "Match evidence" })).toBeVisible();
+  await expect.poll(async () => {
+    const found = await page.getByRole("heading", { name: "Match evidence" }).count();
+    const alert = await page.getByRole("alert").allTextContents();
+    return found ? "evidence" : `http=${httpStatus.join(",")} alert=${alert.join(" ")}`;
+  }, { timeout: 10000 }).toBe("evidence");
   await expect(page.getByRole("heading", { name: "Can we say this?" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Different formats, same evidence" })).toBeVisible();
   await expect(page.getByText("needs_revision", { exact: true })).toBeVisible();
