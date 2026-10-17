@@ -53,6 +53,26 @@ function backendPath(method: string, parts: string[]): string | null {
   return null;
 }
 
+// Next.js generates these headers even for direct localhost requests. Accept
+// only its exact loopback values; reject client-supplied conflicting forwarding
+// data, extra forwarding fields, and any reverse-proxy configuration.
+const NEXT_LOCAL_FORWARDING = new Map<string, string>([
+  ["x-forwarded-for", "127.0.0.1"],
+  ["x-forwarded-host", "127.0.0.1:3000"],
+  ["x-forwarded-port", "3000"],
+  ["x-forwarded-proto", "http"],
+]);
+
+/** Require the exact localhost forwarding tuple synthesized by Next.js. */
+function exactLocalForwarding(headers: Headers): boolean {
+  for (const [name, value] of headers) {
+    if (name.startsWith("x-forwarded-") && NEXT_LOCAL_FORWARDING.get(name) !== value) {
+      return false;
+    }
+  }
+  return [...NEXT_LOCAL_FORWARDING].every(([name, value]) => headers.get(name) === value);
+}
+
 /** Guard the actual browser-facing trust boundary, not only the Python host. */
 function trusted(request: NextRequest): boolean {
   const h = request.headers;
@@ -68,9 +88,7 @@ function trusted(request: NextRequest): boolean {
     // An ordinary same-origin browser fetch may include its page referrer.
     (h.get("referer") === null || h.get("referer")!.startsWith(WEB_ORIGIN + "/")) &&
     !h.has("forwarded") &&
-    !h.has("x-forwarded-for") &&
-    !h.has("x-forwarded-host") &&
-    !h.has("x-forwarded-proto") &&
+    exactLocalForwarding(h) &&
     !h.has("x-original-host") &&
     !h.has("x-original-url") &&
     (fetchSite === null || fetchSite === "same-origin") &&
