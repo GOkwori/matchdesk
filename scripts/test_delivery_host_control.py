@@ -63,6 +63,8 @@ class HostControlTests(unittest.TestCase):
         self.assertEqual(report["coding_executor"], "NOT_ACTIVATED")
         self.assertEqual(len(self.calls), 2)
         self.assertTrue(all(c[1]["timeout"] == 15 for c in self.calls))
+        self.assertTrue(all(c[1]["env"]["GIT_OPTIONAL_LOCKS"] == "0" for c in self.calls))
+        self.assertTrue(all(c[1]["env"]["GIT_CONFIG_GLOBAL"] == "/dev/null" for c in self.calls))
 
     def test_rejects_root_and_credential_inheritance(self):
         """Root and any model/GitHub credential fail before subprocess."""
