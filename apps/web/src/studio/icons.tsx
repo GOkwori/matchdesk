@@ -20,6 +20,7 @@ const paths: Record<string, ReactNode> = {
   card: <rect x="7" y="4" width="10" height="16" rx="1.5" />,
   lock: <><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></>,
   wave: <path d="M3 12v0M6 9v6M9 6v12M12 9v6M15 4v16M18 8v8M21 11v2" />,
+  sliders: <><path d="M4 7h9M17 7h3M4 17h3M11 17h9" /><circle cx="15" cy="7" r="2" /><circle cx="9" cy="17" r="2" /></>,
   grid: <><rect x="4" y="4" width="7" height="7" rx="1.5" /><rect x="13" y="4" width="7" height="7" rx="1.5" /><rect x="4" y="13" width="7" height="7" rx="1.5" /><rect x="13" y="13" width="7" height="7" rx="1.5" /></>,
   pause: <><path d="M9 5v14M15 5v14" /></>,
   play: <path d="M7 4.5v15l12-7.5z" />,

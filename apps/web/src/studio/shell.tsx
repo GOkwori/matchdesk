@@ -28,7 +28,7 @@ const TABS: { href: string; label: string; icon: IconName; match: (p: string) =>
   { href: "/match/nbr-riv/evidence/CL-0213", label: "Verify", icon: "shield", match: (p) => p.startsWith("/match/nbr-riv/evidence") },
   { href: "/producer/queue", label: "Produce", icon: "pen", match: (p) => p.startsWith("/producer") },
   { href: `/story/${STORY_SLUG}`, label: "Story", icon: "phone", match: (p) => p.startsWith("/story") },
-  { href: "/workspace/settings", label: "More", icon: "grid", match: (p) => p.startsWith("/workspace") || p.startsWith("/design-system") },
+  { href: "/workspace/settings", label: "Settings", icon: "sliders", match: (p) => p.startsWith("/workspace") || p.startsWith("/design-system") },
 ];
 
 const LAST_PATH_KEY = "md.lastPath";

@@ -7,10 +7,12 @@ import { TopActions } from "../../studio/shell";
 import { Crest, Logo } from "../../studio/ui";
 import { ContinueCard } from "../../studio/welcome";
 import { STORY_SLUG } from "../../studio/data";
+import { SITE_URL } from "../../studio/site";
 
 export const metadata: Metadata = {
   title: { absolute: "MatchDesk · Turn football moments into verifiable stories" },
   description: "AI-assisted analysis, deterministic verification and human approval for football storytelling. Explore the synthetic Northbridge v Riverside demo.",
+  alternates: { canonical: "/" },
 };
 
 const steps = [
@@ -19,9 +21,25 @@ const steps = [
   { n: "03", title: "Approve", body: "A human producer decides what reaches fans.", icon: "pen" as const },
 ];
 
+/** Structured data for the product and site. The synthetic match is deliberately not marked up as a real SportsEvent. */
+const jsonLd = [
+  { "@context": "https://schema.org", "@type": "WebSite", name: "MatchDesk", url: `${SITE_URL}/`, inLanguage: "en-GB" },
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: "MatchDesk",
+    url: `${SITE_URL}/`,
+    applicationCategory: "SportsApplication",
+    operatingSystem: "Web",
+    description: "AI-assisted football analysis with deterministic claim verification and human approval before anything reaches fans.",
+    offers: { "@type": "Offer", price: "0", priceCurrency: "GBP" },
+  },
+];
+
 export default function WelcomePage() {
   return (
     <div className="md-welcome">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
       <a className="md-skip" href="#main">Skip to main content</a>
       <header className="md-welcome-top">
         <Logo />
@@ -74,7 +92,7 @@ export default function WelcomePage() {
           </div>
         </section>
       </main>
-      <footer className="md-welcome-foot"><span>AI-assisted. Verified. Human-led.</span><span>Synthetic demo match · nothing is published</span></footer>
+      <footer className="md-welcome-foot"><span>AI-assisted. Verified. Human-led. <Link href="/about" className="md-link">How verification works</Link></span><span>Synthetic demo match · nothing is published</span></footer>
     </div>
   );
 }
