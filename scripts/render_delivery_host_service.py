@@ -34,6 +34,7 @@ def render_unit(
     python_path: str = "/usr/bin/python3",
     cycles: int = 1440,
     interval: int = 30,
+    wsl_home_paths: bool = False,
 ) -> str:
     """Return a pinned, restart-managed control-only unit without any side effects.
 
@@ -45,17 +46,57 @@ def render_unit(
     checkout = safe_absolute_path(source)
     state = safe_absolute_path(state_dir)
     executable = safe_absolute_path(python_path)
-    if state == checkout or checkout in state.parents:
-        raise ValueError("State directory must be outside the source checkout")
+    if state == checkout or checkout in state.parents or state in checkout.parents:
+        raise ValueError("State directory must not overlap the source checkout")
     if not 1 <= cycles <= 1440 or not 1 <= interval <= 3600:
         raise ValueError("Finite cycle count and interval must be within bounds")
+
+    # The default unit keeps /home inaccessible. Explicit WSL mode instead
+    # masks all homes with a read-only tmpfs and restores only the minimum
+    # reviewed source/interpreter paths (read-only) and state path (writable).
+    # Do not replace this with ProtectHome=read-only, which exposes all homes.
+    protected = (
+        PurePosixPath("/home"),
+        PurePosixPath("/root"),
+        PurePosixPath("/run/user"),
+    )
+    paths = (checkout, executable, state)
+    mounts: list[str] = []
+    if wsl_home_paths:
+        if len(checkout.parts) < 4 or checkout.parts[1] != "home":
+            raise ValueError("WSL mode requires an explicitly scoped user-home checkout")
+        home = PurePosixPath("/home") / checkout.parts[2]
+        if any(path == home or home not in path.parents for path in paths):
+            raise ValueError("WSL runtime paths must be inside the same user home")
+        if executable.parent.name != "bin" or not executable.name.startswith("python3"):
+            raise ValueError("WSL Python must use a separately installed bin/python3 runtime")
+        # Include the managed interpreter's lib/ tree, but never bind the
+        # user's home or a parent of the checkout or writable state.
+        python_root = executable.parents[1]
+        if python_root == home or home not in python_root.parents:
+            raise ValueError("WSL Python root must be narrower than the home directory")
+        if any(
+            left == right or left in right.parents or right in left.parents
+            for left, right in ((checkout, python_root), (state, python_root))
+        ):
+            raise ValueError("Python, checkout and writable state must not overlap")
+        home_policy = "tmpfs"
+        mounts = [
+            f"BindReadOnlyPaths={checkout}",
+            f"BindReadOnlyPaths={python_root}",
+            f"BindPaths={state}",
+        ]
+    else:
+        if any(root == path or root in path.parents for path in paths for root in protected):
+            raise ValueError("Protected-home paths require explicit --wsl-home-paths")
+        home_policy = "yes"
 
     # Only the previously reviewed, non-coding entrypoint may be invoked.
     script = checkout / "scripts" / "delivery_host_control.py"
     db = state / "state.sqlite3"
     lock = state / "control.lock"
     command = (
-        f"{executable} {script} --source {checkout} --source-sha {source_sha} "
+        f"{executable} -E -s -B {script} --source {checkout} --source-sha {source_sha} "
         f"--db {db} --lock {lock}"
     )
     return "\n".join(
@@ -87,7 +128,8 @@ def render_unit(
             "CapabilityBoundingSet=",
             "PrivateTmp=yes",
             "ProtectSystem=strict",
-            "ProtectHome=yes",
+            f"ProtectHome={home_policy}",
+            *mounts,
             f"ReadWritePaths={state}",
             "RestrictAddressFamilies=AF_UNIX",
             "RestrictSUIDSGID=yes",
@@ -113,6 +155,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--python", default="/usr/bin/python3")
     parser.add_argument("--cycles", type=int, default=1440)
     parser.add_argument("--interval", type=int, default=30)
+    parser.add_argument(
+        "--wsl-home-paths",
+        action="store_true",
+        help="Explicitly bind only the reviewed WSL runtime and state paths",
+    )
     args = parser.parse_args(argv)
     try:
         unit = render_unit(
@@ -122,6 +169,7 @@ def main(argv: list[str] | None = None) -> int:
             python_path=args.python,
             cycles=args.cycles,
             interval=args.interval,
+            wsl_home_paths=args.wsl_home_paths,
         )
     except ValueError as exc:
         parser.error(str(exc))
