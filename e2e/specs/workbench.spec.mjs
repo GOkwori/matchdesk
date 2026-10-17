@@ -21,7 +21,7 @@ function errorAlert(page) {
 }
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/dev/workbench');
   await expect(input(page)).toBeVisible();
 });
 
