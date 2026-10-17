@@ -94,7 +94,16 @@ No entire user home is mounted; the checkout and interpreter are not writable
 through the service mount. The renderer rejects cross-user home paths,
 overlapping interpreter/source/state paths and broad parent mounts.
 
-Local operator example (**do not run under systemd yet**):
+The following example applies **only after PR #88 is merged and the host
+checkout has been updated to its new exact, CI-qualified SHA**. The current
+pinned local checkout at `4aca395` does not contain the renderer and must
+not be treated as evidence that the candidate is installed.
+
+**Replace the example `--source-sha` with the exact merged SHA and verify
+that the checkout HEAD matches it before running. Do not run the example
+against the older checkout or use the PR branch as a service installation.**
+
+Local operator example (**review only; not an installation instruction**):
 
 ```bash
 cd /home/georgie/matchdesk-control-test.PDw9Is/source
