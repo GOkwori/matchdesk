@@ -626,3 +626,4 @@ html[data-md-text="large"] body.md-root { zoom: 1.125; }
 @keyframes md-shimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
 @media (prefers-reduced-motion: reduce) { .md-skel-block { animation: none; } }
 html[data-md-motion="reduce"] .md-skel-block { animation: none; }
+.md-recheck { margin: 0; display: flex; gap: 8px; align-items: baseline; font-size: 13px; color: var(--md-text-body); }

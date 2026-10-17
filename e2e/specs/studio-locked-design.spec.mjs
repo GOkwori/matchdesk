@@ -131,7 +131,7 @@ test('a forged statistic is recalculated and rejected', async ({ page }) => {
   await page.getByRole('button', { name: 'Claim 59% instead' }).click();
   await expect(page.getByText('Failed · needs revision')).toBeVisible();
   await expect(page.getByText('FAIL', { exact: true })).toBeVisible();
-  await expect(page.getByText(/The log gives 58.0%, not 59%/)).toBeVisible();
+  await expect(page.getByText(/The log gives 57.96%, which rounds to 58%, not 59%/)).toBeVisible();
 });
 
 test('moment deep links select the moment and link to its evidence', async ({ page }) => {
@@ -191,7 +191,8 @@ test('evidence figures come from the generated event-log export', async ({ page 
   await open(page, '/match/nbr-riv/evidence/CL-0214');
   await expect(page.getByText('1,421 events read from the log')).toBeVisible();
   await expect(page.getByLabel('Calculation')).toContainText('2,334.5 s / 4,028.0 s');
-  await expect(page.getByLabel('Calculation')).toContainText('58.0%');
+  await expect(page.getByLabel('Calculation')).toContainText('57.96%  →  58%');
+  await expect(page.getByText(/Checked twice: by the server, and again in your browser from 1,421 events/)).toBeVisible();
 });
 
 test('tactical filters recount shots from real event locations', async ({ page }) => {

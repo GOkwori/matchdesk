@@ -164,11 +164,21 @@ test.describe('resilience', () => {
       if (!navigator.serviceWorker.controller) await new Promise((r) => navigator.serviceWorker.addEventListener('controllerchange', r, { once: true }));
       return registration.active?.state;
     });
+    // The event log for the in-browser re-check is warmed in idle time; wait until it is cached.
+    await expect.poll(() => page.evaluate(async () => {
+      const cache = await caches.open('md-assets');
+      for (const request of await cache.keys()) {
+        const response = await cache.match(request);
+        if (request.url.endsWith('.js') && (await response.text()).includes('E-1420')) return true;
+      }
+      return false;
+    }), { timeout: 15000 }).toBe(true);
     await context.setOffline(true);
     try {
       await page.goto('/match/nbr-riv/evidence/CL-0214');
       await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
       await expect(page.getByText('1,421 events read from the log')).toBeVisible();
+      await expect(page.getByText(/Checked twice: by the server, and again in your browser/)).toBeVisible();
       await expect(page.getByText('You’re offline. The demo keeps working from this device.')).toBeVisible();
       await page.getByRole('button', { name: 'Claim 59% instead' }).click();
       await expect(page.getByText('Failed · needs revision')).toBeVisible();

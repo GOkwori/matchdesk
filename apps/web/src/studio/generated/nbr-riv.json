@@ -1,4 +1,172 @@
 {
+  "claims": [
+    {
+      "claim": {
+        "assertion": {
+          "comparator": "eq",
+          "metric": "goals.v1",
+          "schema_version": "1.0",
+          "subject": {
+            "player_id": "nbr-09",
+            "schema_version": "1.0",
+            "team_id": "nbr"
+          },
+          "unit": "count",
+          "value": 2.0,
+          "window": {
+            "from_ms": 0,
+            "schema_version": "1.0",
+            "to_ms": 4032000
+          }
+        },
+        "claim_id": "CL-0213",
+        "evidence_event_ids": [
+          "E-0688",
+          "E-1366"
+        ],
+        "kind": "measured_stat",
+        "schema_version": "1.0",
+        "text": "Okafor scored both Northbridge goals."
+      },
+      "result": {
+        "expected": 2.0,
+        "observed": 2.0,
+        "query_id": "metric-goals-v1",
+        "reason": "Registered metric recomputation satisfies the claim comparator",
+        "status": "verified"
+      },
+      "timeline": [
+        {
+          "from_ms": 0,
+          "status": "needs_revision"
+        },
+        {
+          "from_ms": 3497000,
+          "status": "verified"
+        }
+      ]
+    },
+    {
+      "claim": {
+        "assertion": {
+          "comparator": "eq",
+          "decimals": 2,
+          "metric": "possession_time.v1",
+          "schema_version": "1.0",
+          "subject": {
+            "schema_version": "1.0",
+            "team_id": "nbr"
+          },
+          "unit": "ratio",
+          "value": 0.58,
+          "window": {
+            "from_ms": 0,
+            "schema_version": "1.0",
+            "to_ms": 4032000
+          }
+        },
+        "claim_id": "CL-0214",
+        "evidence_event_ids": [
+          "E-0001",
+          "E-0841",
+          "E-0842",
+          "E-1421"
+        ],
+        "kind": "measured_stat",
+        "schema_version": "1.0",
+        "text": "Northbridge have had 58% possession."
+      },
+      "result": {
+        "expected": 0.58,
+        "observed": 0.5795628103277061,
+        "query_id": "metric-possession_time-v1",
+        "reason": "Registered metric recomputation satisfies the claim comparator",
+        "status": "verified"
+      },
+      "timeline": []
+    },
+    {
+      "claim": {
+        "claim_id": "CL-0215",
+        "evidence_event_ids": [
+          "E-0788",
+          "E-0789",
+          "E-0790"
+        ],
+        "kind": "tactical_inference",
+        "schema_version": "1.0",
+        "text": "Riverside's best spell came between 30 and 45 minutes."
+      },
+      "result": {
+        "expected": null,
+        "observed": null,
+        "query_id": "evidence-support-v1",
+        "reason": "All cited evidence events exist; tactical meaning remains an inference",
+        "status": "supported_inference"
+      },
+      "timeline": []
+    },
+    {
+      "claim": {
+        "claim_id": "CL-0216",
+        "evidence_event_ids": [
+          "E-0688",
+          "E-1366"
+        ],
+        "kind": "event_fact",
+        "schema_version": "1.0",
+        "text": "It is Okafor's first brace of the season."
+      },
+      "result": {
+        "expected": null,
+        "observed": null,
+        "query_id": "event-fact-semantic-v1",
+        "reason": "Event-fact prose has no registered semantic assertion; evidence existence alone cannot verify the text",
+        "status": "needs_revision"
+      },
+      "timeline": []
+    },
+    {
+      "claim": {
+        "assertion": {
+          "comparator": "eq",
+          "decimals": 2,
+          "metric": "possession_time.v1",
+          "schema_version": "1.0",
+          "subject": {
+            "schema_version": "1.0",
+            "team_id": "nbr"
+          },
+          "unit": "ratio",
+          "value": 0.59,
+          "window": {
+            "from_ms": 0,
+            "schema_version": "1.0",
+            "to_ms": 4032000
+          }
+        },
+        "claim_id": "CL-0214",
+        "evidence_event_ids": [
+          "E-0001",
+          "E-0841",
+          "E-0842",
+          "E-1421"
+        ],
+        "kind": "measured_stat",
+        "schema_version": "1.0",
+        "text": "Northbridge have had 59% possession."
+      },
+      "forged": true,
+      "result": {
+        "expected": 0.59,
+        "observed": 0.5795628103277061,
+        "query_id": "metric-possession_time-v1",
+        "reason": "Registered metric recomputation does not satisfy the claim comparator",
+        "status": "needs_revision"
+      },
+      "timeline": []
+    }
+  ],
   "detected_moments": {
     "by_kind": {
       "big_chance": 1,
