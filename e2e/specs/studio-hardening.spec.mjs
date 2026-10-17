@@ -99,7 +99,7 @@ test.describe('search and sharing', () => {
     expect(robots).toContain('Disallow: /dev/');
     expect(robots).toMatch(/Sitemap: .*\/sitemap\.xml/);
     const sitemap = await (await request.get('/sitemap.xml')).text();
-    const listed = [...sitemap.matchAll(/<loc>[^<]*?\/\/[^/]+(\/[^<]*)<\/loc>/g)].map((m) => m[1]);
+    const listed = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => new URL(m[1]).pathname);
     expect(listed.sort()).toEqual([...INDEXABLE].sort());
     const manifest = await (await request.get('/manifest.webmanifest')).json();
     expect(manifest).toMatchObject({ name: 'MatchDesk', display: 'standalone', start_url: '/' });

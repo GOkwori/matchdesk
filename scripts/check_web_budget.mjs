@@ -35,9 +35,14 @@ function gzipSize(asset) {
 const rows = [];
 for (const file of htmlFiles(pages)) {
   const html = readFileSync(file, 'utf8');
-  // Legacy-browser polyfills load with `nomodule`; modern browsers never download them.
-  const modern = html.replace(/<script\b[^>]*\bnomodule\b[^>]*>/gi, '');
-  const assets = new Set([...modern.matchAll(/(?:src|href)="(\/_next\/static\/[^"?]+\.(?:js|css))"/g)].map((m) => m[1]));
+  // Read each tag's attributes; this is measurement, not sanitising. Legacy-browser
+  // polyfills load with `nomodule`, which modern browsers never download.
+  const assets = new Set();
+  for (const [tag] of html.matchAll(/<(?:script|link)\s[^>]*>/gi)) {
+    if (/\snomodule(?:[\s=>]|$)/i.test(tag)) continue;
+    const ref = /\s(?:src|href)="(\/_next\/static\/[^"?]+\.(?:js|css))"/.exec(tag);
+    if (ref) assets.add(ref[1]);
+  }
   let js = 0;
   let css = 0;
   for (const asset of assets) {
