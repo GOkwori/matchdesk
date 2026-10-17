@@ -4,7 +4,7 @@ import { Icon } from "../../../../studio/icons";
 import { TopActions } from "../../../../studio/shell";
 import { PageHead, VerdictChip } from "../../../../studio/ui";
 
-export const metadata: Metadata = { title: "Design system", description: "MatchDesk Sunset Studio tokens and components." };
+export const metadata: Metadata = { title: "Design system", description: "MatchDesk Sunset Studio tokens and components.", robots: { index: false } };
 
 const swatches = [
   ["Canvas", "--md-canvas"], ["Panel", "--md-panel"], ["Raised", "--md-raised"], ["Line", "--md-line"],

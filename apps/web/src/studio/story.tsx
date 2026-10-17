@@ -11,6 +11,7 @@ export function StoryBody() {
   const copy = storyCopy[lang];
   return (
     <div className="md-story">
+      <a className="md-skip" href="#main">Skip to main content</a>
       <header className="md-story-top">
         <Logo size={30} />
         <div role="group" aria-label="Language" className="md-lang">

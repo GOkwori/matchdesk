@@ -2,7 +2,8 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import type { ReactNode } from "react";
-import { ReadyMarker } from "../../studio/ready";
+import { OfflineNotice, ReadyMarker } from "../../studio/ready";
+import { SITE_URL } from "../../studio/site";
 import "../../studio/tokens.css";
 import "../../studio/studio.css";
 
@@ -26,10 +27,13 @@ const plexMono = localFont({
   ],
   variable: "--md-font-mono-loaded",
   display: "swap",
+  // Mono is for small clocks and IDs; fetch it after the page's critical CSS and scripts.
+  preload: false,
   fallback: ["ui-monospace", "monospace"],
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: { default: "MatchDesk · Football intelligence, explained and verified", template: "%s · MatchDesk" },
   description: "MatchDesk turns football match events into verifiable stories: AI-assisted analysis, deterministic verification and human approval. Synthetic demo.",
   applicationName: "MatchDesk",
@@ -38,7 +42,10 @@ export const metadata: Metadata = {
     description: "Turn football moments into verifiable stories. AI-assisted. Verified. Human-led.",
     type: "website",
     locale: "en_GB",
+    siteName: "MatchDesk",
   },
+  twitter: { card: "summary_large_image" },
+  formatDetection: { telephone: false },
 };
 
 export const viewport: Viewport = {
@@ -49,7 +56,7 @@ export const viewport: Viewport = {
 export default function StudioRootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en-GB" className={`${jakarta.variable} ${plexMono.variable}`}>
-      <body className="md-root">{children}<ReadyMarker /></body>
+      <body className="md-root">{children}<OfflineNotice /><ReadyMarker /></body>
     </html>
   );
 }

@@ -4,6 +4,9 @@ WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
 ARG MATCHDESK_API_ORIGIN=http://api:8000
 ENV MATCHDESK_API_ORIGIN=$MATCHDESK_API_ORIGIN
+# Public origin baked into canonical URLs, the sitemap and social cards at build time.
+ARG MATCHDESK_SITE_URL=http://localhost:3000
+ENV MATCHDESK_SITE_URL=$MATCHDESK_SITE_URL
 RUN apk add --no-cache --upgrade 'zlib>=1.3.2-r1'
 COPY apps/web/package.json apps/web/package-lock.json ./
 RUN npm ci --ignore-scripts --no-audit --no-fund

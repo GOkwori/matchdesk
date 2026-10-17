@@ -8,6 +8,7 @@ import { PageHead } from "../../../../../studio/ui";
 export const metadata: Metadata = {
   title: "Intelligence Overview",
   description: "Northbridge FC 2–1 Riverside United (synthetic replay): verified key moments, match statistics and what needs a producer.",
+  alternates: { canonical: "/match/nbr-riv" },
 };
 
 export default function OverviewPage() {

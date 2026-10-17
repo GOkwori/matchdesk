@@ -6,6 +6,7 @@ import "./styles.css";
 export const metadata: Metadata = {
   title: "MatchDesk | Foundation workbench",
   description: "Local synthetic event contract validation. Production workflows are not connected.",
+  robots: { index: false, follow: false },
 };
 
 /** Establish the language and accessible page root shared by all workbench views. */
