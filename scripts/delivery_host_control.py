@@ -72,8 +72,16 @@ def verify_control_host(
         raise ValueError("State and lock paths must be absolute")
     if database.is_symlink() or lock.is_symlink():
         raise ValueError("State and lock files must never be symlinks")
-    state_dir = database.parent.resolve(strict=True)
-    if lock.parent.resolve(strict=True) != state_dir:
+    # Deny a repository-local state path before resolving its parent, so even
+    # a nonexistent directory fails closed with an actionable error.
+    if database.parent == checkout or checkout in database.parent.parents:
+        raise ValueError("Durable state cannot be inside the source checkout")
+    try:
+        state_dir = database.parent.resolve(strict=True)
+        lock_dir = lock.parent.resolve(strict=True)
+    except (OSError, RuntimeError) as exc:
+        raise ValueError("Private state directory must already exist") from exc
+    if lock_dir != state_dir:
         raise ValueError("SQLite and exclusive lock must share one private directory")
     if state_dir == checkout or checkout in state_dir.parents:
         raise ValueError("Durable state cannot be inside the source checkout")
@@ -181,10 +189,7 @@ def main() -> int:
     from delivery_supervisor import Supervisor
 
     manifest_path = (
-        args.source.resolve(strict=True)
-        / "docs"
-        / "engineering"
-        / "delivery-workstreams.json"
+        args.source.resolve(strict=True) / "docs" / "engineering" / "delivery-workstreams.json"
     )
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     with exclusive_lock(args.lock):
