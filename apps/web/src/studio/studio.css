@@ -369,6 +369,7 @@
   position: relative; margin: 12px 0 6px clamp(0px, 6vw, 64px); max-width: 400px; padding: 16px 18px; border-radius: 14px;
   background: #f5f7fa; color: #14202c; display: flex; flex-direction: column; gap: 8px;
   box-shadow: 0 24px 50px -18px rgba(0, 0, 0, 0.75); animation: md-rise 220ms ease-out;
+  scroll-margin: 24px;
 }
 .md-tour-arrow { position: absolute; top: -7px; left: 40px; width: 14px; height: 14px; background: #f5f7fa; transform: rotate(45deg); }
 .md-tour-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
@@ -598,7 +599,7 @@ html[data-md-text="large"] body.md-root { zoom: 1.125; }
   .md-moment-icon, .md-tl-dot { display: none; }
   .md-moment .md-chip, .md-tl-item .md-chip { grid-column: 2; justify-self: start; }
   .md-moment-clock { width: auto; }
-  .md-tour { margin-left: 0; max-width: none; }
+  .md-tour { margin-left: 0; max-width: none; scroll-margin: 16px 16px calc(96px + env(safe-area-inset-bottom)); }
   .md-strip { padding: 10px 12px; gap: 8px 14px; }
   .md-claims, .md-impact { max-width: none; }
   .md-rows div { grid-template-columns: 1fr; gap: 2px; }

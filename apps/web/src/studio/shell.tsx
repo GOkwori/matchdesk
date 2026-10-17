@@ -186,7 +186,20 @@ export function TourStep({ step }: { step: number }) {
   const router = useRouter();
   const pathname = usePathname();
   const current = Number(params.get("tour"));
-  if (current !== step) return null;
+  const card = useRef<HTMLDivElement>(null);
+  const active = current === step;
+  // A tour card that loads below the fold (or under the phone tab bar) is invisible guidance:
+  // bring it into view once, without moving the page when it is already on screen.
+  useEffect(() => {
+    const el = card.current;
+    if (!active || !el) return;
+    const margin = parseFloat(getComputedStyle(el).scrollMarginBottom) || 0;
+    const rect = el.getBoundingClientRect();
+    if (rect.top >= 0 && rect.bottom <= window.innerHeight - margin) return;
+    const reduce = document.documentElement.dataset.mdMotion === "reduce" || window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    el.scrollIntoView({ block: "nearest", behavior: reduce ? "auto" : "smooth" });
+  }, [active]);
+  if (!active) return null;
   const data = tourSteps[step - 1];
   if (!data) return null;
   const finish = () => {
@@ -196,7 +209,7 @@ export function TourStep({ step }: { step: number }) {
     router.replace(next.size ? `${pathname}?${next}` : pathname);
   };
   return (
-    <div className="md-tour" role="dialog" aria-modal="false" aria-labelledby={`md-tour-${step}`}>
+    <div ref={card} className="md-tour" role="dialog" aria-modal="false" aria-labelledby={`md-tour-${step}`}>
       <span className="md-tour-arrow" aria-hidden="true" />
       <div className="md-tour-head">
         <span className="md-tour-eyebrow">Guided tour · {step} of {tourSteps.length}</span>
