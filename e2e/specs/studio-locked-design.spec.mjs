@@ -68,6 +68,20 @@ test('the guided tour walks all six stops across real routes', async ({ page }) 
   await expect(page).toHaveURL(/\/$/);
 });
 
+test('every tour card opens on screen and clear of the phone tab bar', async ({ page }) => {
+  for (const [step, route] of [[1, '/match/nbr-riv?tour=1'], [2, '/match/nbr-riv/moments?moment=M-05&tour=2'], [3, '/match/nbr-riv/evidence/CL-0214?tour=3'], [4, '/producer/queue?tour=4'], [5, '/producer/compose/D-031?tour=5']]) {
+    await open(page, route);
+    const card = page.getByRole('dialog').filter({ hasText: `Guided tour · ${step} of 6` });
+    await expect(card).toBeInViewport({ ratio: 1 });
+    // The tab bar only exists on phones; elsewhere it is display:none and has no box.
+    await expect.poll(() => card.evaluate((el) => {
+      const tabs = document.querySelector('nav[aria-label="Primary"]');
+      const bar = tabs && tabs.getClientRects().length ? tabs.getBoundingClientRect().top : Infinity;
+      return el.getBoundingClientRect().bottom <= bar;
+    }), { message: `tour ${step} is not hidden by the tab bar` }).toBe(true);
+  }
+});
+
 test('browser Back stays inside the app and restores the previous screen', async ({ page }) => {
   await open(page, '/match/nbr-riv');
   await page.getByRole('link', { name: /Fix in composer/ }).click();
