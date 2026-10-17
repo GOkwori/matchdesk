@@ -78,5 +78,46 @@ code-generation adapter is loaded.
 5. Independently verify exact-head GitHub qualification and the open owner
    release holds (#52 and #65) before advancing toward build execution.
 
+## WSL2 dedicated test profile — still review only
+
+The default generator keeps `ProtectHome=yes` and rejects home-directory
+paths. For the operator's **existing** WSL2 source and user-scoped managed
+Python 3.12, use the **explicit** `--wsl-home-paths` rendering option. This
+sets `ProtectHome=tmpfs` to hide the normal home tree and re-exposes only:
+
+- the exact pinned checkout path as `BindReadOnlyPaths`;
+- the managed Python installation root as `BindReadOnlyPaths` (including
+  its standard-library dependencies);
+- a separate existing private SQLite/lock state directory as `BindPaths`.
+
+No entire user home is mounted; the checkout and interpreter are not writable
+through the service mount. The renderer rejects cross-user home paths,
+overlapping interpreter/source/state paths and broad parent mounts.
+
+Local operator example (**do not run under systemd yet**):
+
+```bash
+cd /home/georgie/matchdesk-control-test.PDw9Is/source
+/home/georgie/.local/share/matchdesk/python/cpython-3.12.15-linux-x86_64-gnu/bin/python3.12 \
+  scripts/render_delivery_host_service.py \
+  --source /home/georgie/matchdesk-control-test.PDw9Is/source \
+  --source-sha 4aca395793b03b9ffab108df0db2d45834922f26 \
+  --python /home/georgie/.local/share/matchdesk/python/cpython-3.12.15-linux-x86_64-gnu/bin/python3.12 \
+  --state-dir /home/georgie/matchdesk-control-test.PDw9Is/service-state \
+  --wsl-home-paths
+```
+
+The example state directory is illustrative and must be created and checked
+by the non-root operator (`0700`) before any start; it must not reuse test
+fixtures. User-level `systemd` bind namespaces may be unsupported by a given
+WSL host configuration. A rendered unit does **not** prove mount support,
+Python importability in the namespace, local Git preflight, or restart
+behavior. Validate the rendered unit on the actual host without enabling it,
+then run one separately approved short-lived control-only service and inspect
+the journal. **Stop on any namespace, interpreter, or mount error**; do not
+disable `ProtectHome`, expand mount targets, add `sudo`, or install a
+coding adapter to bypass failure. Unattended/reboot persistence, real agent
+execution, alert delivery and production remain unapproved.
+
 **Important:** A rendered unit or passing offline regression does not prove a
 real always-on host is available. This candidate remains uninstalled.
