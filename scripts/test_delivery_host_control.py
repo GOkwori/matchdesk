@@ -7,7 +7,6 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
 
 from delivery_host_control import exclusive_lock, verify_control_host
 
@@ -81,8 +80,10 @@ class HostControlTests(unittest.TestCase):
             self.verify()
         self.state_dir.chmod(0o700)
         self.assertEqual(self.calls, [])
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(ValueError, "outside the source checkout"):
             self.verify(database=self.source / "private" / "state.sqlite3")
+        with self.assertRaisesRegex(ValueError, "already exist"):
+            self.verify(database=Path(self.temp.name) / "missing" / "state.sqlite3")
         self.lock.symlink_to(self.source / ".git")
         with self.assertRaises(ValueError):
             self.verify()
@@ -91,10 +92,12 @@ class HostControlTests(unittest.TestCase):
     @unittest.skipIf(os.geteuid() == 0, "Requires non-root CI user")
     def test_exact_source_drift_rejected(self):
         """Reject any mismatch between approved commit and checked-out HEAD."""
+
         def mismatch(command, **kwargs):
             """Simulate a checkout at the wrong commit."""
-            result = self.git(command, **kwargs)
+            self.git(command, **kwargs)
             return subprocess.CompletedProcess(command, 0, "b" * 40, "")
+
         with self.assertRaises(ValueError):
             self.verify(runner=mismatch)
 
