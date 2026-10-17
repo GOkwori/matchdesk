@@ -137,7 +137,33 @@ def test_export_matches_scripted_totals(events) -> None:
     assert moments["goals"] == [["E-0688"], ["E-0790"], ["E-1366"]]
 
 
-def test_committed_export_is_current() -> None:
-    """The JSON shipped to the frontend must equal a fresh deterministic export."""
+def test_committed_exports_are_current() -> None:
+    """Every file shipped to the frontend must equal a fresh deterministic export."""
+    from scripts.export_demo_data import outputs
+
     expected = json.dumps(build_demo_export(), indent=2, sort_keys=True, ensure_ascii=False) + "\n"
     assert EXPORT.read_text(encoding="utf-8") == expected
+    for path, text in outputs().items():
+        assert path.read_text(encoding="utf-8") == text, f"{path.name} is stale"
+
+
+def test_the_screen_shows_the_backend_verdicts() -> None:
+    """D-031's claims are verified by verify_claim itself; the forged value is rejected."""
+    claims = {
+        item["claim"]["claim_id"]: item
+        for item in build_demo_export()["claims"]
+        if not item.get("forged")
+    }
+    assert {cid: c["result"]["status"] for cid, c in claims.items()} == {
+        "CL-0213": "verified",
+        "CL-0214": "verified",
+        "CL-0215": "supported_inference",
+        "CL-0216": "needs_revision",
+    }
+    assert claims["CL-0214"]["claim"]["assertion"]["decimals"] == 2
+    assert claims["CL-0213"]["timeline"] == [
+        {"from_ms": 0, "status": "needs_revision"},
+        {"from_ms": canonical.clock_ms(58, 17), "status": "verified"},
+    ]
+    forged = next(item for item in build_demo_export()["claims"] if item.get("forged"))
+    assert forged["result"]["status"] == "needs_revision"

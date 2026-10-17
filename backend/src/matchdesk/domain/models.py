@@ -7,6 +7,7 @@ are separate responsibilities. A validated Claim is never a verified Claim.
 
 from __future__ import annotations
 
+from decimal import ROUND_HALF_UP, Decimal
 from typing import Annotated, Literal, Self
 
 from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, model_validator
@@ -35,6 +36,16 @@ def immutable_array(value: object) -> object:
     if isinstance(value, list):
         return tuple(value)
     return value
+
+
+def round_half_up(value: float, decimals: int) -> Decimal:
+    """Round a float's shortest decimal form half up, so 0.575 -> 0.58 on every platform.
+
+    Binary floats cannot hold most decimals exactly; rounding the shortest round-trip
+    representation (``repr``) gives the result a reader expects and that a JavaScript
+    port can reproduce digit for digit.
+    """
+    return Decimal(repr(value)).quantize(Decimal(1).scaleb(-decimals), rounding=ROUND_HALF_UP)
 
 
 Identifier = Annotated[str, Field(min_length=1, max_length=96, pattern=r"^[A-Za-z0-9_-]+$")]
@@ -176,9 +187,14 @@ class MatchEvent(Contract):
 
 
 class MatchWindow(Contract):
-    """A nonempty half-open [from_ms, to_ms) window within one match period."""
+    """A nonempty half-open [from_ms, to_ms) window of match clock time.
 
-    period: Period
+    With a period, the window covers that period only. Without one (``None``), it covers
+    both periods: every event whose match clock falls in the window, whichever half it is
+    in. That is how a "whole match so far" claim is expressed as a single assertion.
+    """
+
+    period: Period | None = None
     from_ms: Annotated[int, Field(ge=0)]
     to_ms: Annotated[int, Field(ge=1)]
 
@@ -215,14 +231,23 @@ class MetricAssertion(Contract):
     comparator: Literal["eq", "gte", "lte"] = "eq"
     value: Annotated[float, Field(ge=0, allow_inf_nan=False)]
     unit: Literal["count", "ratio", "synthetic_xg", "metres", "per_minute"]
+    # The precision the claim is stated at. "58%" of a ratio is value 0.58 with decimals 2:
+    # it is verified when the recomputed value rounds (half up) to 0.58. Without it, "eq"
+    # stays exact.
+    decimals: Annotated[int, Field(ge=0, le=6)] | None = None
 
     @model_validator(mode="after")
     def validate_units(self) -> Self:
-        """Prevent fractional counts and ratios outside the unit interval."""
+        """Prevent fractional counts, ratios outside the unit interval and false precision."""
         if self.unit == "count" and not self.value.is_integer():
             raise ValueError("Count assertions must be integers")
         if self.unit == "ratio" and self.value > 1:
             raise ValueError("Ratios must lie between zero and one")
+        if self.decimals is not None:
+            if self.comparator != "eq":
+                raise ValueError("A stated precision applies only to the eq comparator")
+            if round_half_up(self.value, self.decimals) != Decimal(repr(self.value)):
+                raise ValueError("The asserted value has more decimal places than its precision")
         return self
 
 

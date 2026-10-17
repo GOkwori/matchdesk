@@ -10,7 +10,13 @@ import math
 
 from matchdesk.domain.hashing import content_digest
 from matchdesk.domain.metrics import METRIC_DEFINITIONS, compute_metric
-from matchdesk.domain.models import Claim, EvidenceRecord, MatchEvent, VerificationResult
+from matchdesk.domain.models import (
+    Claim,
+    EvidenceRecord,
+    MatchEvent,
+    VerificationResult,
+    round_half_up,
+)
 
 
 def _query_id(metric_id: str) -> str:
@@ -39,8 +45,20 @@ def _validate_evidence(
     return None
 
 
-def _comparison_passes(comparator: str, expected: float, observed: float) -> bool:
-    """Evaluate the declared metric comparator without rounding away discrepancies."""
+def _comparison_passes(
+    comparator: str,
+    expected: float,
+    observed: float,
+    decimals: int | None = None,
+) -> bool:
+    """Evaluate the declared metric comparator.
+
+    Without a stated precision, ``eq`` is exact (to float noise). With one, the recomputed
+    value is rounded half up to the claim's precision first: "58%" is true of 57.96% and
+    false of 58.6%. Nothing is rounded for ``gte`` or ``lte``.
+    """
+    if comparator == "eq" and decimals is not None:
+        return round_half_up(observed, decimals) == round_half_up(expected, decimals)
     if comparator == "eq":
         return math.isclose(observed, expected, rel_tol=1e-9, abs_tol=1e-9)
     if comparator == "gte":
@@ -130,7 +148,7 @@ def verify_claim(
             evidence_digest=evidence_digest,
         )
 
-    passed = _comparison_passes(assertion.comparator, assertion.value, observed)
+    passed = _comparison_passes(assertion.comparator, assertion.value, observed, assertion.decimals)
     return VerificationResult(
         claim_id=claim.claim_id,
         status="verified" if passed else "needs_revision",

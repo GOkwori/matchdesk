@@ -38,11 +38,11 @@ Visual baselines were rendered on Linux with an older Chromium build than CI's; 
 
 1. **`script-src 'unsafe-inline'`.** Next.js streams its route payload in inline scripts on statically prerendered pages. A nonce would force every page to render dynamically and defeat the offline cache. `unsafe-eval` is not allowed.
 2. **Lighthouse is measured, not gated.** Adding Lighthouse to CI means a large new dependency tree. CI instead enforces the bundle budget, axe, SEO checks and real-browser web vitals. A local Lighthouse 13.5 mobile run (simulated slow 4G, 4× CPU) on the production build scored **Accessibility 100, Best Practices 100 and SEO 100** on all four public pages. **Performance** ranged from **93–99** (welcome) and **84–96** (about) to **81–92** (overview and fan story); the gap to 95 is main-thread time hydrating React on a throttled phone. Closing it means moving more of each screen to server components.
-3. **The TypeScript verifier port is not done.** See the open decision below.
+3. **The TypeScript verifier port** shipped after this note was written; see the resolved decision below.
 
-## Open decision: what "58% possession" means
+## Resolved: what "58% possession" means
 
-The backend verifier compares with `eq` exactly. The log gives Northbridge **57.96%**, so the headline claim "Northbridge have had 58% possession" would be marked `needs_revision` by `verify_claim`. The frontend currently passes it with a ±0.5-point tolerance. Before porting the verifier, the product needs to decide which is right, then make both sides agree.
+The backend verifier compared with exact `eq`, so "58% possession" failed against the log's 57.96%, while the frontend passed it with a ±0.5-point tolerance. Both sides now use one rule: **a claim is checked at the precision it is stated at**. The verifier rounds the recomputed value half up to that precision, so 57.96% verifies "58%" and a forged 59% is rejected. The frontend shows the backend's own verdicts and re-checks the claim in the browser with a TypeScript port that CI holds to exact parity. See [verification design](../solution-design/07-verification.md).
 
 ## Deployment setting
 

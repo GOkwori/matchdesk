@@ -11,6 +11,7 @@ import hashlib
 from collections import Counter
 
 from matchdesk.domain import canonical_match as canonical
+from matchdesk.domain.demo_claims import claim_export
 from matchdesk.domain.hashing import content_digest
 from matchdesk.domain.metrics import compute_metric
 from matchdesk.domain.models import MatchEvent, MatchWindow, Subject
@@ -189,6 +190,7 @@ def build_demo_export(events: tuple[MatchEvent, ...] | None = None) -> dict[str,
         ],
         "shots": [_event_summary(event) for event in log if event.type == "shot"],
         "feed": [_event_summary(event) for event in log[-FEED_LENGTH:]],
+        "claims": claim_export(log),
         "detected_moments": {
             "total": len(moments),
             "by_kind": dict(sorted(Counter(moment.kind for moment in moments).items())),

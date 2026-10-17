@@ -46,7 +46,8 @@ def _events_in_window(
     return tuple(
         event
         for event in events
-        if event.period == window.period and window.from_ms <= event.match_clock_ms < window.to_ms
+        if (window.period is None or event.period == window.period)
+        and window.from_ms <= event.match_clock_ms < window.to_ms
     )
 
 
@@ -134,9 +135,9 @@ def _possession_time(
 ) -> float:
     """Return an event-derived team possession-time share inside the requested window.
 
-    Consecutive accepted events define observed time intervals. Each interval is
-    attributed to the team on the earlier event, clipped to the half-open query
-    window. Period markers and other teamless events contribute no owned time.
+    Consecutive accepted events within one period define observed time intervals. Each
+    interval is attributed to the team on the earlier event, clipped to the half-open query
+    window; a window without a period sums both periods. Period markers and other teamless events contribute no owned time.
     The denominator is total attributable observed time across teams. A window with
     no attributable interval returns zero rather than inventing possession.
     """
@@ -147,16 +148,20 @@ def _possession_time(
         return 0.0
     _events_in_window(events, window)
 
-    period_events = tuple(event for event in events if event.period == window.period)
+    # Intervals never span the half-time break: each period is walked on its own, and a
+    # whole-match window (period None) sums both periods' clipped intervals.
+    periods = (1, 2) if window.period is None else (window.period,)
     owned_ms: dict[str, int] = {}
-    for current, following in zip(period_events, period_events[1:], strict=False):
-        if current.team_id is None:
-            continue
-        start_ms = max(current.match_clock_ms, window.from_ms)
-        end_ms = min(following.match_clock_ms, window.to_ms)
-        if end_ms <= start_ms:
-            continue
-        owned_ms[current.team_id] = owned_ms.get(current.team_id, 0) + (end_ms - start_ms)
+    for period in periods:
+        period_events = tuple(event for event in events if event.period == period)
+        for current, following in zip(period_events, period_events[1:], strict=False):
+            if current.team_id is None:
+                continue
+            start_ms = max(current.match_clock_ms, window.from_ms)
+            end_ms = min(following.match_clock_ms, window.to_ms)
+            if end_ms <= start_ms:
+                continue
+            owned_ms[current.team_id] = owned_ms.get(current.team_id, 0) + (end_ms - start_ms)
 
     total_ms = sum(owned_ms.values())
     if total_ms == 0:

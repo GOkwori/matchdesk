@@ -7,13 +7,25 @@
  * never a live match, and nothing here grants approval or publication authority.
  */
 import exportData from "./generated/nbr-riv.json";
+import type { Claim as ContractClaim, Result as VerifierResult, Status } from "./verifier";
 
 export type ExportEvent = {
   id: string; clock_ms: number; period: number; type: string; team: string | null; player: string | null;
   outcome: string | null; tags: string[]; x?: number; y?: number; xg?: number;
 };
 
-export const matchExport = exportData as typeof exportData & { key_events: ExportEvent[]; shots: ExportEvent[]; feed: ExportEvent[] };
+/** A D-031 claim as the backend verified it: the contract, the verifier's result, and the
+ * replay clocks at which that result changes. */
+export type VerifiedClaim = {
+  claim: ContractClaim;
+  result: Omit<VerifierResult, "claim_id">;
+  timeline: { from_ms: number; status: Status }[];
+  forged?: boolean;
+};
+
+export const matchExport = exportData as unknown as Omit<typeof exportData, "claims"> & {
+  key_events: ExportEvent[]; shots: ExportEvent[]; feed: ExportEvent[]; claims: VerifiedClaim[];
+};
 
 export const REPLAY_END_SECONDS = matchExport.replay_end_ms / 1000;
 
@@ -146,25 +158,34 @@ export function findClaim(id: string): Claim | undefined {
   return claims.find((c) => c.id === id);
 }
 
-/** Possession share for CL-0214, in percent with one decimal place. */
+/** Possession share for CL-0214 in percent, from the verifier's own recomputation. */
 export function possessionShare(): number {
-  return Math.round((possession.homeSeconds / possession.totalSeconds) * 1000) / 10;
+  return (serverClaim("CL-0214").result.observed ?? 0) * 100;
 }
 
-/** Deterministic verdict for a claim at a replay time. A forged value is recalculated, never trusted. */
-export function verdict(claim: Claim, seconds = REPLAY_END_SECONDS, claimedPossession = 58): Verdict {
-  switch (claim.kind) {
-    case "fact": {
-      const okaforGoals = moments.filter((m) => m.kind === "Goal" && m.team === "NBR" && m.seconds <= seconds).length;
-      return okaforGoals >= 2 ? "verified" : "not-yet";
-    }
-    case "metric":
-      return Math.abs(possessionShare() - claimedPossession) <= 0.5 ? "verified" : "failed";
-    case "interpretation":
-      return "pending";
-    case "history":
-      return "failed";
-  }
+/** The backend's verified claim, by ID (the forged variant only when asked for). */
+export function serverClaim(id: string, forged = false): VerifiedClaim {
+  const found = matchExport.claims.find((c) => c.claim.claim_id === id && Boolean(c.forged) === forged);
+  if (!found) throw new Error(`Claim ${id} is missing from the demo export`);
+  return found;
+}
+
+/** Map a verifier status to what the screen shows. "Not verifiable yet" is a count claim
+ * whose events have not happened at this replay point. */
+export function toVerdict(status: Status, laterVerified = false): Verdict {
+  if (status === "verified") return "verified";
+  if (status === "supported_inference") return "pending";
+  if (status === "needs_revision" && laterVerified) return "not-yet";
+  return "failed";
+}
+
+/** The backend verifier's verdict on a claim at a replay time, never a frontend rule. */
+export function verdict(claim: Claim, seconds = REPLAY_END_SECONDS): Verdict {
+  const verified = serverClaim(claim.id);
+  if (!verified.timeline.length || seconds >= REPLAY_END_SECONDS) return toVerdict(verified.result.status);
+  const ms = seconds * 1000;
+  const current = verified.timeline.filter((t) => t.from_ms <= ms).at(-1) ?? verified.timeline[0];
+  return toVerdict(current.status, verified.result.status === "verified");
 }
 
 export const verdictLabel: Record<Verdict, string> = {
@@ -240,7 +261,7 @@ export const storyCopy: Record<Language, { label: string; headline: [string, str
 export const tourSteps: readonly { title: string; body: string; next?: string; nextLabel?: string }[] = [
   { title: "Start with the 58′ goal", body: "Open it to see exactly which events prove it happened.", next: "/match/nbr-riv/moments?moment=M-05&tour=2", nextLabel: "Open the goal" },
   { title: "Every moment links to evidence", body: `This goal is matched to recorded events. Next, see how a statistic is recalculated from all ${eventCountText} of them.`, next: "/match/nbr-riv/evidence/CL-0214?tour=3", nextLabel: "See the proof" },
-  { title: "Claims are recalculated, not trusted", body: "Try a forged value: the verifier recomputes 58.0% from the events and rejects it.", next: "/producer/queue?tour=4", nextLabel: "See the review queue" },
+  { title: "Claims are recalculated, not trusted", body: "Try a forged value: the verifier recomputes 57.96% from the events, rounds it to 58% and rejects 59%.", next: "/producer/queue?tour=4", nextLabel: "See the review queue" },
   { title: "One draft is blocked", body: "D-031 has a pending interpretation and an unsupported claim. Fix it in the composer.", next: "/producer/compose/D-031?tour=5", nextLabel: "Open the composer" },
   { title: "Fix it and it re-verifies instantly", body: "Remove the unsupported sentence and mark the interpretation as opinion. Watch the draft become eligible.", next: `/story/${STORY_SLUG}?tour=6`, nextLabel: "See what fans get" },
   { title: "What fans see", body: "A verified story with its checks shown. It only goes out after a human producer approves it." },

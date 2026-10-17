@@ -21,7 +21,7 @@ export default function AboutPage() {
         <p className="md-lede">MatchDesk never asks you to trust a number. Every statement in a story is a claim, and every claim is recalculated from the match event log before a human can approve it.</p>
         <ol className="md-welcome-steps">
           <li className="md-panel"><span className="md-step-icon"><Icon name="pulse" size={22} /></span><h2>1. Detect</h2><p>Fixed rules scan the {eventCountText}-event log for goals, big chances and other moments. The same log always gives the same moments.</p></li>
-          <li className="md-panel"><span className="md-step-icon"><Icon name="shield" size={22} /></span><h2>2. Verify</h2><p>Each claim is checked by a registered formula. “58% possession” passes because the log gives {possessionShare().toFixed(1)}%; a forged 59% fails.</p></li>
+          <li className="md-panel"><span className="md-step-icon"><Icon name="shield" size={22} /></span><h2>2. Verify</h2><p>Each claim is checked by a registered formula. “58% possession” passes because the log gives {possessionShare().toFixed(2)}%, which rounds to 58% at the precision the claim is stated at; a forged 59% fails. The same check runs on the server and again in your browser, and the two must agree.</p></li>
           <li className="md-panel"><span className="md-step-icon"><Icon name="pen" size={22} /></span><h2>3. Approve</h2><p>AI can propose wording and spot patterns, but interpretations are labelled, unsupported claims are blocked, and only a producer approves.</p></li>
         </ol>
         <section className="md-panel md-about-trust">

@@ -2,7 +2,7 @@
   "$defs": {
     "MatchWindow": {
       "additionalProperties": false,
-      "description": "A nonempty half-open [from_ms, to_ms) window within one match period.",
+      "description": "A nonempty half-open [from_ms, to_ms) window of match clock time.\n\nWith a period, the window covers that period only. Without one (``None``), it covers\nboth periods: every event whose match clock falls in the window, whichever half it is\nin. That is how a \"whole match so far\" claim is expressed as a single assertion.",
       "properties": {
         "from_ms": {
           "minimum": 0,
@@ -10,12 +10,20 @@
           "type": "integer"
         },
         "period": {
-          "enum": [
-            1,
-            2
+          "anyOf": [
+            {
+              "enum": [
+                1,
+                2
+              ],
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
           ],
-          "title": "Period",
-          "type": "integer"
+          "default": null,
+          "title": "Period"
         },
         "schema_version": {
           "const": "1.0",
@@ -30,7 +38,6 @@
         }
       },
       "required": [
-        "period",
         "from_ms",
         "to_ms"
       ],
@@ -50,6 +57,20 @@
           ],
           "title": "Comparator",
           "type": "string"
+        },
+        "decimals": {
+          "anyOf": [
+            {
+              "maximum": 6,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Decimals"
         },
         "metric": {
           "maxLength": 96,
