@@ -11,7 +11,7 @@ type Row = { time: string; actor: string; initials: string; action: string; deta
 
 const BASE_ROWS: Row[] = [
   { time: "18:32", actor: "Priya Shah", initials: "PS", action: "Saved D-031 v3", detail: "4 claims linked", kind: "editorial" },
-  { time: "18:30", actor: "MatchDesk", initials: "MD", action: "Verified CL-0214", detail: "possession_time.v1 · 58.0%", kind: "verification" },
+  { time: "18:30", actor: "MatchDesk", initials: "MD", action: "Verified CL-0214", detail: "possession_time.v1 · 57.96% → 58%", kind: "verification" },
   { time: "18:29", actor: "MatchDesk", initials: "MD", action: "Failed CL-0216", detail: "No season history in the log", kind: "verification" },
   { time: "18:27", actor: "Sam Reed", initials: "SR", action: "Reviewed CL-0213", detail: "Goals E-0688, E-1366", kind: "verification" },
   { time: "18:20", actor: "MatchDesk", initials: "MD", action: "Detected goal M-05", detail: "E-1366 at 58:17", kind: "system" },

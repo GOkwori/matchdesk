@@ -197,6 +197,9 @@ jobs:
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         working-directory: apps/web
         run: npm run typecheck 2>&1 | tee ../../artifacts/web/typecheck.log
+      - name: Prove the browser verifier matches the backend verifier
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: node --experimental-strip-types --test apps/web/tests/verifier.parity.test.mjs 2>&1 | tee artifacts/web/verifier-parity.log
       - name: Build the actual web application
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         working-directory: apps/web

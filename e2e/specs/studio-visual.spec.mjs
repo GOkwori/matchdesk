@@ -24,6 +24,8 @@ for (const [name, route] of SCREENS) {
     await page.goto(route);
     await page.locator('html[data-md-ready="1"]').waitFor({ state: 'attached' });
     await page.evaluate(() => document.fonts.ready);
+    // The evidence screen re-verifies in the browser; capture the settled result, not the spinner.
+    await page.locator('.md-recheck', { hasText: 'Re-checking' }).waitFor({ state: 'detached' });
     await expect(page).toHaveScreenshot(`${name}.png`, { animations: 'disabled', caret: 'hide', maxDiffPixelRatio: MAX_DIFF });
   });
 }
