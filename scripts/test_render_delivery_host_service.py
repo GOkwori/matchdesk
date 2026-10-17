@@ -40,9 +40,16 @@ class RenderControlHostServiceTests(unittest.TestCase):
     def test_paths_fail_closed_for_injection_and_traversal(self):
         """Never interpolate shell, unit specifier or parent path syntax."""
         for path in (
-            "relative/path", "/", "/srv//checkout", "/srv/./checkout",
-            "/srv/../checkout", "/srv/checkout space", "/srv/checkout;echo",
-            "/srv/%n", "/srv/$(touch-pwned)", "/srv/checkout\nExecStart=unsafe",
+            "relative/path",
+            "/",
+            "/srv//checkout",
+            "/srv/./checkout",
+            "/srv/../checkout",
+            "/srv/checkout space",
+            "/srv/checkout;echo",
+            "/srv/%n",
+            "/srv/$(touch-pwned)",
+            "/srv/checkout\nExecStart=unsafe",
         ):
             with self.subTest(path=path), self.assertRaises(ValueError):
                 safe_absolute_path(path)
@@ -69,10 +76,23 @@ class RenderControlHostServiceTests(unittest.TestCase):
         """The operator gets text to review, not an installed/started service."""
         output = io.StringIO()
         with redirect_stdout(output):
-            self.assertEqual(main([
-                "--source", SOURCE, "--source-sha", PIN,
-                "--state-dir", STATE, "--cycles", "2", "--interval", "5",
-            ]), 0)
+            self.assertEqual(
+                main(
+                    [
+                        "--source",
+                        SOURCE,
+                        "--source-sha",
+                        PIN,
+                        "--state-dir",
+                        STATE,
+                        "--cycles",
+                        "2",
+                        "--interval",
+                        "5",
+                    ]
+                ),
+                0,
+            )
         self.assertIn("--run --cycles 2 --interval 5", output.getvalue())
         self.assertIn("WantedBy=default.target", output.getvalue())
 
