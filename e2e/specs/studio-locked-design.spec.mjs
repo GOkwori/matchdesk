@@ -6,7 +6,7 @@
 import { test, expect } from '@playwright/test';
 
 const STORY = '/story/okafor-header-restores-northbridge-lead';
-const ROUTES = ['/', '/match/nbr-riv', '/match/nbr-riv/moments', '/match/nbr-riv/evidence/CL-0214', '/producer/queue', '/producer/compose/D-031', STORY, '/design-system'];
+const ROUTES = ['/', '/about', '/match/nbr-riv', '/match/nbr-riv/live', '/match/nbr-riv/moments', '/match/nbr-riv/tactical', '/match/nbr-riv/insights', '/match/nbr-riv/evidence/CL-0214', '/producer/queue', '/producer/compose/D-031', '/producer/publish/D-031', '/workspace/activity', '/workspace/settings', STORY, '/design-system'];
 
 /** Static pages are pre-rendered; wait for hydration before interacting. */
 async function open(page, route) {
@@ -171,4 +171,55 @@ test('the shell adapts: sidebar on desktop, icon rail on tablet, tab bar on phon
     await expect(workspace).toBeVisible();
     await expect(workspace.getByRole('link', { name: 'Overview' })).toHaveAttribute('aria-current', 'page');
   }
+});
+
+test('evidence figures come from the generated event-log export', async ({ page }) => {
+  await open(page, '/match/nbr-riv/evidence/CL-0214');
+  await expect(page.getByText('1,421 events read from the log')).toBeVisible();
+  await expect(page.getByLabel('Calculation')).toContainText('2,334.5 s / 4,028.0 s');
+  await expect(page.getByLabel('Calculation')).toContainText('58.0%');
+});
+
+test('tactical filters recount shots from real event locations', async ({ page }) => {
+  await open(page, '/match/nbr-riv/tactical');
+  await expect(page.getByText('23 shots')).toBeVisible();
+  await page.getByRole('group', { name: 'Team' }).getByRole('button', { name: 'Northbridge' }).click();
+  await expect(page.getByText('14 shots')).toBeVisible();
+  await page.getByRole('group', { name: 'Half' }).getByRole('button', { name: '1st' }).click();
+  await expect(page.getByRole('heading', { name: /Shot map · first half/ })).toBeVisible();
+});
+
+test('AI proposals wait for a human decision, and a failed proposal recovers', async ({ page }) => {
+  await open(page, '/match/nbr-riv/insights');
+  await expect(page.getByText('3 left to review')).toBeVisible();
+  await page.getByRole('button', { name: 'Dismiss' }).first().click();
+  await expect(page.getByText('2 left to review')).toBeVisible();
+  await page.getByRole('button', { name: 'Undo' }).click();
+  await expect(page.getByText('3 left to review')).toBeVisible();
+  await page.getByRole('button', { name: 'Try again' }).click();
+  await expect(page.getByText(/No counter-attack goals in this log/)).toBeVisible();
+});
+
+test('publication journey reflects the composer fix and keeps approval locked', async ({ page }) => {
+  await open(page, '/producer/publish/D-031');
+  await expect(page.getByRole('link', { name: /Make D-031 eligible/ })).toBeVisible();
+  await open(page, '/producer/compose/D-031');
+  const cards = page.getByRole('list', { name: 'Claims in this draft' });
+  await cards.getByRole('listitem').filter({ hasText: 'CL-0216' }).getByRole('button', { name: 'Remove sentence' }).click();
+  await cards.getByRole('listitem').filter({ hasText: 'CL-0215' }).getByRole('button', { name: 'Mark as opinion' }).click();
+  await open(page, '/producer/publish/D-031');
+  await expect(page.getByText(/Approve · Planned: a signed-in producer approves/)).toBeVisible();
+  await open(page, '/workspace/activity');
+  await expect(page.getByText('Re-verified D-031 v4')).toBeVisible();
+});
+
+test('display preferences persist and apply to the whole document', async ({ page }) => {
+  await open(page, '/workspace/settings');
+  await page.getByRole('switch', { name: /Reduce motion/ }).check();
+  await expect(page.locator('html')).toHaveAttribute('data-md-motion', 'reduce');
+  await open(page, '/match/nbr-riv');
+  await expect(page.locator('html')).toHaveAttribute('data-md-motion', 'reduce');
+  await open(page, '/workspace/settings');
+  await page.getByRole('button', { name: 'Reset demo data' }).click();
+  await expect(page.getByText(/D-031 is back to v3/)).toBeVisible();
 });

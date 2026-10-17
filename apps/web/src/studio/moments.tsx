@@ -6,7 +6,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Icon } from "./icons";
 import { GoalPitch, VerdictChip } from "./ui";
 import { TourStep } from "./shell";
-import { clock, findMoment, moments, scoreAt, type Moment } from "./data";
+import { clock, eventCountText, findMoment, moments, scoreAt, type Moment } from "./data";
 
 const kindIcon = { Goal: "ball", Corner: "flag", Substitution: "swap", "Yellow card": "card" } as const;
 
@@ -39,7 +39,7 @@ export function MomentsBody() {
   return (
     <div className="md-split">
       <section className="md-panel md-split-main" aria-labelledby="md-timeline-title">
-        <div className="md-panel-head"><h2 id="md-timeline-title">Match timeline</h2><span className="md-muted">7 key moments · 1,284 events</span></div>
+        <div className="md-panel-head"><h2 id="md-timeline-title">Match timeline</h2><span className="md-muted">7 key moments · {eventCountText} events</span></div>
         {halves.map((h) => (
           <div key={h.label} className="md-half">
             <h3 className="md-half-label">{h.label}</h3>

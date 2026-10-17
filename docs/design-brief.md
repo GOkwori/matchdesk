@@ -21,7 +21,7 @@ Every number, name, ID, time and claim on every screen MUST come from this scrip
 
 **Fixture:** Northbridge FC (Home, NBR) vs Riverside United (Away, RIV)
 **Status:** Synthetic replay, NOT live. Replay clock **67:12**, Second half, replay speed 1×. Score **2–1**.
-**Event log:** 1,284 synthetic events. Latest event **E-1421 at 67:08**.
+**Event log:** 1,421 synthetic events (E-0001 to E-1421), generated deterministically by `backend/src/matchdesk/domain/canonical_match.py`. Latest event **E-1421 at 67:08**. (Earlier drafts said 1,284, which contradicted the E-1421 identity.)
 **Date of replay session:** 11 Oct 2026 (all timestamps in 2026, UK time).
 
 | Moment | Clock | Event ID | What happened | Score after |

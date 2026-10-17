@@ -1,9 +1,13 @@
-/** Marks the document as interactive once React has hydrated (used by browser tests). */
+/** Applies saved display preferences and marks the document interactive once hydrated. */
 "use client";
 
 import { useEffect } from "react";
+import { applyPrefs, readPrefs } from "./workspace";
 
 export function ReadyMarker() {
-  useEffect(() => { document.documentElement.dataset.mdReady = "1"; }, []);
+  useEffect(() => {
+    applyPrefs(readPrefs());
+    document.documentElement.dataset.mdReady = "1";
+  }, []);
   return null;
 }

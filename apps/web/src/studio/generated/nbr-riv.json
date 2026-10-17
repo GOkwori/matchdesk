@@ -1,0 +1,727 @@
+{
+  "detected_moments": {
+    "by_kind": {
+      "big_chance": 1,
+      "goal": 3
+    },
+    "goals": [
+      [
+        "E-0688"
+      ],
+      [
+        "E-0790"
+      ],
+      [
+        "E-1366"
+      ]
+    ],
+    "total": 4
+  },
+  "event_count": 1421,
+  "evidence_digest": "3888f12dc8bae13471e425b54e919d762d9794cfbb9ef2320fe683bf702acac1",
+  "feed": [
+    {
+      "clock_ms": 3848210,
+      "id": "E-1407",
+      "outcome": "complete",
+      "period": 2,
+      "player": "nbr-09",
+      "tags": [],
+      "team": "nbr",
+      "type": "pass",
+      "x": 42.9,
+      "y": 15.1
+    },
+    {
+      "clock_ms": 3861052,
+      "id": "E-1408",
+      "outcome": "complete",
+      "period": 2,
+      "player": "nbr-06",
+      "tags": [],
+      "team": "nbr",
+      "type": "carry",
+      "x": 40.0,
+      "y": 79.4
+    },
+    {
+      "clock_ms": 3873894,
+      "id": "E-1409",
+      "outcome": "complete",
+      "period": 2,
+      "player": "nbr-04",
+      "tags": [],
+      "team": "nbr",
+      "type": "carry",
+      "x": 49.8,
+      "y": 57.4
+    },
+    {
+      "clock_ms": 3886736,
+      "id": "E-1410",
+      "outcome": "complete",
+      "period": 2,
+      "player": "nbr-07",
+      "tags": [],
+      "team": "nbr",
+      "type": "pass",
+      "x": 52.1,
+      "y": 31.6
+    },
+    {
+      "clock_ms": 3899578,
+      "id": "E-1411",
+      "outcome": "complete",
+      "period": 2,
+      "player": "nbr-11",
+      "tags": [],
+      "team": "nbr",
+      "type": "pass",
+      "x": 60.8,
+      "y": 41.6
+    },
+    {
+      "clock_ms": 3912421,
+      "id": "E-1412",
+      "outcome": "complete",
+      "period": 2,
+      "player": "nbr-07",
+      "tags": [],
+      "team": "nbr",
+      "type": "pass",
+      "x": 57.3,
+      "y": 74.6
+    },
+    {
+      "clock_ms": 3925263,
+      "id": "E-1413",
+      "outcome": "complete",
+      "period": 2,
+      "player": "nbr-02",
+      "tags": [],
+      "team": "nbr",
+      "type": "pass",
+      "x": 66.4,
+      "y": 70.8
+    },
+    {
+      "clock_ms": 3938105,
+      "id": "E-1414",
+      "outcome": "complete",
+      "period": 2,
+      "player": "nbr-08",
+      "tags": [],
+      "team": "nbr",
+      "type": "pass",
+      "x": 75.1,
+      "y": 89.5
+    },
+    {
+      "clock_ms": 3950947,
+      "id": "E-1415",
+      "outcome": "incomplete",
+      "period": 2,
+      "player": "nbr-05",
+      "tags": [],
+      "team": "nbr",
+      "type": "pass",
+      "x": 76.7,
+      "y": 72.6
+    },
+    {
+      "clock_ms": 3963789,
+      "id": "E-1416",
+      "outcome": "complete",
+      "period": 2,
+      "player": "riv-02",
+      "tags": [],
+      "team": "riv",
+      "type": "recovery",
+      "x": 29.8,
+      "y": 84.0
+    },
+    {
+      "clock_ms": 3976631,
+      "id": "E-1417",
+      "outcome": "complete",
+      "period": 2,
+      "player": "riv-11",
+      "tags": [],
+      "team": "riv",
+      "type": "pass",
+      "x": 37.2,
+      "y": 13.7
+    },
+    {
+      "clock_ms": 3989473,
+      "id": "E-1418",
+      "outcome": "complete",
+      "period": 2,
+      "player": "riv-10",
+      "tags": [],
+      "team": "riv",
+      "type": "pass",
+      "x": 52.3,
+      "y": 80.2
+    },
+    {
+      "clock_ms": 4002315,
+      "id": "E-1419",
+      "outcome": "incomplete",
+      "period": 2,
+      "player": "riv-03",
+      "tags": [],
+      "team": "riv",
+      "type": "pass",
+      "x": 66.6,
+      "y": 39.9
+    },
+    {
+      "clock_ms": 4015157,
+      "id": "E-1420",
+      "outcome": "complete",
+      "period": 2,
+      "player": "nbr-04",
+      "tags": [],
+      "team": "nbr",
+      "type": "recovery",
+      "x": 51.4,
+      "y": 36.5
+    },
+    {
+      "clock_ms": 4028000,
+      "id": "E-1421",
+      "outcome": "complete",
+      "period": 2,
+      "player": "riv-07",
+      "tags": [],
+      "team": "riv",
+      "type": "substitution"
+    }
+  ],
+  "generator": "matchdesk.domain.canonical_match.generate_canonical_match",
+  "key_events": [
+    {
+      "clock_ms": 1660000,
+      "id": "E-0561",
+      "outcome": "yellow",
+      "period": 1,
+      "player": "riv-06",
+      "tags": [],
+      "team": "riv",
+      "type": "card"
+    },
+    {
+      "clock_ms": 2058000,
+      "id": "E-0688",
+      "outcome": "goal",
+      "period": 1,
+      "player": "nbr-09",
+      "tags": [],
+      "team": "nbr",
+      "type": "goal",
+      "x": 84.0,
+      "y": 57.0
+    },
+    {
+      "clock_ms": 2463000,
+      "id": "E-0790",
+      "outcome": "goal",
+      "period": 1,
+      "player": "riv-11",
+      "tags": [],
+      "team": "riv",
+      "type": "goal",
+      "x": 88.0,
+      "y": 44.0
+    },
+    {
+      "clock_ms": 2700000,
+      "id": "E-0841",
+      "outcome": null,
+      "period": 1,
+      "player": null,
+      "tags": [],
+      "team": null,
+      "type": "period_end"
+    },
+    {
+      "clock_ms": 3483000,
+      "id": "E-1359",
+      "outcome": "incomplete",
+      "period": 2,
+      "player": "nbr-07",
+      "tags": [
+        "corner"
+      ],
+      "team": "nbr",
+      "type": "pass",
+      "x": 99.5,
+      "y": 0.5
+    },
+    {
+      "clock_ms": 3497000,
+      "id": "E-1366",
+      "outcome": "goal",
+      "period": 2,
+      "player": "nbr-09",
+      "tags": [],
+      "team": "nbr",
+      "type": "goal",
+      "x": 95.0,
+      "y": 47.0
+    },
+    {
+      "clock_ms": 3784000,
+      "id": "E-1402",
+      "outcome": "yellow",
+      "period": 2,
+      "player": "nbr-04",
+      "tags": [],
+      "team": "nbr",
+      "type": "card"
+    },
+    {
+      "clock_ms": 4028000,
+      "id": "E-1421",
+      "outcome": "complete",
+      "period": 2,
+      "player": "riv-07",
+      "tags": [],
+      "team": "riv",
+      "type": "substitution"
+    }
+  ],
+  "last_event": {
+    "clock_ms": 4028000,
+    "id": "E-1421"
+  },
+  "match_id": "nbr-riv-canonical",
+  "players": {
+    "nbr-04": "Mensah",
+    "nbr-09": "Okafor",
+    "riv-06": "Haddad",
+    "riv-07": "Barros",
+    "riv-11": "Lindqvist",
+    "riv-14": "Kovac"
+  },
+  "possession": {
+    "away_ms": 1693521,
+    "home_ms": 2334479,
+    "home_share": 0.5796,
+    "total_ms": 4028000
+  },
+  "possession_series": [
+    {
+      "from_minute": 0,
+      "home_share": 0.5546,
+      "to_minute": 5
+    },
+    {
+      "from_minute": 5,
+      "home_share": 0.6233,
+      "to_minute": 10
+    },
+    {
+      "from_minute": 10,
+      "home_share": 0.6742,
+      "to_minute": 15
+    },
+    {
+      "from_minute": 15,
+      "home_share": 0.6325,
+      "to_minute": 20
+    },
+    {
+      "from_minute": 20,
+      "home_share": 0.6137,
+      "to_minute": 25
+    },
+    {
+      "from_minute": 25,
+      "home_share": 0.5443,
+      "to_minute": 30
+    },
+    {
+      "from_minute": 30,
+      "home_share": 0.5387,
+      "to_minute": 35
+    },
+    {
+      "from_minute": 35,
+      "home_share": 0.3636,
+      "to_minute": 40
+    },
+    {
+      "from_minute": 40,
+      "home_share": 0.4599,
+      "to_minute": 45
+    },
+    {
+      "from_minute": 45,
+      "home_share": 0.5802,
+      "to_minute": 50
+    },
+    {
+      "from_minute": 50,
+      "home_share": 0.5903,
+      "to_minute": 55
+    },
+    {
+      "from_minute": 55,
+      "home_share": 0.6508,
+      "to_minute": 60
+    },
+    {
+      "from_minute": 60,
+      "home_share": 0.7,
+      "to_minute": 65
+    },
+    {
+      "from_minute": 65,
+      "home_share": 0.5987,
+      "to_minute": 67
+    }
+  ],
+  "replay_end_ms": 4032000,
+  "schema": "matchdesk-demo-export/1",
+  "seed": 4,
+  "shots": [
+    {
+      "clock_ms": 172336,
+      "id": "E-0060",
+      "outcome": "off_target",
+      "period": 1,
+      "player": "nbr-06",
+      "tags": [],
+      "team": "nbr",
+      "type": "shot",
+      "x": 84.5,
+      "xg": 0.239,
+      "y": 44.7
+    },
+    {
+      "clock_ms": 243648,
+      "id": "E-0084",
+      "outcome": "saved",
+      "period": 1,
+      "player": "riv-09",
+      "tags": [],
+      "team": "riv",
+      "type": "shot",
+      "x": 90.3,
+      "xg": 0.101,
+      "y": 75.5
+    },
+    {
+      "clock_ms": 668548,
+      "id": "E-0227",
+      "outcome": "off_target",
+      "period": 1,
+      "player": "nbr-02",
+      "tags": [],
+      "team": "nbr",
+      "type": "shot",
+      "x": 87.4,
+      "xg": 0.056,
+      "y": 77.4
+    },
+    {
+      "clock_ms": 742831,
+      "id": "E-0252",
+      "outcome": "blocked",
+      "period": 1,
+      "player": "riv-04",
+      "tags": [],
+      "team": "riv",
+      "type": "shot",
+      "x": 83.2,
+      "xg": 0.075,
+      "y": 44.2
+    },
+    {
+      "clock_ms": 962709,
+      "id": "E-0326",
+      "outcome": "off_target",
+      "period": 1,
+      "player": "riv-04",
+      "tags": [],
+      "team": "riv",
+      "type": "shot",
+      "x": 78.5,
+      "xg": 0.093,
+      "y": 67.4
+    },
+    {
+      "clock_ms": 1057792,
+      "id": "E-0358",
+      "outcome": "off_target",
+      "period": 1,
+      "player": "nbr-05",
+      "tags": [],
+      "team": "nbr",
+      "type": "shot",
+      "x": 87.7,
+      "xg": 0.254,
+      "y": 57.4
+    },
+    {
+      "clock_ms": 1247956,
+      "id": "E-0422",
+      "outcome": "blocked",
+      "period": 1,
+      "player": "nbr-08",
+      "tags": [],
+      "team": "nbr",
+      "type": "shot",
+      "x": 93.4,
+      "xg": 0.244,
+      "y": 52.5
+    },
+    {
+      "clock_ms": 1745320,
+      "id": "E-0588",
+      "outcome": "off_target",
+      "period": 1,
+      "player": "riv-09",
+      "tags": [],
+      "team": "riv",
+      "type": "shot",
+      "x": 88.9,
+      "xg": 0.138,
+      "y": 76.3
+    },
+    {
+      "clock_ms": 2057600,
+      "id": "E-0687",
+      "outcome": "goal",
+      "period": 1,
+      "player": "nbr-09",
+      "tags": [],
+      "team": "nbr",
+      "type": "shot",
+      "x": 84.0,
+      "xg": 0.21,
+      "y": 57.0
+    },
+    {
+      "clock_ms": 2462600,
+      "id": "E-0789",
+      "outcome": "goal",
+      "period": 1,
+      "player": "riv-11",
+      "tags": [],
+      "team": "riv",
+      "type": "shot",
+      "x": 88.0,
+      "xg": 0.38,
+      "y": 44.0
+    },
+    {
+      "clock_ms": 2633760,
+      "id": "E-0825",
+      "outcome": "saved",
+      "period": 1,
+      "player": "riv-04",
+      "tags": [],
+      "team": "riv",
+      "type": "shot",
+      "x": 94.6,
+      "xg": 0.062,
+      "y": 68.6
+    },
+    {
+      "clock_ms": 2847191,
+      "id": "E-0940",
+      "outcome": "off_target",
+      "period": 2,
+      "player": "nbr-06",
+      "tags": [],
+      "team": "nbr",
+      "type": "shot",
+      "x": 80.4,
+      "xg": 0.208,
+      "y": 43.4
+    },
+    {
+      "clock_ms": 2872988,
+      "id": "E-0957",
+      "outcome": "saved",
+      "period": 2,
+      "player": "nbr-05",
+      "tags": [],
+      "team": "nbr",
+      "type": "shot",
+      "x": 86.3,
+      "xg": 0.072,
+      "y": 70.7
+    },
+    {
+      "clock_ms": 3065703,
+      "id": "E-1084",
+      "outcome": "off_target",
+      "period": 2,
+      "player": "riv-08",
+      "tags": [],
+      "team": "riv",
+      "type": "shot",
+      "x": 83.3,
+      "xg": 0.215,
+      "y": 60.4
+    },
+    {
+      "clock_ms": 3103639,
+      "id": "E-1109",
+      "outcome": "blocked",
+      "period": 2,
+      "player": "nbr-11",
+      "tags": [],
+      "team": "nbr",
+      "type": "shot",
+      "x": 93.2,
+      "xg": 0.081,
+      "y": 76.8
+    },
+    {
+      "clock_ms": 3185581,
+      "id": "E-1163",
+      "outcome": "saved",
+      "period": 2,
+      "player": "nbr-06",
+      "tags": [],
+      "team": "nbr",
+      "type": "shot",
+      "x": 87.1,
+      "xg": 0.231,
+      "y": 63.5
+    },
+    {
+      "clock_ms": 3212895,
+      "id": "E-1181",
+      "outcome": "off_target",
+      "period": 2,
+      "player": "nbr-05",
+      "tags": [],
+      "team": "nbr",
+      "type": "shot",
+      "x": 84.7,
+      "xg": 0.148,
+      "y": 54.4
+    },
+    {
+      "clock_ms": 3226552,
+      "id": "E-1190",
+      "outcome": "blocked",
+      "period": 2,
+      "player": "riv-07",
+      "tags": [],
+      "team": "riv",
+      "type": "shot",
+      "x": 87.5,
+      "xg": 0.16,
+      "y": 42.6
+    },
+    {
+      "clock_ms": 3264488,
+      "id": "E-1215",
+      "outcome": "blocked",
+      "period": 2,
+      "player": "nbr-07",
+      "tags": [],
+      "team": "nbr",
+      "type": "shot",
+      "x": 88.5,
+      "xg": 0.27,
+      "y": 29.8
+    },
+    {
+      "clock_ms": 3320633,
+      "id": "E-1252",
+      "outcome": "saved",
+      "period": 2,
+      "player": "nbr-08",
+      "tags": [],
+      "team": "nbr",
+      "type": "shot",
+      "x": 80.5,
+      "xg": 0.061,
+      "y": 41.0
+    },
+    {
+      "clock_ms": 3422302,
+      "id": "E-1319",
+      "outcome": "saved",
+      "period": 2,
+      "player": "nbr-11",
+      "tags": [],
+      "team": "nbr",
+      "type": "shot",
+      "x": 88.0,
+      "xg": 0.126,
+      "y": 48.0
+    },
+    {
+      "clock_ms": 3496600,
+      "id": "E-1365",
+      "outcome": "goal",
+      "period": 2,
+      "player": "nbr-09",
+      "tags": [
+        "header"
+      ],
+      "team": "nbr",
+      "type": "shot",
+      "x": 95.0,
+      "xg": 0.34,
+      "y": 47.0
+    },
+    {
+      "clock_ms": 3699500,
+      "id": "E-1390",
+      "outcome": "off_target",
+      "period": 2,
+      "player": "riv-02",
+      "tags": [],
+      "team": "riv",
+      "type": "shot",
+      "x": 84.1,
+      "xg": 0.25,
+      "y": 53.5
+    }
+  ],
+  "statistics": {
+    "nbr": {
+      "corners": 6,
+      "final_third_entries": 133,
+      "fouls": 8,
+      "goals": 2,
+      "on_target": 6,
+      "red_cards": 0,
+      "shots": 14,
+      "yellow_cards": 1
+    },
+    "riv": {
+      "corners": 3,
+      "final_third_entries": 88,
+      "fouls": 11,
+      "goals": 1,
+      "on_target": 3,
+      "red_cards": 0,
+      "shots": 9,
+      "yellow_cards": 1
+    }
+  },
+  "synthetic": true,
+  "teams": {
+    "nbr": {
+      "code": "NBR",
+      "name": "Northbridge FC",
+      "short": "Northbridge"
+    },
+    "riv": {
+      "code": "RIV",
+      "name": "Riverside United",
+      "short": "Riverside"
+    }
+  }
+}
