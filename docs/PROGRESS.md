@@ -1,5 +1,9 @@
 # Current progress
 
+## Studio frontend hardening (17 October 2026)
+
+The routed Sunset Studio frontend replaces the `/sunset-v3` preview, which has been removed along with the unlinked legacy `/producer` page. Offline mode, SEO, security headers, error/404/loading states and new CI gates (bundle budget, axe, visual baselines) are described in [frontend hardening](engineering/frontend-hardening.md). The `/sunset-v3` entries below are kept as history.
+
 ## Sunset Studio v3 frontend — 14-screen development milestone (13 October 2026)
 
 **CI-QUALIFIED ON DEVELOPMENT FOR SYNTHETIC READ-ONLY SCOPE.** All 14 screens are implemented in the existing `/sunset-v3` Next.js demo. Screen 13 PR #46 was owner-approved and merged; its first post-merge integration run failed on screenshot capture (206/207 tests), then PR #47 separated functional and visual browser processes and was independently qualified and merged. Owner-approved Screen 14 PR #48 was squash-merged at `4039ccb214ff999290a826df4e4a185718e65be4`.

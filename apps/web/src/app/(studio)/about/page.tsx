@@ -8,11 +8,13 @@ import { eventCountText, possessionShare } from "../../../studio/data";
 export const metadata: Metadata = {
   title: "How verification works",
   description: "How MatchDesk detects football moments, recalculates every claim from the event log, and keeps a human producer in charge of publishing.",
+  alternates: { canonical: "/about" },
 };
 
 export default function AboutPage() {
   return (
     <div className="md-welcome">
+      <a className="md-skip" href="#main">Skip to main content</a>
       <header className="md-welcome-top"><Logo /><Link href="/match/nbr-riv" className="md-btn md-btn-secondary">Open the demo</Link></header>
       <main id="main" tabIndex={-1} className="md-welcome-main md-about">
         <h1>How verification works</h1>

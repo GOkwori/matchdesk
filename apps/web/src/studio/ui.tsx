@@ -2,7 +2,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import mark from "./assets/matchdesk-mark-256.png";
+import mark from "./assets/matchdesk-mark-96.webp";
 import { Icon, type IconName } from "./icons";
 import { fixture, statistics, verdictLabel, type Verdict } from "./data";
 
