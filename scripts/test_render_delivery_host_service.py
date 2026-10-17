@@ -72,6 +72,69 @@ class RenderControlHostServiceTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 self.render(interval=interval)
 
+    def test_wsl_scoped_home_runtime_mounts(self):
+        """Expose only the reviewed interpreter, checkout and external state."""
+        source = "/home/georgie/matchdesk-control-test.PDw9Is/source"
+        python = (
+            "/home/georgie/.local/share/matchdesk/python/"
+            "cpython-3.12.15-linux-x86_64-gnu/bin/python3.12"
+        )
+        state = "/home/georgie/matchdesk-control-test.PDw9Is/service-state"
+        unit = self.render(
+            source=source,
+            python_path=python,
+            state_dir=state,
+            wsl_home_paths=True,
+        )
+        self.assertIn("ProtectHome=tmpfs", unit)
+        self.assertIn(f"BindReadOnlyPaths={source}", unit)
+        self.assertIn(
+            "BindReadOnlyPaths=/home/georgie/.local/share/matchdesk/"
+            "python/cpython-3.12.15-linux-x86_64-gnu",
+            unit,
+        )
+        self.assertIn(f"BindPaths={state}", unit)
+        self.assertIn("ProtectSystem=strict", unit)
+        self.assertIn("RestrictAddressFamilies=AF_UNIX", unit)
+        self.assertNotIn("BindPaths=/home/georgie\n", unit)
+        self.assertIn(" -E -s -B ", unit)
+
+    def test_wsl_profile_does_not_weaken_default(self):
+        """Default remains ProtectHome=yes and rejects paths beneath home."""
+        unit = self.render()
+        self.assertIn("ProtectHome=yes", unit)
+        self.assertNotIn("BindPaths=", unit)
+        with self.assertRaises(ValueError):
+            self.render(source="/home/georgie/source")
+
+    def test_wsl_rejects_cross_user_and_broad_mounts(self):
+        """Reject paths crossing home ownership or overlapping write scopes."""
+        source = "/home/georgie/project/source"
+        python = "/home/georgie/python/cpython-3.12.15/bin/python3.12"
+        valid_state = "/home/georgie/project-state"
+        changes = (
+            {"source": "/home"},
+            {"source": "/home/georgie"},
+            {"source": "/home/another/source"},
+            {"state_dir": "/home/another/state"},
+            {"state_dir": "/home/georgie"},
+            {"state_dir": "/home/georgie/python"},
+            {"state_dir": "/home/georgie/python/cpython-3.12.15/cache"},
+            {"python_path": "/home/another/python/bin/python3.12"},
+            {"python_path": "/home/georgie/bin/python3.12"},
+            {"python_path": "/home/georgie/project/source/bin/python3.12"},
+        )
+        for change in changes:
+            options = {
+                "source": source,
+                "python_path": python,
+                "state_dir": valid_state,
+                "wsl_home_paths": True,
+            }
+            options.update(change)
+            with self.subTest(change=change), self.assertRaises(ValueError):
+                self.render(**options)
+
     def test_cli_outputs_unit_without_installing(self):
         """The operator gets text to review, not an installed/started service."""
         output = io.StringIO()
