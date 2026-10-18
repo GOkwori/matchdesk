@@ -28,7 +28,7 @@ sql(migration);
 sql(migration);
 const fn = 'public.matchdesk_stage_producer_confirmation(' +
   'text,text,text,text,text,text,text,bigint,jsonb,text,text,text,timestamptz)';
-assert.equal(sql("SELECT has_function_privilege('public', '" + fn +
+assert.equal(sql("SELECT has_function_privilege('matchdesk_untrusted_issuer_ci', '" + fn +
   "', 'EXECUTE');"), 'f');
 assert.equal(sql("SELECT count(*) FROM pg_catalog.pg_proc WHERE oid='" +
   fn + "'::regprocedure AND prosecdef;"), '1');
