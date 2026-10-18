@@ -282,18 +282,14 @@ def test_cross_session_and_invalid_actor_denied(monkeypatch):
     ],
     ids=["auditor-role", "foreign-tenant", "foreign-issuer", "wrong-actor-type"],
 )
-def test_command_boundary_rejects_untrusted_actor_before_source_or_store(
-    monkeypatch, untrusted
-):
+def test_command_boundary_rejects_untrusted_actor_before_source_or_store(monkeypatch, untrusted):
     """Recheck issuer, tenant, role and actor type even if a verifier is defective."""
     client, source, store, grants = prepare(monkeypatch)
     grants.actions.update({"create", "approve"})
     import matchdesk.api.producer_command_routes as routes
 
     # An intentionally defective verifier must never confer mutation authority.
-    monkeypatch.setattr(
-        routes, "verify_producer_access_token", lambda *_a, **_k: untrusted
-    )
+    monkeypatch.setattr(routes, "verify_producer_access_token", lambda *_a, **_k: untrusted)
     attempted = client.post(BASE + "/create", headers=HEADERS, json=create_body(source))
     assert attempted.status_code == 403
     assert source.calls == 0
