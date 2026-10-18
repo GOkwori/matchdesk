@@ -21,6 +21,8 @@ AudienceLanguage = Literal["en", "es", "fr"]
 AudiencePersona = Literal["analyst", "casual_fan", "broadcast_caption"]
 
 _MAX_SOURCE_BYTES = 16_000
+# Typed model proposals are still untrusted: bound their serialized output size.
+_MAX_PROPOSAL_BYTES = 262_144
 # Bounded offline proposal step; a real provider must separately enforce network budgets.
 _PROVIDER_TIMEOUT_SECONDS = 15
 _LOCALE_NAMES = {"en": "English", "es": "Spanish", "fr": "French"}
@@ -60,7 +62,9 @@ def build_audience_prompt(request: AudienceDraftRequest) -> str:
     if request.persona not in _PERSONA_POLICIES:
         raise ValueError("Unsupported audience persona")
 
-    source = request.source
+    # Frozen models can still be constructed unsafely with model_copy(update=...).
+    # Reparse all nested invariants before sending any source text to a provider.
+    source = BroadcastEnvelope.model_validate_json(request.source.model_dump_json())
     source_context = json.dumps(
         {
             "output_kind": source.payload.kind,
@@ -102,13 +106,24 @@ async def propose_audience_variant(
     """
     prompt = build_audience_prompt(request)
     try:
-        # A provider is untrusted and must not hold the request indefinitely.
-        # This wait bound does not authenticate, approve, publish, or cap model spend.
-        async with asyncio.timeout(_PROVIDER_TIMEOUT_SECONDS):
+        # The deadline rejects cooperative stalls. A provider can suppress
+        # cancellation, so also inspect expiry after it returns a late result.
+        # This does not replace adapter-level transport or spending controls.
+        async with asyncio.timeout(_PROVIDER_TIMEOUT_SECONDS) as deadline:
             response = await provider.propose(prompt)
     except TimeoutError as exc:
         raise ValueError("Audience proposal deadline exceeded") from exc
-    payload = _OUTPUT_ADAPTER.validate_python(response)
+    if deadline.expired():
+        raise ValueError("Audience proposal deadline exceeded")
+
+    # Never trust an already-instantiated Pydantic model from a provider:
+    # model_copy(update=...) bypasses validators. JSON round-tripping restores
+    # nested constraints, and the byte bound prevents oversized accepted drafts.
+    candidate = _OUTPUT_ADAPTER.validate_python(response)
+    serialized = _OUTPUT_ADAPTER.dump_json(candidate)
+    if len(serialized) > _MAX_PROPOSAL_BYTES:
+        raise ValueError("Audience proposal exceeds the bounded response size")
+    payload = _OUTPUT_ADAPTER.validate_json(serialized)
     if payload.kind != request.source.payload.kind:
         raise ValueError("Audience generation must preserve the broadcast output kind")
     return build_audience_variant(

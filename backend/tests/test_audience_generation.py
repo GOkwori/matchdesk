@@ -170,3 +170,74 @@ def test_provider_failure_propagates_without_an_approved_draft() -> None:
     )
     with pytest.raises(RuntimeError, match="offline provider failed"):
         asyncio.run(propose_audience_variant(request, FailingProvider()))
+
+
+def test_provider_that_suppresses_cancellation_cannot_return_late_copy() -> None:
+    """A late result remains denied even when a provider mishandles cancellation."""
+
+    class CancellationSuppressingProvider:
+        """Offline malicious/non-cooperative provider used only for timeout probing."""
+
+        async def propose(self, prompt: str) -> object:
+            """Return a superficially valid proposal after swallowing cancellation."""
+            del prompt
+            try:
+                await asyncio.Event().wait()
+            except asyncio.CancelledError:
+                return {"kind": "commentary", "lines": [{"claim_id": "claim-1", "text": "Late."}]}
+            return {}
+
+    request = AudienceDraftRequest(
+        source=_source(), output_id="late-variant", language="en", persona="analyst"
+    )
+    with patch("matchdesk.domain.audience_generation._PROVIDER_TIMEOUT_SECONDS", 0.01):
+        with pytest.raises(ValueError, match="deadline exceeded"):
+            asyncio.run(propose_audience_variant(request, CancellationSuppressingProvider()))
+
+
+def test_model_copy_bypass_cannot_inject_invalid_typed_provider_payload() -> None:
+    """Always revalidate a provider-supplied Pydantic instance from actual JSON."""
+
+    valid = CommentaryPayload.model_validate(
+        {"lines": [{"claim_id": "claim-1", "text": "Valid source-linked sentence."}]}
+    )
+    # Pydantic's update helper bypasses min_length; the proposal edge must not.
+    invalid = valid.model_copy(update={"lines": ()})
+    provider = OfflineProvider(invalid)
+    request = AudienceDraftRequest(
+        source=_source(), output_id="bad-model", language="fr", persona="analyst"
+    )
+    with pytest.raises(ValidationError, match="too_short"):
+        asyncio.run(propose_audience_variant(request, provider))
+
+
+def test_large_model_copy_payload_rejected_before_draft_construction() -> None:
+    """A forged model instance cannot evade the byte-budget output boundary."""
+
+    valid = CommentaryPayload.model_validate(
+        {"lines": [{"claim_id": "claim-1", "text": "Safe."}]}
+    )
+    forged_line = valid.lines[0].model_copy(update={"text": "X" * 262_145})
+    forged = valid.model_copy(update={"lines": (forged_line,)})
+    provider = OfflineProvider(forged)
+    request = AudienceDraftRequest(
+        source=_source(), output_id="oversized-model", language="es", persona="casual_fan"
+    )
+    with pytest.raises(ValueError, match="bounded response size"):
+        asyncio.run(propose_audience_variant(request, provider))
+
+
+def test_tampered_source_is_denied_before_any_provider_call() -> None:
+    """Do not leak structurally inconsistent source drafts to an external adapter."""
+
+    source = _source()
+    tampered = source.model_copy(
+        update={"binding": source.binding.model_copy(update={"content_digest": "b" * 64})}
+    )
+    provider = OfflineProvider({"kind": "commentary"})
+    request = AudienceDraftRequest(
+        source=tampered, output_id="tampered-source", language="en", persona="analyst"
+    )
+    with pytest.raises(ValidationError, match="digest"):
+        asyncio.run(propose_audience_variant(request, provider))
+    assert provider.prompts == []
