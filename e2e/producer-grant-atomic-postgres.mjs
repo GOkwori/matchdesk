@@ -211,6 +211,73 @@ try {
     sql('DROP TRIGGER matchdesk_ci_grant_writer_barrier ON matchdesk_producer_cases;');
     sql('DROP FUNCTION matchdesk_ci_grant_writer_barrier();');
   });
+  await check('a forged approval cannot skip independent reverification', () => {
+    const id = 'ci-skip-reverify-approve-01';
+    sql(grantSql(id, 'approve'));
+    sql("UPDATE matchdesk_producer_action_grants SET expected_generation=1 WHERE grant_id='" + id + "';");
+    const approval = { ...entry, action: 'approved', reason: 'unverified approval attempt' };
+    const forgedCase = { ...caseDoc, generation: 2,
+      review: { ...caseDoc.review, status: 'approved', audit: [entry, approval] } };
+    const attempt = 'SELECT public.matchdesk_commit_producer_grant(' +
+      [id, actor, tenant, session, output, 'approve', 'ci-skip-reverify-command-01']
+        .map(x => "'" + x + "'").join(',') +
+      ",1,'" + digest1 + "','" + digest2 + "'," + q(forgedCase) + ',' + q(approval) + ');';
+    assert.equal(sql(executeAsRestricted(attempt)), 'f');
+    assert.equal(sql("SELECT generation FROM matchdesk_producer_cases WHERE session_id='" +
+      session + "';"), '1');
+    assert.equal(sql("SELECT count(*) FROM matchdesk_producer_audit WHERE session_id='" +
+      session + "';"), '1');
+    assert.equal(sql("SELECT count(*) FROM matchdesk_producer_action_grants WHERE grant_id='" +
+      id + "' AND consumed_at IS NULL;"), '1');
+  });
+  await check('a revision without a newer item version is denied', () => {
+    const id = 'ci-stale-edit-grant-0001';
+    sql(grantSql(id, 'edit'));
+    sql("UPDATE matchdesk_producer_action_grants SET expected_generation=1 WHERE grant_id='" + id + "';");
+    const badEdit = { ...entry, action: 'revision_opened', reason: 'stale revision' };
+    const forgedCase = { ...caseDoc, generation: 2,
+      review: { ...caseDoc.review, status: 'pending_verification', audit: [entry, badEdit] } };
+    const attempt = 'SELECT public.matchdesk_commit_producer_grant(' +
+      [id, actor, tenant, session, output, 'edit', 'ci-stale-edit-command-01']
+        .map(x => "'" + x + "'").join(',') +
+      ",1,'" + digest1 + "','" + digest2 + "'," + q(forgedCase) + ',' + q(badEdit) + ');';
+    assert.equal(sql(executeAsRestricted(attempt)), 'f');
+    assert.equal(sql("SELECT generation FROM matchdesk_producer_cases WHERE session_id='" +
+      session + "';"), '1');
+  });
+  await check('reverified generation can then receive one real scoped approval', () => {
+    // This is a synthetic state-machine trace; not a live person or MFA grant.
+    const revId = 'ci-good-reverify-grant-01';
+    sql(grantSql(revId, 'reverify'));
+    sql("UPDATE matchdesk_producer_action_grants SET expected_generation=1 WHERE grant_id='" +
+      revId + "';");
+    const reverified = { ...entry, action: 'reverified', reason: 'synthetic evidence reverified' };
+    const reviewedCase = { ...caseDoc, generation: 2,
+      review: { ...caseDoc.review, status: 'ready_for_decision', audit: [entry, reverified] } };
+    const reverify = 'SELECT public.matchdesk_commit_producer_grant(' +
+      [revId, actor, tenant, session, output, 'reverify', 'ci-good-reverify-command-01']
+        .map(x => "'" + x + "'").join(',') +
+      ",1,'" + digest1 + "','" + digest2 + "'," + q(reviewedCase) + ',' + q(reverified) + ');';
+    assert.equal(sql(executeAsRestricted(reverify)), 't');
+    const approveId = 'ci-good-approval-grant-01';
+    sql(grantSql(approveId, 'approve'));
+    sql("UPDATE matchdesk_producer_action_grants SET expected_generation=2 WHERE grant_id='" +
+      approveId + "';");
+    const approved = { ...entry, action: 'approved', reason: 'synthetic review decision' };
+    const approvedCase = { ...caseDoc, generation: 3,
+      review: { ...caseDoc.review, status: 'approved', audit: [entry, reverified, approved] } };
+    const approval = 'SELECT public.matchdesk_commit_producer_grant(' +
+      [approveId, actor, tenant, session, output, 'approve', 'ci-good-approval-command-01']
+        .map(x => "'" + x + "'").join(',') +
+      ",2,'" + digest2 + "','" + 'c'.repeat(64) + "'," +
+      q(approvedCase) + ',' + q(approved) + ');';
+    assert.equal(sql(executeAsRestricted(approval)), 't');
+    assert.equal(sql(executeAsRestricted(approval)), 'f');
+    assert.equal(sql("SELECT generation FROM matchdesk_producer_cases WHERE session_id='" +
+      session + "';"), '3');
+    assert.equal(sql("SELECT count(*) FROM matchdesk_producer_audit WHERE session_id='" +
+      session + "';"), '3');
+  });
   report.status = 'PASS';
 } catch (error) { report.status = 'FAIL'; console.error(String(error)); process.exitCode = 1; }
 finally {

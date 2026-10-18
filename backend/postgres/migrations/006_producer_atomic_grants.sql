@@ -146,9 +146,52 @@ BEGIN
         FOR UPDATE;
         IF NOT FOUND
            OR jsonb_typeof(preceding #> '{review,audit}') IS DISTINCT FROM 'array'
+           OR preceding #> '{review,binding}' IS DISTINCT FROM
+              preceding #> '{output,binding}'
            OR p_case_json #> '{review,audit}' IS DISTINCT FROM
               ((preceding #> '{review,audit}') || jsonb_build_array(p_audit_entry)) THEN
             RETURN FALSE;
+        END IF;
+
+        -- Even an otherwise valid grant cannot override the domain state
+        -- machine. A direct restricted-role function call must not create an
+        -- approval that skipped reverification or reopen a terminal decision.
+        IF p_action IN ('approve', 'reverify', 'reject') THEN
+            IF p_case_json #> '{review,binding}' IS DISTINCT FROM
+               preceding #> '{review,binding}' THEN
+                RETURN FALSE;
+            END IF;
+            IF p_action = 'approve' AND
+               preceding #>> '{review,status}' IS DISTINCT FROM 'ready_for_decision' THEN
+                RETURN FALSE;
+            END IF;
+            IF p_action IN ('reverify', 'reject') AND
+               preceding #>> '{review,status}' NOT IN
+                   ('pending_verification', 'ready_for_decision') THEN
+                RETURN FALSE;
+            END IF;
+        ELSE
+            -- An edit must open a strictly newer version for the same item,
+            -- replay and audience: it cannot silently preserve an approval.
+            IF p_action <> 'edit'
+               OR jsonb_typeof(p_case_json #> '{review,binding,item_version}')
+                  IS DISTINCT FROM 'number'
+               OR jsonb_typeof(preceding #> '{review,binding,item_version}')
+                  IS DISTINCT FROM 'number'
+               OR p_case_json #>> '{review,binding,item_id}' IS DISTINCT FROM
+                  preceding #>> '{review,binding,item_id}'
+               OR p_case_json #>> '{review,binding,replay_id}' IS DISTINCT FROM
+                  preceding #>> '{review,binding,replay_id}'
+               OR p_case_json #>> '{review,binding,language}' IS DISTINCT FROM
+                  preceding #>> '{review,binding,language}'
+               OR p_case_json #>> '{review,binding,persona}' IS DISTINCT FROM
+                  preceding #>> '{review,binding,persona}' THEN
+                RETURN FALSE;
+            END IF;
+            IF (p_case_json #>> '{review,binding,item_version}')::bigint <=
+               (preceding #>> '{review,binding,item_version}')::bigint THEN
+                RETURN FALSE;
+            END IF;
         END IF;
         UPDATE public.matchdesk_producer_cases
         SET generation = p_expected_generation + 1,
