@@ -28,7 +28,8 @@ SET search_path = pg_catalog, pg_temp
 AS $stage$
 DECLARE
     staged_id text;
-    current_time timestamptz := clock_timestamp();
+    -- Avoid SQL's CURRENT_TIME keyword (timetz); use a named timestamptz.
+    v_checked_at timestamptz := clock_timestamp();
 BEGIN
     -- Validate every caller-supplied dimension. No stored row is considered
     -- authoritative unless host-side verification also succeeded.
@@ -47,8 +48,8 @@ BEGIN
        OR p_case_hash IS NULL OR p_case_hash !~ '^[a-f0-9]{64}$'
        OR p_audit_hash IS NULL OR p_audit_hash !~ '^[a-f0-9]{64}$'
        OR p_proof_hash IS NULL OR p_proof_hash !~ '^[a-f0-9]{64}$'
-       OR p_expires_at IS NULL OR p_expires_at <= current_time
-       OR p_expires_at > current_time + interval '120 seconds'
+       OR p_expires_at IS NULL OR p_expires_at <= v_checked_at
+       OR p_expires_at > v_checked_at + interval '120 seconds'
     THEN
         RETURN FALSE;
     END IF;
@@ -61,7 +62,7 @@ BEGIN
     VALUES
       (p_confirmation_id, p_tenant_id, p_session_id, p_output_id,
        p_actor_id, p_issuer, p_action, p_generation, p_binding,
-       p_case_hash, p_audit_hash, p_proof_hash, current_time, p_expires_at)
+       p_case_hash, p_audit_hash, p_proof_hash, v_checked_at, p_expires_at)
     ON CONFLICT (confirmation_id) DO NOTHING
     RETURNING confirmation_id INTO staged_id;
     RETURN staged_id IS NOT NULL;
