@@ -129,6 +129,25 @@ try {
     const ready = await request('/api/ready', undefined, 'http://127.0.0.1:3000');
     assert.equal(ready.status, 503);
   });
+  await check('standalone web does not proxy privileged workforce commands', async () => {
+    // A backend router may be opt-in later, but the browser cannot reach it
+    // through the legacy generic rewrite before a real workforce BFF exists.
+    const protectedPaths = [
+      '/api/workforce',
+      '/api/workforce/producer/sessions/demo-preview-only/cases/demo-story-output/create',
+    ];
+    for (const path of protectedPaths) {
+      const body = path.endsWith('/create') ? '{}' : undefined;
+      const response = await request(path, body, 'http://127.0.0.1:3000');
+      assert.equal(response.status, 404);
+      assert.match(response.headers.get('content-type') ?? '', /^text\/html\b/i);
+    }
+    // The deliberately unmounted Python host replies with a JSON 404. An HTML
+    // 404 from Next.js above is evidence the workforce route was not forwarded.
+    const backend = await request('/api/workforce');
+    assert.equal(backend.status, 404);
+    assert.match(backend.headers.get('content-type') ?? '', /^application\/json\b/i);
+  });
   await check('PostgreSQL rejects wrong TCP passwords', async () => {
     const result = spawnSync('docker', ['compose', '--project-name', project, 'exec', '-T',
       '--env', `PGPASSWORD=wrong-${randomUUID()}`, 'postgres', 'psql', '--no-psqlrc',
