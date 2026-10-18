@@ -56,22 +56,28 @@ SELECT current_user::text, session_user::text,
              SELECT 1 FROM pg_catalog.pg_class c
              JOIN pg_catalog.pg_namespace ns ON ns.oid = c.relnamespace
              WHERE ns.nspname !~ '^pg_' AND ns.nspname <> 'information_schema'
-               AND c.relkind IN ('r', 'p', 'v', 'm', 'f')
-               AND (
+               -- A WHERE relkind predicate does not promise short-circuit
+               -- evaluation. The relation-type guard must be INSIDE CASE,
+               -- otherwise PostgreSQL can call privilege functions on a
+               -- TOAST table or sequence and fail with WrongObjectType.
+               AND CASE WHEN c.relkind IN ('r', 'p', 'v', 'm', 'f') THEN
                    pg_catalog.has_table_privilege(
                        c.oid, 'INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER'
                    )
                    OR pg_catalog.has_any_column_privilege(
                        c.oid, 'INSERT, UPDATE, REFERENCES'
                    )
-               )
+                   ELSE FALSE
+               END
          )
          AND NOT EXISTS (
              SELECT 1 FROM pg_catalog.pg_class c
              JOIN pg_catalog.pg_namespace ns ON ns.oid = c.relnamespace
              WHERE ns.nspname !~ '^pg_' AND ns.nspname <> 'information_schema'
-               AND c.relkind = 'S'
-               AND pg_catalog.has_sequence_privilege(c.oid, 'USAGE, UPDATE')
+               AND CASE WHEN c.relkind = 'S' THEN
+                   pg_catalog.has_sequence_privilege(c.oid, 'USAGE, UPDATE')
+                   ELSE FALSE
+               END
          )
          AND pg_catalog.has_function_privilege(
              'public.matchdesk_commit_producer_grant('
