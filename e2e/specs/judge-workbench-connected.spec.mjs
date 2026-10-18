@@ -11,7 +11,7 @@ test("actual judge browser replays, rotates, and revokes a disposable session", 
   const httpStatus = [];
   page.on("response", (response) => {
     if (response.url().includes("/api/judge-local/")) {
-      httpStatus.push(`${response.request().method()} ${new URL(response.url()).pathname} ${response.status()} denial=${response.headers()["x-matchdesk-judge-denial"] ?? "none"}`);
+      httpStatus.push(`${response.request().method()} ${new URL(response.url()).pathname} ${response.status()}`);
     }
   });
   await page.goto("/judge");
@@ -86,4 +86,10 @@ test("local bridge denies cross-origin and forwarded header spoofing", async ({ 
     headers: { ...content, Origin: "http://127.0.0.1:3000" }, data: "{}",
   });
   expect(query.status()).toBe(403);
+  // Body limits are enforced in the Next.js bridge before contacting Python.
+  const oversized = await request.post(url, {
+    headers: { ...content, Origin: "http://127.0.0.1:3000" },
+    data: "x".repeat(2049),
+  });
+  expect(oversized.status()).toBe(413);
 });

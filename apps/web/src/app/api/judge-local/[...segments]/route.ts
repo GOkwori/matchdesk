@@ -11,6 +11,7 @@ export const dynamic = "force-dynamic";
 const WEB_ORIGIN = "http://127.0.0.1:3000";
 const BACKEND_ORIGIN = "http://127.0.0.1:8000";
 const MAX_RESPONSE_BYTES = 48_000;
+const MAX_REQUEST_BYTES = 64;
 const SID = /^[A-Za-z0-9_-]{32}$/;
 const TOKEN = /^Bearer [A-Za-z0-9_-]{43}$/;
 
@@ -78,7 +79,6 @@ function trusted(request: NextRequest): boolean {
   const h = request.headers;
   const origin = h.get("origin");
   const fetchSite = h.get("sec-fetch-site");
-  const isWrite = request.method !== "GET";
   return (
     // Next.js may normalize the URL hostname to localhost; the incoming
     // Host header must still be the exact IPv4 loopback endpoint.
@@ -100,35 +100,53 @@ function trusted(request: NextRequest): boolean {
   );
 }
 
+/** Bound POST commands even when Content-Length is absent or dishonest. */
+async function readEmptyJsonCommand(request: NextRequest): Promise<"ok" | "invalid" | "oversized"> {
+  const statedLength = request.headers.get("content-length");
+  if (statedLength !== null &&
+      (!/^\\d+$/.test(statedLength) || Number(statedLength) > MAX_REQUEST_BYTES)) {
+    return "oversized";
+  }
+  if (request.body === null) return "invalid";
+
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let received = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      received += value.byteLength;
+      if (received > MAX_REQUEST_BYTES) {
+        await reader.cancel();
+        return "oversized";
+      }
+      chunks.push(value);
+    }
+  } catch {
+    return "invalid";
+  } finally {
+    reader.releaseLock();
+  }
+
+  // Accept precisely the two ASCII bytes of {}, never a larger JSON payload.
+  if (received !== 2) return "invalid";
+  const bytes = new Uint8Array(received);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return bytes[0] === 123 && bytes[1] === 125 ? "ok" : "invalid";
+}
+
 /** Forward only fixed, syntactically bounded capabilities to loopback. */
 async function handle(request: NextRequest, context: RouteContext): Promise<Response> {
   // An explicit operator-only environment opt-in is required even on localhost.
   if (process.env.MATCHDESK_LOCAL_JUDGE_ENABLED !== "1") {
     return denied(404, "Local judge adapter is disabled");
   }
-  if (!trusted(request)) {
-    // Local qualification only: identify the failed trust predicate without
-    // exposing request values, tokens, or diagnostics to deployed clients.
-    const response = denied(403, "Local judge access denied");
-    if (process.env.MATCHDESK_JUDGE_DIAGNOSTICS === "1" &&
-        process.env.NODE_ENV !== "production") {
-      const h = request.headers;
-      const checks: Array<[string, boolean]> = [
-        ["host", h.get("host") === WEB_ORIGIN.slice(7)],
-        ["url-host", (request.nextUrl.hostname === "127.0.0.1" || request.nextUrl.hostname === "localhost")],
-        ["url-port", request.nextUrl.port === "3000"],
-        ["query", request.nextUrl.search === ""],
-        ["cookie", !h.has("cookie")],
-        ["referer", h.get("referer") === null || h.get("referer")!.startsWith(WEB_ORIGIN + "/")],
-        ["forwarded", !h.has("forwarded") && exactLocalForwarding(h)],
-        ["original", !h.has("x-original-host") && !h.has("x-original-url")],
-        ["site", h.get("sec-fetch-site") === null || h.get("sec-fetch-site") === "same-origin"],
-        ["origin", h.get("origin") === null || h.get("origin") === WEB_ORIGIN],
-      ];
-      response.headers.set("X-MatchDesk-Judge-Denial", checks.filter(([, ok]) => !ok).map(([key]) => key).join(",") || "unknown");
-    }
-    return response;
-  }
+  if (!trusted(request)) return denied(403, "Local judge access denied");
   const { segments } = await context.params;
   const path = backendPath(request.method, segments);
   if (path === null) return denied(404, "Unknown local judge operation");
@@ -144,8 +162,10 @@ async function handle(request: NextRequest, context: RouteContext): Promise<Resp
     if (request.headers.get("content-type") !== "application/json") {
       return denied(400, "Expected JSON");
     }
-    body = await request.text();
-    if (body !== "{}") return denied(400, "Expected an empty JSON object");
+    const command = await readEmptyJsonCommand(request);
+    if (command === "oversized") return denied(413, "Synthetic judge request too large");
+    if (command !== "ok") return denied(400, "Expected an empty JSON object");
+    body = "{}";
   }
   try {
     const controller = new AbortController();

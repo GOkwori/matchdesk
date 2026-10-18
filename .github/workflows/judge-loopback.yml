@@ -22,7 +22,6 @@ jobs:
     env:
       NEXT_TELEMETRY_DISABLED: '1'
       MATCHDESK_LOCAL_JUDGE_ENABLED: '1'
-      MATCHDESK_JUDGE_DIAGNOSTICS: '1'
       PYTHONPATH: backend/src
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
