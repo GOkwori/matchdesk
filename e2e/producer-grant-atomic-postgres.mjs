@@ -49,8 +49,8 @@ try {
   check('migration is repeatable and callable only when role is granted', () => {
     const migration = readFileSync('backend/postgres/migrations/006_producer_atomic_grants.sql','utf8');
     sql(migration); sql(migration);
-    assert.equal(sql("SELECT has_function_privilege('public','public.matchdesk_commit_producer_grant(text,text,text,text,text,text,text,bigint,text,text,jsonb,jsonb)','EXECUTE');"), 'f');
     sql("CREATE ROLE matchdesk_grant_ci LOGIN;");
+    assert.equal(sql("SELECT has_function_privilege('matchdesk_grant_ci','public.matchdesk_commit_producer_grant(text,text,text,text,text,text,text,bigint,text,text,jsonb,jsonb)','EXECUTE');"), 'f');
     sql("GRANT CONNECT ON DATABASE matchdesk TO matchdesk_grant_ci;");
     sql("GRANT USAGE ON SCHEMA public TO matchdesk_grant_ci;");
     sql("GRANT EXECUTE ON FUNCTION public.matchdesk_commit_producer_grant(text,text,text,text,text,text,text,bigint,text,text,jsonb,jsonb) TO matchdesk_grant_ci;");
