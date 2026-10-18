@@ -10,7 +10,6 @@ from dataclasses import replace
 
 import pytest
 from fastapi.testclient import TestClient
-
 from matchdesk.api.app import create_app
 from matchdesk.api.producer_command_routes import create_producer_command_router
 from matchdesk.domain.broadcast_outputs import ClaimLinkedText, CommentaryPayload
@@ -71,6 +70,7 @@ class Source:
     """Supply only an immutable host-controlled synthetic producer case."""
 
     def __init__(self) -> None:
+        """Initialize host-derived evidence and track source lookups."""
         self.case = sample()
         self.calls = 0
         self.failure: Exception | None = None
@@ -93,6 +93,7 @@ class Store:
     """Model a single atomic case with no implicit grants or retries."""
 
     def __init__(self) -> None:
+        """Initialize an isolated compare-and-swap test store."""
         self.case = None
         self.reads = 0
         self.writes = 0
@@ -141,6 +142,7 @@ class Grants:
     """Deny all commands unless a synthetic host grants an exact action."""
 
     def __init__(self) -> None:
+        """Initialize default-deny host grants and error injection."""
         self.actions: set[str] = set()
         self.calls = 0
         self.failure: Exception | None = None
@@ -158,7 +160,7 @@ class Grants:
             and actor.tenant_id == TENANT
             and session_id == "demo-preview-only"
             and output_id == "demo-story-output"
-            and binding.item_id == "demo-story-output"
+            and binding.item_id == "demo-first-half-story"
             and expected_generation >= 0
         )
 
@@ -212,7 +214,9 @@ def test_default_app_has_no_command_or_publication_routes():
 def test_token_alone_cannot_create_or_approve(monkeypatch):
     """Bearer possession is not a host decision or authorization to mutate."""
     client, source, store, grants = prepare(monkeypatch)
-    assert client.post(BASE + "/create", headers=HEADERS, json=create_body(source)).status_code == 403
+    assert (
+        client.post(BASE + "/create", headers=HEADERS, json=create_body(source)).status_code == 403
+    )
     assert store.writes == 0 and grants.calls == 1
     assert client.post(BASE + "/approve", headers=HEADERS, json={}).status_code == 400
     assert store.writes == 0
@@ -225,7 +229,9 @@ def test_exact_create_is_atomic_and_replay_is_denied(monkeypatch):
     assert store.case.generation == 1
     assert len(store.case.review.audit) == 1
     assert store.case.review.status == "pending_verification"
-    assert client.post(BASE + "/create", headers=HEADERS, json=create_body(source)).status_code == 409
+    assert (
+        client.post(BASE + "/create", headers=HEADERS, json=create_body(source)).status_code == 409
+    )
     assert store.writes == 1
     assert client.post(BASE + "/publish", headers=HEADERS, json={}).status_code == 404
 
@@ -260,7 +266,9 @@ def test_cross_session_and_invalid_actor_denied(monkeypatch):
         "verify_producer_access_token",
         lambda *_a, **_k: actor(sessions=frozenset({"another-session"})),
     )
-    assert client.post(BASE + "/create", headers=HEADERS, json=create_body(source)).status_code == 403
+    assert (
+        client.post(BASE + "/create", headers=HEADERS, json=create_body(source)).status_code == 403
+    )
     assert source.calls == 0 and store.writes == 0 and grants.calls == 0
 
 
@@ -276,7 +284,9 @@ def test_invalid_json_or_client_authority_cannot_create(monkeypatch):
         assert client.post(BASE + "/create", headers=HEADERS, json=malformed).status_code == 400
     duplicate = '{"binding":{},"binding":{}}'
     assert client.post(BASE + "/create", headers=HEADERS, content=duplicate).status_code == 400
-    assert client.post(BASE + "/create", headers=HEADERS, content='{"binding":NaN}').status_code == 400
+    assert (
+        client.post(BASE + "/create", headers=HEADERS, content='{"binding":NaN}').status_code == 400
+    )
     assert store.writes == 0 and grants.calls == 0
 
 
@@ -285,7 +295,9 @@ def test_source_tampering_and_backend_faults_fail_closed(monkeypatch):
     client, source, store, grants = prepare(monkeypatch)
     grants.actions.add("create")
     source.case = replace(source.case, generation=2)
-    assert client.post(BASE + "/create", headers=HEADERS, json=create_body(source)).status_code == 409
+    assert (
+        client.post(BASE + "/create", headers=HEADERS, json=create_body(source)).status_code == 409
+    )
     assert store.writes == 0
     source.case = sample()
     store.failure = OSError("private store failure")
@@ -327,10 +339,17 @@ def test_exact_edit_revokes_previous_verification(monkeypatch):
     grants.actions.add("edit")
     current = store.case.output
     payload = CommentaryPayload(
-        lines=(ClaimLinkedText(claim_id=store.case.claims[0].claim_id, text="Revised synthetic narrative."),)
+        lines=(
+            ClaimLinkedText(
+                claim_id=store.case.claims[0].claim_id, text="Revised synthetic narrative."
+            ),
+        )
     )
     new_binding = current.binding.model_copy(
-        update={"item_version": current.binding.item_version + 1, "content_digest": content_digest(payload)}
+        update={
+            "item_version": current.binding.item_version + 1,
+            "content_digest": content_digest(payload),
+        }
     )
     revised = current.model_copy(update={"binding": new_binding, "payload": payload})
     request = decision_body(store)
@@ -378,5 +397,7 @@ def test_body_limit_and_host_error_are_non_disclosing(monkeypatch):
     large = b"x" * 65_537
     assert client.post(BASE + "/create", headers=HEADERS, content=large).status_code == 413
     grants.failure = RuntimeError("secret grant outage")
-    assert client.post(BASE + "/create", headers=HEADERS, json=create_body(source)).status_code == 503
+    assert (
+        client.post(BASE + "/create", headers=HEADERS, json=create_body(source)).status_code == 503
+    )
     assert store.writes == 0
