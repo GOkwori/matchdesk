@@ -186,8 +186,7 @@ def create_producer_command_router(
         (store, "replace_if_generation"),
     )
     if type(policy) is not ProducerIdentityPolicy or any(
-        not callable(getattr(dependency, method, None))
-        for dependency, method in requirements
+        not callable(getattr(dependency, method, None)) for dependency, method in requirements
     ):
         raise ValueError("Producer commands require explicitly trusted host dependencies")
     policy.__post_init__()
@@ -201,8 +200,11 @@ def create_producer_command_router(
         if token is None:
             return _response("Producer command denied", 401)
         actor = _actor(
-            token, policy=policy, keys=keys,
-            entitlements=entitlements, session_id=session_id,
+            token,
+            policy=policy,
+            keys=keys,
+            entitlements=entitlements,
+            session_id=session_id,
         )
         if isinstance(actor, JSONResponse):
             return actor
@@ -232,8 +234,12 @@ def create_producer_command_router(
             return _response("Producer command unavailable", 503)
         try:
             permitted = grants.authorize(
-                actor=actor, action="create", session_id=session_id,
-                output_id=output_id, binding=case.output.binding, expected_generation=0,
+                actor=actor,
+                action="create",
+                session_id=session_id,
+                output_id=output_id,
+                binding=case.output.binding,
+                expected_generation=0,
             )
         except (PermissionError, LookupError, TypeError, ValueError):
             return _response("Producer command denied", 403)
@@ -263,8 +269,11 @@ def create_producer_command_router(
         if token is None:
             return _response("Producer command denied", 401)
         actor = _actor(
-            token, policy=policy, keys=keys,
-            entitlements=entitlements, session_id=session_id,
+            token,
+            policy=policy,
+            keys=keys,
+            entitlements=entitlements,
+            session_id=session_id,
         )
         if isinstance(actor, JSONResponse):
             return actor
@@ -281,15 +290,15 @@ def create_producer_command_router(
             return _response("Producer command denied", 403)
         except Exception:
             return _response("Producer command unavailable", 503)
-        if (
-            case.generation != command.expected_generation
-            or case.output.binding != command.binding
-        ):
+        if case.generation != command.expected_generation or case.output.binding != command.binding:
             return _response("Producer case changed; reload before acting", 409)
         try:
             permitted = grants.authorize(
-                actor=actor, action=action, session_id=session_id,
-                output_id=output_id, binding=case.output.binding,
+                actor=actor,
+                action=action,
+                session_id=session_id,
+                output_id=output_id,
+                binding=case.output.binding,
                 expected_generation=case.generation,
             )
         except (PermissionError, LookupError, TypeError, ValueError):
@@ -300,11 +309,13 @@ def create_producer_command_router(
             return _response("Producer command denied", 403)
         try:
             revised = apply_producer_command(
-                case, actor=actor, expected_generation=command.expected_generation,
-                command=action, reason=command.reason,
+                case,
+                actor=actor,
+                expected_generation=command.expected_generation,
+                command=action,
+                reason=command.reason,
                 revised_output=(
-                    command.revised_output
-                    if isinstance(command, ProducerEditRequest) else None
+                    command.revised_output if isinstance(command, ProducerEditRequest) else None
                 ),
             )
         except (RuntimeError, ValueError):
