@@ -77,7 +77,9 @@ def test_direct_http_call_cannot_activate_unmounted_authority(
     assert "set-cookie" not in response.headers
 
 
-def test_local_judge_opt_in_cannot_change_shipped_python_api(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_local_judge_opt_in_cannot_change_shipped_python_api(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """The separate Next.js judge opt-in cannot silently expose Python routes."""
     monkeypatch.setenv("MATCHDESK_LOCAL_JUDGE_ENABLED", "1")
     with TestClient(create_app()) as client:
