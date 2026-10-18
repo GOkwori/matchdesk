@@ -214,9 +214,7 @@ def test_model_copy_bypass_cannot_inject_invalid_typed_provider_payload() -> Non
 def test_large_model_copy_payload_rejected_before_draft_construction() -> None:
     """A forged model instance cannot evade the byte-budget output boundary."""
 
-    valid = CommentaryPayload.model_validate(
-        {"lines": [{"claim_id": "claim-1", "text": "Safe."}]}
-    )
+    valid = CommentaryPayload.model_validate({"lines": [{"claim_id": "claim-1", "text": "Safe."}]})
     forged_line = valid.lines[0].model_copy(update={"text": "X" * 262_145})
     forged = valid.model_copy(update={"lines": (forged_line,)})
     provider = OfflineProvider(forged)
