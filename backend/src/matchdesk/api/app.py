@@ -43,6 +43,7 @@ def create_app(
     customer_oidc_router: APIRouter | None = None,
     producer_read_router: APIRouter | None = None,
     producer_reverification_router: APIRouter | None = None,
+    producer_command_router: APIRouter | None = None,
 ) -> FastAPI:
     """Construct an isolated app for the local workbench and integration tests."""
     app = FastAPI(
@@ -66,6 +67,10 @@ def create_app(
     # Privileged producer reverification remains absent unless the host opts in.
     if producer_reverification_router is not None:
         app.include_router(producer_reverification_router)
+    # Privileged commands are invisible unless the host injects trusted dependencies.
+    # The exported application remains a deny-by-default foundation workbench.
+    if producer_command_router is not None:
+        app.include_router(producer_command_router)
 
     @app.exception_handler(RequestValidationError)
     async def invalid_request(request: Request, exc: RequestValidationError) -> JSONResponse:
