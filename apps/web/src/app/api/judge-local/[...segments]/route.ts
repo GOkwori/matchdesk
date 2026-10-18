@@ -104,7 +104,7 @@ function trusted(request: NextRequest): boolean {
 async function readEmptyJsonCommand(request: NextRequest): Promise<"ok" | "invalid" | "oversized"> {
   const statedLength = request.headers.get("content-length");
   if (statedLength !== null &&
-      (!/^\\d+$/.test(statedLength) || Number(statedLength) > MAX_REQUEST_BYTES)) {
+      (!/^\d+$/.test(statedLength) || Number(statedLength) > MAX_REQUEST_BYTES)) {
     return "oversized";
   }
   if (request.body === null) return "invalid";
