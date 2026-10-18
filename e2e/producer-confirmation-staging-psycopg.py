@@ -301,9 +301,18 @@ def _verify() -> None:
             assert cursor.fetchall() == [(_GRANT, True, False)]
             cursor.execute(
                 "SELECT count(*) FROM public.matchdesk_producer_confirmations "
-                "WHERE confirmation_id IN (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
-                (*_INVALID_IDS, "invalid-id", "a" * 32, "b" * 32,
-                 "c" * 32, "d" * 32, "e" * 32),
+                "WHERE tenant_id=%s AND "
+                "confirmation_id IN (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                (
+                    _TENANT,
+                    *_INVALID_IDS,
+                    "invalid-id",
+                    "a" * 32,
+                    "b" * 32,
+                    "c" * 32,
+                    "d" * 32,
+                    "e" * 32,
+                ),
             )
             assert cursor.fetchone() == (0,)
     print("MATCHDESK_P4_STAGER_RESTART_RECONCILED: one atomic grant, no replay")
