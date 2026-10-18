@@ -68,6 +68,41 @@ jobs:
         run: |
           set -euo pipefail
           node e2e/producer-confirmation-issuer-postgres.mjs 2>&1 | tee artifacts/integration/producer-confirmation-issuer.log
+      - name: Qualify separate physical issuer and revoker PostgreSQL logins
+        id: physical_issuer
+        if: ${{ !cancelled() && steps.confirmed_issuer.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          issuer_password="$(openssl rand -hex 32)"
+          revoker_password="$(openssl rand -hex 32)"
+          echo "::add-mask::$issuer_password"
+          echo "::add-mask::$revoker_password"
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$POSTGRES_PASSWORD" \
+            -e "ISSUER_CI_PASSWORD=$issuer_password" \
+            -e "REVOKER_CI_PASSWORD=$revoker_password" api \
+            /app/.venv/bin/python - setup < e2e/producer-confirmation-issuer-psycopg.py \
+            2>&1 | tee artifacts/integration/producer-issuer-physical.log
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$issuer_password" api \
+            /app/.venv/bin/python - issue < e2e/producer-confirmation-issuer-psycopg.py \
+            2>&1 | tee -a artifacts/integration/producer-issuer-physical.log
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$revoker_password" api \
+            /app/.venv/bin/python - revoke < e2e/producer-confirmation-issuer-psycopg.py \
+            2>&1 | tee -a artifacts/integration/producer-issuer-physical.log
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" restart postgres
+          for attempt in $(seq 1 40); do
+            if docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+              pg_isready -U matchdesk -d matchdesk > /dev/null 2>&1; then
+              break
+            fi
+            sleep 1
+          done
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$POSTGRES_PASSWORD" api \
+            /app/.venv/bin/python - verify < e2e/producer-confirmation-issuer-psycopg.py \
+            2>&1 | tee -a artifacts/integration/producer-issuer-physical.log
       - name: Qualify grant writer through a physical restricted PostgreSQL login
         id: grant_psycopg
         if: ${{ !cancelled() && steps.grant_atomicity.outcome == 'success' }}
