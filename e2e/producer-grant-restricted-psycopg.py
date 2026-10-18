@@ -140,8 +140,13 @@ def main() -> None:
     if phase not in ("initial", "after-restart", "elevated"):
         raise RuntimeError("Unknown real grant qualification phase")
 
-    _physical_role()
     if phase == "elevated":
+        # Check the physical principal but deliberately do not run the normal
+        # no-DML acceptance helper: this phase intentionally grants extra DML.
+        with psycopg.connect(_conninfo(), autocommit=True) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT current_user::text, session_user::text")
+                assert cursor.fetchone() == (_ROLE, _ROLE)
         # The grant itself remains valid. The unexpected unrelated UPDATE
         # permission must be rejected before a database function call.
         try:
@@ -152,6 +157,7 @@ def main() -> None:
             raise AssertionError("Unexpected DML privilege did not block the writer")
         print("PASS: unrelated application DML privilege blocked atomic grant")
         return
+    _physical_role()
     if phase == "initial":
         assert _invoke(_GRANTS["revoked"], "ci-revoked-command-00001") is False
         assert _invoke(_GRANTS["wrong_issuer"], "ci-wrongissuer-command-01") is False
