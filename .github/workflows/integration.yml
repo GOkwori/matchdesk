@@ -56,6 +56,12 @@ jobs:
         id: producer_storage
         if: ${{ !cancelled() && steps.start.outcome == 'success' && steps.runtime.outcome == 'success' }}
         run: node e2e/producer-store-postgres.mjs 2>&1 | tee artifacts/integration/producer-store-postgres.log
+      - name: Qualify atomic single-use producer grant write on disposable PostgreSQL
+        id: grant_atomicity
+        if: ${{ !cancelled() && steps.producer_storage.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          node e2e/producer-grant-atomic-postgres.mjs 2>&1 | tee artifacts/integration/producer-grant-atomic.log
       - name: Verify restricted real-Psycopg producer transactions and recovery
         id: psycopg_storage
         if: ${{ !cancelled() && steps.producer_storage.outcome == 'success' }}
