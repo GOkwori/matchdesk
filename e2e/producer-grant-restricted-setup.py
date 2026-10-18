@@ -15,6 +15,7 @@ from psycopg import sql
 from matchdesk.domain.postgres_producer_store import (
     _CASE,
     _audit_digest,
+    _case_json,
     _reconcile_audit,
 )
 from matchdesk.domain.producer_commands import (
@@ -29,10 +30,12 @@ _GRANTS = {
     "revoked": "ci-real-grant-revoked-01",
     "wrong_issuer": "ci-real-grant-issuer-001",
     "wrong_actor": "ci-real-grant-subject-01",
+    "tampered_case": "ci-real-grant-case-tamper-01",
+    "tampered_audit": "ci-real-grant-audit-tamper-01",
 }
 
 
-def _fixture() -> tuple[str, str, str, str, str, str]:
+def _fixture() -> tuple[str, str, str, str, str, str, str, str]:
     """Recompute the same source-bound fixture as the restricted login process."""
     preview = build_producer_desk_preview()
     actor = HostVerifiedActor(
@@ -57,11 +60,13 @@ def _fixture() -> tuple[str, str, str, str, str, str]:
         actor.subject,
         actor.issuer,
         case.output.binding.model_dump_json(),
+        _case_json(case),
+        _audit_digest(case.review.audit),
     )
 
 
 
-def _verify_after_restart(scope: tuple[str, str, str, str, str, str]) -> None:
+def _verify_after_restart(scope: tuple[str, str, str, str, str, str, str, str]) -> None:
     """Reconcile persisted case, immutable audit, and every grant as DB owner.
 
     The workload role cannot read any of these tables directly. Only this
@@ -128,6 +133,12 @@ def _verify_after_restart(scope: tuple[str, str, str, str, str, str]) -> None:
                 False, False, None, "create"
             )
             assert persisted[_GRANTS["wrong_actor"]] == (
+                False, False, None, "create"
+            )
+            assert persisted[_GRANTS["tampered_case"]] == (
+                False, False, None, "create"
+            )
+            assert persisted[_GRANTS["tampered_audit"]] == (
                 False, False, None, "create"
             )
     print("MATCHDESK_P4_GRANT_AUDIT_RESTART_RECONCILED: exact case, audit and grants")
@@ -249,10 +260,12 @@ def main() -> None:
                 cursor.execute(
                     "INSERT INTO public.matchdesk_producer_action_grants "
                     "(grant_id, tenant_id, session_id, output_id, actor_id, issuer, "
-                    "action, binding, expected_generation, expires_at, revoked_at) "
+                    "action, binding, expected_generation, expires_at, revoked_at, "
+                    "authorized_case_sha256, authorized_audit_digest) "
                     "VALUES (%s,%s,%s,%s,%s,%s,'create',%s::jsonb,0,"
                     "clock_timestamp() + interval '10 minutes',"
-                    "CASE WHEN %s THEN clock_timestamp() ELSE NULL END)",
+                    "CASE WHEN %s THEN clock_timestamp() ELSE NULL END,"
+                    "encode(sha256(convert_to(%s::jsonb::text, 'UTF8')), 'hex'),%s)",
                     (
                         grant_id,
                         scope[0],
@@ -262,6 +275,8 @@ def main() -> None:
                         issuer,
                         scope[5],
                         label == "revoked",
+                        scope[6],
+                        scope[7],
                     ),
                 )
     print("PASS: synthetic issuer prepared distinct SCRAM login and four bound grants")
