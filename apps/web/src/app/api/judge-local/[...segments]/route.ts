@@ -92,7 +92,9 @@ function trusted(request: NextRequest): boolean {
     !h.has("x-original-host") &&
     !h.has("x-original-url") &&
     (fetchSite === null || fetchSite === "same-origin") &&
-    (isWrite ? origin === WEB_ORIGIN : origin === null || origin === WEB_ORIGIN)
+    // Same-origin browser fetches can omit Origin; the exact loopback host,
+    // URL and forwarding checks above remain mandatory for every request.
+    (origin === null || origin === WEB_ORIGIN)
   );
 }
 
