@@ -197,10 +197,17 @@ jobs:
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         working-directory: apps/web
         run: npm run typecheck 2>&1 | tee ../../artifacts/web/typecheck.log
+      - name: Prove the browser verifier matches the backend verifier
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: node --experimental-strip-types --test apps/web/tests/verifier.parity.test.mjs 2>&1 | tee artifacts/web/verifier-parity.log
       - name: Build the actual web application
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         working-directory: apps/web
         run: npm run build 2>&1 | tee ../../artifacts/web/build.log
+      - name: Enforce the per-page JavaScript and CSS budget
+        id: web_budget
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: node scripts/check_web_budget.mjs apps/web 2>&1 | tee artifacts/web/budget.log
       - name: Confirm frontend manifests did not change
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: git diff --exit-code -- apps/web/package.json apps/web/package-lock.json

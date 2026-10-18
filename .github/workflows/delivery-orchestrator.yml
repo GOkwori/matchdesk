@@ -22,6 +22,11 @@ on:
       - scripts/test_delivery_agent_loop.py
       - scripts/delivery_worker_loop.py
       - scripts/test_delivery_worker_loop.py
+      - scripts/test_delivery_activation_rehearsal.py
+      - scripts/delivery_host_control.py
+      - scripts/test_delivery_host_control.py
+      - scripts/render_delivery_host_service.py
+      - scripts/test_render_delivery_host_service.py
   pull_request:
     branches: [development]
     paths:
@@ -40,6 +45,11 @@ on:
       - scripts/test_delivery_agent_loop.py
       - scripts/delivery_worker_loop.py
       - scripts/test_delivery_worker_loop.py
+      - scripts/test_delivery_activation_rehearsal.py
+      - scripts/delivery_host_control.py
+      - scripts/test_delivery_host_control.py
+      - scripts/render_delivery_host_service.py
+      - scripts/test_render_delivery_host_service.py
   workflow_dispatch:
   schedule:
     - cron: '17 */4 * * *'
@@ -76,6 +86,12 @@ jobs:
         run: python3 -m unittest discover -s scripts -p 'test_delivery_alert_reconcile.py' -v
       - name: Verify local worker runtime preflight remains fail-closed
         run: python3 -m unittest discover -s scripts -p 'test_delivery_runtime_preflight.py' -v
+      - name: Verify local control-service readiness remains offline and single-instance
+        run: python3 -m unittest discover -s scripts -p 'test_delivery_host_control.py' -v
+      - name: Verify inert service renderer and injection controls
+        run: python3 -m unittest discover -s scripts -p 'test_render_delivery_host_service.py' -v
+      - name: Rehearse four-lane crash recovery and owner input holds without an executor
+        run: python3 -m unittest discover -s scripts -p 'test_delivery_activation_rehearsal.py' -v
       - name: Read live delivery state and development checks
         env:
           GITHUB_TOKEN: ${{ github.token }}

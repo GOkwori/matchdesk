@@ -23,6 +23,8 @@ export default defineConfig({
     ['junit', { outputFile: `../artifacts/integration/${artifactName}-junit.xml` }],
     ['json', { outputFile: `../artifacts/integration/${artifactName}-results.json` }],
     ['html', { outputFolder: `../artifacts/integration/${artifactName}-report`, open: 'never' }],
+    // On GitHub Actions, also surface each failure as a check annotation on the PR.
+    ...(process.env.GITHUB_ACTIONS ? [['github']] : []),
   ],
   use: {
     baseURL: 'http://127.0.0.1:3000',

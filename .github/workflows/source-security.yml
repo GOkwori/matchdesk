@@ -202,7 +202,27 @@ jobs:
               raise SystemExit('New OpenAPI finding is not the reviewed file digest')
           fingerprints.append(reviewed_fingerprint)
 
-          if len(fingerprints) != 27 or len(set(fingerprints)) != 27:
+          # 17 Oct 2026: the contract snapshots gained MetricAssertion.decimals and an
+          # optional MatchWindow.period, so the OpenAPI digest in the manifest changed.
+          # Re-prove the one exact fingerprint the same way: the flagged line must be the
+          # manifest's openapi.json field and equal SHA-256 of openapi.json at that commit.
+          later = json.loads(Path('docs/evidence/secret-scan-reviewed-digests-20261017.json').read_text())
+          if len(later) != 1:
+              raise SystemExit('Unexpected 17 October digest-review count')
+          entry = later[0]
+          commit, path, rule, number = entry['fingerprint'].split(':')
+          if (not re.fullmatch(r'[0-9a-f]{40}', commit) or path != 'contracts/manifest.json'
+                  or rule != 'generic-api-key' or number != '13'
+                  or entry.get('digest_of') != 'contracts/openapi.json'):
+              raise SystemExit('17 October digest review identity changed')
+          line = subprocess.check_output(['git', 'show', f'{commit}:{path}']).decode('utf-8').splitlines()[12]
+          parsed = re.fullmatch(r'\s*"openapi\.json": "([0-9a-f]{64})",?', line)
+          actual_digest = hashlib.sha256(subprocess.check_output(['git', 'show', f'{commit}:contracts/openapi.json'])).hexdigest()
+          if parsed is None or parsed[1] != entry.get('sha256') or actual_digest != entry.get('sha256'):
+              raise SystemExit('17 October OpenAPI finding is not the reviewed file digest')
+          fingerprints.append(entry['fingerprint'])
+
+          if len(fingerprints) != 28 or len(set(fingerprints)) != 28:
               raise SystemExit('Unexpected exact-fingerprint scope after new digest review')
           output = Path(os.environ['RUNNER_TEMP']) / 'matchdesk-no-ignores' / 'reviewed.ignore'
           output.write_text('\n'.join(fingerprints) + '\n')
@@ -214,7 +234,7 @@ jobs:
               'squash_commit': squash_commit,
               'records': records,
               'derived_squash_aliases': squash_aliases}, indent=2) + '\n')
-          print('Recomputed 13 original digests, 13 squash aliases and one exact new OpenAPI digest; no path or rule-wide exclusions.')
+          print('Recomputed 13 original digests, 13 squash aliases and two exact OpenAPI digests; no path or rule-wide exclusions.')
           PY
       - name: Confirm the scanner still detects a new synthetic key with the same exceptions
         run: |
