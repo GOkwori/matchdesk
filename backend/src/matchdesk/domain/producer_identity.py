@@ -7,9 +7,9 @@ the host; request-provided role, tenant and entitlement claims grant no authorit
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
-import re
 from typing import Mapping, Protocol
 
 import jwt

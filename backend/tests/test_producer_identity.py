@@ -292,9 +292,7 @@ def test_tenant_pinned_auth_context_accepts_only_signed_access_token_claim(signi
         [None, "c1"],
     ],
 )
-def test_missing_wrong_or_malformed_auth_context_denies_privileged_access(
-    signing, acrs
-) -> None:
+def test_missing_wrong_or_malformed_auth_context_denies_privileged_access(signing, acrs) -> None:
     """Neither a bearer without the exact context nor an invalid shape can pass."""
     private, keys = signing
     with pytest.raises(PermissionError):
