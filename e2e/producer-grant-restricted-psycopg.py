@@ -137,10 +137,21 @@ def main() -> None:
             )
         )
         return
-    if phase not in ("initial", "after-restart"):
+    if phase not in ("initial", "after-restart", "elevated"):
         raise RuntimeError("Unknown real grant qualification phase")
 
     _physical_role()
+    if phase == "elevated":
+        # The grant itself remains valid. The unexpected unrelated UPDATE
+        # permission must be rejected before a database function call.
+        try:
+            _invoke(_GRANTS["valid"], "ci-elevated-privilege-deny-01")
+        except PermissionError as exc:
+            assert "pinned restricted login" in str(exc)
+        else:
+            raise AssertionError("Unexpected DML privilege did not block the writer")
+        print("PASS: unrelated application DML privilege blocked atomic grant")
+        return
     if phase == "initial":
         assert _invoke(_GRANTS["revoked"], "ci-revoked-command-00001") is False
         assert _invoke(_GRANTS["wrong_issuer"], "ci-wrongissuer-command-01") is False

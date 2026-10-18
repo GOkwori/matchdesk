@@ -74,6 +74,20 @@ jobs:
             -e "GRANT_WRITER_CI_PASSWORD=$role_password" api \
             /app/.venv/bin/python - setup < e2e/producer-grant-restricted-setup.py \
             2>&1 | tee artifacts/integration/producer-grant-setup.log
+          # The valid one-use grant must NOT be spent if an unrelated table
+          # has accidentally been granted to this restricted workload login.
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$POSTGRES_PASSWORD" api \
+            /app/.venv/bin/python - elevate < e2e/producer-grant-restricted-setup.py \
+            2>&1 | tee artifacts/integration/producer-grant-extra-dml.log
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$role_password" api \
+            /app/.venv/bin/python - elevated < e2e/producer-grant-restricted-psycopg.py \
+            2>&1 | tee -a artifacts/integration/producer-grant-extra-dml.log
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$POSTGRES_PASSWORD" api \
+            /app/.venv/bin/python - restore < e2e/producer-grant-restricted-setup.py \
+            2>&1 | tee -a artifacts/integration/producer-grant-extra-dml.log
           docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
             -e CI=true -e "PGPASSWORD=$role_password" api \
             /app/.venv/bin/python - initial < e2e/producer-grant-restricted-psycopg.py \

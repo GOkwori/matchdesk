@@ -45,19 +45,33 @@ SELECT current_user::text, session_user::text,
          AND NOT pg_catalog.has_database_privilege(
              current_database(), 'CREATE, TEMP'
          )
-         AND NOT pg_catalog.has_schema_privilege('public', 'CREATE')
+         -- Check all non-system schemas. An unrelated writable table or
+         -- sequence is still unacceptable for this fixed-purpose workload.
          AND NOT EXISTS (
-             SELECT 1 FROM (
-                 VALUES
-                     ('public.matchdesk_producer_cases'::regclass),
-                     ('public.matchdesk_producer_audit'::regclass),
-                     ('public.matchdesk_producer_action_grants'::regclass)
-             ) AS target(table_oid)
-             WHERE pg_catalog.has_table_privilege(
-                 target.table_oid, 'INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER'
-             ) OR pg_catalog.has_any_column_privilege(
-                 target.table_oid, 'INSERT, UPDATE, REFERENCES'
-             )
+             SELECT 1 FROM pg_catalog.pg_namespace ns
+             WHERE ns.nspname !~ '^pg_' AND ns.nspname <> 'information_schema'
+               AND pg_catalog.has_schema_privilege(ns.oid, 'CREATE')
+         )
+         AND NOT EXISTS (
+             SELECT 1 FROM pg_catalog.pg_class c
+             JOIN pg_catalog.pg_namespace ns ON ns.oid = c.relnamespace
+             WHERE ns.nspname !~ '^pg_' AND ns.nspname <> 'information_schema'
+               AND c.relkind IN ('r', 'p', 'v', 'm', 'f')
+               AND (
+                   pg_catalog.has_table_privilege(
+                       c.oid, 'INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER'
+                   )
+                   OR pg_catalog.has_any_column_privilege(
+                       c.oid, 'INSERT, UPDATE, REFERENCES'
+                   )
+               )
+         )
+         AND NOT EXISTS (
+             SELECT 1 FROM pg_catalog.pg_class c
+             JOIN pg_catalog.pg_namespace ns ON ns.oid = c.relnamespace
+             WHERE ns.nspname !~ '^pg_' AND ns.nspname <> 'information_schema'
+               AND c.relkind = 'S'
+               AND pg_catalog.has_sequence_privilege(c.oid, 'USAGE, UPDATE')
          )
          AND pg_catalog.has_function_privilege(
              'public.matchdesk_commit_producer_grant('

@@ -135,13 +135,51 @@ def _verify_after_restart(scope: tuple[str, str, str, str, str, str]) -> None:
 
 def main() -> None:
     """Issue synthetic grants via the owner, never via the grant execution role."""
-    if sys.argv[1:] not in (["setup"], ["verify"]) or os.getenv("CI") != "true":
+    phase = sys.argv[1:]
+    if phase not in (["setup"], ["verify"], ["elevate"], ["restore"]) or os.getenv("CI") != "true":
         raise RuntimeError("Grant owner audit is only available in disposable CI")
     if not os.getenv("PGPASSWORD"):
         raise RuntimeError("Disposable database-owner secret is required")
     scope = _fixture()
-    if sys.argv[1:] == ["verify"]:
+    if phase == ["verify"]:
         _verify_after_restart(scope)
+        return
+    if phase in (["elevate"], ["restore"]):
+        # Use a CI-only unrelated table to prove the restricted execution
+        # role cannot tolerate accidental global DML privilege expansion.
+        with psycopg.connect(
+            "host=postgres dbname=matchdesk user=matchdesk sslmode=prefer"
+        ) as connection:
+            with connection.cursor() as cursor:
+                if phase == ["elevate"]:
+                    cursor.execute(
+                        "CREATE TABLE public.matchdesk_ci_grant_dml_canary "
+                        "(id integer PRIMARY KEY)"
+                    )
+                    cursor.execute(
+                        "GRANT UPDATE ON public.matchdesk_ci_grant_dml_canary "
+                        "TO matchdesk_grant_executor_ci"
+                    )
+                else:
+                    cursor.execute(
+                        "SELECT consumed_at, command_id "
+                        "FROM public.matchdesk_producer_action_grants "
+                        "WHERE grant_id=%s",
+                        (_GRANTS["valid"],),
+                    )
+                    assert cursor.fetchone() == (None, None)
+                    cursor.execute(
+                        "SELECT count(*) FROM public.matchdesk_producer_cases "
+                        "WHERE tenant_id=%s AND session_id=%s AND output_id=%s",
+                        scope[:3],
+                    )
+                    assert cursor.fetchone() == (0,)
+                    cursor.execute(
+                        "REVOKE UPDATE ON public.matchdesk_ci_grant_dml_canary "
+                        "FROM matchdesk_grant_executor_ci"
+                    )
+                    cursor.execute("DROP TABLE public.matchdesk_ci_grant_dml_canary")
+        print("PASS: disposable global-DML canary " + phase[0])
         return
     with psycopg.connect(
         "host=postgres dbname=matchdesk user=matchdesk sslmode=prefer"
