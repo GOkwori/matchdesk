@@ -71,20 +71,33 @@ def _fixture():
 
     public = PyJWK.from_dict(
         {
-            "kty": "RSA", "alg": "RS256", "use": "sig", "kid": "ci-kid",
-            "n": encode_number(numbers.n), "e": encode_number(numbers.e),
+            "kty": "RSA",
+            "alg": "RS256",
+            "use": "sig",
+            "kid": "ci-kid",
+            "n": encode_number(numbers.n),
+            "e": encode_number(numbers.e),
         }
     )
     policy = ProducerIdentityPolicy(
-        issuer=ISSUER, tenant_id=TENANT, audience="api://matchdesk-ci",
-        client_ids=frozenset({CLIENT}), required_auth_context="c1",
+        issuer=ISSUER,
+        tenant_id=TENANT,
+        audience="api://matchdesk-ci",
+        client_ids=frozenset({CLIENT}),
+        required_auth_context="c1",
         max_token_age_seconds=300,
     )
     claims = {
-        "iss": ISSUER, "aud": policy.audience, "tid": TENANT,
-        "sub": producer.subject, "azp": CLIENT, "scp": policy.required_scope,
-        "acrs": ["c1"], "iat": TIMESTAMP - 10,
-        "nbf": TIMESTAMP - 10, "exp": TIMESTAMP + 100,
+        "iss": ISSUER,
+        "aud": policy.audience,
+        "tid": TENANT,
+        "sub": producer.subject,
+        "azp": CLIENT,
+        "scp": policy.required_scope,
+        "acrs": ["c1"],
+        "iat": TIMESTAMP - 10,
+        "nbf": TIMESTAMP - 10,
+        "exp": TIMESTAMP + 100,
     }
     token = jwt.encode(claims, private, algorithm="RS256", headers={"kid": "ci-kid"})
     signing = ed25519.Ed25519PrivateKey.generate()
@@ -117,17 +130,24 @@ def _fixture():
             altered, ensure_ascii=True, sort_keys=True, separators=(",", ":")
         ).encode()
         signature = (signing_key or signing).sign(body)
-        return json.dumps({
-            "claims": altered,
-            "signature": base64.urlsafe_b64encode(signature).decode().rstrip("="),
-        })
+        return json.dumps(
+            {
+                "claims": altered,
+                "signature": base64.urlsafe_b64encode(signature).decode().rstrip("="),
+            }
+        )
 
     args = dict(
-        access_token=token, policy=policy, keys=StaticTrustedKeys(
-            ISSUER, {"ci-kid": public}
-        ), entitlements=Grants(), case=case, action="create",
-        expected_generation=0, confirmation_public_key=signing.public_key(),
-        case_hash=Digest(), now=NOW,
+        access_token=token,
+        policy=policy,
+        keys=StaticTrustedKeys(ISSUER, {"ci-kid": public}),
+        entitlements=Grants(),
+        case=case,
+        action="create",
+        expected_generation=0,
+        confirmation_public_key=signing.public_key(),
+        case_hash=Digest(),
+        now=NOW,
     )
     return args, envelope, claims, private
 
@@ -135,9 +155,7 @@ def _fixture():
 def test_exact_signed_step_up_confirmation_returns_only_inert_preflight():
     """Valid evidence returns scope, not a usable grant or writer operation."""
     args, envelope, _, _ = _fixture()
-    result = qualify_producer_grant_preflight(
-        **args, signed_confirmation=envelope()
-    )
+    result = qualify_producer_grant_preflight(**args, signed_confirmation=envelope())
     assert result.action == "create"
     assert result.expected_generation == 0
     assert result.authorized_audit_digest == _audit_digest(args["case"].review.audit)
@@ -165,9 +183,7 @@ def test_signed_but_out_of_scope_confirmation_is_denied(changed):
     """Even a genuine signature cannot authorize a different exact action."""
     args, envelope, _, _ = _fixture()
     with pytest.raises(GrantPreflightDenied):
-        qualify_producer_grant_preflight(
-            **args, signed_confirmation=envelope(changed)
-        )
+        qualify_producer_grant_preflight(**args, signed_confirmation=envelope(changed))
 
 
 def test_untrusted_confirmation_signer_cannot_authorize_action():
@@ -175,9 +191,7 @@ def test_untrusted_confirmation_signer_cannot_authorize_action():
     args, envelope, _, _ = _fixture()
     with pytest.raises(GrantPreflightDenied):
         qualify_producer_grant_preflight(
-            **args, signed_confirmation=envelope(
-                signing_key=ed25519.Ed25519PrivateKey.generate()
-            )
+            **args, signed_confirmation=envelope(signing_key=ed25519.Ed25519PrivateKey.generate())
         )
 
 
@@ -190,22 +204,20 @@ def test_missing_authentication_context_denies_human_confirmation():
         without, private, algorithm="RS256", headers={"kid": "ci-kid"}
     )
     with pytest.raises(GrantPreflightDenied):
-        qualify_producer_grant_preflight(
-            **args, signed_confirmation=envelope()
-        )
+        qualify_producer_grant_preflight(**args, signed_confirmation=envelope())
 
 
 def test_read_only_policy_cannot_be_used_for_grant_issuance():
     """A read-only verifier cannot silently disable step-up for this gate."""
     args, envelope, _, _ = _fixture()
     args["policy"] = ProducerIdentityPolicy(
-        issuer=ISSUER, tenant_id=TENANT, audience="api://matchdesk-ci",
+        issuer=ISSUER,
+        tenant_id=TENANT,
+        audience="api://matchdesk-ci",
         client_ids=frozenset({CLIENT}),
     )
     with pytest.raises(GrantPreflightDenied):
-        qualify_producer_grant_preflight(
-            **args, signed_confirmation=envelope()
-        )
+        qualify_producer_grant_preflight(**args, signed_confirmation=envelope())
 
 
 def test_untrusted_digest_provider_result_and_duplicate_json_are_denied():
@@ -221,13 +233,10 @@ def test_untrusted_digest_provider_result_and_duplicate_json_are_denied():
 
     args["case_hash"] = BadDigest()
     with pytest.raises(GrantPreflightDenied):
-        qualify_producer_grant_preflight(
-            **args, signed_confirmation=envelope()
-        )
+        qualify_producer_grant_preflight(**args, signed_confirmation=envelope())
     args["case_hash"] = Digest()
     with pytest.raises(GrantPreflightDenied):
         qualify_producer_grant_preflight(
-            **args, signed_confirmation=envelope().replace(
-                '{"claims":', '{"claims":{},"claims":', 1
-            )
+            **args,
+            signed_confirmation=envelope().replace('{"claims":', '{"claims":{},"claims":', 1),
         )

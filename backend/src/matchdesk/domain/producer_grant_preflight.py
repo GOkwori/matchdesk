@@ -16,7 +16,6 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Literal, Protocol
 
-from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from pydantic import TypeAdapter
 
@@ -128,9 +127,9 @@ def _invalid_constant(_value: str) -> None:
 
 def _signed_bytes(claims: dict[str, object]) -> bytes:
     """Create deterministic bytes for a pinned Ed25519 verification key."""
-    return json.dumps(
-        claims, ensure_ascii=True, sort_keys=True, separators=(",", ":")
-    ).encode("utf-8")
+    return json.dumps(claims, ensure_ascii=True, sort_keys=True, separators=(",", ":")).encode(
+        "utf-8"
+    )
 
 
 def qualify_producer_grant_preflight(
@@ -171,8 +170,11 @@ def qualify_producer_grant_preflight(
             raise ValueError("Preflight requires an explicitly configured trusted host")
         policy.__post_init__()
         actor = verify_producer_access_token(
-            access_token, policy=policy, keys=keys,
-            entitlements=entitlements, now=now,
+            access_token,
+            policy=policy,
+            keys=keys,
+            entitlements=entitlements,
+            now=now,
         )
         # Rebuild dataclass nested objects through strict Pydantic conversion:
         # frozen dataclasses alone cannot prevent forged nested attributes.
@@ -228,8 +230,9 @@ def qualify_producer_grant_preflight(
             "authorized_case_sha256": case_digest,
             "authorized_audit_digest": audit_digest,
         }
-        if any(type(claims[key]) is not str or claims[key] != value
-               for key, value in exact.items()):
+        if any(
+            type(claims[key]) is not str or claims[key] != value for key, value in exact.items()
+        ):
             raise ValueError("Confirmation is not bound to exact producer facts")
         if (
             type(claims["expected_generation"]) is not int
