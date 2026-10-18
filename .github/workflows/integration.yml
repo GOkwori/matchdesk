@@ -90,6 +90,12 @@ jobs:
             -e CI=true -e "PGPASSWORD=$role_password" api \
             /app/.venv/bin/python - after-restart < e2e/producer-grant-restricted-psycopg.py \
             2>&1 | tee -a artifacts/integration/producer-grant-psycopg.log
+          # Independent owner-only reconciliation: the restricted writer has
+          # no SELECT privilege on the case, audit or grant tables.
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$POSTGRES_PASSWORD" api \
+            /app/.venv/bin/python - verify < e2e/producer-grant-restricted-setup.py \
+            2>&1 | tee artifacts/integration/producer-grant-restart-reconciliation.log
       - name: Verify restricted real-Psycopg producer transactions and recovery
         id: psycopg_storage
         if: ${{ !cancelled() && steps.grant_psycopg.outcome == 'success' }}

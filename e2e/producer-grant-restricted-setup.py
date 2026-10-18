@@ -12,7 +12,16 @@ import sys
 import psycopg
 from psycopg import sql
 
-from matchdesk.domain.producer_commands import HostVerifiedActor, open_producer_case
+from matchdesk.domain.postgres_producer_store import (
+    _CASE,
+    _audit_digest,
+    _reconcile_audit,
+)
+from matchdesk.domain.producer_commands import (
+    HostVerifiedActor,
+    _validate_case,
+    open_producer_case,
+)
 from matchdesk.domain.producer_preview import build_producer_desk_preview
 
 _GRANTS = {
@@ -51,13 +60,89 @@ def _fixture() -> tuple[str, str, str, str, str, str]:
     )
 
 
+
+def _verify_after_restart(scope: tuple[str, str, str, str, str, str]) -> None:
+    """Reconcile persisted case, immutable audit, and every grant as DB owner.
+
+    The workload role cannot read any of these tables directly. Only this
+    independent CI-only auditor inspects full persistent state after restart.
+    """
+    with psycopg.connect(
+        "host=postgres dbname=matchdesk user=matchdesk sslmode=prefer",
+        autocommit=True,
+    ) as connection:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT current_user::text, session_user::text")
+            assert cursor.fetchone() == ("matchdesk", "matchdesk")
+            cursor.execute(
+                "SELECT generation, case_json, audit_digest "
+                "FROM public.matchdesk_producer_cases "
+                "WHERE tenant_id=%s AND session_id=%s AND output_id=%s",
+                scope[:3],
+            )
+            row = cursor.fetchone()
+            assert row is not None and row[0] == 1
+            case = _CASE.validate_python(row[1])
+            _validate_case(case)
+            assert case.tenant_id == scope[0]
+            assert case.output.session_id == scope[1]
+            assert case.output.output_id == scope[2]
+            assert case.output.binding.model_dump_json() == scope[5]
+            assert case.generation == 1
+            assert case.review.status == "pending_verification"
+            assert len(case.review.audit) == 1
+            assert case.review.audit[0].actor_id == scope[3]
+            assert case.review.audit[0].action == "review_started"
+            assert row[2] == _audit_digest(case.review.audit)
+
+            cursor.execute(
+                "SELECT generation, entry_json, audit_digest "
+                "FROM public.matchdesk_producer_audit "
+                "WHERE tenant_id=%s AND session_id=%s AND output_id=%s "
+                "ORDER BY generation",
+                scope[:3],
+            )
+            # A second, separately constrained append-only table must match
+            # the entire case-side audit history, not just the final digest.
+            _reconcile_audit(case, cursor.fetchall())
+
+            cursor.execute(
+                "SELECT grant_id, revoked_at IS NOT NULL, "
+                "consumed_at IS NOT NULL, command_id, action "
+                "FROM public.matchdesk_producer_action_grants "
+                "WHERE grant_id = ANY(%s)",
+                (list(_GRANTS.values()),),
+            )
+            persisted = {
+                grant_id: (revoked, consumed, command, action)
+                for grant_id, revoked, consumed, command, action in cursor.fetchall()
+            }
+            assert len(persisted) == len(_GRANTS)
+            assert persisted[_GRANTS["valid"]] == (
+                False, True, "ci-valid-command-0000001", "create"
+            )
+            assert persisted[_GRANTS["revoked"]] == (
+                True, False, None, "create"
+            )
+            assert persisted[_GRANTS["wrong_issuer"]] == (
+                False, False, None, "create"
+            )
+            assert persisted[_GRANTS["wrong_actor"]] == (
+                False, False, None, "create"
+            )
+    print("MATCHDESK_P4_GRANT_AUDIT_RESTART_RECONCILED: exact case, audit and grants")
+
+
 def main() -> None:
     """Issue synthetic grants via the owner, never via the grant execution role."""
-    if sys.argv[1:] != ["setup"] or os.getenv("CI") != "true":
-        raise RuntimeError("Fixture setup is only available in disposable CI")
+    if sys.argv[1:] not in (["setup"], ["verify"]) or os.getenv("CI") != "true":
+        raise RuntimeError("Grant owner audit is only available in disposable CI")
     if not os.getenv("PGPASSWORD"):
         raise RuntimeError("Disposable database-owner secret is required")
     scope = _fixture()
+    if sys.argv[1:] == ["verify"]:
+        _verify_after_restart(scope)
+        return
     with psycopg.connect(
         "host=postgres dbname=matchdesk user=matchdesk sslmode=prefer"
     ) as connection:
