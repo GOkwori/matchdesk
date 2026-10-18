@@ -46,11 +46,12 @@ const config = {
   async rewrites() {
     // This URL is operator configuration, never a browser-supplied proxy target.
     const origin = process.env.MATCHDESK_API_ORIGIN ?? "http://127.0.0.1:8000";
-    // Run the general Python API proxy only after filesystem and dynamic routes.
-    // This lets /api/judge-local/* stay owned by its dedicated Next.js handler.
-    return {
-      fallback: [{ source: "/api/:path*", destination: `${origin}/api/:path*` }],
-    };
+    // Exclude the opt-in judge namespace from the generic proxy at match time.
+    // Other API paths retain the original before-files proxy behavior; the
+    // dedicated Next.js route remains responsible for judge authorization.
+    return [
+      { source: "/api/:path((?!judge-local(?:/|$)).*)", destination: `${origin}/api/:path` },
+    ];
   },
 };
 export default config;
