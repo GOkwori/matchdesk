@@ -14,6 +14,11 @@ CREATE TABLE IF NOT EXISTS public.matchdesk_producer_action_grants (
     binding jsonb NOT NULL CHECK (jsonb_typeof(binding) = 'object'),
     expected_generation bigint NOT NULL CHECK (expected_generation >= 0),
     expires_at timestamptz NOT NULL,
+    -- The issuer binds the exact validated proposed case and audit digest.
+    authorized_case_sha256 text NOT NULL
+        CHECK (authorized_case_sha256 ~ '^[a-f0-9]{64}$'),
+    authorized_audit_digest text NOT NULL
+        CHECK (authorized_audit_digest ~ '^[a-f0-9]{64}$'),
     revoked_at timestamptz,
     consumed_at timestamptz,
     command_id text UNIQUE,
@@ -24,6 +29,26 @@ CREATE TABLE IF NOT EXISTS public.matchdesk_producer_action_grants (
 -- trusted authority. No browser-facing or generic application role is granted
 -- access to create, read, update, delete or consume grants by this migration.
 REVOKE ALL ON TABLE public.matchdesk_producer_action_grants FROM PUBLIC;
+
+-- Legacy unbound grants must never be backfilled with guessed authority.
+-- Existing populated candidate tables with missing hashes fail closed here.
+ALTER TABLE public.matchdesk_producer_action_grants
+    ADD COLUMN IF NOT EXISTS authorized_case_sha256 text;
+ALTER TABLE public.matchdesk_producer_action_grants
+    ADD COLUMN IF NOT EXISTS authorized_audit_digest text;
+ALTER TABLE public.matchdesk_producer_action_grants
+    ALTER COLUMN authorized_case_sha256 SET NOT NULL,
+    ALTER COLUMN authorized_audit_digest SET NOT NULL;
+ALTER TABLE public.matchdesk_producer_action_grants
+    DROP CONSTRAINT IF EXISTS matchdesk_grant_case_sha256_shape;
+ALTER TABLE public.matchdesk_producer_action_grants
+    ADD CONSTRAINT matchdesk_grant_case_sha256_shape
+    CHECK (authorized_case_sha256 ~ '^[a-f0-9]{64}$');
+ALTER TABLE public.matchdesk_producer_action_grants
+    DROP CONSTRAINT IF EXISTS matchdesk_grant_audit_digest_shape;
+ALTER TABLE public.matchdesk_producer_action_grants
+    ADD CONSTRAINT matchdesk_grant_audit_digest_shape
+    CHECK (authorized_audit_digest ~ '^[a-f0-9]{64}$');
 
 -- PostgreSQL treats a changed argument list as a new overload, not as a
 -- replacement. Remove the prior prototype's weaker subject-only signature
@@ -88,6 +113,16 @@ BEGIN
        OR g.output_id IS DISTINCT FROM p_output_id
        OR g.action IS DISTINCT FROM p_action
        OR g.expected_generation IS DISTINCT FROM p_expected_generation
+       -- Hash the entire normalized JSONB case in the database. A caller
+       -- cannot substitute changed content, claims, evidence, or audit history
+       -- while reusing the issuer's one-use grant.
+       OR g.authorized_case_sha256 IS DISTINCT FROM
+          pg_catalog.encode(
+              pg_catalog.sha256(
+                  pg_catalog.convert_to(p_case_json::text, 'UTF8')
+              ), 'hex'
+          )
+       OR g.authorized_audit_digest IS DISTINCT FROM p_next_audit_digest
        OR p_command_id !~ '^[A-Za-z0-9_-]{16,128}$'
        OR p_next_audit_digest !~ '^[a-f0-9]{64}$'
        OR p_expected_generation IS NULL
