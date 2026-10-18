@@ -79,6 +79,46 @@ try {
     assert.equal(sql(invoke('ci-conflict-grant-01')), 'f');
     assert.equal(sql("SELECT count(*) FROM matchdesk_producer_action_grants WHERE grant_id='ci-conflict-grant-01' AND consumed_at IS NULL;"), '1');
   });
+  check('expired grant is denied and cannot spend its capability', () => {
+    sql(grantSql('ci-expired-grant-01', 'create', -1));
+    assert.equal(sql(invoke('ci-expired-grant-01')), 'f');
+    assert.equal(sql("SELECT count(*) FROM matchdesk_producer_action_grants WHERE grant_id='ci-expired-grant-01' AND consumed_at IS NULL;"), '1');
+  });
+  check('restricted role cannot directly forge a case, audit or grant', () => {
+    const attempts = [
+      "SET ROLE matchdesk_grant_ci; INSERT INTO public.matchdesk_producer_cases (tenant_id) VALUES ('forged');",
+      "SET ROLE matchdesk_grant_ci; INSERT INTO public.matchdesk_producer_audit (tenant_id) VALUES ('forged');",
+      "SET ROLE matchdesk_grant_ci; UPDATE public.matchdesk_producer_action_grants SET revoked_at=NULL;",
+    ];
+    for (const attempt of attempts) sql(attempt, /permission denied/i);
+    assert.equal(sql("SELECT generation FROM matchdesk_producer_cases WHERE tenant_id='ci-tenant';"), '1');
+  });
+  check('audit insertion fault cannot burn grant or advance generation', () => {
+    sql(grantSql('ci-audit-fault-01'));
+    // The restricted one-use operation must roll back the case insert as well.
+    // A fresh tenant/scope is selected to prevent an existing PK conflict.
+    const newSession = 'ci-rollback-session';
+    const newOutput = 'ci-rollback-output';
+    const revisedGrant = { ...binding };
+    sql("UPDATE matchdesk_producer_action_grants SET session_id='" + newSession +
+        "',output_id='" + newOutput + "' WHERE grant_id='ci-audit-fault-01';");
+    const freshCase = { ...caseDoc, output: { ...caseDoc.output, session_id: newSession, output_id: newOutput } };
+    sql([
+      "CREATE OR REPLACE FUNCTION matchdesk_ci_grant_reject_audit() RETURNS trigger LANGUAGE plpgsql AS $f$",
+      "BEGIN IF NEW.session_id='ci-rollback-session' THEN RAISE EXCEPTION 'CI atomic audit rollback'; END IF; RETURN NEW; END; $f$;",
+      "CREATE TRIGGER matchdesk_ci_grant_reject_audit BEFORE INSERT ON matchdesk_producer_audit",
+      "FOR EACH ROW EXECUTE FUNCTION matchdesk_ci_grant_reject_audit();",
+    ].join(' '));
+    const candidate = 'SELECT public.matchdesk_commit_producer_grant(' +
+      ["ci-audit-fault-01",actor,tenant,newSession,newOutput,'create','ci-rollback-command-01']
+        .map(x=>"'"+x+"'").join(',') + ',0,NULL,' +
+      "'" + digest1 + "'," + q(freshCase) + ',' + q(entry) + ');';
+    sql(candidate, /CI atomic audit rollback/);
+    assert.equal(sql("SELECT count(*) FROM matchdesk_producer_cases WHERE session_id='ci-rollback-session';"), '0');
+    assert.equal(sql("SELECT count(*) FROM matchdesk_producer_action_grants WHERE grant_id='ci-audit-fault-01' AND consumed_at IS NULL;"), '1');
+    sql("DROP TRIGGER matchdesk_ci_grant_reject_audit ON matchdesk_producer_audit;");
+    sql("DROP FUNCTION matchdesk_ci_grant_reject_audit();");
+  });
   report.status = 'PASS';
 } catch (error) { report.status = 'FAIL'; console.error(String(error)); process.exitCode = 1; }
 finally {
