@@ -80,12 +80,20 @@ def main() -> None:
                 "GRANT SELECT, UPDATE ON public.matchdesk_producer_action_grants "
                 "TO matchdesk_grant_definer_ci"
             )
+            # ALTER FUNCTION OWNER requires CREATE on its schema only during
+            # reassignment. Remove it immediately, before restricted execution.
+            cursor.execute(
+                "GRANT USAGE, CREATE ON SCHEMA public TO matchdesk_grant_definer_ci"
+            )
             signature = (
                 "public.matchdesk_commit_producer_grant("
                 "text,text,text,text,text,text,text,text,bigint,text,text,jsonb,jsonb)"
             )
             cursor.execute(
                 "ALTER FUNCTION " + signature + " OWNER TO matchdesk_grant_definer_ci"
+            )
+            cursor.execute(
+                "REVOKE CREATE ON SCHEMA public FROM matchdesk_grant_definer_ci"
             )
             cursor.execute(
                 "CREATE ROLE matchdesk_grant_executor_ci LOGIN NOSUPERUSER "
