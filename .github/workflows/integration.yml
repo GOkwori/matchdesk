@@ -103,6 +103,21 @@ jobs:
             -e "REVOKER_CI_PASSWORD=$revoker_password" api \
             /app/.venv/bin/python - initial < e2e/producer-confirmation-races-psycopg.py \
             2>&1 | tee artifacts/integration/producer-issuer-races.log
+          # Qualify a third physical login with no issuer/revoker or table DML authority.
+          stager_password="$(openssl rand -hex 32)"
+          echo "::add-mask::$stager_password"
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$POSTGRES_PASSWORD" \
+            -e "STAGER_CI_PASSWORD=$stager_password" api \
+            /app/.venv/bin/python - setup < e2e/producer-confirmation-staging-psycopg.py \
+            2>&1 | tee artifacts/integration/producer-confirmation-stager.log
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$stager_password" \
+            -e "STAGER_CI_PASSWORD=$stager_password" \
+            -e "ISSUER_CI_PASSWORD=$issuer_password" \
+            -e "REVOKER_CI_PASSWORD=$revoker_password" api \
+            /app/.venv/bin/python - exercise < e2e/producer-confirmation-staging-psycopg.py \
+            2>&1 | tee -a artifacts/integration/producer-confirmation-stager.log
           docker compose --project-name "$COMPOSE_PROJECT_NAME" restart postgres
           for attempt in $(seq 1 40); do
             if docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
@@ -119,6 +134,10 @@ jobs:
             -e CI=true -e "PGPASSWORD=$POSTGRES_PASSWORD" api \
             /app/.venv/bin/python - verify < e2e/producer-confirmation-races-psycopg.py \
             2>&1 | tee -a artifacts/integration/producer-issuer-races.log
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$POSTGRES_PASSWORD" api \
+            /app/.venv/bin/python - verify < e2e/producer-confirmation-staging-psycopg.py \
+            2>&1 | tee -a artifacts/integration/producer-confirmation-stager.log
       - name: Qualify grant writer through a physical restricted PostgreSQL login
         id: grant_psycopg
         if: ${{ !cancelled() && steps.grant_atomicity.outcome == 'success' }}
