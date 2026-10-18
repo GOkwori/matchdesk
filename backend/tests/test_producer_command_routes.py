@@ -272,6 +272,57 @@ def test_cross_session_and_invalid_actor_denied(monkeypatch):
     assert source.calls == 0 and store.writes == 0 and grants.calls == 0
 
 
+@pytest.mark.parametrize(
+    "untrusted",
+    [
+        replace(actor(), roles=frozenset({"auditor"})),
+        replace(actor(), tenant_id="11111111-2222-3333-4444-555555555555"),
+        replace(actor(), issuer="https://issuer.invalid/v2.0"),
+        object(),
+    ],
+    ids=["auditor-role", "foreign-tenant", "foreign-issuer", "wrong-actor-type"],
+)
+def test_command_boundary_rejects_untrusted_actor_before_source_or_store(
+    monkeypatch, untrusted
+):
+    """Recheck issuer, tenant, role and actor type even if a verifier is defective."""
+    client, source, store, grants = prepare(monkeypatch)
+    grants.actions.update({"create", "approve"})
+    import matchdesk.api.producer_command_routes as routes
+
+    # An intentionally defective verifier must never confer mutation authority.
+    monkeypatch.setattr(
+        routes, "verify_producer_access_token", lambda *_a, **_k: untrusted
+    )
+    attempted = client.post(BASE + "/create", headers=HEADERS, json=create_body(source))
+    assert attempted.status_code == 403
+    assert source.calls == 0
+    assert store.reads == 0 and store.writes == 0 and grants.calls == 0
+    assert attempted.headers["Cache-Control"] == "no-store"
+
+
+def test_untrusted_actor_cannot_mutate_existing_case(monkeypatch):
+    """A forged non-producer must not read existing cases or call host grants."""
+    client, source, store, grants = prepare(monkeypatch)
+    create_case(client, source, grants)
+    initial_audit = store.case.review.audit
+    existing = decision_body(store)
+    calls_before = grants.calls
+
+    import matchdesk.api.producer_command_routes as routes
+
+    monkeypatch.setattr(
+        routes,
+        "verify_producer_access_token",
+        lambda *_a, **_k: replace(actor(), roles=frozenset({"auditor"})),
+    )
+    denied = client.post(BASE + "/reject", headers=HEADERS, json=existing)
+    assert denied.status_code == 403
+    assert store.reads == 0 and store.writes == 1
+    assert grants.calls == calls_before
+    assert store.case.review.audit == initial_audit
+
+
 def test_invalid_json_or_client_authority_cannot_create(monkeypatch):
     """Reject duplicate keys, unknown authority claims, malformed JSON and booleans."""
     client, source, store, grants = prepare(monkeypatch)
