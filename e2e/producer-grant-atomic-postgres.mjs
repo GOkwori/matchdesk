@@ -84,6 +84,13 @@ try {
   await check('migration is repeatable and callable only when role is granted', () => {
     const migration = readFileSync('backend/postgres/migrations/006_producer_atomic_grants.sql','utf8');
     sql(migration); sql(migration);
+    // The issuer-bound 13-argument function must be the only callable
+    // overload. Otherwise a prior 12-argument SECURITY DEFINER path remains.
+    assert.equal(sql("SELECT count(*) FROM pg_catalog.pg_proc AS p " +
+      "JOIN pg_catalog.pg_namespace AS n ON n.oid=p.pronamespace " +
+      "WHERE n.nspname='public' AND p.proname='matchdesk_commit_producer_grant';"), '1');
+    assert.equal(sql("SELECT to_regprocedure('public.matchdesk_commit_producer_grant(" +
+      "text,text,text,text,text,text,text,bigint,text,text,jsonb,jsonb)') IS NULL;"), 't');
     sql("CREATE ROLE matchdesk_grant_ci LOGIN;");
     assert.equal(sql("SELECT has_function_privilege('matchdesk_grant_ci','public.matchdesk_commit_producer_grant(text,text,text,text,text,text,text,text,bigint,text,text,jsonb,jsonb)','EXECUTE');"), 'f');
     sql("GRANT CONNECT ON DATABASE matchdesk TO matchdesk_grant_ci;");

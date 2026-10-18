@@ -25,6 +25,13 @@ CREATE TABLE IF NOT EXISTS public.matchdesk_producer_action_grants (
 -- access to create, read, update, delete or consume grants by this migration.
 REVOKE ALL ON TABLE public.matchdesk_producer_action_grants FROM PUBLIC;
 
+-- PostgreSQL treats a changed argument list as a new overload, not as a
+-- replacement. Remove the prior prototype's weaker subject-only signature
+-- inside this same migration transaction so no stale privileged path survives.
+DROP FUNCTION IF EXISTS public.matchdesk_commit_producer_grant(
+    text, text, text, text, text, text, text, bigint, text, text, jsonb, jsonb
+);
+
 -- The only proposed write entry is a tightly constrained SECURITY DEFINER
 -- operation. Every identifier is fully qualified and all inputs are values;
 -- search_path never resolves application-controlled names.
