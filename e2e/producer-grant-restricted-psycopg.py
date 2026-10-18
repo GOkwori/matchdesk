@@ -14,6 +14,7 @@ import sys
 import psycopg
 
 from matchdesk.domain.postgres_producer_grant_writer import PostgresProducerGrantWriter
+from matchdesk.domain.postgres_producer_store import _ENTRY, _audit_digest, _case_json
 from matchdesk.domain.producer_commands import HostVerifiedActor, open_producer_case
 from matchdesk.domain.producer_preview import build_producer_desk_preview
 from matchdesk.domain.psycopg_producer_driver import producer_connection_factory
@@ -24,6 +25,8 @@ _GRANTS = {
     "revoked": "ci-real-grant-revoked-01",
     "wrong_issuer": "ci-real-grant-issuer-001",
     "wrong_actor": "ci-real-grant-subject-01",
+    "tampered_case": "ci-real-grant-case-tamper-01",
+    "tampered_audit": "ci-real-grant-audit-tamper-01",
 }
 
 
@@ -115,6 +118,32 @@ def _invoke(grant: str, command: str) -> bool:
     )
 
 
+def _direct_sql_tamper(grant: str, *, modify_case: bool = False,
+                       modify_audit: bool = False) -> bool:
+    """Direct restricted EXECUTE must not bypass the issuer-bound proposal."""
+    case = _case()
+    payload = json.loads(_case_json(case))
+    if modify_case:
+        payload["output"]["unauthorized_extra_content"] = "substituted"
+    digest = "d" * 64 if modify_audit else _audit_digest(case.review.audit)
+    entry = _ENTRY.dump_json(case.review.audit[-1]).decode("utf-8")
+    with psycopg.connect(_conninfo()) as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT public.matchdesk_commit_producer_grant("
+                "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s::jsonb,%s::jsonb)",
+                (
+                    grant, _actor().subject, _actor().issuer, case.tenant_id,
+                    case.output.session_id, case.output.output_id, "create",
+                    "ci-direct-tamper-command-01", 0, None, digest,
+                    json.dumps(payload, separators=(",", ":")), entry,
+                ),
+            )
+            result = cursor.fetchone()
+            assert result is not None and type(result[0]) is bool
+            return result[0]
+
+
 def main() -> None:
     """Run explicit offline fixture export, first commit, or restart replay."""
     if len(sys.argv) != 2:
@@ -162,6 +191,8 @@ def main() -> None:
         assert _invoke(_GRANTS["revoked"], "ci-revoked-command-00001") is False
         assert _invoke(_GRANTS["wrong_issuer"], "ci-wrongissuer-command-01") is False
         assert _invoke(_GRANTS["wrong_actor"], "ci-wrongactor-command-001") is False
+        assert _direct_sql_tamper(_GRANTS["tampered_case"], modify_case=True) is False
+        assert _direct_sql_tamper(_GRANTS["tampered_audit"], modify_audit=True) is False
         assert _invoke(_GRANTS["valid"], "ci-valid-command-0000001") is True
         assert _invoke(_GRANTS["valid"], "ci-replayed-command-00001") is False
         print("PASS: restricted Psycopg create committed once; revoked/issuer/actor/replay denied")
