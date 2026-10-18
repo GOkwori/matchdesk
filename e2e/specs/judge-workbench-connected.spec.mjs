@@ -11,7 +11,7 @@ test("actual judge browser replays, rotates, and revokes a disposable session", 
   const httpStatus = [];
   page.on("response", (response) => {
     if (response.url().includes("/api/judge-local/")) {
-      httpStatus.push(`${response.request().method()} ${new URL(response.url()).pathname} ${response.status()}`);
+      httpStatus.push(`${response.request().method()} ${new URL(response.url()).pathname} ${response.status()} denial=${response.headers()["x-matchdesk-judge-denial"] ?? "none"}`);
     }
   });
   await page.goto("/judge");
