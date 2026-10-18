@@ -1,7 +1,8 @@
 /** Exercise the default-denied producer grant transaction on disposable PostgreSQL only. */
 import assert from 'node:assert/strict';
-import { execFileSync, spawnSync } from 'node:child_process';
+import { execFile, execFileSync, spawnSync } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { promisify } from 'node:util';
 
 const project = process.env.COMPOSE_PROJECT_NAME ?? '';
 if (process.env.CI !== 'true' || !/^matchdesk-it-[0-9]+-[0-9]+$/.test(project)) {
@@ -21,8 +22,8 @@ function sql(query, expectedError = null) {
   } else assert.equal(res.status, 0, res.stderr);
   return res.stdout.trim();
 }
-function check(name, fn) {
-  try { fn(); report.checks.push({ name, status: 'PASS' }); }
+async function check(name, fn) {
+  try { await fn(); report.checks.push({ name, status: 'PASS' }); }
   catch (error) { report.checks.push({ name, status: 'FAIL', detail: String(error).slice(0, 450) }); throw error; }
 }
 const digest1 = 'a'.repeat(64);
@@ -36,6 +37,40 @@ const caseDoc = { tenant_id: tenant, generation: 1,
   output: { session_id: session, output_id: output, binding },
   review: { binding, status: 'pending_verification', audit: [entry] } };
 const q = (v) => "'" + JSON.stringify(v).replaceAll("'", "''") + "'::jsonb";
+// Use an unprivileged SQL execution role for every positive decision. The
+// database owner only creates test grants and performs fixture setup/revocation.
+const executeAsRestricted = (statement) => 'SET ROLE matchdesk_grant_ci; ' + statement;
+const execAsync = promisify(execFile);
+async function concurrentSql(statement) {
+  const result = await execAsync('docker', [...args, '-c', statement],
+    { encoding: 'utf8', timeout: 30000, maxBuffer: 1048576 });
+  return result.stdout.trim();
+}
+async function waitForHeldTransaction(marker) {
+  // Observe an actual active SQL lock-holder instead of assuming CI timing.
+  for (let attempt = 0; attempt < 25; attempt += 1) {
+    const count = sql("SELECT count(*) FROM pg_catalog.pg_stat_activity WHERE " +
+      "state='active' AND wait_event_type='Timeout' AND query LIKE '%" + marker + "%';");
+    if (Number(count) >= 1) return;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  throw new Error('Database lock-holder barrier not observed: ' + marker);
+}
+function scopedInvocation(id, scopeSession, scopeOutput, command) {
+  const candidate = { ...caseDoc, output: { ...caseDoc.output,
+    session_id: scopeSession, output_id: scopeOutput } };
+  return 'SELECT public.matchdesk_commit_producer_grant(' +
+    [id, actor, tenant, scopeSession, scopeOutput, 'create', command]
+      .map(x => "'" + x + "'").join(',') +
+    ',0,NULL,' + "'" + digest1 + "'," + q(candidate) + ',' + q(entry) + ');';
+}
+function scopedGrant(id, scopeSession, scopeOutput) {
+  // CI fixture issuer is physically separate from restricted execution.
+  sql(grantSql(id));
+  sql("UPDATE public.matchdesk_producer_action_grants SET session_id='" + scopeSession +
+    "',output_id='" + scopeOutput + "' WHERE grant_id='" + id + "';");
+}
+
 const grantSql = (id, action = 'create', seconds = 600) =>
   'INSERT INTO public.matchdesk_producer_action_grants ' +
   '(grant_id,tenant_id,session_id,output_id,actor_id,issuer,action,binding,expected_generation,expires_at) VALUES (' +
@@ -46,7 +81,7 @@ const invoke = (id, identity = actor, command = 'ci-command-000001') =>
   [id,identity,tenant,session,output,'create',command].map(x => "'" + x + "'").join(',') +
   ',0,NULL,' + "'" + digest1 + "'," + q(caseDoc) + ',' + q(entry) + ');';
 try {
-  check('migration is repeatable and callable only when role is granted', () => {
+  await check('migration is repeatable and callable only when role is granted', () => {
     const migration = readFileSync('backend/postgres/migrations/006_producer_atomic_grants.sql','utf8');
     sql(migration); sql(migration);
     sql("CREATE ROLE matchdesk_grant_ci LOGIN;");
@@ -58,33 +93,33 @@ try {
     assert.equal(sql("SELECT has_table_privilege('matchdesk_grant_ci','public.matchdesk_producer_action_grants','UPDATE');"), 'f');
     assert.equal(sql("SELECT has_table_privilege('matchdesk_grant_ci','public.matchdesk_producer_cases','UPDATE');"), 'f');
   });
-  check('revocation and invalid actor fail before any case write', () => {
+  await check('revocation and invalid actor fail before any case write', () => {
     sql(grantSql('ci-revoked-grant-01'));
     sql("UPDATE public.matchdesk_producer_action_grants SET revoked_at=clock_timestamp() WHERE grant_id='ci-revoked-grant-01';");
-    assert.equal(sql(invoke('ci-revoked-grant-01')), 'f');
+    assert.equal(sql(executeAsRestricted(invoke('ci-revoked-grant-01'))), 'f');
     sql(grantSql('ci-wrong-actor-01'));
-    assert.equal(sql(invoke('ci-wrong-actor-01','forged-actor')), 'f');
+    assert.equal(sql(executeAsRestricted(invoke('ci-wrong-actor-01','forged-actor'))), 'f');
     assert.equal(sql("SELECT count(*) FROM matchdesk_producer_cases WHERE tenant_id='ci-tenant';"), '0');
   });
-  check('valid grant commits case and audit and cannot replay', () => {
+  await check('valid grant commits case and audit and cannot replay', () => {
     sql(grantSql(grantId));
-    assert.equal(sql(invoke(grantId)), 't');
-    assert.equal(sql(invoke(grantId)), 'f');
+    assert.equal(sql(executeAsRestricted(invoke(grantId))), 't');
+    assert.equal(sql(executeAsRestricted(invoke(grantId))), 'f');
     assert.equal(sql("SELECT generation FROM matchdesk_producer_cases WHERE tenant_id='ci-tenant';"), '1');
     assert.equal(sql("SELECT count(*) FROM matchdesk_producer_audit WHERE tenant_id='ci-tenant';"), '1');
     assert.equal(sql("SELECT count(*) FROM matchdesk_producer_action_grants WHERE grant_id='" + grantId + "' AND consumed_at IS NOT NULL;"), '1');
   });
-  check('conflicting case insert leaves grant unconsumed', () => {
+  await check('conflicting case insert leaves grant unconsumed', () => {
     sql(grantSql('ci-conflict-grant-01'));
-    assert.equal(sql(invoke('ci-conflict-grant-01')), 'f');
+    assert.equal(sql(executeAsRestricted(invoke('ci-conflict-grant-01'))), 'f');
     assert.equal(sql("SELECT count(*) FROM matchdesk_producer_action_grants WHERE grant_id='ci-conflict-grant-01' AND consumed_at IS NULL;"), '1');
   });
-  check('expired grant is denied and cannot spend its capability', () => {
+  await check('expired grant is denied and cannot spend its capability', () => {
     sql(grantSql('ci-expired-grant-01', 'create', -1));
-    assert.equal(sql(invoke('ci-expired-grant-01')), 'f');
+    assert.equal(sql(executeAsRestricted(invoke('ci-expired-grant-01'))), 'f');
     assert.equal(sql("SELECT count(*) FROM matchdesk_producer_action_grants WHERE grant_id='ci-expired-grant-01' AND consumed_at IS NULL;"), '1');
   });
-  check('restricted role cannot directly forge a case, audit or grant', () => {
+  await check('restricted role cannot directly forge a case, audit or grant', () => {
     const attempts = [
       "SET ROLE matchdesk_grant_ci; INSERT INTO public.matchdesk_producer_cases (tenant_id) VALUES ('forged');",
       "SET ROLE matchdesk_grant_ci; INSERT INTO public.matchdesk_producer_audit (tenant_id) VALUES ('forged');",
@@ -93,7 +128,7 @@ try {
     for (const attempt of attempts) sql(attempt, /permission denied/i);
     assert.equal(sql("SELECT generation FROM matchdesk_producer_cases WHERE tenant_id='ci-tenant';"), '1');
   });
-  check('audit insertion fault cannot burn grant or advance generation', () => {
+  await check('audit insertion fault cannot burn grant or advance generation', () => {
     sql(grantSql('ci-audit-fault-01'));
     // The restricted one-use operation must roll back the case insert as well.
     // A fresh tenant/scope is selected to prevent an existing PK conflict.
@@ -113,11 +148,68 @@ try {
       ["ci-audit-fault-01",actor,tenant,newSession,newOutput,'create','ci-rollback-command-01']
         .map(x=>"'"+x+"'").join(',') + ',0,NULL,' +
       "'" + digest1 + "'," + q(freshCase) + ',' + q(entry) + ');';
-    sql(candidate, /CI atomic audit rollback/);
+    sql(executeAsRestricted(candidate), /CI atomic audit rollback/);
     assert.equal(sql("SELECT count(*) FROM matchdesk_producer_cases WHERE session_id='ci-rollback-session';"), '0');
     assert.equal(sql("SELECT count(*) FROM matchdesk_producer_action_grants WHERE grant_id='ci-audit-fault-01' AND consumed_at IS NULL;"), '1');
     sql("DROP TRIGGER matchdesk_ci_grant_reject_audit ON matchdesk_producer_audit;");
     sql("DROP FUNCTION matchdesk_ci_grant_reject_audit();");
+  });
+
+  await check('two restricted writers cannot consume the same grant twice', async () => {
+    const grant = 'ci-parallel-grant-0001';
+    const sc = 'ci-parallel-session', out = 'ci-parallel-output';
+    scopedGrant(grant, sc, out);
+    const call = executeAsRestricted(scopedInvocation(grant, sc, out, 'ci-parallel-command-01'));
+    const results = await Promise.all([concurrentSql(call), concurrentSql(call)]);
+    assert.deepEqual(results.sort(), ['f', 't']);
+    assert.equal(sql("SELECT count(*) FROM matchdesk_producer_cases WHERE session_id='" + sc + "';"), '1');
+    assert.equal(sql("SELECT count(*) FROM matchdesk_producer_audit WHERE session_id='" + sc + "';"), '1');
+    assert.equal(sql("SELECT count(*) FROM matchdesk_producer_action_grants WHERE grant_id='" +
+      grant + "' AND consumed_at IS NOT NULL;"), '1');
+  });
+  await check('revocation committing first denies a concurrent restricted writer', async () => {
+    const grant = 'ci-revoke-before-write-01';
+    const sc = 'ci-revoke-first-session', out = 'ci-revoke-first-output';
+    scopedGrant(grant, sc, out);
+    // Hold the revoked grant row so that the writer must wait for the revocation.
+    const revoker = concurrentSql("BEGIN; UPDATE matchdesk_producer_action_grants " +
+      "SET revoked_at=clock_timestamp() WHERE grant_id='" + grant + "';" +
+      "SELECT pg_sleep(2) /* ci-revoke-first-holding */; COMMIT;");
+    await waitForHeldTransaction('ci-revoke-first-holding');
+    const writer = concurrentSql(executeAsRestricted(scopedInvocation(grant, sc, out,
+      'ci-revoke-first-command')));
+    const [, decision] = await Promise.all([revoker, writer]);
+    assert.equal(decision, 'f');
+    assert.equal(sql("SELECT count(*) FROM matchdesk_producer_cases WHERE session_id='" + sc + "';"), '0');
+    assert.equal(sql("SELECT count(*) FROM matchdesk_producer_action_grants WHERE grant_id='" +
+      grant + "' AND revoked_at IS NOT NULL AND consumed_at IS NULL;"), '1');
+  });
+  await check('writer committing first defeats conditional revocation', async () => {
+    const grant = 'ci-write-before-revoke-01';
+    const sc = 'ci-writer-first-session', out = 'ci-writer-first-output';
+    scopedGrant(grant, sc, out);
+    // The writer has already locked the grant when this trigger sleeps.
+    sql([
+      "CREATE FUNCTION matchdesk_ci_grant_writer_barrier() RETURNS trigger LANGUAGE plpgsql AS $f$",
+      "BEGIN IF NEW.session_id='ci-writer-first-session' THEN PERFORM pg_sleep(3);",
+      "END IF; RETURN NEW; END; $f$;",
+      "CREATE TRIGGER matchdesk_ci_grant_writer_barrier BEFORE INSERT ON",
+      "matchdesk_producer_cases FOR EACH ROW EXECUTE FUNCTION matchdesk_ci_grant_writer_barrier();"
+    ].join(' '));
+    const writer = concurrentSql(executeAsRestricted(scopedInvocation(grant, sc, out,
+      'ci-writer-first-command-01')));
+    await waitForHeldTransaction('ci-writer-first-command-01');
+    const revoker = concurrentSql("UPDATE matchdesk_producer_action_grants " +
+      "SET revoked_at=clock_timestamp() WHERE grant_id='" + grant +
+      "' AND consumed_at IS NULL RETURNING grant_id;");
+    const [writerOutcome, revocationOutcome] = await Promise.all([writer, revoker]);
+    assert.equal(writerOutcome, 't');
+    assert.equal(revocationOutcome, '');
+    assert.equal(sql("SELECT count(*) FROM matchdesk_producer_action_grants WHERE grant_id='" +
+      grant + "' AND consumed_at IS NOT NULL AND revoked_at IS NULL;"), '1');
+    assert.equal(sql("SELECT count(*) FROM matchdesk_producer_audit WHERE session_id='" + sc + "';"), '1');
+    sql('DROP TRIGGER matchdesk_ci_grant_writer_barrier ON matchdesk_producer_cases;');
+    sql('DROP FUNCTION matchdesk_ci_grant_writer_barrier();');
   });
   report.status = 'PASS';
 } catch (error) { report.status = 'FAIL'; console.error(String(error)); process.exitCode = 1; }

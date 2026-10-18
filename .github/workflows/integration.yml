@@ -64,7 +64,7 @@ jobs:
           node e2e/producer-grant-atomic-postgres.mjs 2>&1 | tee artifacts/integration/producer-grant-atomic.log
       - name: Verify restricted real-Psycopg producer transactions and recovery
         id: psycopg_storage
-        if: ${{ !cancelled() && steps.producer_storage.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.grant_atomicity.outcome == 'success' }}
         run: |
           set -euo pipefail
           # A fresh, masked password exists only in this disposable workflow step.
