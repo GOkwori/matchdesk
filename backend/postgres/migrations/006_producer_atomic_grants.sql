@@ -32,6 +32,14 @@ DROP FUNCTION IF EXISTS public.matchdesk_commit_producer_grant(
     text, text, text, text, text, text, text, bigint, text, text, jsonb, jsonb
 );
 
+-- CREATE OR REPLACE FUNCTION retains previous role-specific EXECUTE grants.
+-- Re-create the current function as well, in the same transaction, so an
+-- upgrade cannot silently preserve an obsolete privileged invoker's access.
+-- Any dependent object blocks the migration instead of weakening this rule.
+DROP FUNCTION IF EXISTS public.matchdesk_commit_producer_grant(
+    text, text, text, text, text, text, text, text, bigint, text, text, jsonb, jsonb
+);
+
 -- The only proposed write entry is a tightly constrained SECURITY DEFINER
 -- operation. Every identifier is fully qualified and all inputs are values;
 -- search_path never resolves application-controlled names.

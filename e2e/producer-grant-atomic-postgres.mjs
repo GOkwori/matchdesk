@@ -287,6 +287,30 @@ try {
     assert.equal(sql("SELECT count(*) FROM matchdesk_producer_audit WHERE session_id='" +
       session + "';"), '3');
   });
+  await check('migration clears stale execution grants instead of preserving them', () => {
+    // Simulate a formerly privileged workload role from an earlier version.
+    // Replacing a function without first dropping it would leave the grant.
+    const signature = 'public.matchdesk_commit_producer_grant(' +
+      'text,text,text,text,text,text,text,text,bigint,text,text,jsonb,jsonb)';
+    sql('CREATE ROLE matchdesk_stale_grant_ci NOLOGIN;');
+    sql('GRANT EXECUTE ON FUNCTION ' + signature + ' TO matchdesk_stale_grant_ci;');
+    assert.equal(sql("SELECT has_function_privilege('matchdesk_stale_grant_ci','" +
+      signature + "','EXECUTE');"), 't');
+    const before = sql("SELECT count(*) FROM matchdesk_producer_audit WHERE tenant_id='ci-tenant';");
+    // Repeated application must remove the old grant, retain committed rows
+    // and not re-enable execution for anyone except the database owner.
+    const migration = readFileSync('backend/postgres/migrations/006_producer_atomic_grants.sql', 'utf8');
+    sql(migration);
+    assert.equal(sql("SELECT has_function_privilege('matchdesk_stale_grant_ci','" +
+      signature + "','EXECUTE');"), 'f');
+    assert.equal(sql("SELECT has_function_privilege('matchdesk_grant_ci','" +
+      signature + "','EXECUTE');"), 'f');
+    assert.equal(sql("SELECT count(*) FROM matchdesk_producer_audit WHERE tenant_id='ci-tenant';"),
+      before);
+    assert.equal(sql("SELECT count(*) FROM pg_catalog.pg_proc p " +
+      "JOIN pg_catalog.pg_namespace n ON p.pronamespace=n.oid " +
+      "WHERE n.nspname='public' AND p.proname='matchdesk_commit_producer_grant';"), '1');
+  });
   report.status = 'PASS';
 } catch (error) { report.status = 'FAIL'; console.error(String(error)); process.exitCode = 1; }
 finally {
