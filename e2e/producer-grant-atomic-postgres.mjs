@@ -56,26 +56,33 @@ async function waitForHeldTransaction(marker) {
   }
   throw new Error('Database lock-holder barrier not observed: ' + marker);
 }
-function scopedInvocation(id, scopeSession, scopeOutput, command) {
-  const candidate = { ...caseDoc, output: { ...caseDoc.output,
+function scopedCase(scopeSession, scopeOutput) {
+  return { ...caseDoc, output: { ...caseDoc.output,
     session_id: scopeSession, output_id: scopeOutput } };
+}
+function scopedInvocation(id, scopeSession, scopeOutput, command,
+  candidate = scopedCase(scopeSession, scopeOutput), nextDigest = digest1) {
   return 'SELECT public.matchdesk_commit_producer_grant(' +
     [id, actor, 'ci-issuer', tenant, scopeSession, scopeOutput, 'create', command]
       .map(x => "'" + x + "'").join(',') +
-    ',0,NULL,' + "'" + digest1 + "'," + q(candidate) + ',' + q(entry) + ');';
+    ',0,NULL,' + "'" + nextDigest + "'," + q(candidate) + ',' + q(entry) + ');';
 }
 function scopedGrant(id, scopeSession, scopeOutput) {
   // CI fixture issuer is physically separate from restricted execution.
-  sql(grantSql(id));
+  sql(grantSql(id, 'create', 600, scopedCase(scopeSession, scopeOutput)));
   sql("UPDATE public.matchdesk_producer_action_grants SET session_id='" + scopeSession +
     "',output_id='" + scopeOutput + "' WHERE grant_id='" + id + "';");
 }
 
-const grantSql = (id, action = 'create', seconds = 600) =>
+const grantSql = (id, action = 'create', seconds = 600,
+  proposedCase = caseDoc, nextDigest = digest1) =>
   'INSERT INTO public.matchdesk_producer_action_grants ' +
-  '(grant_id,tenant_id,session_id,output_id,actor_id,issuer,action,binding,expected_generation,expires_at) VALUES (' +
+  '(grant_id,tenant_id,session_id,output_id,actor_id,issuer,action,binding,' +
+  'expected_generation,expires_at,authorized_case_sha256,authorized_audit_digest) VALUES (' +
   [id,tenant,session,output,actor,'ci-issuer',action].map(x => "'" + x + "'").join(',') +
-  ',' + q(binding) + ",0,clock_timestamp() + interval '" + seconds + " seconds');";
+  ',' + q(binding) + ",0,clock_timestamp() + interval '" + seconds + " seconds'," +
+  "encode(sha256(convert_to((" + q(proposedCase) + ")::text, 'UTF8')), 'hex'),'" +
+  nextDigest + "');";
 const invoke = (id, identity = actor, command = 'ci-command-000001') =>
   'SELECT public.matchdesk_commit_producer_grant(' +
   [id,identity,'ci-issuer',tenant,session,output,'create',command].map(x => "'" + x + "'").join(',') +
@@ -138,7 +145,8 @@ try {
     assert.equal(sql("SELECT generation FROM matchdesk_producer_cases WHERE tenant_id='ci-tenant';"), '1');
   });
   await check('audit insertion fault cannot burn grant or advance generation', () => {
-    sql(grantSql('ci-audit-fault-01'));
+    sql(grantSql('ci-audit-fault-01', 'create', 600,
+      scopedCase('ci-rollback-session', 'ci-rollback-output')));
     // The restricted one-use operation must roll back the case insert as well.
     // A fresh tenant/scope is selected to prevent an existing PK conflict.
     const newSession = 'ci-rollback-session';
@@ -222,11 +230,11 @@ try {
   });
   await check('a forged approval cannot skip independent reverification', () => {
     const id = 'ci-skip-reverify-approve-01';
-    sql(grantSql(id, 'approve'));
-    sql("UPDATE matchdesk_producer_action_grants SET expected_generation=1 WHERE grant_id='" + id + "';");
     const approval = { ...entry, action: 'approved', reason: 'unverified approval attempt' };
     const forgedCase = { ...caseDoc, generation: 2,
       review: { ...caseDoc.review, status: 'approved', audit: [entry, approval] } };
+    sql(grantSql(id, 'approve', 600, forgedCase, digest2));
+    sql("UPDATE matchdesk_producer_action_grants SET expected_generation=1 WHERE grant_id='" + id + "';");
     const attempt = 'SELECT public.matchdesk_commit_producer_grant(' +
       [id, actor, 'ci-issuer', tenant, session, output, 'approve', 'ci-skip-reverify-command-01']
         .map(x => "'" + x + "'").join(',') +
@@ -241,11 +249,11 @@ try {
   });
   await check('a revision without a newer item version is denied', () => {
     const id = 'ci-stale-edit-grant-0001';
-    sql(grantSql(id, 'edit'));
-    sql("UPDATE matchdesk_producer_action_grants SET expected_generation=1 WHERE grant_id='" + id + "';");
     const badEdit = { ...entry, action: 'revision_opened', reason: 'stale revision' };
     const forgedCase = { ...caseDoc, generation: 2,
       review: { ...caseDoc.review, status: 'pending_verification', audit: [entry, badEdit] } };
+    sql(grantSql(id, 'edit', 600, forgedCase, digest2));
+    sql("UPDATE matchdesk_producer_action_grants SET expected_generation=1 WHERE grant_id='" + id + "';");
     const attempt = 'SELECT public.matchdesk_commit_producer_grant(' +
       [id, actor, 'ci-issuer', tenant, session, output, 'edit', 'ci-stale-edit-command-01']
         .map(x => "'" + x + "'").join(',') +
@@ -257,24 +265,24 @@ try {
   await check('reverified generation can then receive one real scoped approval', () => {
     // This is a synthetic state-machine trace; not a live person or MFA grant.
     const revId = 'ci-good-reverify-grant-01';
-    sql(grantSql(revId, 'reverify'));
-    sql("UPDATE matchdesk_producer_action_grants SET expected_generation=1 WHERE grant_id='" +
-      revId + "';");
     const reverified = { ...entry, action: 'reverified', reason: 'synthetic evidence reverified' };
     const reviewedCase = { ...caseDoc, generation: 2,
       review: { ...caseDoc.review, status: 'ready_for_decision', audit: [entry, reverified] } };
+    sql(grantSql(revId, 'reverify', 600, reviewedCase, digest2));
+    sql("UPDATE matchdesk_producer_action_grants SET expected_generation=1 WHERE grant_id='" +
+      revId + "';");
     const reverify = 'SELECT public.matchdesk_commit_producer_grant(' +
       [revId, actor, 'ci-issuer', tenant, session, output, 'reverify', 'ci-good-reverify-command-01']
         .map(x => "'" + x + "'").join(',') +
       ",1,'" + digest1 + "','" + digest2 + "'," + q(reviewedCase) + ',' + q(reverified) + ');';
     assert.equal(sql(executeAsRestricted(reverify)), 't');
     const approveId = 'ci-good-approval-grant-01';
-    sql(grantSql(approveId, 'approve'));
-    sql("UPDATE matchdesk_producer_action_grants SET expected_generation=2 WHERE grant_id='" +
-      approveId + "';");
     const approved = { ...entry, action: 'approved', reason: 'synthetic review decision' };
     const approvedCase = { ...caseDoc, generation: 3,
       review: { ...caseDoc.review, status: 'approved', audit: [entry, reverified, approved] } };
+    sql(grantSql(approveId, 'approve', 600, approvedCase, 'c'.repeat(64)));
+    sql("UPDATE matchdesk_producer_action_grants SET expected_generation=2 WHERE grant_id='" +
+      approveId + "';");
     const approval = 'SELECT public.matchdesk_commit_producer_grant(' +
       [approveId, actor, 'ci-issuer', tenant, session, output, 'approve', 'ci-good-approval-command-01']
         .map(x => "'" + x + "'").join(',') +
@@ -328,6 +336,29 @@ try {
       "' AND consumed_at IS NULL AND command_id IS NULL;"), '1');
     sql('DROP TRIGGER matchdesk_ci_grant_expiry_barrier ON public.matchdesk_producer_audit;');
     sql('DROP FUNCTION matchdesk_ci_grant_expiry_barrier();');
+  });
+  await check('direct SQL rejects altered case and audit without spending grants', () => {
+    const scope = 'ci-direct-tamper-session', outputId = 'ci-direct-tamper-output';
+    const id = 'ci-tamper-content-0001';
+    scopedGrant(id, scope, outputId);
+    const modified = { ...scopedCase(scope, outputId),
+      output: { ...scopedCase(scope, outputId).output, forged_content: 'not authorized' } };
+    assert.equal(sql(executeAsRestricted(scopedInvocation(
+      id, scope, outputId, 'ci-tampered-content-01', modified))), 'f');
+    const auditId = 'ci-tamper-audit-0001';
+    const scope2 = 'ci-tamper-audit-session', output2 = 'ci-tamper-audit-output';
+    scopedGrant(auditId, scope2, output2);
+    assert.equal(sql(executeAsRestricted(scopedInvocation(
+      auditId, scope2, output2, 'ci-tampered-audit-001',
+      scopedCase(scope2, output2), 'd'.repeat(64)))), 'f');
+    for (const [grant, sessionId] of [[id, scope], [auditId, scope2]]) {
+      assert.equal(sql("SELECT count(*) FROM public.matchdesk_producer_cases WHERE session_id='" +
+        sessionId + "';"), '0');
+      assert.equal(sql("SELECT count(*) FROM public.matchdesk_producer_audit WHERE session_id='" +
+        sessionId + "';"), '0');
+      assert.equal(sql("SELECT count(*) FROM public.matchdesk_producer_action_grants WHERE grant_id='" +
+        grant + "' AND consumed_at IS NULL;"), '1');
+    }
   });
   await check('migration clears stale execution grants instead of preserving them', () => {
     // Simulate a formerly privileged workload role from an earlier version.
