@@ -185,11 +185,7 @@ class PostgresProducerGrantWriter:
                         raise PermissionError("Producer write requires a pinned restricted login")
                     cursor.execute(_COMMIT, params)
                     receipt = cursor.fetchone()
-                    if (
-                        receipt is None
-                        or len(receipt) != 1
-                        or type(receipt[0]) is not bool
-                    ):
+                    if receipt is None or len(receipt) != 1 or type(receipt[0]) is not bool:
                         raise RuntimeError("Producer grant writer returned an invalid receipt")
                     return receipt[0]
         finally:

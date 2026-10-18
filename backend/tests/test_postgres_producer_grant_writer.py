@@ -229,9 +229,7 @@ def test_reverification_recomputes_source_before_sql() -> None:
         command="reverify",
         reason="offline metric reverified",
     )
-    assert _commit(
-        db, case=reverified, action="reverify", expected_generation=1
-    ) is True
+    assert _commit(db, case=reverified, action="reverify", expected_generation=1) is True
     assert db.queries[-1][1][6] == "reverify"
     assert db.queries[-1][1][8] == 1
     assert isinstance(db.queries[-1][1][9], str)
