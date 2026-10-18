@@ -48,7 +48,11 @@ const config = {
     const origin = process.env.MATCHDESK_API_ORIGIN ?? "http://127.0.0.1:8000";
     // Filesystem-backed Next API handlers (including the judge bridge) take precedence.
     // Unknown API paths still fall back to the existing fixed-target Python service.
-    return { fallback: [{ source: "/api/:path*", destination: `${origin}/api/:path*` }] };
+    return [
+      // The dedicated judge handler is a filesystem route and takes priority.
+      // Keep the original before-files proxy behavior for existing API contracts.
+      { source: "/api/:path*", destination: `${origin}/api/:path*` },
+    ];
   },
 };
 export default config;
