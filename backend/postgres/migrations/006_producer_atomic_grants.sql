@@ -31,6 +31,7 @@ REVOKE ALL ON TABLE public.matchdesk_producer_action_grants FROM PUBLIC;
 CREATE OR REPLACE FUNCTION public.matchdesk_commit_producer_grant(
     p_grant_id text,
     p_actor_id text,
+    p_issuer text,
     p_tenant_id text,
     p_session_id text,
     p_output_id text,
@@ -66,6 +67,7 @@ BEGIN
     IF g.revoked_at IS NOT NULL OR g.consumed_at IS NOT NULL
        OR g.expires_at <= clock_timestamp()
        OR g.actor_id IS DISTINCT FROM p_actor_id
+       OR g.issuer IS DISTINCT FROM p_issuer
        OR g.tenant_id IS DISTINCT FROM p_tenant_id
        OR g.session_id IS DISTINCT FROM p_session_id
        OR g.output_id IS DISTINCT FROM p_output_id
@@ -231,6 +233,6 @@ $function$;
 -- Function defaults in PostgreSQL permit PUBLIC execution: explicitly remove it
 -- in the same migration transaction. CI grants EXECUTE to only its test role.
 REVOKE ALL ON FUNCTION public.matchdesk_commit_producer_grant(
-    text, text, text, text, text, text, text, bigint, text, text, jsonb, jsonb
+    text, text, text, text, text, text, text, text, bigint, text, text, jsonb, jsonb
 ) FROM PUBLIC;
 COMMIT;

@@ -60,7 +60,7 @@ function scopedInvocation(id, scopeSession, scopeOutput, command) {
   const candidate = { ...caseDoc, output: { ...caseDoc.output,
     session_id: scopeSession, output_id: scopeOutput } };
   return 'SELECT public.matchdesk_commit_producer_grant(' +
-    [id, actor, tenant, scopeSession, scopeOutput, 'create', command]
+    [id, actor, 'ci-issuer', tenant, scopeSession, scopeOutput, 'create', command]
       .map(x => "'" + x + "'").join(',') +
     ',0,NULL,' + "'" + digest1 + "'," + q(candidate) + ',' + q(entry) + ');';
 }
@@ -78,18 +78,18 @@ const grantSql = (id, action = 'create', seconds = 600) =>
   ',' + q(binding) + ",0,clock_timestamp() + interval '" + seconds + " seconds');";
 const invoke = (id, identity = actor, command = 'ci-command-000001') =>
   'SELECT public.matchdesk_commit_producer_grant(' +
-  [id,identity,tenant,session,output,'create',command].map(x => "'" + x + "'").join(',') +
+  [id,identity,'ci-issuer',tenant,session,output,'create',command].map(x => "'" + x + "'").join(',') +
   ',0,NULL,' + "'" + digest1 + "'," + q(caseDoc) + ',' + q(entry) + ');';
 try {
   await check('migration is repeatable and callable only when role is granted', () => {
     const migration = readFileSync('backend/postgres/migrations/006_producer_atomic_grants.sql','utf8');
     sql(migration); sql(migration);
     sql("CREATE ROLE matchdesk_grant_ci LOGIN;");
-    assert.equal(sql("SELECT has_function_privilege('matchdesk_grant_ci','public.matchdesk_commit_producer_grant(text,text,text,text,text,text,text,bigint,text,text,jsonb,jsonb)','EXECUTE');"), 'f');
+    assert.equal(sql("SELECT has_function_privilege('matchdesk_grant_ci','public.matchdesk_commit_producer_grant(text,text,text,text,text,text,text,text,bigint,text,text,jsonb,jsonb)','EXECUTE');"), 'f');
     sql("GRANT CONNECT ON DATABASE matchdesk TO matchdesk_grant_ci;");
     sql("GRANT USAGE ON SCHEMA public TO matchdesk_grant_ci;");
-    sql("GRANT EXECUTE ON FUNCTION public.matchdesk_commit_producer_grant(text,text,text,text,text,text,text,bigint,text,text,jsonb,jsonb) TO matchdesk_grant_ci;");
-    assert.equal(sql("SELECT has_function_privilege('matchdesk_grant_ci','public.matchdesk_commit_producer_grant(text,text,text,text,text,text,text,bigint,text,text,jsonb,jsonb)','EXECUTE');"), 't');
+    sql("GRANT EXECUTE ON FUNCTION public.matchdesk_commit_producer_grant(text,text,text,text,text,text,text,text,bigint,text,text,jsonb,jsonb) TO matchdesk_grant_ci;");
+    assert.equal(sql("SELECT has_function_privilege('matchdesk_grant_ci','public.matchdesk_commit_producer_grant(text,text,text,text,text,text,text,text,bigint,text,text,jsonb,jsonb)','EXECUTE');"), 't');
     assert.equal(sql("SELECT has_table_privilege('matchdesk_grant_ci','public.matchdesk_producer_action_grants','UPDATE');"), 'f');
     assert.equal(sql("SELECT has_table_privilege('matchdesk_grant_ci','public.matchdesk_producer_cases','UPDATE');"), 'f');
   });
@@ -99,6 +99,8 @@ try {
     assert.equal(sql(executeAsRestricted(invoke('ci-revoked-grant-01'))), 'f');
     sql(grantSql('ci-wrong-actor-01'));
     assert.equal(sql(executeAsRestricted(invoke('ci-wrong-actor-01','forged-actor'))), 'f');
+    sql(grantSql('ci-wrong-issuer-01'));
+    assert.equal(sql(executeAsRestricted(invoke('ci-wrong-issuer-01').replace("'ci-issuer'", "'other-issuer'"))), 'f');
     assert.equal(sql("SELECT count(*) FROM matchdesk_producer_cases WHERE tenant_id='ci-tenant';"), '0');
   });
   await check('valid grant commits case and audit and cannot replay', () => {
@@ -145,7 +147,7 @@ try {
       "FOR EACH ROW EXECUTE FUNCTION matchdesk_ci_grant_reject_audit();",
     ].join(' '));
     const candidate = 'SELECT public.matchdesk_commit_producer_grant(' +
-      ["ci-audit-fault-01",actor,tenant,newSession,newOutput,'create','ci-rollback-command-01']
+      ["ci-audit-fault-01",actor,'ci-issuer',tenant,newSession,newOutput,'create','ci-rollback-command-01']
         .map(x=>"'"+x+"'").join(',') + ',0,NULL,' +
       "'" + digest1 + "'," + q(freshCase) + ',' + q(entry) + ');';
     sql(executeAsRestricted(candidate), /CI atomic audit rollback/);
@@ -219,7 +221,7 @@ try {
     const forgedCase = { ...caseDoc, generation: 2,
       review: { ...caseDoc.review, status: 'approved', audit: [entry, approval] } };
     const attempt = 'SELECT public.matchdesk_commit_producer_grant(' +
-      [id, actor, tenant, session, output, 'approve', 'ci-skip-reverify-command-01']
+      [id, actor, 'ci-issuer', tenant, session, output, 'approve', 'ci-skip-reverify-command-01']
         .map(x => "'" + x + "'").join(',') +
       ",1,'" + digest1 + "','" + digest2 + "'," + q(forgedCase) + ',' + q(approval) + ');';
     assert.equal(sql(executeAsRestricted(attempt)), 'f');
@@ -238,7 +240,7 @@ try {
     const forgedCase = { ...caseDoc, generation: 2,
       review: { ...caseDoc.review, status: 'pending_verification', audit: [entry, badEdit] } };
     const attempt = 'SELECT public.matchdesk_commit_producer_grant(' +
-      [id, actor, tenant, session, output, 'edit', 'ci-stale-edit-command-01']
+      [id, actor, 'ci-issuer', tenant, session, output, 'edit', 'ci-stale-edit-command-01']
         .map(x => "'" + x + "'").join(',') +
       ",1,'" + digest1 + "','" + digest2 + "'," + q(forgedCase) + ',' + q(badEdit) + ');';
     assert.equal(sql(executeAsRestricted(attempt)), 'f');
@@ -255,7 +257,7 @@ try {
     const reviewedCase = { ...caseDoc, generation: 2,
       review: { ...caseDoc.review, status: 'ready_for_decision', audit: [entry, reverified] } };
     const reverify = 'SELECT public.matchdesk_commit_producer_grant(' +
-      [revId, actor, tenant, session, output, 'reverify', 'ci-good-reverify-command-01']
+      [revId, actor, 'ci-issuer', tenant, session, output, 'reverify', 'ci-good-reverify-command-01']
         .map(x => "'" + x + "'").join(',') +
       ",1,'" + digest1 + "','" + digest2 + "'," + q(reviewedCase) + ',' + q(reverified) + ');';
     assert.equal(sql(executeAsRestricted(reverify)), 't');
@@ -267,7 +269,7 @@ try {
     const approvedCase = { ...caseDoc, generation: 3,
       review: { ...caseDoc.review, status: 'approved', audit: [entry, reverified, approved] } };
     const approval = 'SELECT public.matchdesk_commit_producer_grant(' +
-      [approveId, actor, tenant, session, output, 'approve', 'ci-good-approval-command-01']
+      [approveId, actor, 'ci-issuer', tenant, session, output, 'approve', 'ci-good-approval-command-01']
         .map(x => "'" + x + "'").join(',') +
       ",2,'" + digest2 + "','" + 'c'.repeat(64) + "'," +
       q(approvedCase) + ',' + q(approved) + ');';
