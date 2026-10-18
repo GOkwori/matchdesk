@@ -10,6 +10,7 @@ import os
 import sys
 
 import psycopg
+from psycopg import sql
 
 from matchdesk.domain.producer_commands import HostVerifiedActor, open_producer_case
 from matchdesk.domain.producer_preview import build_producer_desk_preview
@@ -105,7 +106,9 @@ def main() -> None:
             if not password or len(password) < 32:
                 raise RuntimeError("Ephemeral restricted login password is required")
             cursor.execute(
-                "ALTER ROLE matchdesk_grant_executor_ci PASSWORD %s", (password,)
+                sql.SQL("ALTER ROLE matchdesk_grant_executor_ci PASSWORD {}").format(
+                    sql.Literal(password)
+                )
             )
             cursor.execute(
                 "GRANT CONNECT ON DATABASE matchdesk TO matchdesk_grant_executor_ci"
