@@ -104,7 +104,29 @@ async function handle(request: NextRequest, context: RouteContext): Promise<Resp
   if (process.env.MATCHDESK_LOCAL_JUDGE_ENABLED !== "1") {
     return denied(404, "Local judge adapter is disabled");
   }
-  if (!trusted(request)) return denied(403, "Local judge access denied");
+  if (!trusted(request)) {
+    // Local qualification only: identify the failed trust predicate without
+    // exposing request values, tokens, or diagnostics to deployed clients.
+    const response = denied(403, "Local judge access denied");
+    if (process.env.MATCHDESK_JUDGE_DIAGNOSTICS === "1" &&
+        process.env.NODE_ENV !== "production") {
+      const h = request.headers;
+      const checks: Array<[string, boolean]> = [
+        ["host", h.get("host") === WEB_ORIGIN.slice(7)],
+        ["url-host", request.nextUrl.hostname === "127.0.0.1"],
+        ["url-port", request.nextUrl.port === "3000"],
+        ["query", request.nextUrl.search === ""],
+        ["cookie", !h.has("cookie")],
+        ["referer", h.get("referer") === null || h.get("referer")!.startsWith(WEB_ORIGIN + "/")],
+        ["forwarded", !h.has("forwarded") && exactLocalForwarding(h)],
+        ["original", !h.has("x-original-host") && !h.has("x-original-url")],
+        ["site", h.get("sec-fetch-site") === null || h.get("sec-fetch-site") === "same-origin"],
+        ["origin", h.get("origin") === null || h.get("origin") === WEB_ORIGIN],
+      ];
+      response.headers.set("X-MatchDesk-Judge-Denial", checks.filter(([, ok]) => !ok).map(([key]) => key).join(",") || "unknown");
+    }
+    return response;
+  }
   const { segments } = await context.params;
   const path = backendPath(request.method, segments);
   if (path === null) return denied(404, "Unknown local judge operation");
