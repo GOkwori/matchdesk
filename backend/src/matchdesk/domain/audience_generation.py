@@ -7,6 +7,7 @@ content or publish. The output is an unapproved, immutable broadcast draft.
 
 from __future__ import annotations
 
+import asyncio
 import json
 from dataclasses import dataclass
 from typing import Literal, Protocol
@@ -20,6 +21,8 @@ AudienceLanguage = Literal["en", "es", "fr"]
 AudiencePersona = Literal["analyst", "casual_fan", "broadcast_caption"]
 
 _MAX_SOURCE_BYTES = 16_000
+# Bounded offline proposal step; a real provider must separately enforce network budgets.
+_PROVIDER_TIMEOUT_SECONDS = 15
 _LOCALE_NAMES = {"en": "English", "es": "Spanish", "fr": "French"}
 _PERSONA_POLICIES = {
     "analyst": "Use measured, precise football terminology; distinguish inference from fact.",
@@ -98,7 +101,13 @@ async def propose_audience_variant(
     language-quality acceptance; structural validity never proves equivalence.
     """
     prompt = build_audience_prompt(request)
-    response = await provider.propose(prompt)
+    try:
+        # A provider is untrusted and must not hold the request indefinitely.
+        # This wait bound does not authenticate, approve, publish, or cap model spend.
+        async with asyncio.timeout(_PROVIDER_TIMEOUT_SECONDS):
+            response = await provider.propose(prompt)
+    except TimeoutError as exc:
+        raise ValueError("Audience proposal deadline exceeded") from exc
     payload = _OUTPUT_ADAPTER.validate_python(response)
     if payload.kind != request.source.payload.kind:
         raise ValueError("Audience generation must preserve the broadcast output kind")

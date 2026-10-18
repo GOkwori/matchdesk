@@ -1,6 +1,7 @@
 """Offline Phase 3D audience generation contract tests; no live-model expenditure."""
 
 import asyncio
+from unittest.mock import patch
 
 import pytest
 from matchdesk.domain.audience_generation import (
@@ -131,3 +132,41 @@ def test_prompt_distinguishes_untrusted_copy_from_policy() -> None:
     assert "SOURCE_JSON:" in prompt
     assert "untrusted data" in prompt
     assert "independent human meaning/language review" in prompt
+
+
+def test_slow_provider_fails_closed_without_adapted_draft() -> None:
+    """A stalled provider cannot produce an implicitly accepted adaptation."""
+
+    class StalledProvider:
+        """Offline cooperative coroutine to exercise the real deadline."""
+
+        async def propose(self, prompt: str) -> object:
+            """Yield without completing; the deadline must cancel this task."""
+            del prompt
+            await asyncio.Event().wait()
+            return {}
+
+    request = AudienceDraftRequest(
+        source=_source(), output_id="variant-timeout", language="en", persona="analyst"
+    )
+    with patch("matchdesk.domain.audience_generation._PROVIDER_TIMEOUT_SECONDS", 0.01):
+        with pytest.raises(ValueError, match="deadline exceeded"):
+            asyncio.run(propose_audience_variant(request, StalledProvider()))
+
+
+def test_provider_failure_propagates_without_an_approved_draft() -> None:
+    """A provider exception cannot be interpreted as a usable response."""
+
+    class FailingProvider:
+        """Offline failure injection; no external model is contacted."""
+
+        async def propose(self, prompt: str) -> object:
+            """Fail after receiving an otherwise valid bounded request."""
+            del prompt
+            raise RuntimeError("offline provider failed")
+
+    request = AudienceDraftRequest(
+        source=_source(), output_id="variant-error", language="fr", persona="casual_fan"
+    )
+    with pytest.raises(RuntimeError, match="offline provider failed"):
+        asyncio.run(propose_audience_variant(request, FailingProvider()))
