@@ -1,3 +1,4 @@
+/** Isolated document root for the opt-in localhost judge workbench. */
 import type { ReactNode } from "react";
 
 /**
