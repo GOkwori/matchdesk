@@ -287,6 +287,48 @@ try {
     assert.equal(sql("SELECT count(*) FROM matchdesk_producer_audit WHERE session_id='" +
       session + "';"), '3');
   });
+  await check('grant expiry during an audit insert rolls back every write', () => {
+    const grant = 'ci-expiry-mid-write-0001';
+    const sc = 'ci-expiry-midwrite-session';
+    const out = 'ci-expiry-midwrite-output';
+    scopedGrant(grant, sc, out);
+    // A trigger runs after the case INSERT but before the audit append. The
+    // notice proves the writer was accepted initially and reached that stage:
+    // an already-expired grant would return false without entering the trigger.
+    sql([
+      "CREATE FUNCTION matchdesk_ci_grant_expiry_barrier() RETURNS trigger",
+      "LANGUAGE plpgsql AS $f$ BEGIN",
+      "IF NEW.session_id='ci-expiry-midwrite-session' THEN",
+      "RAISE NOTICE 'CI_GRANT_EXPIRY_BARRIER_REACHED'; PERFORM pg_sleep(12);",
+      "END IF; RETURN NEW; END; $f$;",
+      "CREATE TRIGGER matchdesk_ci_grant_expiry_barrier",
+      "BEFORE INSERT ON public.matchdesk_producer_audit",
+      "FOR EACH ROW EXECUTE FUNCTION matchdesk_ci_grant_expiry_barrier();",
+    ].join(' '));
+    // The grant is valid when issued, but expires while the trigger sleeps.
+    // The command must fail closed and roll back BOTH the case and audit.
+    sql("UPDATE public.matchdesk_producer_action_grants " +
+      "SET expires_at=clock_timestamp() + interval '10 seconds' " +
+      "WHERE grant_id='" + grant + "';");
+    const call = executeAsRestricted(scopedInvocation(
+      grant, sc, out, 'ci-expiry-midwrite-command-01'));
+    const result = spawnSync('docker', [...args, '-f', '-'], {
+      input: call, encoding: 'utf8', timeout: 30000, maxBuffer: 1048576,
+    });
+    if (result.error) throw result.error;
+    assert.notEqual(result.status, 0, 'Expiry must reject the transaction');
+    assert.match(result.stderr, /CI_GRANT_EXPIRY_BARRIER_REACHED/);
+    assert.match(result.stderr, /Producer grant expired during commit/);
+    assert.equal(sql("SELECT count(*) FROM public.matchdesk_producer_cases " +
+      "WHERE session_id='" + sc + "';"), '0');
+    assert.equal(sql("SELECT count(*) FROM public.matchdesk_producer_audit " +
+      "WHERE session_id='" + sc + "';"), '0');
+    assert.equal(sql("SELECT count(*) FROM public.matchdesk_producer_action_grants " +
+      "WHERE grant_id='" + grant +
+      "' AND consumed_at IS NULL AND command_id IS NULL;"), '1');
+    sql('DROP TRIGGER matchdesk_ci_grant_expiry_barrier ON public.matchdesk_producer_audit;');
+    sql('DROP FUNCTION matchdesk_ci_grant_expiry_barrier();');
+  });
   await check('migration clears stale execution grants instead of preserving them', () => {
     // Simulate a formerly privileged workload role from an earlier version.
     // Replacing a function without first dropping it would leave the grant.
