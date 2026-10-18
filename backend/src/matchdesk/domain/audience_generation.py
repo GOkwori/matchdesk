@@ -16,6 +16,7 @@ from pydantic import TypeAdapter
 
 from matchdesk.domain.audience_variants import build_audience_variant
 from matchdesk.domain.broadcast_outputs import BroadcastEnvelope, OutputPayload
+from matchdesk.domain.models import Identifier
 
 AudienceLanguage = Literal["en", "es", "fr"]
 AudiencePersona = Literal["analyst", "casual_fan", "broadcast_caption"]
@@ -32,6 +33,7 @@ _PERSONA_POLICIES = {
     "broadcast_caption": "Keep concise, readable caption wording without losing factual qualifications.",
 }
 _OUTPUT_ADAPTER: TypeAdapter[OutputPayload] = TypeAdapter(OutputPayload)
+_OUTPUT_ID_ADAPTER: TypeAdapter[str] = TypeAdapter(Identifier)
 
 
 @dataclass(frozen=True)
@@ -61,6 +63,12 @@ def build_audience_prompt(request: AudienceDraftRequest) -> str:
         raise ValueError("Unsupported audience language")
     if request.persona not in _PERSONA_POLICIES:
         raise ValueError("Unsupported audience persona")
+
+    # Fail before any potentially metered provider operation. Structural ID
+    # rejection after proposal generation would waste model spend and telemetry.
+    candidate_id = _OUTPUT_ID_ADAPTER.validate_python(request.output_id)
+    if candidate_id == request.source.output_id:
+        raise ValueError("Audience variant requires a distinct output ID")
 
     # Frozen models can still be constructed unsafely with model_copy(update=...).
     # Reparse all nested invariants before sending any source text to a provider.

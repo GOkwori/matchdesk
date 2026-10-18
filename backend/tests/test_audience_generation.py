@@ -239,3 +239,15 @@ def test_tampered_source_is_denied_before_any_provider_call() -> None:
     with pytest.raises(ValidationError, match="digest"):
         asyncio.run(propose_audience_variant(request, provider))
     assert provider.prompts == []
+
+
+@pytest.mark.parametrize("output_id", ["", "invalid id", "x" * 97, "source-1"])
+def test_invalid_variant_output_id_never_calls_provider(output_id: str) -> None:
+    """Deny unsafe, overlong or colliding output IDs before a metered provider call."""
+    provider = OfflineProvider({})
+    request = AudienceDraftRequest(
+        source=_source(), output_id=output_id, language="es", persona="analyst"
+    )
+    with pytest.raises(ValueError):
+        asyncio.run(propose_audience_variant(request, provider))
+    assert provider.prompts == []
