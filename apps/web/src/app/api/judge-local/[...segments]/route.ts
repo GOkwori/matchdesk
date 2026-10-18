@@ -80,8 +80,10 @@ function trusted(request: NextRequest): boolean {
   const fetchSite = h.get("sec-fetch-site");
   const isWrite = request.method !== "GET";
   return (
+    // Next.js may normalize the URL hostname to localhost; the incoming
+    // Host header must still be the exact IPv4 loopback endpoint.
     h.get("host") === "127.0.0.1:3000" &&
-    request.nextUrl.hostname === "127.0.0.1" &&
+    (request.nextUrl.hostname === "127.0.0.1" || request.nextUrl.hostname === "localhost") &&
     request.nextUrl.port === "3000" &&
     request.nextUrl.search === "" &&
     !h.has("cookie") &&
@@ -113,7 +115,7 @@ async function handle(request: NextRequest, context: RouteContext): Promise<Resp
       const h = request.headers;
       const checks: Array<[string, boolean]> = [
         ["host", h.get("host") === WEB_ORIGIN.slice(7)],
-        ["url-host", request.nextUrl.hostname === "127.0.0.1"],
+        ["url-host", (request.nextUrl.hostname === "127.0.0.1" || request.nextUrl.hostname === "localhost")],
         ["url-port", request.nextUrl.port === "3000"],
         ["query", request.nextUrl.search === ""],
         ["cookie", !h.has("cookie")],
