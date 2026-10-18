@@ -63,14 +63,14 @@ const NEXT_LOCAL_FORWARDING = new Map<string, string>([
   ["x-forwarded-proto", "http"],
 ]);
 
-/** Require the exact localhost forwarding tuple synthesized by Next.js. */
+/** Reject spoofed forwarding fields while allowing Next.js to omit optional ones. */
 function exactLocalForwarding(headers: Headers): boolean {
   for (const [name, value] of headers) {
     if (name.startsWith("x-forwarded-") && NEXT_LOCAL_FORWARDING.get(name) !== value) {
       return false;
     }
   }
-  return [...NEXT_LOCAL_FORWARDING].every(([name, value]) => headers.get(name) === value);
+  return true;
 }
 
 /** Guard the actual browser-facing trust boundary, not only the Python host. */
