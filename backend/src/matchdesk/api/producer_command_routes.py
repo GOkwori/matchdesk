@@ -139,7 +139,16 @@ def _actor(
         actor = verify_producer_access_token(
             token, policy=policy, keys=keys, entitlements=entitlements
         )
-        if type(actor) is not HostVerifiedActor or session_id not in actor.permitted_sessions:
+        # Re-enforce the exact policy at the HTTP boundary, independently of
+        # the token verifier and host-specific grant resolver. A non-producer
+        # principal must never reach the source or durable mutation adapters.
+        if (
+            type(actor) is not HostVerifiedActor
+            or actor.tenant_id != policy.tenant_id
+            or actor.issuer != policy.issuer
+            or "producer" not in actor.roles
+            or session_id not in actor.permitted_sessions
+        ):
             return _response("Producer command denied", 403)
         return actor
     except (PermissionError, LookupError, TypeError, ValueError):
