@@ -222,6 +222,27 @@ def test_token_alone_cannot_create_or_approve(monkeypatch):
     assert store.writes == 0
 
 
+def test_revoked_host_grant_denies_existing_rejection(monkeypatch):
+    """Revoked action permission must deny an existing case without a new audit."""
+    client, source, store, grants = prepare(monkeypatch)
+    create_case(client, source, grants)
+    grants.actions.add("reject")
+    grants.actions.remove("reject")
+    history = store.case.review.audit
+    denied = client.post(BASE + "/reject", headers=HEADERS, json=decision_body(store))
+    assert denied.status_code == 403
+    assert store.writes == 1 and store.case.review.audit == history
+
+
+def test_truthy_non_boolean_grant_never_authorizes_create(monkeypatch):
+    """A misconfigured host cannot grant mutation with an integer truthy result."""
+    client, source, store, grants = prepare(monkeypatch)
+    monkeypatch.setattr(grants, "authorize", lambda **_kwargs: 1)
+    denied = client.post(BASE + "/create", headers=HEADERS, json=create_body(source))
+    assert denied.status_code == 403
+    assert store.writes == 0
+
+
 def test_exact_create_is_atomic_and_replay_is_denied(monkeypatch):
     """Only the first source-bound insert may produce an audit entry."""
     client, source, store, grants = prepare(monkeypatch)
@@ -418,10 +439,17 @@ def test_reject_and_concurrent_update_never_publish(monkeypatch):
     assert response.status_code == 409
     assert store.writes == 1 and len(store.case.review.audit) == 1
     store.conflict = False
-    denied = client.post(BASE + "/reject", headers=HEADERS, json=decision_body(store))
-    # Current review status may reject directly or require separate reverification.
-    assert denied.status_code in (200, 409)
-    assert denied.json().get("publication_enabled") is not True
+    accepted = client.post(BASE + "/reject", headers=HEADERS, json=decision_body(store))
+    assert accepted.status_code == 200
+    assert accepted.json()["review_status"] == "rejected"
+    assert accepted.json()["generation"] == 2
+    assert accepted.json()["publication_enabled"] is False
+    assert len(store.case.review.audit) == 2 and store.writes == 2
+
+    # A repeated exact-generation decision cannot append another audit entry.
+    replay = client.post(BASE + "/reject", headers=HEADERS, json=decision_body(store))
+    assert replay.status_code == 409
+    assert len(store.case.review.audit) == 2 and store.writes == 2
 
 
 def test_changed_binding_or_missing_generation_blocks_grants(monkeypatch):
