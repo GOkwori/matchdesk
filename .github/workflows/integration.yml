@@ -68,9 +68,15 @@ jobs:
         run: |
           set -euo pipefail
           node e2e/producer-confirmation-issuer-postgres.mjs 2>&1 | tee artifacts/integration/producer-confirmation-issuer.log
+      - name: Qualify confirmation staging migration in disposable PostgreSQL
+        id: confirmation_staging
+        if: ${{ !cancelled() && steps.confirmed_issuer.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          node e2e/producer-confirmation-staging-postgres.mjs 2>&1 | tee artifacts/integration/producer-confirmation-staging.log
       - name: Qualify separate physical issuer and revoker PostgreSQL logins
         id: physical_issuer
-        if: ${{ !cancelled() && steps.confirmed_issuer.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.confirmation_staging.outcome == 'success' }}
         run: |
           set -euo pipefail
           issuer_password="$(openssl rand -hex 32)"
