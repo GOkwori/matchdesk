@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
+import re
 from typing import Mapping, Protocol
 
 import jwt
@@ -27,6 +28,9 @@ class ProducerIdentityPolicy:
     tenant_id: str
     client_ids: frozenset[str]
     required_scope: str = "MatchDesk.Producer.Access"
+    # Optional for read-only callers; privileged issuer MUST configure a
+    # reviewed tenant Conditional Access context (c1-c99) independently.
+    required_auth_context: str | None = None
     max_token_age_seconds: int = 3600
     clock_leeway_seconds: int = 30
 
@@ -36,6 +40,11 @@ class ProducerIdentityPolicy:
         # customer External ID and common/organizations remain untrusted.
         if self.issuer != f"https://login.microsoftonline.com/{self.tenant_id}/v2.0":
             raise ValueError("Producer policy requires the exact workforce issuer")
+        if self.required_auth_context is not None and (
+            type(self.required_auth_context) is not str
+            or re.fullmatch(r"c(?:[1-9]|[1-9][0-9])", self.required_auth_context) is None
+        ):
+            raise ValueError("Producer step-up requires a pinned Entra authentication context")
         if (
             not self.issuer.startswith("https://")
             or not self.issuer.endswith("/v2.0")
@@ -135,6 +144,19 @@ def verify_producer_access_token(
             and claims["idtyp"] == "app"
         ):
             raise PermissionError("Producer token is outside delegated API policy")
+        # Only the *signature-verified API access token's* array of Entra
+        # authentication context IDs may satisfy this opt-in requirement.
+        # A signed 'amr' label, unverified header or browser flag cannot replace
+        # a tenant-pinned Conditional Access authentication context. Entra CA
+        # policy must separately be verified to require MFA/step-up for this ID.
+        if policy.required_auth_context is not None:
+            contexts = claims.get("acrs")
+            if (
+                type(contexts) is not list
+                or not all(type(value) is str for value in contexts)
+                or policy.required_auth_context not in contexts
+            ):
+                raise PermissionError("Producer authentication context was not satisfied")
         grants = entitlements.resolve(tenant_id=policy.tenant_id, subject=claims["sub"])
         if grants is None:
             raise PermissionError("Producer has no current server-side grants")

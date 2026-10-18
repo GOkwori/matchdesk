@@ -198,6 +198,12 @@ def test_invalid_token_framing_fails_closed(signing, invalid) -> None:
         {"required_scope": ""},
         {"max_token_age_seconds": 20000},
         {"clock_leeway_seconds": 900},
+        {"required_auth_context": ""},
+        {"required_auth_context": "c0"},
+        {"required_auth_context": "c100"},
+        {"required_auth_context": "C1"},
+        {"required_auth_context": "c1,c2"},
+        {"required_auth_context": True},
     ],
 )
 def test_invalid_server_policy_fails_closed(changes) -> None:
@@ -256,3 +262,72 @@ def test_privileged_auth_never_trusts_customer_or_generic_issuer(invalid_issuer:
     """Customer and generic authorities cannot configure producer trust."""
     with pytest.raises(ValueError, match="workforce issuer"):
         policy(issuer=invalid_issuer)
+
+
+def test_tenant_pinned_auth_context_accepts_only_signed_access_token_claim(signing) -> None:
+    """A configured step-up context must be in the signed delegated API token."""
+    private, keys = signing
+    actor = verify_producer_access_token(
+        token(private, acrs=["c1", "c7"], amr=["mfa"]),
+        policy=policy(required_auth_context="c1"),
+        keys=keys,
+        entitlements=Grants(),
+        now=NOW,
+    )
+    assert actor.subject == "person-1"
+    assert actor.roles == frozenset({"producer"})
+
+
+@pytest.mark.parametrize(
+    "acrs",
+    [
+        None,
+        [],
+        ["c2"],
+        ["c10"],
+        ["C1"],
+        "c1",
+        {"c1": True},
+        [1, "c1"],
+        [None, "c1"],
+    ],
+)
+def test_missing_wrong_or_malformed_auth_context_denies_privileged_access(
+    signing, acrs
+) -> None:
+    """Neither a bearer without the exact context nor an invalid shape can pass."""
+    private, keys = signing
+    with pytest.raises(PermissionError):
+        verify_producer_access_token(
+            token(private, acrs=acrs, amr=["mfa"]),
+            policy=policy(required_auth_context="c1"),
+            keys=keys,
+            entitlements=Grants(),
+            now=NOW,
+        )
+
+
+def test_mfa_label_does_not_bypass_missing_enforced_auth_context(signing) -> None:
+    """A standalone amr label is insufficient for a privileged issuer policy."""
+    private, keys = signing
+    with pytest.raises(PermissionError):
+        verify_producer_access_token(
+            token(private, amr=["mfa"], xms_cc=["cp1"]),
+            policy=policy(required_auth_context="c1"),
+            keys=keys,
+            entitlements=Grants(),
+            now=NOW,
+        )
+
+
+def test_step_up_context_never_overrides_revoked_server_entitlements(signing) -> None:
+    """A cryptographically valid c1 token still needs fresh trusted session grants."""
+    private, keys = signing
+    with pytest.raises(PermissionError):
+        verify_producer_access_token(
+            token(private, acrs=["c1"]),
+            policy=policy(required_auth_context="c1"),
+            keys=keys,
+            entitlements=NoProducerGrants(),
+            now=NOW,
+        )
