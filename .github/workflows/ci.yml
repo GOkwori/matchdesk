@@ -200,6 +200,11 @@ jobs:
       - name: Prove the browser verifier matches the backend verifier
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: node --experimental-strip-types --test apps/web/tests/verifier.parity.test.mjs 2>&1 | tee artifacts/web/verifier-parity.log
+      - name: Qualify default-disabled workforce BFF contract
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          node --experimental-strip-types --test apps/web/tests/workforce-bff.test.mjs 2>&1 | tee artifacts/web/workforce-bff.log
       - name: Build the actual web application
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         working-directory: apps/web
