@@ -149,6 +149,86 @@ try {
     assert.equal(sql('SELECT has_function_privilege(' + q(role) + ',' +
       q(revokeSig) + ",'EXECUTE')"), 'f');
   });
+  await check('SECURITY DEFINER executes as constrained non-login column-grant owner', () => {
+    // Reassign only inside the disposable CI database. Deployment ownership
+    // remains an independent, explicit infrastructure approval requirement.
+    // FOR UPDATE requires UPDATE privilege on at least one pending column:
+    // restrict it to revoked_at; never expose the pending token ciphertext.
+    const definer = 'matchdesk_workforce_stepup_definer_ci';
+    sql([
+      'BEGIN',
+      'CREATE ROLE ' + definer +
+        ' NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOREPLICATION NOBYPASSRLS',
+      'GRANT USAGE ON SCHEMA public TO ' + definer,
+      'GRANT SELECT (record_digest, tenant_id, client_id, object_id, ' +
+        'subject, issued_at_ms, expires_at_ms, revoked_at), ' +
+        'UPDATE (revoked_at) ON public.matchdesk_workforce_pending_sessions TO ' + definer,
+      'GRANT SELECT (state_digest, pending_digest, tenant_id, client_id, ' +
+        'object_id, subject, context_id, issued_at_ms, expires_at_ms, ' +
+        'nonce_iv, nonce_ciphertext, nonce_tag, consumed_at), ' +
+        'INSERT (state_digest, pending_digest, tenant_id, client_id, ' +
+        'object_id, subject, context_id, issued_at_ms, expires_at_ms, ' +
+        'nonce_iv, nonce_ciphertext, nonce_tag), ' +
+        'UPDATE (consumed_at) ON public.matchdesk_workforce_step_up_challenges TO ' + definer,
+      // PostgreSQL requires CREATE on the containing schema to change
+      // function ownership. Grant/revoke it in ONE transaction, not as a
+      // durable permission of the definer identity.
+      'GRANT CREATE ON SCHEMA public TO ' + definer,
+      'ALTER FUNCTION ' + createSig + ' OWNER TO ' + definer,
+      'ALTER FUNCTION ' + consumeSig + ' OWNER TO ' + definer,
+      'REVOKE CREATE ON SCHEMA public FROM ' + definer,
+      'COMMIT',
+    ].join(';\n') + ';');
+
+    // Confirm both exact SECURITY DEFINER entrypoints run under the same
+    // independently restricted identity, not a superuser or table owner.
+    assert.equal(sql(
+      'SELECT count(*) FROM pg_catalog.pg_proc AS p ' +
+      'JOIN pg_catalog.pg_roles AS r ON r.oid=p.proowner ' +
+      "WHERE p.pronamespace='public'::regnamespace AND p.proname IN (" +
+      "'matchdesk_create_workforce_step_up_challenge'," +
+      "'matchdesk_consume_workforce_step_up_challenge') " +
+      'AND p.prosecdef AND r.rolname=' + q(definer) +
+      ' AND NOT r.rolsuper AND NOT r.rolcanlogin ' +
+      'AND NOT r.rolcreatedb AND NOT r.rolcreaterole ' +
+      'AND NOT r.rolinherit AND NOT r.rolreplication AND NOT r.rolbypassrls'
+    ), '2');
+    assert.equal(sql(
+      'SELECT count(*) FROM pg_catalog.pg_auth_members AS m ' +
+      'JOIN pg_catalog.pg_roles AS r ON r.oid=m.roleid OR r.oid=m.member ' +
+      'WHERE r.rolname=' + q(definer)
+    ), '0');
+    assert.equal(sql('SELECT has_schema_privilege(' + q(definer) +
+      ",'public','CREATE')"), 'f');
+    // A definer cannot become a raw pending-token reader even if a caller
+    // misuses its opaque nonce API; only the selected parent fields are read.
+    for (const column of ['token_iv', 'token_ciphertext', 'token_tag']) {
+      assert.equal(sql('SELECT has_column_privilege(' + q(definer) +
+        ",'public.matchdesk_workforce_pending_sessions'," +
+        q(column) + ",'SELECT')"), 'f');
+    }
+    for (const [table, column, privilege, expected] of [
+      ['matchdesk_workforce_pending_sessions', 'revoked_at', 'UPDATE', 't'],
+      ['matchdesk_workforce_pending_sessions', 'tenant_id', 'UPDATE', 'f'],
+      ['matchdesk_workforce_pending_sessions', 'record_digest', 'UPDATE', 'f'],
+      ['matchdesk_workforce_step_up_challenges', 'consumed_at', 'UPDATE', 't'],
+      ['matchdesk_workforce_step_up_challenges', 'nonce_ciphertext', 'UPDATE', 'f'],
+      ['matchdesk_workforce_step_up_challenges', 'state_digest', 'INSERT', 't'],
+    ]) {
+      assert.equal(sql('SELECT has_column_privilege(' + q(definer) +
+        ",'public." + table + "'," + q(column) + ',' +
+        q(privilege) + ')'), expected);
+    }
+    for (const table of ['matchdesk_workforce_pending_sessions',
+      'matchdesk_workforce_step_up_challenges', 'matchdesk_customer_sessions']) {
+      for (const privilege of ['DELETE', 'TRUNCATE', 'TRIGGER']) {
+        assert.equal(sql('SELECT has_table_privilege(' + q(definer) +
+          ",'public." + table + "'," + q(privilege) + ')'), 'f');
+      }
+    }
+    assert.equal(sql('SELECT has_table_privilege(' + q(definer) +
+      ",'public.matchdesk_customer_sessions','SELECT')"), 'f');
+  });
   await check('restricted caller cannot read, alter or enumerate sealed state', () => {
     for (const table of [
       'public.matchdesk_workforce_pending_sessions',
