@@ -55,7 +55,10 @@ function fixture(overrides = {}) {
       return Response.json({
         session_id: SID, output_id: OUTPUT,
         generation: action === 'create' ? 1 : 2,
-        item_version: 1, action,
+        item_version: 1,
+        ...(action === 'reverify'
+          ? { mode: 'grant_backed_development_only', approval_enabled: false }
+          : { action }),
         review_status: action === 'reverify' ? 'ready_for_decision' : 'pending_verification',
         publication_enabled: false, private_marker: 'never-return-me',
       }, {
@@ -227,5 +230,34 @@ test('backend denials, redirects, invalid receipts and failures redact all secre
     const body = await response.text();
     assert.doesNotMatch(body, /private grant internal|private backend credential|attacker.invalid/);
     assert.equal(response.headers.get('location'), null);
+  }
+});
+
+
+test('reverification receipts must prove transaction-backed mode and an unapproved state', async () => {
+  const variants = [
+    { mode: 'host_authorized_reverification', approval_enabled: false,
+      review_status: 'ready_for_decision' },
+    { mode: 'grant_backed_development_only', approval_enabled: true,
+      review_status: 'ready_for_decision' },
+    { mode: 'grant_backed_development_only', approval_enabled: false,
+      review_status: 'approved' },
+    { mode: 'grant_backed_development_only', approval_enabled: false,
+      review_status: 'ready_for_decision', action: 'approve' },
+  ];
+  for (const variant of variants) {
+    const { handle, host } = fixture();
+    host.fetchBackend = async () => Response.json({
+      session_id: SID,
+      output_id: OUTPUT,
+      generation: 2,
+      item_version: 1,
+      publication_enabled: false,
+      ...variant,
+    });
+    const response = await handle(req('reverify'),
+      ['sessions', SID, 'cases', OUTPUT, 'reverify']);
+    assert.equal(response.status, 503, JSON.stringify(variant));
+    assert.equal((await response.json()).detail, 'Workforce upstream unavailable');
   }
 });

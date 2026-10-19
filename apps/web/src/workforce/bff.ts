@@ -189,7 +189,15 @@ function receipt(payload: unknown, sessionId: string, outputId: string, action: 
     !Number.isSafeInteger(value.generation) || Number(value.generation) < 1 ||
     !Number.isSafeInteger(value.item_version) || Number(value.item_version) < 1 ||
     typeof value.review_status !== "string" || !REVIEW_STATES.has(value.review_status) ||
-    (action !== "reverify" && value.action !== action)
+    // Unlike other commands, the backend reverify contract has no 'action'
+    // field. Require its *atomic-grant* mode and unapproved decision state.
+    // A legacy boolean-grant response must never be presented as a safe write.
+    (action === "reverify"
+      ? (value.mode !== "grant_backed_development_only" ||
+        value.approval_enabled !== false ||
+        value.review_status !== "ready_for_decision" ||
+        value.action !== undefined)
+      : value.action !== action)
   ) return null;
   return {
     session_id: sessionId,
