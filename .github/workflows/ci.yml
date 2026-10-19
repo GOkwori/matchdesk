@@ -215,6 +215,11 @@ jobs:
         run: |
           set -euo pipefail
           node --experimental-strip-types --test apps/web/tests/workforce-postgres-oidc.test.mjs 2>&1 | tee artifacts/web/workforce-postgres-oidc.log
+      - name: Verify signed Entra confidential code exchange and JWT boundaries
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          node --experimental-strip-types --test apps/web/tests/workforce-entra.test.mjs 2>&1 | tee artifacts/web/workforce-entra.log
       - name: Build the actual web application
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         working-directory: apps/web
