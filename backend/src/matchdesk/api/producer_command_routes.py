@@ -9,7 +9,7 @@ not provision keys, assert real Entra MFA, or publish any broadcast material.
 from __future__ import annotations
 
 import json
-from typing import Literal, Protocol, TypeVar
+from typing import Literal, Protocol, TypeVar, cast
 
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
@@ -32,6 +32,7 @@ from matchdesk.domain.producer_commands import (
     apply_producer_command,
     inspect_producer_case,
 )
+from matchdesk.domain.producer_execution_grants import ProducerGrantAttempt
 from matchdesk.domain.producer_identity import (
     EntitlementResolver,
     ProducerIdentityPolicy,
@@ -85,6 +86,41 @@ class ProducerMutationStore(ProducerCaseStore, Protocol):
 
     def create(self, case: ProducerCase) -> bool:
         """Persist one initial generation and its first audit entry atomically."""
+
+
+class ProducerGrantMutationStore(ProducerMutationStore, Protocol):
+    """A store that always consumes an exact grant inside its case/audit transaction."""
+
+    def create_with_execution_grant(
+        self, case: ProducerCase, *, grant: ProducerGrantAttempt
+    ) -> bool:
+        """Create case and audit atomically with the execution grant."""
+
+    def replace_with_execution_grant(
+        self, case: ProducerCase, *, expected_generation: int, grant: ProducerGrantAttempt
+    ) -> bool:
+        """CAS one case and append audit inside its grant-consumption transaction."""
+
+
+class ProducerTransactionalGrantSelector(Protocol):
+    """Host-owned lookup of an already authorised, opaque, exact-action grant.
+
+    The selector must validate human step-up and revocation against independent
+    server-side policy. Never construct its grant from request-supplied UUIDs,
+    role headers, cookies, prompts or unverified MFA assertions.
+    """
+
+    def select(
+        self,
+        *,
+        actor: HostVerifiedActor,
+        action: CommandAction,
+        session_id: str,
+        output_id: str,
+        binding: ApprovalBinding,
+        expected_generation: int,
+    ) -> ProducerGrantAttempt | None:
+        """Return the host-held grant reference for this exact action or deny."""
 
 
 class ProducerCommandGrantResolver(Protocol):
@@ -175,32 +211,93 @@ def _result(case: ProducerCase, *, action: CommandAction, status: int) -> JSONRe
     )
 
 
-def create_producer_command_router(
+def _build_producer_command_router(
     *,
     policy: ProducerIdentityPolicy,
     keys: TrustedKeyResolver,
     entitlements: EntitlementResolver,
-    grants: ProducerCommandGrantResolver,
+    grants: ProducerCommandGrantResolver | None,
+    transactional_grants: ProducerTransactionalGrantSelector | None,
     source: ProducerSourceResolver,
     store: ProducerMutationStore,
 ) -> APIRouter:
-    """Build default-disabled, source-bound command routes using host-injected trust."""
-    requirements = (
+    """Build either the offline legacy route or the strictly grant-backed candidate."""
+    # Exactly one host authority path exists per router instance. In grant-backed
+    # mode there is NO fallback to a boolean approval or unguarded case write.
+    if (grants is None) == (transactional_grants is None):
+        raise ValueError("Select exactly one trusted producer grant authority")
+    requirements = [
         (keys, "resolve"),
         (entitlements, "resolve"),
-        (grants, "authorize"),
         (source, "resolve"),
         (store, "load"),
-        (store, "create"),
-        (store, "replace_if_generation"),
-    )
+    ]
+    if transactional_grants is None:
+        requirements.extend(((grants, "authorize"), (store, "create"), (store, "replace_if_generation")))
+    else:
+        requirements.extend(
+            (
+                (transactional_grants, "select"),
+                (store, "create_with_execution_grant"),
+                (store, "replace_with_execution_grant"),
+            )
+        )
     if type(policy) is not ProducerIdentityPolicy or any(
         not callable(getattr(dependency, method, None)) for dependency, method in requirements
     ):
         raise ValueError("Producer commands require explicitly trusted host dependencies")
     policy.__post_init__()
+    locked_store = cast(ProducerGrantMutationStore, store)
 
     router = APIRouter(prefix="/api/workforce/producer", tags=["workforce-producer"])
+
+    def host_authorization(
+        *,
+        actor: HostVerifiedActor,
+        action: CommandAction,
+        session_id: str,
+        output_id: str,
+        binding: ApprovalBinding,
+        expected_generation: int,
+    ) -> ProducerGrantAttempt | bool | JSONResponse:
+        """Fail closed unless the exact host-selected grant or legacy DEV decision exists."""
+        try:
+            if transactional_grants is not None:
+                selected = transactional_grants.select(
+                    actor=actor,
+                    action=action,
+                    session_id=session_id,
+                    output_id=output_id,
+                    binding=binding,
+                    expected_generation=expected_generation,
+                )
+                # Recheck the returned grant against the *verified* actor and
+                # current case. A defective selector cannot retarget a grant.
+                if (
+                    type(selected) is not ProducerGrantAttempt
+                    or selected.actor != actor
+                    or selected.action != action
+                    or selected.session_id != session_id
+                    or selected.output_id != output_id
+                    or selected.binding != binding
+                    or selected.expected_generation != expected_generation
+                ):
+                    return _response("Producer command denied", 403)
+                return selected
+            if grants is None or grants.authorize(
+                actor=actor,
+                action=action,
+                session_id=session_id,
+                output_id=output_id,
+                binding=binding,
+                expected_generation=expected_generation,
+            ) is not True:
+                return _response("Producer command denied", 403)
+            return True
+        except (PermissionError, LookupError, TypeError, ValueError):
+            return _response("Producer command denied", 403)
+        except Exception:
+            return _response("Producer command unavailable", 503)
 
     @router.post("/sessions/{session_id}/cases/{output_id}/create")
     async def create(session_id: str, output_id: str, request: Request) -> JSONResponse:
@@ -241,23 +338,22 @@ def create_producer_command_router(
             return _response("Producer source or binding changed", 409)
         except Exception:
             return _response("Producer command unavailable", 503)
+        permission = host_authorization(
+            actor=actor,
+            action="create",
+            session_id=session_id,
+            output_id=output_id,
+            binding=case.output.binding,
+            expected_generation=0,
+        )
+        if isinstance(permission, JSONResponse):
+            return permission
         try:
-            permitted = grants.authorize(
-                actor=actor,
-                action="create",
-                session_id=session_id,
-                output_id=output_id,
-                binding=case.output.binding,
-                expected_generation=0,
+            saved = (
+                locked_store.create_with_execution_grant(case, grant=permission)
+                if type(permission) is ProducerGrantAttempt
+                else store.create(case)
             )
-        except (PermissionError, LookupError, TypeError, ValueError):
-            return _response("Producer command denied", 403)
-        except Exception:
-            return _response("Producer command unavailable", 503)
-        if permitted is not True:
-            return _response("Producer command denied", 403)
-        try:
-            saved = store.create(case)
         except (PermissionError, ValueError):
             return _response("Producer command denied", 403)
         except Exception:
@@ -301,21 +397,16 @@ def create_producer_command_router(
             return _response("Producer command unavailable", 503)
         if case.generation != command.expected_generation or case.output.binding != command.binding:
             return _response("Producer case changed; reload before acting", 409)
-        try:
-            permitted = grants.authorize(
-                actor=actor,
-                action=action,
-                session_id=session_id,
-                output_id=output_id,
-                binding=case.output.binding,
-                expected_generation=case.generation,
-            )
-        except (PermissionError, LookupError, TypeError, ValueError):
-            return _response("Producer command denied", 403)
-        except Exception:
-            return _response("Producer command unavailable", 503)
-        if permitted is not True:
-            return _response("Producer command denied", 403)
+        permission = host_authorization(
+            actor=actor,
+            action=action,
+            session_id=session_id,
+            output_id=output_id,
+            binding=case.output.binding,
+            expected_generation=case.generation,
+        )
+        if isinstance(permission, JSONResponse):
+            return permission
         try:
             revised = apply_producer_command(
                 case,
@@ -332,8 +423,14 @@ def create_producer_command_router(
         except Exception:
             return _response("Producer command unavailable", 503)
         try:
-            saved = store.replace_if_generation(
-                revised, expected_generation=command.expected_generation
+            saved = (
+                locked_store.replace_with_execution_grant(
+                    revised, expected_generation=command.expected_generation, grant=permission
+                )
+                if type(permission) is ProducerGrantAttempt
+                else store.replace_if_generation(
+                    revised, expected_generation=command.expected_generation
+                )
             )
         except Exception:
             return _response("Producer command unavailable", 503)
@@ -357,3 +454,53 @@ def create_producer_command_router(
         return await mutate(session_id, output_id, request, action="reject")
 
     return router
+
+
+def create_producer_command_router(
+    *,
+    policy: ProducerIdentityPolicy,
+    keys: TrustedKeyResolver,
+    entitlements: EntitlementResolver,
+    grants: ProducerCommandGrantResolver,
+    source: ProducerSourceResolver,
+    store: ProducerMutationStore,
+) -> APIRouter:
+    """Maintain the default-disabled, boolean-grant offline compatibility router.
+
+    This compatibility route is NOT approved for operational producer mutation:
+    its separate boolean host decision cannot prevent an in-flight revocation.
+    """
+    return _build_producer_command_router(
+        policy=policy,
+        keys=keys,
+        entitlements=entitlements,
+        grants=grants,
+        transactional_grants=None,
+        source=source,
+        store=store,
+    )
+
+
+def create_grant_backed_producer_command_router(
+    *,
+    policy: ProducerIdentityPolicy,
+    keys: TrustedKeyResolver,
+    entitlements: EntitlementResolver,
+    grants: ProducerTransactionalGrantSelector,
+    source: ProducerSourceResolver,
+    store: ProducerGrantMutationStore,
+) -> APIRouter:
+    """Build an opt-in, grant-backed DEV candidate without legacy store fallback.
+
+    Real workforce sign-in, MFA step-up, host issuance and manual operator
+    acceptance remain unqualified. Do not mount in the shipped default app.
+    """
+    return _build_producer_command_router(
+        policy=policy,
+        keys=keys,
+        entitlements=entitlements,
+        grants=None,
+        transactional_grants=grants,
+        source=source,
+        store=store,
+    )
