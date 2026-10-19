@@ -7,9 +7,10 @@
  */
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 import type { WorkforceSqlExecutor } from "./postgres-oidc";
-import type {
-  WorkforceStepUpAttempt, WorkforceStepUpPolicy, WorkforceStepUpStore,
-} from "./step-up";
+import {
+  workforceStepUpClaimsRequest, type WorkforceStepUpAttempt,
+  type WorkforceStepUpPolicy, type WorkforceStepUpStore,
+} from "./step-up.ts";
 
 const DIGEST = /^[a-f0-9]{64}$/;
 const NONCE = /^[A-Za-z0-9_-]{43}$/;
@@ -47,7 +48,9 @@ function validAttempt(attempt: WorkforceStepUpAttempt, policy: WorkforceStepUpPo
     attempt.subject.length <= 256 && attempt.contextId === policy.contextId &&
     Number.isSafeInteger(attempt.issuedAtSeconds) && attempt.issuedAtSeconds > 0 &&
     Number.isSafeInteger(attempt.expiresAtSeconds) &&
-    attempt.expiresAtSeconds === attempt.issuedAtSeconds + 300);
+    attempt.expiresAtSeconds === attempt.issuedAtSeconds + 300 &&
+    Number.isSafeInteger(attempt.issuedAtSeconds * 1000) &&
+    Number.isSafeInteger(attempt.expiresAtSeconds * 1000));
 }
 
 function aad(a: Omit<WorkforceStepUpAttempt, "nonce">, pendingDigest: string): Buffer {
@@ -66,6 +69,8 @@ export class PostgresWorkforceStepUpStore implements WorkforceStepUpStore {
 
   constructor(sql: WorkforceSqlExecutor, policy: WorkforceStepUpPolicy,
     encryptionKey: Buffer, pendingDigest: string) {
+    // Pin the exact reviewed HTTPS origin as well as issuer, resource and context.
+    workforceStepUpClaimsRequest(policy);
     if (!sql || typeof sql.query !== "function" ||
         !policy || !policy.oidc || !GUID.test(policy.oidc.tenantId) ||
         !GUID.test(policy.oidc.clientId) || !GUID.test(policy.oidc.apiResourceAppId) ||
@@ -117,7 +122,7 @@ export class PostgresWorkforceStepUpStore implements WorkforceStepUpStore {
           row.pending_digest !== this.pendingDigest ||
           row.tenant_id !== this.policy.oidc.tenantId ||
           row.client_id !== this.policy.oidc.clientId ||
-          !GUID.test(row.object_id as string) ||
+          typeof row.object_id !== "string" || !GUID.test(row.object_id) ||
           row.context_id !== this.policy.contextId ||
           typeof row.subject !== "string" ||
           !Buffer.isBuffer(row.nonce_iv) || row.nonce_iv.length !== 12 ||
