@@ -515,8 +515,6 @@ def test_stale_cas_rolls_back_valid_execution_grant() -> None:
     )
     grant = _grant_for(candidate, action="reverify", generation=1)
     _register_grant(db, grant)
-    assert not store.replace_with_execution_grant(
-        candidate, expected_generation=1, grant=grant
-    )
+    assert not store.replace_with_execution_grant(candidate, expected_generation=1, grant=grant)
     assert "active" in db.grants.values()
     assert len(db.audit) == 2

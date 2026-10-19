@@ -336,7 +336,6 @@ class PostgresProducerCaseStore:
         finally:
             connection.close()
 
-
     def create_with_execution_grant(
         self, case: ProducerCase, *, grant: ProducerGrantAttempt
     ) -> bool:
