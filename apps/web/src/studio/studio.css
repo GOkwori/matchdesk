@@ -673,7 +673,8 @@ html[data-md-motion="reduce"] .md-skel-block { animation: none; }
   border-bottom: 1px solid var(--md-line);
 }
 .md-decision-binding > div:last-child { border-bottom: 0; }
-.md-decision-binding dt { color: var(--md-muted); font-weight: 600; }
+/* Ensure wrapped mobile review labels retain WCAG AA contrast on raised rows. */
+.md-decision-binding dt { color: var(--md-text-body); font-weight: 600; }
 .md-decision-binding dd {
   margin: 0;
   min-width: 0;
