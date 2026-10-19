@@ -191,13 +191,18 @@ function receipt(payload: unknown, sessionId: string, outputId: string, action: 
     typeof value.review_status !== "string" || !REVIEW_STATES.has(value.review_status) ||
     // Unlike other commands, the backend reverify contract has no 'action'
     // field. Require its *atomic-grant* mode and unapproved decision state.
+    // Every producer action must prove atomic-grant mode in its receipt.
     // A legacy boolean-grant response must never be presented as a safe write.
+    value.mode !== "grant_backed_development_only" ||
     (action === "reverify"
-      ? (value.mode !== "grant_backed_development_only" ||
-        value.approval_enabled !== false ||
+      ? (value.approval_enabled !== false ||
         value.review_status !== "ready_for_decision" ||
         value.action !== undefined)
-      : value.action !== action)
+      : (value.action !== action ||
+        (action === "create" && value.review_status !== "pending_verification") ||
+        (action === "edit" && value.review_status !== "pending_verification") ||
+        (action === "approve" && value.review_status !== "approved") ||
+        (action === "reject" && value.review_status !== "rejected")))
   ) return null;
   return {
     session_id: sessionId,
