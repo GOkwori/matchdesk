@@ -230,6 +230,11 @@ jobs:
         run: |
           set -euo pipefail
           node --experimental-strip-types --test apps/web/tests/workforce-decision.test.mjs 2>&1 | tee artifacts/web/workforce-decision.log
+      - name: Qualify signed Entra step-up and enforced Conditional Access boundary
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          node --experimental-strip-types --test apps/web/tests/workforce-step-up.test.mjs 2>&1 | tee artifacts/web/workforce-step-up.log
       - name: Build the actual web application
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         working-directory: apps/web

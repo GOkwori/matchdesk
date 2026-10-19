@@ -177,6 +177,60 @@ export async function verifyWorkforceTokenPair(
   };
 }
 
+/** Recheck the signed Entra token pair for a FRESH, requested auth context.
+ *
+ * This does NOT prove that a tenant Conditional Access policy is configured:
+ * Entra can issue an acrs claim when no policy protects that context. The
+ * caller MUST separately verify policy enforcement for the exact actor.
+ * The auth_time claim must be explicitly configured and recent; missing
+ * optional claims fail closed. No token, roles or MFA authority are returned.
+ */
+export async function verifyWorkforceStepUpClaims(
+  idToken: string, accessToken: string, policy: WorkforceOidcPolicy,
+  nonce: string, keys: WorkforceSigningKeys, nowSeconds: number,
+  challengeIssuedAtSeconds: number, contextId: string, expectedObjectId: string,
+  expectedSubject: string,
+): Promise<Readonly<{ objectId: string; subject: string; expiresAtSeconds: number }>> {
+  if (!/^c[1-9][0-9]?$/.test(contextId) ||
+      !Number.isSafeInteger(challengeIssuedAtSeconds) ||
+      challengeIssuedAtSeconds < 1 ||
+      challengeIssuedAtSeconds > nowSeconds + CLOCK_SKEW_SECONDS ||
+      nowSeconds - challengeIssuedAtSeconds > 300 ||
+      !GUID.test(expectedObjectId) ||
+      typeof expectedSubject !== "string" ||
+      expectedSubject.length === 0 || expectedSubject.length > 256) return denied();
+
+  // First reuse all existing identity, signature, audience and delegation checks.
+  const checked = await verifyWorkforceTokenPair(
+    idToken, accessToken, policy, nonce, keys, nowSeconds,
+  );
+  const issuer = "https://login.microsoftonline.com/" + policy.tenantId.toLowerCase() + "/v2.0";
+  // Fresh signed token claims are needed in addition to the base identity pair.
+  const id = await verifyJwt(idToken, issuer, policy.clientId, keys, nowSeconds);
+  const api = await verifyJwt(accessToken, issuer, policy.apiResourceAppId, keys, nowSeconds);
+  const authTime = id.auth_time;
+  if (checked.objectId !== expectedObjectId ||
+      checked.subject !== expectedSubject ||
+      !Number.isSafeInteger(authTime) ||
+      (authTime as number) < challengeIssuedAtSeconds - CLOCK_SKEW_SECONDS ||
+      (authTime as number) > nowSeconds + CLOCK_SKEW_SECONDS ||
+      nowSeconds - (authTime as number) > 300 ||
+      (id.iat as number) < challengeIssuedAtSeconds - CLOCK_SKEW_SECONDS ||
+      (api.iat as number) < challengeIssuedAtSeconds - CLOCK_SKEW_SECONDS ||
+      !Array.isArray(api.acrs) ||
+      api.acrs.length < 1 || api.acrs.length > 32 ||
+      api.acrs.some((value) => typeof value !== "string" ||
+        !/^c[1-9][0-9]?$/.test(value)) ||
+      !api.acrs.includes(contextId)) return denied();
+
+  return {
+    objectId: checked.objectId,
+    subject: checked.subject,
+    expiresAtSeconds: Math.min(checked.expiresAtSeconds,
+      (authTime as number) + 300),
+  };
+}
+
 async function boundedJson(response: Response): Promise<Claims> {
   const length = response.headers.get("content-length");
   if (length !== null && (!/^[0-9]+$/.test(length) ||
