@@ -639,7 +639,9 @@ jobs:
           echo 'MATCHDESK_ID3J_REAL_POSTGRESQL_NEGATIVE_PASS'
       - name: Install locked browser harness and matching Chromium
         id: browser
-        if: ${{ !cancelled() && steps.start.outcome == 'success' }}
+        # Do not spend runner time after the security-critical pending-vault
+        # real-PostgreSQL prerequisite fails closed.
+        if: ${{ !cancelled() && steps.start.outcome == 'success' && steps.workforce_pending_sessions.outcome == 'success' }}
         working-directory: e2e
         run: |
           set -euo pipefail
