@@ -235,6 +235,11 @@ jobs:
         run: |
           set -euo pipefail
           node --experimental-strip-types --test apps/web/tests/workforce-step-up.test.mjs 2>&1 | tee artifacts/web/workforce-step-up.log
+      - name: Qualify pending-bound encrypted step-up persistence adapter
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          node --experimental-strip-types --test apps/web/tests/workforce-postgres-step-up.test.mjs 2>&1 | tee artifacts/web/workforce-postgres-step-up.log
       - name: Build the actual web application
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         working-directory: apps/web
