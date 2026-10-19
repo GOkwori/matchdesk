@@ -67,8 +67,6 @@ class ReverificationGrantResolver(Protocol):
         """Return exactly True only when this actor may reverify this version."""
 
 
-
-
 class TransactionalReverificationStore(ProducerCaseStore, Protocol):
     """A durable writer with grant consumption in the same case/audit transaction."""
 
@@ -271,13 +269,17 @@ def _build_reverification_router(
                 ):
                     return _response("Producer reverification denied", 403)
                 selected_grant = candidate
-            elif grants is None or grants.authorize(
-                actor=actor,
-                session_id=session_id,
-                output_id=output_id,
-                binding=case.output.binding,
-                expected_generation=case.generation,
-            ) is not True:
+            elif (
+                grants is None
+                or grants.authorize(
+                    actor=actor,
+                    session_id=session_id,
+                    output_id=output_id,
+                    binding=case.output.binding,
+                    expected_generation=case.generation,
+                )
+                is not True
+            ):
                 return _response("Producer reverification denied", 403)
         except (PermissionError, LookupError, ValueError, TypeError):
             return _response("Producer reverification denied", 403)

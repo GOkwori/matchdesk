@@ -354,7 +354,7 @@ def setup_grant_backed(monkeypatch):
 
 def test_grant_backed_factory_requires_atomic_case_writer():
     """A legacy store cannot be misconfigured as the transactional route."""
-    with pytest.raises(ValueError, match="trusted host-owned dependencies"):
+    with pytest.raises(ValueError, match="verified host-owned dependencies"):
         create_grant_backed_producer_reverification_router(
             policy=POLICY,
             keys=Resolver(),
