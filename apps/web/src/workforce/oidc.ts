@@ -23,6 +23,7 @@ export type WorkforceOidcPolicy = Readonly<{
   publicOrigin: string;
   tenantId: string;
   clientId: string;
+  apiResourceAppId: string;
   delegatedApiScope: string;
 }>;
 
@@ -83,7 +84,8 @@ function matchDigest(a: string, b: string): boolean {
 export function workforceOidcEndpoints(policy: WorkforceOidcPolicy) {
   if (!policy || typeof policy !== "object" ||
       !GUID.test(policy.tenantId) || !GUID.test(policy.clientId) ||
-      policy.delegatedApiScope !== "api://" + policy.tenantId + "/MatchDesk.Producer.Access") {
+      !GUID.test(policy.apiResourceAppId) ||
+      policy.delegatedApiScope !== "api://" + policy.apiResourceAppId + "/MatchDesk.Producer.Access") {
     throw new Error("Workforce OIDC policy is not approved");
   }
   let publicUrl: URL;
@@ -115,7 +117,7 @@ function exactBrowserRequest(
   const url = new URL(request.url);
   const headers = request.headers;
   if (
-    url.origin !== publicOrigin ||
+    url.origin !== publicOrigin || url.hash !== "" ||
     headers.get("host") !== new URL(publicOrigin).host ||
     headers.has("forwarded") ||
     [...headers.keys()].some((name) => name.startsWith("x-forwarded-") ||
@@ -164,6 +166,7 @@ export async function beginWorkforceOidc(
   const endpoints = workforceOidcEndpoints(policy);
   exactBrowserRequest(request, policy.publicOrigin, "start");
   if (!Number.isSafeInteger(nowMs) || nowMs <= 0 ||
+      nowMs > Number.MAX_SAFE_INTEGER - MAX_AGE_MS ||
       !store || typeof store.create !== "function") deny();
 
   const state = randomSecret();
