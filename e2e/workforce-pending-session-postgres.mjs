@@ -55,7 +55,7 @@ function sql(statement, failurePattern = null) {
 
 function caller(statement, failurePattern = null) {
   return sql('BEGIN;\nSET LOCAL ROLE ' + role + ';\n' + statement +
-    '\nCOMMIT;', failurePattern);
+    ';\nCOMMIT;', failurePattern);
 }
 
 function prepare(value, issuedAtMs) {
