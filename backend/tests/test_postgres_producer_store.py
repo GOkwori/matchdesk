@@ -11,15 +11,15 @@ from dataclasses import replace
 from uuid import UUID
 
 import pytest
-from matchdesk.domain.postgres_producer_store import PostgresProducerCaseStore
 from matchdesk.domain.hashing import content_digest
-from matchdesk.domain.producer_execution_grants import ProducerGrantAttempt
+from matchdesk.domain.postgres_producer_store import PostgresProducerCaseStore
 from matchdesk.domain.producer_commands import (
     HostVerifiedActor,
     apply_producer_command,
     execute_producer_command,
     open_producer_case,
 )
+from matchdesk.domain.producer_execution_grants import ProducerGrantAttempt
 from matchdesk.domain.producer_preview import build_producer_desk_preview
 
 
@@ -74,7 +74,11 @@ class FakeConnection:
     @contextmanager
     def transaction(self):
         """Restore the case and audit tables on any raised exception."""
-        saved = (copy.deepcopy(self.db.cases), copy.deepcopy(self.db.audit), copy.deepcopy(self.db.grants))
+        saved = (
+            copy.deepcopy(self.db.cases),
+            copy.deepcopy(self.db.audit),
+            copy.deepcopy(self.db.grants),
+        )
         try:
             yield
         except Exception:
@@ -444,20 +448,14 @@ def test_locked_reverification_grant_uses_previous_binding_and_cas() -> None:
         case, actor=_actor(), expected_generation=1, command="reverify", reason="Checked"
     )
     attempt = _grant_for(updated, action="reverify", generation=1)
-    assert not store.replace_with_execution_grant(
-        updated, expected_generation=1, grant=attempt
-    )
+    assert not store.replace_with_execution_grant(updated, expected_generation=1, grant=attempt)
     _register_grant(db, attempt)
     assert store.replace_with_execution_grant(updated, expected_generation=1, grant=attempt)
     assert len(db.audit) == 2
-    assert not store.replace_with_execution_grant(
-        updated, expected_generation=1, grant=attempt
-    )
+    assert not store.replace_with_execution_grant(updated, expected_generation=1, grant=attempt)
     wrong_action = replace(attempt, action="reject")
     with pytest.raises(PermissionError, match="transition"):
-        store.replace_with_execution_grant(
-            updated, expected_generation=1, grant=wrong_action
-        )
+        store.replace_with_execution_grant(updated, expected_generation=1, grant=wrong_action)
     assert len(db.audit) == 2
 
 
@@ -473,8 +471,45 @@ def test_revoked_grant_blocks_mutation_after_case_preparation() -> None:
     attempt = _grant_for(updated, action="reject", generation=1)
     _register_grant(db, attempt)
     _register_grant(db, attempt, state="revoked")
-    assert not store.replace_with_execution_grant(
-        updated, expected_generation=1, grant=attempt
-    )
+    assert not store.replace_with_execution_grant(updated, expected_generation=1, grant=attempt)
     assert len(db.audit) == 1
     assert store.load("tenant-1", "demo-preview-only", "demo-story-output") == case
+
+
+def test_duplicate_create_rolls_back_valid_execution_grant() -> None:
+    """A duplicate case cannot permanently consume its newly issued grant."""
+    db = FakeDatabase()
+    store = PostgresProducerCaseStore(db)
+    case = _case()
+    assert store.create(case)
+    grant = _grant_for(case)
+    _register_grant(db, grant)
+    assert not store.create_with_execution_grant(case, grant=grant)
+    assert "active" in db.grants.values()
+    assert len(db.audit) == 1
+
+
+def test_stale_cas_rolls_back_valid_execution_grant() -> None:
+    """A competing committed generation cannot exhaust an unused action grant."""
+    db = FakeDatabase()
+    store = PostgresProducerCaseStore(db)
+    case = _case()
+    assert store.create(case)
+    candidate = apply_producer_command(
+        case, actor=_actor(), expected_generation=1, command="reverify", reason="Checked"
+    )
+    execute_producer_command(
+        store,
+        actor=_actor(),
+        tenant_id="tenant-1",
+        session_id="demo-preview-only",
+        output_id="demo-story-output",
+        expected_generation=1,
+        command="reverify",
+        reason="Other contender",
+    )
+    grant = _grant_for(candidate, action="reverify", generation=1)
+    _register_grant(db, grant)
+    assert not store.replace_with_execution_grant(candidate, expected_generation=1, grant=grant)
+    assert "active" in db.grants.values()
+    assert len(db.audit) == 2

@@ -183,6 +183,10 @@ def _reconcile_audit(case: ProducerCase, rows: list[tuple[object, ...]]) -> None
             raise ValueError("Producer audit entry differs from the review snapshot")
 
 
+class _GrantWriteConflict(Exception):
+    """Roll back consumed grants when creation/CAS fails to save a case."""
+
+
 class PostgresProducerCaseStore:
     """Atomically persist a case and its append-only audit for one exact tenant/session.
 
@@ -333,7 +337,9 @@ class PostgresProducerCaseStore:
             connection.close()
 
 
-    def create_with_execution_grant(self, case: ProducerCase, *, grant: ProducerGrantAttempt) -> bool:
+    def create_with_execution_grant(
+        self, case: ProducerCase, *, grant: ProducerGrantAttempt
+    ) -> bool:
         """Consume a locked grant with the initial case and audit in one transaction.
 
         This opt-in method is a future host-authenticated HTTP candidate; the
@@ -361,7 +367,8 @@ class PostgresProducerCaseStore:
                         ),
                     )
                     if cursor.fetchone() is None:
-                        return False
+                        # Do not commit a grant claim if the case write loses a race.
+                        raise _GrantWriteConflict()
                     cursor.execute(
                         _APPEND_AUDIT,
                         (
@@ -374,6 +381,8 @@ class PostgresProducerCaseStore:
                         ),
                     )
             return True
+        except _GrantWriteConflict:
+            return False
         finally:
             connection.close()
 
@@ -400,7 +409,9 @@ class PostgresProducerCaseStore:
         try:
             with connection.transaction():
                 with connection.cursor() as cursor:
-                    if not consume_execution_grant(cursor, attempt=grant, case=case, creating=False):
+                    if not consume_execution_grant(
+                        cursor, attempt=grant, case=case, creating=False
+                    ):
                         return False
                     cursor.execute(
                         _COMPARE_AND_SWAP,
@@ -416,7 +427,8 @@ class PostgresProducerCaseStore:
                         ),
                     )
                     if cursor.fetchone() is None:
-                        return False
+                        # Do not commit a grant claim if the case write loses a race.
+                        raise _GrantWriteConflict()
                     cursor.execute(
                         _APPEND_AUDIT,
                         (
@@ -429,6 +441,8 @@ class PostgresProducerCaseStore:
                         ),
                     )
             return True
+        except _GrantWriteConflict:
+            return False
         finally:
             connection.close()
 
