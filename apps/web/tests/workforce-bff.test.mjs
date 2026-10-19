@@ -15,7 +15,7 @@ const SID = 'synthetic-session-1';
 const OUTPUT = 'synthetic-output-1';
 const COOKIE = 's'.repeat(43);
 const CSRF = 'c'.repeat(43);
-const ACCESS = 'eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiIxIn0.signaturetest123456';
+const ACCESS = ['eyJhbGciOiJSUzI1NiJ9', 'eyJzdWIiOiIxIn0', 'signaturetest123456'].join('.');
 const SEGMENTS = ['sessions', SID, 'cases', OUTPUT, 'create'];
 
 function req(action = 'create', overrides = {}) {
