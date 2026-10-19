@@ -17,6 +17,10 @@ from typing import Protocol
 from pydantic import TypeAdapter
 
 from matchdesk.domain.producer_commands import ProducerCase, _validate_case
+from matchdesk.domain.producer_execution_grants import (
+    ProducerGrantAttempt,
+    consume_execution_grant,
+)
 from matchdesk.domain.producer_review import ProducerAuditEntry
 
 
@@ -328,6 +332,105 @@ class PostgresProducerCaseStore:
         finally:
             connection.close()
 
+
+    def create_with_execution_grant(self, case: ProducerCase, *, grant: ProducerGrantAttempt) -> bool:
+        """Consume a locked grant with the initial case and audit in one transaction.
+
+        This opt-in method is a future host-authenticated HTTP candidate; the
+        legacy create method alone does not prove an execution-time grant.
+        """
+        _validate_case(case)
+        if case.generation != 1 or case.review.status != "pending_verification":
+            raise ValueError("New producer cases must begin unapproved at generation one")
+        digest = _audit_digest(case.review.audit)
+        connection = self._connect()
+        try:
+            with connection.transaction():
+                with connection.cursor() as cursor:
+                    if not consume_execution_grant(cursor, attempt=grant, case=case, creating=True):
+                        return False
+                    cursor.execute(
+                        _CREATE,
+                        (
+                            case.tenant_id,
+                            case.output.session_id,
+                            case.output.output_id,
+                            case.generation,
+                            _case_json(case),
+                            digest,
+                        ),
+                    )
+                    if cursor.fetchone() is None:
+                        return False
+                    cursor.execute(
+                        _APPEND_AUDIT,
+                        (
+                            case.tenant_id,
+                            case.output.session_id,
+                            case.output.output_id,
+                            case.generation,
+                            _ENTRY.dump_json(case.review.audit[-1]).decode("utf-8"),
+                            digest,
+                        ),
+                    )
+            return True
+        finally:
+            connection.close()
+
+    def replace_with_execution_grant(
+        self, case: ProducerCase, *, expected_generation: int, grant: ProducerGrantAttempt
+    ) -> bool:
+        """Consume grant, CAS exact generation, and append audit in one transaction.
+
+        Revocation committed before the grant UPDATE rejects the write. Once the
+        grant row is locked, a concurrent revoker waits for the whole commit.
+        """
+        _validate_case(case)
+        if (
+            type(expected_generation) is not int
+            or expected_generation < 1
+            or case.generation != expected_generation + 1
+            or type(grant) is not ProducerGrantAttempt
+            or grant.expected_generation != expected_generation
+        ):
+            raise ValueError("Execution-grant CAS requires one exact positive generation")
+        digest = _audit_digest(case.review.audit)
+        prior_digest = _audit_digest(case.review.audit[:-1])
+        connection = self._connect()
+        try:
+            with connection.transaction():
+                with connection.cursor() as cursor:
+                    if not consume_execution_grant(cursor, attempt=grant, case=case, creating=False):
+                        return False
+                    cursor.execute(
+                        _COMPARE_AND_SWAP,
+                        (
+                            case.generation,
+                            _case_json(case),
+                            digest,
+                            case.tenant_id,
+                            case.output.session_id,
+                            case.output.output_id,
+                            expected_generation,
+                            prior_digest,
+                        ),
+                    )
+                    if cursor.fetchone() is None:
+                        return False
+                    cursor.execute(
+                        _APPEND_AUDIT,
+                        (
+                            case.tenant_id,
+                            case.output.session_id,
+                            case.output.output_id,
+                            case.generation,
+                            _ENTRY.dump_json(case.review.audit[-1]).decode("utf-8"),
+                            digest,
+                        ),
+                    )
+            return True
+        finally:
+            connection.close()
 
 class ReadOnlyPostgresProducerReader:
     """Expose only scoped audited SELECTs through a pinned physical read role.

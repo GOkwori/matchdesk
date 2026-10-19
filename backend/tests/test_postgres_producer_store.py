@@ -8,9 +8,12 @@ import copy
 import json
 from contextlib import contextmanager
 from dataclasses import replace
+from uuid import UUID
 
 import pytest
 from matchdesk.domain.postgres_producer_store import PostgresProducerCaseStore
+from matchdesk.domain.hashing import content_digest
+from matchdesk.domain.producer_execution_grants import ProducerGrantAttempt
 from matchdesk.domain.producer_commands import (
     HostVerifiedActor,
     apply_producer_command,
@@ -51,6 +54,7 @@ class FakeDatabase:
         """Start a fresh database with no review or audit rows."""
         self.cases = {}
         self.audit = {}
+        self.grants = {}
         self.fail_audit = False
         self.closed = 0
         self.statements = []
@@ -70,11 +74,11 @@ class FakeConnection:
     @contextmanager
     def transaction(self):
         """Restore the case and audit tables on any raised exception."""
-        saved = (copy.deepcopy(self.db.cases), copy.deepcopy(self.db.audit))
+        saved = (copy.deepcopy(self.db.cases), copy.deepcopy(self.db.audit), copy.deepcopy(self.db.grants))
         try:
             yield
         except Exception:
-            self.db.cases, self.db.audit = saved
+            self.db.cases, self.db.audit, self.db.grants = saved
             raise
 
     @contextmanager
@@ -101,6 +105,11 @@ class FakeCursor:
         self.db.statements.append((sql, parameters))
         self.result = None
         self.rows = []
+        if sql.lstrip().startswith("UPDATE matchdesk_producer_execution_grants"):
+            if self.db.grants.get(parameters) == "active":
+                self.db.grants[parameters] = "consumed"
+                self.result = (UUID(parameters[0]),)
+            return
         if sql.lstrip().startswith("SET TRANSACTION ISOLATION LEVEL"):
             return
         if sql.lstrip().startswith("SELECT generation, entry_json, audit_digest"):
@@ -345,3 +354,127 @@ def test_append_only_audit_must_match_independent_case_snapshot(corruption: str)
         database.audit[(*key[:3], 2)] = (entry, digest)
     with pytest.raises(ValueError, match="audit"):
         store.load(*key[:3])
+
+
+def _grant_for(case, *, action="create", generation=0, grant_id=None):
+    """Use a test-only UUID and exact host-derived binding; never a browser grant."""
+    binding = case.output.binding if action == "create" else case.review.audit[-2].binding
+    return ProducerGrantAttempt(
+        grant_id=grant_id or UUID("11111111-2222-4333-8444-555555555555"),
+        actor=_actor(),
+        action=action,
+        session_id=case.output.session_id,
+        output_id=case.output.output_id,
+        binding=binding,
+        expected_generation=generation,
+    )
+
+
+def _register_grant(db, attempt, *, state="active"):
+    """Model an independently stored issuer-owned row, not a resolver boolean."""
+    db.grants[
+        (
+            str(attempt.grant_id),
+            attempt.actor.tenant_id,
+            attempt.actor.subject,
+            attempt.actor.issuer,
+            attempt.action,
+            attempt.session_id,
+            attempt.output_id,
+            attempt.expected_generation,
+            content_digest(attempt.binding),
+        )
+    ] = state
+
+
+def test_locked_create_grant_denies_absence_revocation_replay_and_wrong_scope() -> None:
+    """An exact one-time grant must be present and active at the write boundary."""
+    db = FakeDatabase()
+    store = PostgresProducerCaseStore(db)
+    case = _case()
+    attempt = _grant_for(case)
+    assert not store.create_with_execution_grant(case, grant=attempt)
+    _register_grant(db, attempt, state="revoked")
+    assert not store.create_with_execution_grant(case, grant=attempt)
+    assert not db.cases and not db.audit
+    _register_grant(db, attempt)
+    assert store.create_with_execution_grant(case, grant=attempt)
+    assert len(db.cases) == len(db.audit) == 1
+    assert not store.create_with_execution_grant(case, grant=attempt)
+    assert len(db.audit) == 1
+
+
+def test_grant_cannot_retarget_an_actor_or_a_different_binding() -> None:
+    """Wrong actor and version/content binding are rejected before SQL mutation."""
+    db = FakeDatabase()
+    store = PostgresProducerCaseStore(db)
+    case = _case()
+    attempt = _grant_for(case)
+    _register_grant(db, attempt)
+    foreign = replace(attempt, actor=replace(attempt.actor, tenant_id="other-tenant"))
+    with pytest.raises(PermissionError, match="scope"):
+        store.create_with_execution_grant(case, grant=foreign)
+    other_binding = attempt.binding.model_copy(update={"item_version": 999})
+    with pytest.raises(PermissionError, match="initial"):
+        store.create_with_execution_grant(case, grant=replace(attempt, binding=other_binding))
+    assert not db.cases and not db.audit
+
+
+def test_grant_and_case_audit_rollback_together_on_insert_failure() -> None:
+    """A failed audit cannot commit a consumed grant or an unaudited case."""
+    db = FakeDatabase()
+    db.fail_audit = True
+    store = PostgresProducerCaseStore(db)
+    case = _case()
+    attempt = _grant_for(case)
+    _register_grant(db, attempt)
+    with pytest.raises(RuntimeError, match="audit"):
+        store.create_with_execution_grant(case, grant=attempt)
+    assert not db.cases and not db.audit
+    assert "active" in db.grants.values()
+
+
+def test_locked_reverification_grant_uses_previous_binding_and_cas() -> None:
+    """An exact generation-bound grant permits one reverify, not cross-action reuse."""
+    db = FakeDatabase()
+    store = PostgresProducerCaseStore(db)
+    case = _case()
+    assert store.create(case)
+    updated = apply_producer_command(
+        case, actor=_actor(), expected_generation=1, command="reverify", reason="Checked"
+    )
+    attempt = _grant_for(updated, action="reverify", generation=1)
+    assert not store.replace_with_execution_grant(
+        updated, expected_generation=1, grant=attempt
+    )
+    _register_grant(db, attempt)
+    assert store.replace_with_execution_grant(updated, expected_generation=1, grant=attempt)
+    assert len(db.audit) == 2
+    assert not store.replace_with_execution_grant(
+        updated, expected_generation=1, grant=attempt
+    )
+    wrong_action = replace(attempt, action="reject")
+    with pytest.raises(PermissionError, match="transition"):
+        store.replace_with_execution_grant(
+            updated, expected_generation=1, grant=wrong_action
+        )
+    assert len(db.audit) == 2
+
+
+def test_revoked_grant_blocks_mutation_after_case_preparation() -> None:
+    """Model revocation after a valid candidate was prepared but before DB claim."""
+    db = FakeDatabase()
+    store = PostgresProducerCaseStore(db)
+    case = _case()
+    assert store.create(case)
+    updated = apply_producer_command(
+        case, actor=_actor(), expected_generation=1, command="reject", reason="Checked"
+    )
+    attempt = _grant_for(updated, action="reject", generation=1)
+    _register_grant(db, attempt)
+    _register_grant(db, attempt, state="revoked")
+    assert not store.replace_with_execution_grant(
+        updated, expected_generation=1, grant=attempt
+    )
+    assert len(db.audit) == 1
+    assert store.load("tenant-1", "demo-preview-only", "demo-story-output") == case
