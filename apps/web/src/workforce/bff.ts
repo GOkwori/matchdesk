@@ -210,6 +210,8 @@ export function createWorkforceBff(host: WorkforceBffHost | null) {
     if (host === null) return deny(404, "Workforce BFF is disabled");
     if (!originsValid(host)) return deny(503, "Workforce BFF unavailable");
     const url = new URL(request.url);
+    // Query strings cannot select, retarget or decorate privileged operations.
+    if (url.search !== "") return deny(404, "Unknown workforce operation");
     const target = operation(segments, url.pathname);
     if (!target) return deny(404, "Unknown workforce operation");
     if (!trustedRequest(request, host.publicOrigin)) {
