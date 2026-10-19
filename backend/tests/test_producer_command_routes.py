@@ -483,7 +483,6 @@ def test_body_limit_and_host_error_are_non_disclosing(monkeypatch):
     assert store.writes == 0
 
 
-
 class AtomicStore(Store):
     """Strict test adapter: legacy create/CAS methods must never execute."""
 
@@ -511,9 +510,7 @@ class AtomicStore(Store):
         assert type(grant) is ProducerGrantAttempt
         assert grant.expected_generation == expected_generation
         self.atomic_actions.append(grant.action)
-        return Store.replace_if_generation(
-            self, case, expected_generation=expected_generation
-        )
+        return Store.replace_if_generation(self, case, expected_generation=expected_generation)
 
 
 class AtomicSelector:
@@ -623,9 +620,7 @@ def test_atomic_selection_must_match_actor_action_and_content(monkeypatch, kind)
             grant, actor=replace(grant.actor, issuer="https://foreign.invalid/v2.0")
         )
     elif kind == "wrong-action":
-        grants.override = lambda grant: replace(
-            grant, action="reject", expected_generation=1
-        )
+        grants.override = lambda grant: replace(grant, action="reject", expected_generation=1)
     else:
         grants.override = lambda grant: replace(
             grant,

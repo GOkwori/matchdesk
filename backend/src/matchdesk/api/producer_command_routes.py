@@ -233,7 +233,9 @@ def _build_producer_command_router(
         (store, "load"),
     ]
     if transactional_grants is None:
-        requirements.extend(((grants, "authorize"), (store, "create"), (store, "replace_if_generation")))
+        requirements.extend(
+            ((grants, "authorize"), (store, "create"), (store, "replace_if_generation"))
+        )
     else:
         requirements.extend(
             (
@@ -284,14 +286,18 @@ def _build_producer_command_router(
                 ):
                     return _response("Producer command denied", 403)
                 return selected
-            if grants is None or grants.authorize(
-                actor=actor,
-                action=action,
-                session_id=session_id,
-                output_id=output_id,
-                binding=binding,
-                expected_generation=expected_generation,
-            ) is not True:
+            if (
+                grants is None
+                or grants.authorize(
+                    actor=actor,
+                    action=action,
+                    session_id=session_id,
+                    output_id=output_id,
+                    binding=binding,
+                    expected_generation=expected_generation,
+                )
+                is not True
+            ):
                 return _response("Producer command denied", 403)
             return True
         except (PermissionError, LookupError, TypeError, ValueError):
