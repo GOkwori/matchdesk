@@ -1,6 +1,6 @@
 # MatchDesk P5 — opt-in localhost judge workbench (candidate)
 
-**Status: feature branch only. Do not claim completed live/browser qualification until exact-head CI gates, browser testing and a human rehearsal pass. Related issue: #64.**
+**Status: implementation merged into `development` via PR #80; all five automated workflows, including the localhost judge browser, passed at the original exact head. Human rehearsal and independent accessibility acceptance remain NOT RUN. Any later modification requires fresh exact-head gates. Related issue: #64.**
 
 The /judge screen is a disposable local-only synthetic football walkthrough: events, deterministic moment detection, explicitly scripted specialist proposal, verified claim, deliberate false-claim rejection, simulated producer review and nine scripted audience variants. None is live data, a model execution, authenticated producer approval, publication or independently reviewed translation.
 

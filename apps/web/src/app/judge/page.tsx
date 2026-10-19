@@ -176,7 +176,7 @@ export default function JudgeWorkbench() {
   }
 
   return <main className="judge-main">
-    <header className="judge-top"><Link href="/sunset-v3" className="judge-brand">MATCHDESK<span> / SUNSET STUDIO</span></Link>
+    <header className="judge-top"><Link href="/" className="judge-brand">MATCHDESK<span> / SUNSET STUDIO</span></Link>
       <span className="judge-mode">LOCAL · SYNTHETIC · READ ONLY</span></header>
     <div className="judge-hero">
       <p className="judge-eyebrow">DEMONSTRATION WORKBENCH · PHASE 5</p>
@@ -236,6 +236,6 @@ export default function JudgeWorkbench() {
       <span aria-hidden="true">◎</span><h2>No active replay evidence</h2>
       <p>Start the demo, or replay after a token reset. Nothing shown here is a live match.</p>
     </section>}
-    <footer className="judge-footer">MatchDesk · Synthetic-only competition workbench · No real data, real producer approval, or broadcast publishing · <Link href="/sunset-v3">Back to Sunset Studio</Link></footer>
+    <footer className="judge-footer">MatchDesk · Synthetic-only competition workbench · No real data, real producer approval, or broadcast publishing · <Link href="/">Back to Sunset Studio</Link></footer>
   </main>;
 }
