@@ -193,7 +193,9 @@ def _actor(
         return _response("Producer command unavailable", 503)
 
 
-def _result(case: ProducerCase, *, action: CommandAction, status: int) -> JSONResponse:
+def _result(
+    case: ProducerCase, *, action: CommandAction, status: int, grant_backed: bool
+) -> JSONResponse:
     """Return a minimal state receipt, never the audit actors, source events or tokens."""
     return JSONResponse(
         {
@@ -203,7 +205,11 @@ def _result(case: ProducerCase, *, action: CommandAction, status: int) -> JSONRe
             "item_version": case.output.binding.item_version,
             "review_status": case.review.status,
             "action": action,
-            "mode": "opt_in_development_only",
+            # Receipt mode is diagnostic only; the actual authority is the
+            # grant consumed under the same database lock as the case/audit.
+            "mode": (
+                "grant_backed_development_only" if grant_backed else "opt_in_development_only"
+            ),
             "publication_enabled": False,
         },
         status_code=status,
@@ -366,7 +372,10 @@ def _build_producer_command_router(
             return _response("Producer command unavailable", 503)
         if saved is not True:
             return _response("Producer case exists; reload instead of replaying", 409)
-        return _result(case, action="create", status=201)
+        return _result(
+            case, action="create", status=201,
+            grant_backed=transactional_grants is not None,
+        )
 
     async def mutate(
         session_id: str,
@@ -442,7 +451,10 @@ def _build_producer_command_router(
             return _response("Producer command unavailable", 503)
         if saved is not True:
             return _response("Producer case changed; reload before acting", 409)
-        return _result(revised, action=action, status=200)
+        return _result(
+            revised, action=action, status=200,
+            grant_backed=transactional_grants is not None,
+        )
 
     @router.post("/sessions/{session_id}/cases/{output_id}/edit")
     async def edit(session_id: str, output_id: str, request: Request) -> JSONResponse:
