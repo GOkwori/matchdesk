@@ -77,7 +77,10 @@ export class PostgresPendingWorkforceSessions implements WorkforceSessionResolve
         !JWT.test(exchange.delegatedAccessToken) ||
         !Number.isSafeInteger(exchange.expiresAtSeconds) ||
         !Number.isSafeInteger(nowMs) || nowMs < 1 ||
-        nowMs > Number.MAX_SAFE_INTEGER - MAX_PENDING_MS) return denied();
+        nowMs > Number.MAX_SAFE_INTEGER - MAX_PENDING_MS ||
+        // The signed API token is already capped to 3600 seconds. Refuse
+        // implausibly long or future forged claims rather than truncating them.
+        exchange.expiresAtSeconds > Math.floor(nowMs / 1000) + 3600) return denied();
 
     const expiresAtMs = Math.min(
       nowMs + MAX_PENDING_MS, exchange.expiresAtSeconds * 1000,
