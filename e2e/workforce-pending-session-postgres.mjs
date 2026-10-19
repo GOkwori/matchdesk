@@ -70,7 +70,7 @@ function caller(statement, failurePattern = null) {
 function prepare(value, issuedAtMs) {
   const expires = issuedAtMs + 600_000;
   return 'SELECT public.matchdesk_prepare_workforce_session(' +
-    "'" + value + "','" + tenant + "'::uuid,'" +
+    "'" + value + "','" + tenant + "'::uuid," +
     "'" + issuer + "','" + subject + "','" + object + "'::uuid," +
     "'" + client + "'::uuid," + issuedAtMs + '::bigint,' +
     expires + '::bigint,' +
@@ -132,6 +132,12 @@ async function check(name, fn) {
 }
 
 try {
+  await check('SQL fixture has one canonical opening quote per literal', () => {
+    // Prevent the prior doubled-quote issuer bug from silently reaching CI.
+    const statement = prepare(digest('syntax-preflight'), Date.now());
+    assert.ok(statement.includes("'::uuid,'" + issuer + "','"));
+    assert.doesNotMatch(statement, /::uuid,''/);
+  });
   await check('idempotent migration and default PUBLIC EXECUTE denial', () => {
     sql(migration);
     sql(migration);
