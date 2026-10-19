@@ -3,12 +3,17 @@
 from __future__ import annotations
 
 from dataclasses import replace
+from uuid import UUID
 
 import pytest
 from fastapi.testclient import TestClient
 from matchdesk.api.app import create_app
-from matchdesk.api.producer_reverification_routes import create_producer_reverification_router
+from matchdesk.api.producer_reverification_routes import (
+    create_grant_backed_producer_reverification_router,
+    create_producer_reverification_router,
+)
 from matchdesk.domain.producer_commands import HostVerifiedActor, open_producer_case
+from matchdesk.domain.producer_execution_grants import ProducerGrantAttempt
 from matchdesk.domain.producer_identity import ProducerIdentityPolicy
 from matchdesk.domain.producer_preview import build_producer_desk_preview
 
@@ -276,3 +281,198 @@ def test_integrity_corruption_blocks_command(monkeypatch):
     store.case = replace(store.case, generation=3)
     assert client.post(URL, json=request, headers=HEADERS).status_code == 503
     assert store.writes == 0
+
+
+class GrantBackedStore(Store):
+    """A fake atomic CAS store that rejects every legacy non-grant mutation."""
+
+    def __init__(self):
+        """Track whether an exact typed grant reaches the intended storage path."""
+        super().__init__()
+        self.atomic_calls = 0
+        self.revoked = False
+
+    def replace_if_generation(self, case, *, expected_generation):
+        """Fail loudly on any downgrade from transaction-backed reverification."""
+        raise AssertionError("Legacy unguarded CAS must not be called")
+
+    def replace_with_execution_grant(self, case, *, expected_generation, grant):
+        """Simulate a grant-checked CAS without claiming to be real PostgreSQL."""
+        if type(grant) is not ProducerGrantAttempt or grant.action != "reverify":
+            raise AssertionError("Expected the exact host-selected reverify grant")
+        self.atomic_calls += 1
+        if self.revoked:
+            return False
+        return Store.replace_if_generation(self, case, expected_generation=expected_generation)
+
+
+class GrantSelector:
+    """A synthetic host-held grant selector, initially deny-all."""
+
+    def __init__(self):
+        """Do not issue a grant until a test explicitly enables selection."""
+        self.enabled = False
+        self.calls = 0
+        self.override = None
+        self.failure: Exception | None = None
+
+    def select(self, *, actor, action, session_id, output_id, binding, expected_generation):
+        """Select only server-created test grants, never a request-supplied UUID."""
+        self.calls += 1
+        if self.failure is not None:
+            raise self.failure
+        if not self.enabled:
+            return None
+        selected = ProducerGrantAttempt(
+            grant_id=UUID("11111111-2222-4333-8444-555555555555"),
+            actor=actor,
+            action=action,
+            session_id=session_id,
+            output_id=output_id,
+            binding=binding,
+            expected_generation=expected_generation,
+        )
+        return self.override(selected) if self.override is not None else selected
+
+
+def setup_grant_backed(monkeypatch):
+    """Mount only the opt-in atomic factory with a synthetic verifier."""
+    store, grants = GrantBackedStore(), GrantSelector()
+    router = create_grant_backed_producer_reverification_router(
+        policy=POLICY,
+        keys=Resolver(),
+        entitlements=Resolver(),
+        grants=grants,
+        store=store,
+    )
+    client = TestClient(create_app(producer_reverification_router=router))
+    import matchdesk.api.producer_reverification_routes as routes
+
+    monkeypatch.setattr(routes, "verify_producer_access_token", lambda *_a, **_k: actor())
+    return client, store, grants
+
+
+def test_grant_backed_factory_requires_atomic_case_writer():
+    """A legacy store cannot be misconfigured as the transactional route."""
+    with pytest.raises(ValueError, match="trusted host-owned dependencies"):
+        create_grant_backed_producer_reverification_router(
+            policy=POLICY,
+            keys=Resolver(),
+            entitlements=Resolver(),
+            grants=GrantSelector(),
+            store=Store(),
+        )
+
+
+def test_grant_backed_reverification_denies_without_host_grant(monkeypatch):
+    """A delegated token alone must not reach the case mutation boundary."""
+    client, store, grants = setup_grant_backed(monkeypatch)
+    denied = client.post(URL, headers=HEADERS, json=body(store))
+    assert denied.status_code == 403
+    assert denied.headers["Cache-Control"] == "no-store"
+    assert grants.calls == 1
+    assert store.atomic_calls == 0 and store.writes == 0
+    assert len(store.case.review.audit) == 1
+
+
+def test_grant_backed_reverify_calls_only_atomic_method(monkeypatch):
+    """One exact grant-backed reverification leaves approval and publication off."""
+    client, store, grants = setup_grant_backed(monkeypatch)
+    grants.enabled = True
+    request = body(store)
+    accepted = client.post(URL, headers=HEADERS, json=request)
+    assert accepted.status_code == 200
+    assert accepted.json()["generation"] == 2
+    assert accepted.json()["review_status"] == "ready_for_decision"
+    assert accepted.json()["mode"] == "grant_backed_development_only"
+    assert accepted.json()["approval_enabled"] is False
+    assert accepted.json()["publication_enabled"] is False
+    assert store.atomic_calls == 1 and store.writes == 1
+    assert grants.calls == 1
+    assert client.post(URL, headers=HEADERS, json=request).status_code == 409
+    assert store.atomic_calls == 1 and len(store.case.review.audit) == 2
+
+
+@pytest.mark.parametrize(
+    "fault",
+    [
+        "missing",
+        "boolean",
+        "foreign-subject",
+        "foreign-tenant",
+        "foreign-issuer",
+        "wrong-action",
+        "wrong-generation",
+        "wrong-output",
+        "wrong-binding",
+    ],
+)
+def test_grant_backed_selector_must_match_verified_actor_and_binding(monkeypatch, fault):
+    """Never infer authority from a wrong type, actor, action, target or version."""
+    client, store, grants = setup_grant_backed(monkeypatch)
+    grants.enabled = True
+    if fault == "missing":
+        grants.override = lambda _grant: None
+    elif fault == "boolean":
+        grants.override = lambda _grant: True
+    elif fault == "foreign-subject":
+        grants.override = lambda grant: replace(
+            grant, actor=replace(grant.actor, subject="foreign-person")
+        )
+    elif fault == "foreign-tenant":
+        grants.override = lambda grant: replace(
+            grant, actor=replace(grant.actor, tenant_id="other-tenant")
+        )
+    elif fault == "foreign-issuer":
+        grants.override = lambda grant: replace(
+            grant, actor=replace(grant.actor, issuer="https://foreign.invalid/v2.0")
+        )
+    elif fault == "wrong-action":
+        grants.override = lambda grant: replace(grant, action="approve")
+    elif fault == "wrong-generation":
+        grants.override = lambda grant: replace(grant, expected_generation=2)
+    elif fault == "wrong-output":
+        grants.override = lambda grant: replace(grant, output_id="other-output")
+    else:
+        grants.override = lambda grant: replace(
+            grant,
+            binding=grant.binding.model_copy(update={"item_version": 999}),
+        )
+    denied = client.post(URL, headers=HEADERS, json=body(store))
+    assert denied.status_code == 403
+    assert store.atomic_calls == 0 and store.writes == 0
+
+
+def test_grant_backed_cannot_take_client_grant_uuid_or_role(monkeypatch):
+    """Request JSON cannot inject a grant handle or a spoofed MFA role."""
+    client, store, grants = setup_grant_backed(monkeypatch)
+    grants.enabled = True
+    forged = body(store)
+    forged["grant_id"] = "11111111-2222-4333-8444-555555555555"
+    assert client.post(URL, headers=HEADERS, json=forged).status_code == 400
+    forged = body(store)
+    forged["mfa_completed"] = True
+    assert client.post(URL, headers=HEADERS, json=forged).status_code == 400
+    assert grants.calls == 0 and store.atomic_calls == 0
+
+
+def test_grant_backed_revocation_during_save_stays_denied(monkeypatch):
+    """Simulated database refusal must not produce a successful HTTP receipt."""
+    client, store, grants = setup_grant_backed(monkeypatch)
+    grants.enabled = True
+    store.revoked = True
+    response = client.post(URL, headers=HEADERS, json=body(store))
+    assert response.status_code == 409
+    assert response.headers["Cache-Control"] == "no-store"
+    assert store.atomic_calls == 1 and store.writes == 0
+    assert len(store.case.review.audit) == 1
+
+
+def test_grant_backed_selector_outage_fails_closed_without_details(monkeypatch):
+    """An internal issuer fault cannot downgrade to a separate boolean grant."""
+    client, store, grants = setup_grant_backed(monkeypatch)
+    grants.failure = OSError("private issuer details")
+    response = client.post(URL, headers=HEADERS, json=body(store))
+    assert response.status_code == 503
+    assert "private issuer details" not in response.text
+    assert store.atomic_calls == 0 and store.writes == 0
