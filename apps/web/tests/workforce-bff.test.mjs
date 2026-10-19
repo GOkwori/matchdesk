@@ -58,8 +58,10 @@ function fixture(overrides = {}) {
         item_version: 1,
         ...(action === 'reverify'
           ? { mode: 'grant_backed_development_only', approval_enabled: false }
-          : { action }),
-        review_status: action === 'reverify' ? 'ready_for_decision' : 'pending_verification',
+          : { mode: 'grant_backed_development_only', action }),
+        review_status: action === 'reverify' ? 'ready_for_decision'
+          : action === 'approve' ? 'approved'
+          : action === 'reject' ? 'rejected' : 'pending_verification',
         publication_enabled: false, private_marker: 'never-return-me',
       }, {
         status: action === 'create' ? 201 : 200,
@@ -259,5 +261,36 @@ test('reverification receipts must prove transaction-backed mode and an unapprov
       ['sessions', SID, 'cases', OUTPUT, 'reverify']);
     assert.equal(response.status, 503, JSON.stringify(variant));
     assert.equal((await response.json()).detail, 'Workforce upstream unavailable');
+  }
+});
+
+test('all producer commands reject legacy boolean grants and impossible review states', async () => {
+  const actionStates = {
+    create: 'pending_verification',
+    edit: 'pending_verification',
+    approve: 'approved',
+    reject: 'rejected',
+  };
+  for (const [action, validState] of Object.entries(actionStates)) {
+    for (const variant of [
+      { mode: 'opt_in_development_only', review_status: validState },
+      { mode: undefined, review_status: validState },
+      { mode: 'grant_backed_development_only', review_status: 'ready_for_decision' },
+    ]) {
+      const { calls, handle, host } = fixture();
+      host.fetchBackend = async (url, init) => {
+        calls.push({ url, init });
+        return Response.json({
+          session_id: SID, output_id: OUTPUT,
+          generation: action === 'create' ? 1 : 2, item_version: 1,
+          action, publication_enabled: false, ...variant,
+        }, { status: action === 'create' ? 201 : 200 });
+      };
+      const response = await handle(req(action),
+        ['sessions', SID, 'cases', OUTPUT, action]);
+      assert.equal(response.status, 503, action + ': ' + JSON.stringify(variant));
+      assert.equal((await response.json()).detail, 'Workforce upstream unavailable');
+      assert.equal(calls.length, 1);
+    }
   }
 });
