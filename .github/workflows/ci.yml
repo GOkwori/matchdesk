@@ -220,6 +220,11 @@ jobs:
         run: |
           set -euo pipefail
           node --experimental-strip-types --test apps/web/tests/workforce-entra.test.mjs 2>&1 | tee artifacts/web/workforce-entra.log
+      - name: Verify sealed pending workforce session and revoke boundaries
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          node --experimental-strip-types --test apps/web/tests/workforce-pending-session.test.mjs 2>&1 | tee artifacts/web/workforce-pending-session.log
       - name: Build the actual web application
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         working-directory: apps/web
