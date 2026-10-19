@@ -7,11 +7,15 @@ They cannot establish a real Entra MFA, operator approval or production readines
 from __future__ import annotations
 
 from dataclasses import replace
+from uuid import UUID
 
 import pytest
 from fastapi.testclient import TestClient
 from matchdesk.api.app import create_app
-from matchdesk.api.producer_command_routes import create_producer_command_router
+from matchdesk.api.producer_command_routes import (
+    create_grant_backed_producer_command_router,
+    create_producer_command_router,
+)
 from matchdesk.domain.broadcast_outputs import ClaimLinkedText, CommentaryPayload
 from matchdesk.domain.hashing import content_digest
 from matchdesk.domain.producer_commands import (
@@ -19,6 +23,7 @@ from matchdesk.domain.producer_commands import (
     apply_producer_command,
     open_producer_case,
 )
+from matchdesk.domain.producer_execution_grants import ProducerGrantAttempt
 from matchdesk.domain.producer_identity import ProducerIdentityPolicy
 from matchdesk.domain.producer_preview import build_producer_desk_preview
 
@@ -476,3 +481,178 @@ def test_body_limit_and_host_error_are_non_disclosing(monkeypatch):
         client.post(BASE + "/create", headers=HEADERS, json=create_body(source)).status_code == 503
     )
     assert store.writes == 0
+
+
+
+class AtomicStore(Store):
+    """Strict test adapter: legacy create/CAS methods must never execute."""
+
+    def __init__(self) -> None:
+        """Track only grant-backed, atomic method calls."""
+        super().__init__()
+        self.atomic_actions: list[str] = []
+
+    def create(self, case):
+        """Reject an accidental downgrade to the legacy, unguarded write."""
+        raise AssertionError("legacy create bypassed execution-grant transaction")
+
+    def replace_if_generation(self, case, *, expected_generation):
+        """Reject an accidental downgrade to a boolean-authorized CAS."""
+        raise AssertionError("legacy CAS bypassed execution-grant transaction")
+
+    def create_with_execution_grant(self, case, *, grant):
+        """Model an atomic, grant-scoped create without a real database."""
+        assert type(grant) is ProducerGrantAttempt and grant.action == "create"
+        self.atomic_actions.append("create")
+        return Store.create(self, case)
+
+    def replace_with_execution_grant(self, case, *, expected_generation, grant):
+        """Model an atomic, exact-action version update."""
+        assert type(grant) is ProducerGrantAttempt
+        assert grant.expected_generation == expected_generation
+        self.atomic_actions.append(grant.action)
+        return Store.replace_if_generation(
+            self, case, expected_generation=expected_generation
+        )
+
+
+class AtomicSelector:
+    """Return a server-only UUID after a synthetic host grant selection."""
+
+    def __init__(self) -> None:
+        """Begin denied; no client-supplied grant lookup exists."""
+        self.enabled = False
+        self.calls = 0
+        self.override = None
+        self.failure: Exception | None = None
+
+    def select(self, *, actor, action, session_id, output_id, binding, expected_generation):
+        """Return the selected exact grant, or a forced invalid test result."""
+        self.calls += 1
+        if self.failure is not None:
+            raise self.failure
+        if not self.enabled:
+            return None
+        candidate = ProducerGrantAttempt(
+            grant_id=UUID("11111111-2222-4333-8444-555555555555"),
+            actor=actor,
+            action=action,
+            session_id=session_id,
+            output_id=output_id,
+            binding=binding,
+            expected_generation=expected_generation,
+        )
+        return self.override(candidate) if self.override is not None else candidate
+
+
+def prepare_atomic(monkeypatch):
+    """Mount only the opt-in grant-backed route with synthetic trusted inputs."""
+    source, store, grants = Source(), AtomicStore(), AtomicSelector()
+    router = create_grant_backed_producer_command_router(
+        policy=POLICY,
+        keys=DenyResolver(),
+        entitlements=DenyResolver(),
+        grants=grants,
+        source=source,
+        store=store,
+    )
+    import matchdesk.api.producer_command_routes as routes
+
+    monkeypatch.setattr(routes, "verify_producer_access_token", lambda *_a, **_k: actor())
+    return TestClient(create_app(producer_command_router=router)), source, store, grants
+
+
+def test_atomic_factory_refuses_a_store_without_transaction_scoped_methods() -> None:
+    """No unguarded store can be accidentally mounted as an atomic route."""
+    with pytest.raises(ValueError, match="trusted host dependencies"):
+        create_grant_backed_producer_command_router(
+            policy=POLICY,
+            keys=DenyResolver(),
+            entitlements=DenyResolver(),
+            grants=AtomicSelector(),
+            source=Source(),
+            store=Store(),
+        )
+
+
+def test_atomic_route_default_denies_and_has_no_legacy_write(monkeypatch) -> None:
+    """A bearer alone cannot create and an unavailable grant cannot fall back."""
+    client, source, store, grants = prepare_atomic(monkeypatch)
+    response = client.post(BASE + "/create", headers=HEADERS, json=create_body(source))
+    assert response.status_code == 403
+    assert response.headers["Cache-Control"] == "no-store"
+    assert store.atomic_actions == [] and store.case is None
+    assert grants.calls == 1
+
+
+def test_atomic_create_and_reject_use_only_grant_locked_store(monkeypatch) -> None:
+    """Create and reject select distinct action-bound grants and never publish."""
+    client, source, store, grants = prepare_atomic(monkeypatch)
+    grants.enabled = True
+    created = client.post(BASE + "/create", headers=HEADERS, json=create_body(source))
+    assert created.status_code == 201
+    rejected = client.post(BASE + "/reject", headers=HEADERS, json=decision_body(store))
+    assert rejected.status_code == 200
+    assert rejected.json()["review_status"] == "rejected"
+    assert rejected.json()["publication_enabled"] is False
+    assert store.atomic_actions == ["create", "reject"]
+    assert grants.calls == 2
+    replay = client.post(BASE + "/reject", headers=HEADERS, json=decision_body(store))
+    assert replay.status_code == 409 or replay.status_code == 403
+    assert store.atomic_actions == ["create", "reject"]
+
+
+@pytest.mark.parametrize(
+    "kind",
+    ["missing", "bool", "foreign-tenant", "foreign-issuer", "wrong-action", "wrong-binding"],
+)
+def test_atomic_selection_must_match_actor_action_and_content(monkeypatch, kind):
+    """A defective host selector cannot retarget an exact grant or claim True."""
+    client, source, store, grants = prepare_atomic(monkeypatch)
+    grants.enabled = True
+    if kind == "missing":
+        grants.override = lambda _grant: None
+    elif kind == "bool":
+        grants.override = lambda _grant: True
+    elif kind == "foreign-tenant":
+        grants.override = lambda grant: replace(
+            grant, actor=replace(grant.actor, tenant_id="foreign-tenant")
+        )
+    elif kind == "foreign-issuer":
+        grants.override = lambda grant: replace(
+            grant, actor=replace(grant.actor, issuer="https://foreign.invalid/v2.0")
+        )
+    elif kind == "wrong-action":
+        grants.override = lambda grant: replace(
+            grant, action="reject", expected_generation=1
+        )
+    else:
+        grants.override = lambda grant: replace(
+            grant,
+            binding=grant.binding.model_copy(update={"item_version": 999}),
+        )
+    denied = client.post(BASE + "/create", headers=HEADERS, json=create_body(source))
+    assert denied.status_code == 403
+    assert store.case is None and store.atomic_actions == []
+
+
+def test_atomic_unexpected_host_failure_denies_without_leaking(monkeypatch) -> None:
+    """Grant selector faults never become a soft authorization success."""
+    client, source, store, grants = prepare_atomic(monkeypatch)
+    grants.failure = OSError("private selector problem")
+    response = client.post(BASE + "/create", headers=HEADERS, json=create_body(source))
+    assert response.status_code == 503
+    assert "private" not in response.text
+    assert store.case is None and store.atomic_actions == []
+
+
+def test_atomic_request_cannot_supply_its_own_grant_id(monkeypatch) -> None:
+    """A browser grant UUID or role assertion is not an API authority input."""
+    client, source, store, grants = prepare_atomic(monkeypatch)
+    grants.enabled = True
+    request = create_body(source)
+    request["grant_id"] = "11111111-2222-4333-8444-555555555555"
+    denied = client.post(BASE + "/create", headers=HEADERS, json=request)
+    assert denied.status_code == 400
+    assert grants.calls == 0
+    assert store.case is None and store.atomic_actions == []
