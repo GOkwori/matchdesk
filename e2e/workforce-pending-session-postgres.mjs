@@ -149,27 +149,40 @@ try {
       /permission denied for table/i);
   });
 
-  await check('sealed pending state persists once with no activatable read function', () => {
-    const value = digest('once');
-    const now = Date.now();
-    assert.equal(caller(prepare(value, now)), 't');
-    assert.equal(caller(prepare(value, now)), 'f');
+  // Each assertion is an independent named gate. The published report records
+  // only which security property failed, never SQL parameters or token bytes.
+  const onceValue = digest('once');
+  const onceNow = Date.now();
+  await check('first pending insert commits successfully', () => {
+    assert.equal(caller(prepare(onceValue, onceNow)), 't');
+  });
+  await check('duplicate pending digest cannot replace or revive existing row', () => {
+    assert.equal(caller(prepare(onceValue, onceNow)), 'f');
+  });
+  await check('sealed pending token remains protected by IV and GCM tag', () => {
     assert.equal(sql(
       "SELECT octet_length(token_iv)::text || ',' || " +
       "octet_length(token_ciphertext)::text || ',' || " +
       "octet_length(token_tag)::text FROM " +
-      "public.matchdesk_workforce_pending_sessions WHERE record_digest='" + value + "'"
+      "public.matchdesk_workforce_pending_sessions WHERE record_digest='" + onceValue + "'"
     ), '12,60,16');
-    // No SECURITY DEFINER accessor returns token contents to the caller.
+  });
+  await check('there is no privileged workforce session activation function', () => {
     assert.equal(sql(
       "SELECT count(*) FROM pg_proc WHERE pronamespace='public'::regnamespace " +
       "AND proname='matchdesk_activate_workforce_session'"
     ), '0');
-    assert.equal(caller(revoke(value)), 't');
-    assert.equal(caller(revoke(value)), 'f');
+  });
+  await check('first pending revocation commits a tombstone', () => {
+    assert.equal(caller(revoke(onceValue)), 't');
+  });
+  await check('replayed pending revocation is rejected', () => {
+    assert.equal(caller(revoke(onceValue)), 'f');
+  });
+  await check('revoked pending tombstone remains durable', () => {
     assert.equal(sql(
       "SELECT (revoked_at IS NOT NULL)::text FROM " +
-      "public.matchdesk_workforce_pending_sessions WHERE record_digest='" + value + "'"
+      "public.matchdesk_workforce_pending_sessions WHERE record_digest='" + onceValue + "'"
     ), 'true');
   });
 
