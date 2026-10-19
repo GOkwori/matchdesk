@@ -48,7 +48,16 @@ function sql(statement, failurePattern = null) {
     assert.notEqual(r.status, 0, 'Unexpected PostgreSQL authorization success');
     assert.match(r.stderr, failurePattern);
   } else {
-    assert.equal(r.status, 0, 'PostgreSQL: ' + r.stderr.slice(0, 500));
+    if (r.status !== 0) {
+      // Keep runner evidence useful without exposing SQL, connection details,
+      // tokens, runner paths or credential-bearing stderr from PostgreSQL.
+      const category = /permission denied/i.test(r.stderr) ? 'PRIVILEGE' :
+        /syntax error/i.test(r.stderr) ? 'SYNTAX' :
+        /invalid input syntax|invalid byte sequence/i.test(r.stderr) ? 'INPUT' :
+        /violates check constraint/i.test(r.stderr) ? 'CONSTRAINT' :
+        'UNCLASSIFIED';
+      throw new Error('SAFE_SQL_' + category);
+    }
   }
   return r.stdout.trim();
 }
@@ -115,6 +124,8 @@ async function check(name, fn) {
       name, result: 'FAIL', ms: Math.round(performance.now() - started),
       // Never include SQL parameter text, tokens or connection strings.
       error_type: error?.constructor?.name ?? 'Error',
+      diagnostic: /^SAFE_(SQL|PENDING)_[A-Z_]+$/.test(String(error?.message))
+        ? error.message : undefined,
     });
     throw error;
   }
@@ -152,9 +163,15 @@ try {
   // Each assertion is an independent named gate. The published report records
   // only which security property failed, never SQL parameters or token bytes.
   const onceValue = digest('once');
-  const onceNow = Date.now();
+  // Generate the positive fixture against the database's own clock so host
+  // timestamp skew cannot turn this into a false policy-negative test.
+  const onceNow = Number(sql(
+    "SELECT floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint"
+  )) - 1000;
   await check('first pending insert commits successfully', () => {
-    assert.equal(caller(prepare(onceValue, onceNow)), 't');
+    const observed = caller(prepare(onceValue, onceNow));
+    if (observed === 'f') throw new Error('SAFE_PENDING_REJECTED');
+    if (observed !== 't') throw new Error('SAFE_PENDING_OUTPUT_SHAPE');
   });
   await check('duplicate pending digest cannot replace or revive existing row', () => {
     assert.equal(caller(prepare(onceValue, onceNow)), 'f');
