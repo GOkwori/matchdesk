@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import json
 import re
-from typing import Protocol
+from typing import Literal, Protocol, cast
 
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
@@ -20,10 +20,12 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from matchdesk.domain.models import ApprovalBinding
 from matchdesk.domain.producer_commands import (
     HostVerifiedActor,
+    ProducerCase,
     ProducerCaseStore,
     apply_producer_command,
     inspect_producer_case,
 )
+from matchdesk.domain.producer_execution_grants import ProducerGrantAttempt
 from matchdesk.domain.producer_identity import (
     EntitlementResolver,
     ProducerIdentityPolicy,
@@ -63,6 +65,37 @@ class ReverificationGrantResolver(Protocol):
         expected_generation: int,
     ) -> bool:
         """Return exactly True only when this actor may reverify this version."""
+
+
+
+
+class TransactionalReverificationStore(ProducerCaseStore, Protocol):
+    """A durable writer with grant consumption in the same case/audit transaction."""
+
+    def replace_with_execution_grant(
+        self, case: ProducerCase, *, expected_generation: int, grant: ProducerGrantAttempt
+    ) -> bool:
+        """Atomically consume a server-held grant, CAS the case, and append audit."""
+
+
+class TransactionalReverificationSelector(Protocol):
+    """Host-injected resolver for an independently verified, exact reverify grant.
+
+    A real selector must use server-held grant IDs and prove delegated workforce
+    identity, current session membership and step-up independently of HTTP input.
+    """
+
+    def select(
+        self,
+        *,
+        actor: HostVerifiedActor,
+        action: Literal["reverify"],
+        session_id: str,
+        output_id: str,
+        binding: ApprovalBinding,
+        expected_generation: int,
+    ) -> ProducerGrantAttempt | None:
+        """Return only an already issued, scoped and server-held grant reference."""
 
 
 def _headers() -> dict[str, str]:
@@ -130,32 +163,35 @@ def _request_shape(request: Request, session_id: str, output_id: str) -> str | N
     return token
 
 
-def create_producer_reverification_router(
+def _build_reverification_router(
     *,
     policy: ProducerIdentityPolicy,
     keys: TrustedKeyResolver,
     entitlements: EntitlementResolver,
-    grants: ReverificationGrantResolver,
+    grants: ReverificationGrantResolver | None,
+    transactional_grants: TransactionalReverificationSelector | None,
     store: ProducerCaseStore,
 ) -> APIRouter:
-    """Create an explicit host-injected, default-disabled DEV command router.
+    """Build one default-disabled legacy or transaction-backed DEV route.
 
-    The trusted host must separately qualify the durable store's transaction/
-    audit guarantees and genuinely human step-up authorization before activation.
-    A synthetic test verifier does not confer operational production readiness.
+    No selector may fall back to a boolean grant or ordinary CAS writer.
+    Neither factory activates operational Entra sign-in or human MFA step-up.
     """
-    requirements = (
-        (keys, "resolve"),
-        (entitlements, "resolve"),
-        (grants, "authorize"),
-        (store, "load"),
-        (store, "replace_if_generation"),
-    )
+    if (grants is None) == (transactional_grants is None):
+        raise ValueError("Exactly one producer reverification grant mode is required")
+    requirements = [(keys, "resolve"), (entitlements, "resolve"), (store, "load")]
+    if transactional_grants is None:
+        requirements.extend(((grants, "authorize"), (store, "replace_if_generation")))
+    else:
+        requirements.extend(
+            ((transactional_grants, "select"), (store, "replace_with_execution_grant"))
+        )
     if type(policy) is not ProducerIdentityPolicy or any(
         not callable(getattr(dependency, method, None)) for dependency, method in requirements
     ):
         raise ValueError("Producer reverification requires verified host-owned dependencies")
     policy.__post_init__()
+    locked_store = cast(TransactionalReverificationStore, store)
     router = APIRouter(prefix="/api/workforce/producer", tags=["workforce-producer"])
 
     @router.post("/sessions/{session_id}/cases/{output_id}/reverify")
@@ -210,20 +246,43 @@ def create_producer_reverification_router(
         if case.generation != command.expected_generation or case.output.binding != command.binding:
             return _response("Producer case changed; reload before reverification", 409)
 
+        selected_grant: ProducerGrantAttempt | None = None
         try:
-            allowed = grants.authorize(
+            if transactional_grants is not None:
+                candidate = transactional_grants.select(
+                    actor=actor,
+                    action="reverify",
+                    session_id=session_id,
+                    output_id=output_id,
+                    binding=case.output.binding,
+                    expected_generation=case.generation,
+                )
+                # A selector's returned object is not itself an authority.
+                # Match every scope field to the verified identity and stored
+                # content before the database consumes the actual live grant.
+                if (
+                    type(candidate) is not ProducerGrantAttempt
+                    or candidate.actor != actor
+                    or candidate.action != "reverify"
+                    or candidate.session_id != session_id
+                    or candidate.output_id != output_id
+                    or candidate.binding != case.output.binding
+                    or candidate.expected_generation != case.generation
+                ):
+                    return _response("Producer reverification denied", 403)
+                selected_grant = candidate
+            elif grants is None or grants.authorize(
                 actor=actor,
                 session_id=session_id,
                 output_id=output_id,
                 binding=case.output.binding,
                 expected_generation=case.generation,
-            )
-        except (PermissionError, LookupError, ValueError):
+            ) is not True:
+                return _response("Producer reverification denied", 403)
+        except (PermissionError, LookupError, ValueError, TypeError):
             return _response("Producer reverification denied", 403)
         except Exception:
             return _response("Producer reverification unavailable", 503)
-        if allowed is not True:
-            return _response("Producer reverification denied", 403)
 
         try:
             revised = apply_producer_command(
@@ -238,9 +297,22 @@ def create_producer_reverification_router(
         except Exception:
             return _response("Producer reverification unavailable", 503)
         try:
-            saved = store.replace_if_generation(
-                revised, expected_generation=command.expected_generation
-            )
+            if transactional_grants is not None:
+                if selected_grant is None:
+                    return _response("Producer reverification denied", 403)
+                saved = locked_store.replace_with_execution_grant(
+                    revised,
+                    expected_generation=command.expected_generation,
+                    grant=selected_grant,
+                )
+            else:
+                # Backwards-compatible offline test contract only: it is not
+                # safe for live use because a grant can be revoked after check.
+                saved = store.replace_if_generation(
+                    revised, expected_generation=command.expected_generation
+                )
+        except (PermissionError, ValueError, TypeError):
+            return _response("Producer reverification denied", 403)
         except Exception:
             return _response("Producer reverification unavailable", 503)
         if saved is not True:
@@ -253,7 +325,11 @@ def create_producer_reverification_router(
                 "generation": revised.generation,
                 "review_status": revised.review.status,
                 "item_version": revised.output.binding.item_version,
-                "mode": "host_authorized_reverification",
+                "mode": (
+                    "grant_backed_development_only"
+                    if transactional_grants is not None
+                    else "host_authorized_reverification"
+                ),
                 "approval_enabled": False,
                 "publication_enabled": False,
             },
@@ -261,3 +337,49 @@ def create_producer_reverification_router(
         )
 
     return router
+
+
+def create_producer_reverification_router(
+    *,
+    policy: ProducerIdentityPolicy,
+    keys: TrustedKeyResolver,
+    entitlements: EntitlementResolver,
+    grants: ReverificationGrantResolver,
+    store: ProducerCaseStore,
+) -> APIRouter:
+    """Preserve the default-disabled, legacy boolean-grant offline DEV tests.
+
+    This route is NOT authorised for a live producer because the independent
+    host grant and case write are not one atomic database transaction.
+    """
+    return _build_reverification_router(
+        policy=policy,
+        keys=keys,
+        entitlements=entitlements,
+        grants=grants,
+        transactional_grants=None,
+        store=store,
+    )
+
+
+def create_grant_backed_producer_reverification_router(
+    *,
+    policy: ProducerIdentityPolicy,
+    keys: TrustedKeyResolver,
+    entitlements: EntitlementResolver,
+    grants: TransactionalReverificationSelector,
+    store: TransactionalReverificationStore,
+) -> APIRouter:
+    """Require grant-backed CAS/audit for an opt-in, unauthenticated-by-default DEV host.
+
+    The selector is merely a host-injected interface, not an implemented step-up
+    or Entra issuer. Do not mount until separate human and identity acceptance.
+    """
+    return _build_reverification_router(
+        policy=policy,
+        keys=keys,
+        entitlements=entitlements,
+        grants=None,
+        transactional_grants=grants,
+        store=store,
+    )
