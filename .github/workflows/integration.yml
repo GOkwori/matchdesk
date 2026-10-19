@@ -55,7 +55,10 @@ jobs:
       - name: Qualify producer audit and CAS on real isolated PostgreSQL
         id: producer_storage
         if: ${{ !cancelled() && steps.start.outcome == 'success' && steps.runtime.outcome == 'success' }}
-        run: node e2e/producer-store-postgres.mjs 2>&1 | tee artifacts/integration/producer-store-postgres.log
+        run: |
+          set -euo pipefail
+          node e2e/producer-store-postgres.mjs 2>&1 | tee artifacts/integration/producer-store-postgres.log
+          node e2e/producer-grant-postgres.mjs 2>&1 | tee artifacts/integration/producer-grant-postgres.log
       - name: Verify restricted real-Psycopg producer transactions and recovery
         id: psycopg_storage
         if: ${{ !cancelled() && steps.producer_storage.outcome == 'success' }}

@@ -109,10 +109,11 @@ class FakeCursor:
         self.db.statements.append((sql, parameters))
         self.result = None
         self.rows = []
-        if sql.lstrip().startswith("UPDATE matchdesk_producer_execution_grants"):
-            if self.db.grants.get(parameters) == "active":
+        if sql.lstrip().startswith("SELECT public.matchdesk_consume_producer_execution_grant"):
+            allowed = self.db.grants.get(parameters) == "active"
+            if allowed:
                 self.db.grants[parameters] = "consumed"
-                self.result = (UUID(parameters[0]),)
+            self.result = (allowed,)
             return
         if sql.lstrip().startswith("SET TRANSACTION ISOLATION LEVEL"):
             return
@@ -496,7 +497,11 @@ def test_stale_cas_rolls_back_valid_execution_grant() -> None:
     case = _case()
     assert store.create(case)
     candidate = apply_producer_command(
-        case, actor=_actor(), expected_generation=1, command="reverify", reason="Checked"
+        case,
+        actor=_actor(),
+        expected_generation=1,
+        command="reverify",
+        reason="Checked",
     )
     execute_producer_command(
         store,
@@ -510,6 +515,8 @@ def test_stale_cas_rolls_back_valid_execution_grant() -> None:
     )
     grant = _grant_for(candidate, action="reverify", generation=1)
     _register_grant(db, grant)
-    assert not store.replace_with_execution_grant(candidate, expected_generation=1, grant=grant)
+    assert not store.replace_with_execution_grant(
+        candidate, expected_generation=1, grant=grant
+    )
     assert "active" in db.grants.values()
     assert len(db.audit) == 2

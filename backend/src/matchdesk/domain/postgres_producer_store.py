@@ -446,6 +446,7 @@ class PostgresProducerCaseStore:
         finally:
             connection.close()
 
+
 class ReadOnlyPostgresProducerReader:
     """Expose only scoped audited SELECTs through a pinned physical read role.
 

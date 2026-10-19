@@ -2,9 +2,10 @@
 
 This is not an Entra/MFA adapter. A trusted host must verify a real workforce
 actor and step-up and retrieve the opaque grant ID from protected server state.
-Only the committed database grant row conveys execution authority. The UPDATE
-locks that row until the enclosing case/audit transaction commits, serializing
-concurrent revocation and writes without a separate check/write gap.
+Only the committed database grant row conveys execution authority. A narrowly
+scoped SECURITY DEFINER function performs its conditional UPDATE and retains
+the row lock through the caller's case/audit transaction. Case writers cannot
+enumerate grants or modify issuer-owned revocation fields.
 """
 
 from __future__ import annotations
@@ -25,14 +26,9 @@ _AUDIT_ACTION = {
     "reject": "rejected",
 }
 _CONSUME = """
-UPDATE matchdesk_producer_execution_grants
-SET consumed_at = clock_timestamp()
-WHERE grant_id = %s::uuid AND tenant_id = %s AND actor_subject = %s
-  AND actor_issuer = %s AND action = %s AND session_id = %s
-  AND output_id = %s AND expected_generation = %s AND binding_digest = %s
-  AND revoked_at IS NULL AND consumed_at IS NULL
-  AND expires_at > clock_timestamp()
-RETURNING grant_id
+SELECT public.matchdesk_consume_producer_execution_grant(
+    %s::uuid, %s, %s, %s, %s, %s, %s, %s, %s
+)
 """
 
 
@@ -135,5 +131,7 @@ def consume_execution_grant(
             content_digest(attempt.binding),
         ),
     )
+    # Only the literal boolean True from the database-owned function grants
+    # execution; a UUID, truthy string or missing row never grants authority.
     row = cursor.fetchone()
-    return type(row) is tuple and len(row) == 1 and str(row[0]) == str(attempt.grant_id)
+    return type(row) is tuple and len(row) == 1 and row[0] is True
