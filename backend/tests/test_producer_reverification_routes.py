@@ -151,6 +151,36 @@ def test_valid_token_alone_cannot_write(monkeypatch):
     assert grants.calls == 1
 
 
+@pytest.mark.parametrize(
+    "untrusted",
+    [
+        replace(actor(), roles=frozenset({"auditor"})),
+        replace(actor(), tenant_id="11111111-2222-3333-4444-555555555555"),
+        replace(actor(), issuer="https://untrusted.invalid/v2.0"),
+        replace(actor(), permitted_sessions=frozenset({"other-session"})),
+        object(),
+    ],
+    ids=[
+        "non-producer",
+        "foreign-tenant",
+        "foreign-issuer",
+        "foreign-session",
+        "wrong-type",
+    ],
+)
+def test_reverification_rechecks_workforce_actor_before_case_lookup(monkeypatch, untrusted):
+    """Reject defective verifier output before storage and action-grant lookup."""
+    client, store, grants = setup(monkeypatch)
+    grants.allowed = True
+    import matchdesk.api.producer_reverification_routes as routes
+
+    monkeypatch.setattr(routes, "verify_producer_access_token", lambda *_a, **_k: untrusted)
+    response = client.post(URL, json=body(store), headers=HEADERS)
+    assert response.status_code == 403
+    assert response.headers["Cache-Control"] == "no-store"
+    assert store.reads == 0 and store.writes == 0 and grants.calls == 0
+
+
 def test_exact_grant_saves_once_and_replay_fails(monkeypatch):
     """A scoped host decision permits one atomic update, never repeated writes."""
     client, store, grants = setup(monkeypatch)

@@ -174,9 +174,15 @@ def create_producer_reverification_router(
         except Exception:
             return _response("Producer reverification unavailable", 503)
 
-        # Verify the identity and session authorization before reading request JSON
-        # or any producer case. No body-supplied role, tenant or actor is trusted.
-        if type(actor) is not HostVerifiedActor or session_id not in actor.permitted_sessions:
+        # Independently recheck configured workforce trust if the token-verifier
+        # integration is defective. Deny before reading cases or requesting grants.
+        if (
+            type(actor) is not HostVerifiedActor
+            or actor.tenant_id != policy.tenant_id
+            or actor.issuer != policy.issuer
+            or "producer" not in actor.roles
+            or session_id not in actor.permitted_sessions
+        ):
             return _response("Producer reverification denied", 403)
         try:
             payload = json.loads(
