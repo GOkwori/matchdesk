@@ -190,7 +190,8 @@ test('direct table queries, SQL identifiers and raw state never reach the execut
   await s.create(a);
   await s.consume(a.stateDigest);
   assert.equal(db.calls.length, 2);
-  assert.ok(db.calls.every(({ sql }) => sql.startsWith('SELECT public.matchdesk_')));
+  assert.equal(db.calls[0].sql.startsWith('SELECT public.matchdesk_create_workforce_oidc_attempt('), true);
+  assert.equal(db.calls[1].sql, 'SELECT * FROM public.matchdesk_consume_workforce_oidc_attempt($1)');
   assert.ok(db.calls.every(({ sql }) => !sql.includes('DROP') && !sql.includes('FROM public.matchdesk_workforce_oidc_attempts')));
   assert.equal(db.calls[1].values[0], a.stateDigest);
 });
