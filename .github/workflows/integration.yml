@@ -211,9 +211,15 @@ jobs:
         run: |
           set -euo pipefail
           node e2e/workforce-pending-session-postgres.mjs 2>&1 | tee artifacts/integration/workforce-pending-session-postgres.log
+      - name: Qualify pending-bound step-up race and least-privilege PostgreSQL gates
+        id: workforce_stepup_storage
+        if: ${{ !cancelled() && steps.workforce_pending_sessions.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          node e2e/workforce-step-up-postgres.mjs 2>&1 | tee artifacts/integration/workforce-step-up-postgres.log
       - name: Qualify SELECT-only customer directory with real PostgreSQL
         id: account_directory
-        if: ${{ !cancelled() && steps.workforce_pending_sessions.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.workforce_stepup_storage.outcome == 'success' }}
         run: |
           set -euo pipefail
           for attempt in 1 2; do
@@ -641,7 +647,7 @@ jobs:
         id: browser
         # Do not spend runner time after the security-critical pending-vault
         # real-PostgreSQL prerequisite fails closed.
-        if: ${{ !cancelled() && steps.start.outcome == 'success' && steps.workforce_pending_sessions.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.start.outcome == 'success' && steps.workforce_stepup_storage.outcome == 'success' }}
         working-directory: e2e
         run: |
           set -euo pipefail
