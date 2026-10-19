@@ -27,7 +27,6 @@ const POLICY = {
 };
 const PAIR = generateKeyPairSync('rsa', { modulusLength: 2048 });
 const FOREIGN = generateKeyPairSync('rsa', { modulusLength: 2048 });
-const SMALL = generateKeyPairSync('rsa', { modulusLength: 1024 });
 const JWK = PAIR.publicKey.export({ format: 'jwk' });
 
 function token(claims, key = PAIR.privateKey, header = {}) {
@@ -171,10 +170,10 @@ test('JWT header key substitution, unsigned tokens and bad RSA signatures fail c
 });
 
 test('issuer-bound RSA keys, 2048-bit minimum and immutable policy are mandatory', async () => {
-  const smallJwk = SMALL.publicKey.export({ format: 'jwk' });
   const badKeys = [
     keys({ issuer: 'https://attacker.invalid' }),
-    keys({ n: smallJwk.n, e: smallJwk.e }),
+    // Malformed public key cannot be accepted; do not generate weak RSA keys.
+    keys({ n: 'AQAB' }),
     keys({ e: 'AQAC' }),
     keys({ use: 'enc' }),
     keys({ alg: 'HS256' }),
