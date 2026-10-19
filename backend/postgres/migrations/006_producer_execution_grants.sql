@@ -29,7 +29,7 @@ CREATE OR REPLACE FUNCTION public.matchdesk_consume_producer_execution_grant(
 ) RETURNS boolean
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER
 SET search_path = pg_catalog
-AS $
+AS $mdgrant$
 DECLARE claimed boolean;
 BEGIN
     -- All tables are schema qualified. Caller values are typed equality
@@ -46,7 +46,7 @@ BEGIN
     RETURNING true INTO claimed;
     RETURN COALESCE(claimed, false);
 END;
-$;
+$mdgrant$;
 
 -- PostgreSQL defaults to PUBLIC EXECUTE for new functions. Deny by default.
 -- An approved provisioning step must grant EXECUTE only to its exact writer.
