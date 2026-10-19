@@ -68,7 +68,8 @@ test("modal is accessible and keyboard navigation stays inside it", async ({ pag
   const trapped = await page.evaluate(() => {
     const active = document.activeElement;
     const modal = document.querySelector("dialog.md-decision-dialog");
-    return !!modal && !!active && modal.contains(active);
+    // Native <dialog> itself may receive focus when Shift+Tab wraps.
+    return !!modal && !!active && (modal === active || modal.contains(active));
   });
   expect(trapped).toBe(true);
   const results = await new AxeBuilder({ page })

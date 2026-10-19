@@ -25,6 +25,7 @@ export function ProducerDecisionDialog({
   intent, current, onDismiss, onConfirmed,
 }: ProducerDecisionDialogProps) {
   const dialog = useRef<HTMLDialogElement>(null);
+  const cancelButton = useRef<HTMLButtonElement>(null);
   const previousFocus = useRef<HTMLElement | null>(null);
   const currentRef = useRef(current);
   const intentRef = useRef(intent);
@@ -48,6 +49,9 @@ export function ProducerDecisionDialog({
       setReason("");
       setError("");
       element.showModal();
+      // autoFocus may be processed before showModal() enters the top layer.
+      // Focus a non-destructive action explicitly after opening the modal.
+      cancelButton.current?.focus();
     } else if (intent === null && element.open) {
       element.close();
       const last = previousFocus.current;
@@ -132,7 +136,7 @@ export function ProducerDecisionDialog({
               disabled={busy || !currentVersion} aria-invalid={error ? "true" : undefined} />
             {error && <p className="md-decision-error" role="alert">{error}</p>}
             <div className="md-decision-actions">
-              <button type="button" autoFocus className="md-btn md-btn-secondary"
+              <button ref={cancelButton} type="button" autoFocus className="md-btn md-btn-secondary"
                 onClick={dismiss} disabled={busy}>Cancel</button>
               <button type="submit" className="md-btn md-btn-primary"
                 disabled={busy || !currentVersion || reason.trim().length === 0}>
