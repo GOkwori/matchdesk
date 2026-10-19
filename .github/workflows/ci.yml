@@ -225,6 +225,11 @@ jobs:
         run: |
           set -euo pipefail
           node --experimental-strip-types --test apps/web/tests/workforce-pending-session.test.mjs 2>&1 | tee artifacts/web/workforce-pending-session.log
+      - name: Qualify exact-version human decision binding and no-authority payload
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          node --experimental-strip-types --test apps/web/tests/workforce-decision.test.mjs 2>&1 | tee artifacts/web/workforce-decision.log
       - name: Build the actual web application
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         working-directory: apps/web
