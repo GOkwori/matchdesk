@@ -14,7 +14,7 @@ import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import {
   verifyWorkforceStepUpClaims, type VerifiedWorkforceCodeExchange,
   type WorkforceSigningKeys,
-} from "./entra";
+} from "./entra.ts";
 import type { WorkforceOidcPolicy } from "./oidc";
 
 const DIGEST = /^[a-f0-9]{64}$/;
