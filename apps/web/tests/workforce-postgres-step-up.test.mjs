@@ -108,6 +108,9 @@ test("invalid actor, digest, context and host dependencies reject before SQL", a
   assert.equal(db.calls.length, 0);
   assert.throws(() => store(db, Buffer.alloc(31)), /Protected step-up/);
   assert.throws(() => store(db, Buffer.alloc(32), "bad"), /Protected step-up/);
+  assert.throws(() => new PostgresWorkforceStepUpStore(db, {
+    ...policy, oidc: { ...policy.oidc, publicOrigin: "http://operator.example.test" },
+  }, Buffer.alloc(32), PENDING), /qualification denied/);
 });
 
 test("database faults, foreign rows and shape corruption disclose no internals", async () => {
