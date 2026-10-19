@@ -4,7 +4,7 @@
  * permanent revocation and concurrent row-lock serialization. No real
  * bearer/credential is used and no step-up or session activation exists.
  */
-import { test as assert } from 'node:assert/strict';
+import assert from 'node:assert/strict';
 import { execFileSync, spawn, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
