@@ -46,7 +46,7 @@ function validatePolicy(policy: WorkforceOidcPolicy): void {
       !GUID.test(policy.apiResourceAppId) ||
       policy.delegatedApiScope !==
         "api://" + policy.apiResourceAppId + "/MatchDesk.Producer.Access") {
-    throw new ValueError("Invalid workforce OIDC persistence policy");
+    throw new Error("Invalid workforce OIDC persistence policy");
   }
   try {
     const url = new URL(policy.publicOrigin);
