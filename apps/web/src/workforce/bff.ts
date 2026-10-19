@@ -97,6 +97,9 @@ function operation(segments: readonly string[], pathname: string): {
   return { sessionId: segments[1], outputId: segments[3], action: segments[4], backendPath };
 }
 
+/** Distinguish a bounded-request rejection from malformed JSON and transport faults. */
+class BodyLimitError extends Error {}
+
 /** Read streams with a hard byte limit; Content-Length is not a memory limit. */
 async function boundedBody(body: ReadableStream<Uint8Array> | null, limit: number): Promise<string> {
   if (!body) throw new Error("Missing response/request body");
@@ -110,7 +113,7 @@ async function boundedBody(body: ReadableStream<Uint8Array> | null, limit: numbe
       count += value.byteLength;
       if (count > limit) {
         await reader.cancel();
-        throw new Error("Body exceeds bound");
+        throw new BodyLimitError("Body exceeds bound");
       }
       chunks.push(value);
     }
@@ -240,7 +243,8 @@ export function createWorkforceBff(host: WorkforceBffHost | null) {
       if (body === null || typeof body !== "object" || Array.isArray(body)) {
         return deny(400, "Invalid workforce request");
       }
-    } catch {
+    } catch (error) {
+      if (error instanceof BodyLimitError) return deny(413, "Workforce request too large");
       return deny(400, "Invalid workforce request");
     }
 

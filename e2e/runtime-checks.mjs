@@ -132,18 +132,21 @@ try {
   await check('standalone web does not proxy privileged workforce commands', async () => {
     // A backend router may be opt-in later, but the browser cannot reach it
     // through the legacy generic rewrite before a real workforce BFF exists.
-    const protectedPaths = [
-      '/api/workforce',
+    // A generic workforce URL must still be a Next.js HTML 404, not the API rewrite.
+    const unknown = await request('/api/workforce', undefined, 'http://127.0.0.1:3000');
+    assert.equal(unknown.status, 404);
+    assert.match(unknown.headers.get('content-type') ?? '', /^text\/html\b/i);
+    // The reserved BFF URL is also blocked, with a no-store JSON response.
+    // Its status and body differ from any forwarded Python API 404.
+    const reserved = await request(
       '/api/workforce/producer/sessions/demo-preview-only/cases/demo-story-output/create',
-    ];
-    for (const path of protectedPaths) {
-      const body = path.endsWith('/create') ? '{}' : undefined;
-      const response = await request(path, body, 'http://127.0.0.1:3000');
-      assert.equal(response.status, 404);
-      assert.match(response.headers.get('content-type') ?? '', /^text\/html\b/i);
-    }
-    // The deliberately unmounted Python host replies with a JSON 404. An HTML
-    // 404 from Next.js above is evidence the workforce route was not forwarded.
+      '{}', 'http://127.0.0.1:3000'
+    );
+    assert.equal(reserved.status, 404);
+    assert.match(reserved.headers.get('content-type') ?? '', /^application\/json\b/i);
+    assert.equal(reserved.headers.get('cache-control'), 'no-store, max-age=0');
+    assert.match((await reserved.json()).detail, /BFF is disabled/);
+    // The Python host has no corresponding mounted workforce router.
     const backend = await request('/api/workforce');
     assert.equal(backend.status, 404);
     assert.match(backend.headers.get('content-type') ?? '', /^application\/json\b/i);
