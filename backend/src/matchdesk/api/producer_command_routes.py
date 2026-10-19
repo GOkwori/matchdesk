@@ -373,7 +373,9 @@ def _build_producer_command_router(
         if saved is not True:
             return _response("Producer case exists; reload instead of replaying", 409)
         return _result(
-            case, action="create", status=201,
+            case,
+            action="create",
+            status=201,
             grant_backed=transactional_grants is not None,
         )
 
@@ -452,7 +454,9 @@ def _build_producer_command_router(
         if saved is not True:
             return _response("Producer case changed; reload before acting", 409)
         return _result(
-            revised, action=action, status=200,
+            revised,
+            action=action,
+            status=200,
             grant_backed=transactional_grants is not None,
         )
 
