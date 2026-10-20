@@ -8,7 +8,7 @@ this factory does not enable live Entra, production access or publication.
 
 from __future__ import annotations
 
-from typing import Literal, cast
+from typing import Literal
 
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
@@ -102,9 +102,7 @@ def create_atomic_producer_router(
         else:
             if not isinstance(command, (ProducerDecisionRequest, ReverificationRequest)):
                 return _response("Invalid producer command request", 400)
-            decision_command = cast(
-                ProducerDecisionRequest | ReverificationRequest, command
-            )
+            decision_command = command
 
         try:
             if action == "create":
