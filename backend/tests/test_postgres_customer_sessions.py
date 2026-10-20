@@ -298,3 +298,60 @@ def test_rotation_denied_when_predecessor_revocation_loses_race() -> None:
     assert store.rotate(session.session_id, now=NOW + timedelta(seconds=1)) is None
     assert len(connection.cursor_obj.execute.call_args_list) == 2
     assert connection.closed
+
+
+@pytest.mark.parametrize("operation", ["create", "load", "revoke", "touch", "rotate"])
+def test_session_connection_failure_does_not_grant_recovery_authority(operation: str) -> None:
+    """A database outage must propagate instead of synthesizing an authenticated session."""
+    attempts = []
+
+    def disconnected_factory():
+        """Simulate a failed PostgreSQL connection before any transaction starts."""
+        attempts.append(operation)
+        raise ConnectionError("synthetic database unavailable")
+
+    store = PostgresCustomerSessionStore(disconnected_factory)
+    session = record()
+    with pytest.raises(ConnectionError, match="synthetic database unavailable"):
+        if operation == "create":
+            store.create(session)
+        elif operation == "load":
+            store.load(session.session_id)
+        elif operation == "revoke":
+            store.revoke(session.session_id)
+        elif operation == "touch":
+            store.touch(session.session_id, now=NOW)
+        else:
+            store.rotate(session.session_id, now=NOW)
+    assert attempts == [operation]
+
+
+def test_rotation_transaction_failure_closes_connection_without_successor() -> None:
+    """A failed transactional write cannot return a replacement bearer."""
+    connection = FakeConnection()
+    session = record()
+    connection.cursor_obj.fetchone.side_effect = [
+        (
+            session.identity.issuer,
+            session.identity.tenant_id,
+            session.identity.subject,
+            session.account_id,
+            "customer",
+            session.created_at,
+            session.expires_at,
+            session.last_seen_at,
+            False,
+        ),
+        ("revoked",),
+    ]
+    connection.cursor_obj.execute.side_effect = [
+        None,
+        None,
+        RuntimeError("synthetic write failed"),
+    ]
+    with pytest.raises(RuntimeError, match="synthetic write failed"):
+        PostgresCustomerSessionStore(lambda: connection).rotate(
+            session.session_id, now=NOW + timedelta(seconds=1)
+        )
+    assert connection.closed
+    assert len(connection.cursor_obj.execute.call_args_list) == 3
