@@ -14,7 +14,7 @@ from datetime import datetime, timezone
 from typing import Literal, Protocol
 
 ControlStrength = Literal["multifactor", "phishing_resistant"]
-_GUID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\Z")
+_GUID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\Z")
 _MAX_ASSURANCE_AGE_SECONDS = 120
 
 

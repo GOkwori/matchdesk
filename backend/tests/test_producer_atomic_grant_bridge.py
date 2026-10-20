@@ -297,6 +297,7 @@ def test_no_preflight_without_delegated_access_token(monkeypatch):
     assert confirmation.calls == 0
     assert not stager.queries and not issuer.queries and not writes
 
+
 def test_no_independent_policy_assurance_denies_before_confirmation_and_sql(monkeypatch):
     """A signed acrs token is insufficient without independently enforced CA."""
     handler, case, stager, issuer, writes, confirmations = fixture(monkeypatch)
@@ -320,9 +321,7 @@ def test_http_identity_requires_separate_policy_assurance(monkeypatch):
 def test_policy_assurance_is_rechecked_immediately_before_grant_staging(monkeypatch):
     """Revoked host policy coverage after authentication denies the write."""
     handler, case, stager, issuer, writes, confirmations = fixture(monkeypatch)
-    actor = handler.authenticate(
-        access_token="signed-test-jwt", session_id="demo-preview-only"
-    )
+    actor = handler.authenticate(access_token="signed-test-jwt", session_id="demo-preview-only")
     assert actor.subject == "ci-producer"
     handler._policy_assurance.allowed = False
     with pytest.raises(PermissionError, match="Producer execution denied"):
