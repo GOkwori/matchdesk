@@ -195,9 +195,32 @@ def main() -> None:
             )
         )
         return
-    if phase not in ("initial", "after-restart", "elevated"):
+    if phase not in ("initial", "after-restart", "elevated", "issuer-elevated"):
         raise RuntimeError("Unknown real grant qualification phase")
 
+    if phase == "issuer-elevated":
+        # Test the real physical login after an unrelated privileged function
+        # was granted, not a SET ROLE simulation or fake cursor response.
+        with psycopg.connect(_conninfo(), autocommit=True) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT current_user::text, session_user::text")
+                assert cursor.fetchone() == (_ROLE, _ROLE)
+                cursor.execute(
+                    "SELECT has_function_privilege("
+                    "current_user,"
+                    "'public.matchdesk_issue_confirmed_producer_grant("
+                    "text,text,text,text,text,text,text,text,bigint,jsonb,text,text)',"
+                    "'EXECUTE')"
+                )
+                assert cursor.fetchone() == (True,)
+        try:
+            _invoke(_GRANTS["valid"], "ci-issuer-privilege-deny-01")
+        except PermissionError as exc:
+            assert "pinned restricted login" in str(exc)
+        else:
+            raise AssertionError("Issuer function privilege did not block producer writer")
+        print("PASS: issuer EXECUTE privilege drift denied before grant consumption")
+        return
     if phase == "elevated":
         # Check the physical principal but deliberately do not run the normal
         # no-DML acceptance helper: this phase intentionally grants extra DML.

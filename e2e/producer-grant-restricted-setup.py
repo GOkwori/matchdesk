@@ -189,13 +189,46 @@ def _verify_after_restart(scope: tuple[str, str, str, str, str, str, str, str]) 
 def main() -> None:
     """Issue synthetic grants via the owner, never via the grant execution role."""
     phase = sys.argv[1:]
-    if phase not in (["setup"], ["verify"], ["elevate"], ["restore"]) or os.getenv("CI") != "true":
+    if phase not in (
+        ["setup"], ["verify"], ["elevate"], ["restore"],
+        ["issuer-elevate"], ["issuer-restore"],
+    ) or os.getenv("CI") != "true":
         raise RuntimeError("Grant owner audit is only available in disposable CI")
     if not os.getenv("PGPASSWORD"):
         raise RuntimeError("Disposable database-owner secret is required")
     scope = _fixture()
     if phase == ["verify"]:
         _verify_after_restart(scope)
+        return
+    if phase in (["issuer-elevate"], ["issuer-restore"]):
+        # Privilege drift test only: unrelated issuer EXECUTE must never
+        # coexist with the ordinary case-grant execution login.
+        function = (
+            "public.matchdesk_issue_confirmed_producer_grant("
+            "text,text,text,text,text,text,text,text,bigint,jsonb,text,text)"
+        )
+        with psycopg.connect(
+            "host=postgres dbname=matchdesk user=matchdesk sslmode=prefer"
+        ) as connection:
+            with connection.cursor() as cursor:
+                if phase == ["issuer-elevate"]:
+                    cursor.execute(
+                        "GRANT EXECUTE ON FUNCTION " + function
+                        + " TO matchdesk_grant_executor_ci"
+                    )
+                else:
+                    cursor.execute(
+                        "SELECT consumed_at, command_id "
+                        "FROM public.matchdesk_producer_action_grants "
+                        "WHERE grant_id=%s",
+                        (_GRANTS["valid"],),
+                    )
+                    assert cursor.fetchone() == (None, None)
+                    cursor.execute(
+                        "REVOKE EXECUTE ON FUNCTION " + function
+                        + " FROM matchdesk_grant_executor_ci"
+                    )
+        print("PASS: disposable issuer privilege drift " + phase[0])
         return
     if phase in (["elevate"], ["restore"]):
         # Use a CI-only unrelated table to prove the restricted execution

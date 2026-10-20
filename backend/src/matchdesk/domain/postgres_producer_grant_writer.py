@@ -84,6 +84,21 @@ SELECT current_user::text, session_user::text,
              || 'text,text,text,text,text,text,text,text,bigint,text,text,jsonb,jsonb)',
              'EXECUTE'
          )
+         -- Producer execution and issuance are different trust domains.
+         -- Reject role drift even if grant-case DML remains unavailable.
+         -- Check all overloads rather than relying on one signature.
+         AND NOT EXISTS (
+             SELECT 1 FROM pg_catalog.pg_proc p
+             JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+             WHERE n.nspname = 'public'
+               AND p.proname IN (
+                   'matchdesk_stage_producer_confirmation',
+                   'matchdesk_issue_confirmed_producer_grant',
+                   'matchdesk_revoke_confirmed_producer_grant',
+                   'matchdesk_consume_producer_execution_grant'
+               )
+               AND pg_catalog.has_function_privilege(p.oid, 'EXECUTE')
+         )
        )
 FROM pg_catalog.pg_roles r WHERE r.rolname = current_user
 """
