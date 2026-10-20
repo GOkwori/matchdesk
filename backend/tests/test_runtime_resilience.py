@@ -193,3 +193,41 @@ def test_recovered_workflow_resumes_same_role_and_completes() -> None:
     assert result.state.recovery_count == 1
     assert result.state.current_role == "narrative_composer"
     assert [attempt.attempt for attempt in result.state.attempts] == [1, 2]
+
+
+def test_cancellation_suppressing_executor_cannot_return_late_success() -> None:
+    """A cooperative deadline cannot accept a provider that swallows cancellation."""
+
+    class CancellationSuppressingExecutor:
+        """Return plausible output only after host timeout cancellation."""
+
+        def __init__(self) -> None:
+            """Track how many timed-out calls reached the provider."""
+            self.calls = 0
+
+        async def execute(self, request, tools):
+            """Suppress cancellation to simulate a misbehaving remote adapter."""
+            del tools
+            self.calls += 1
+            try:
+                await asyncio.Event().wait()
+            except asyncio.CancelledError:
+                return SpecialistResponse(role=request.role, content="Late untrusted result")
+            raise AssertionError("Unreachable without cancellation")
+
+    executor = CancellationSuppressingExecutor()
+    result = asyncio.run(
+        execute_bounded_specialist(
+            _state(),
+            instruction="Do not accept results after the host deadline.",
+            executor=executor,
+            tools=ScopedReadTools(role="tactical_analyst", events=()),
+            policy=RolePolicy(role="tactical_analyst", max_attempts=2, timeout_ms=1),
+        )
+    )
+
+    assert result.response is None
+    assert executor.calls == 2
+    assert result.failure_kinds == ("timeout", "timeout")
+    assert result.state.status == "fallback"
+    assert [attempt.outcome for attempt in result.state.attempts] == ["timeout", "timeout"]

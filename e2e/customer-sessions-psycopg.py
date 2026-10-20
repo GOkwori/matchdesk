@@ -13,6 +13,7 @@ import sys
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
+from threading import Barrier
 
 import psycopg
 
@@ -136,6 +137,71 @@ def _assert_hash_only(token: str) -> None:
             assert digest[0] != token
 
 
+
+def _revoke_rotation_races(store: PostgresCustomerSessionStore, *, now: datetime) -> None:
+    """Qualify competing revoke/rotate transactions on real restricted connections.
+
+    Revocation and rotation must be linearizable: whichever acquires the
+    predecessor row lock first wins. The old bearer always becomes invalid;
+    a successor is legal only if rotation wins, and only one may remain active.
+    This test uses disposable accounts and never touches a production database.
+    """
+    for attempt in range(4):
+        account_id = f"ci-revoke-rotate-{attempt}"
+        predecessor = _issue(account_id, now=now)
+        assert store.create(predecessor)
+        start = Barrier(2)
+
+        def revoke_competitor() -> bool:
+            """Compete through a fresh, least-privileged Psycopg connection."""
+            start.wait(timeout=10)
+            return _store().revoke(predecessor.session_id)
+
+        def rotate_competitor():
+            """Compete for the same predecessor using SELECT FOR UPDATE."""
+            start.wait(timeout=10)
+            return _store().rotate(
+                predecessor.session_id, now=now + timedelta(seconds=2)
+            )
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            revoke_job = executor.submit(revoke_competitor)
+            rotate_job = executor.submit(rotate_competitor)
+            revocation_won = revoke_job.result(timeout=15)
+            successor = rotate_job.result(timeout=15)
+
+        # Exactly one operation wins the predecessor's row lock. A revoked
+        # predecessor cannot later be revived or rotated into another bearer.
+        assert (successor is None) == revocation_won
+        stored_predecessor = store.load(predecessor.session_id)
+        assert stored_predecessor is not None and stored_predecessor.revoked
+        _expect_denial(predecessor.session_id, now=now + timedelta(seconds=2))
+
+        rows = _count(account_id)
+        predecessor_digest = hashlib.sha256(
+            predecessor.session_id.encode("ascii")
+        ).hexdigest()
+        assert predecessor_digest in {row[1] for row in rows}
+        assert len(rows) == (1 if successor is None else 2)
+        assert sum(not row[0] for row in rows) == int(successor is not None)
+
+        if successor is not None:
+            assert not revocation_won
+            assert successor.session_id != predecessor.session_id
+            assert successor.expires_at == predecessor.expires_at
+            assert (
+                resolve_customer_session(
+                    successor.session_id, store=store, now=now + timedelta(seconds=2)
+                )
+                == successor
+            )
+            _assert_hash_only(successor.session_id)
+        else:
+            assert revocation_won
+
+    print("MATCHDESK_CI_SESSION_REVOKE_ROTATE_RACE_PASS")
+
+
 def _initial() -> None:
     """Exercise real create/revoke, idle/expiry, rollback and concurrent rotation."""
     store = _store()
@@ -193,6 +259,7 @@ def _initial() -> None:
     assert sum(not row[0] for row in rows) == 1
     _assert_hash_only(winners[0].session_id)
     print("PASS: two real Psycopg session rotations yield exactly one active successor")
+    _revoke_rotation_races(store, now=now)
 
     rollback = _issue("ci-rollback", now=now)
     assert store.create(rollback)

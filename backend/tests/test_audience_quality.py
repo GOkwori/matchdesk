@@ -228,3 +228,132 @@ def test_quality_review_requires_explicit_judgments_and_notes() -> None:
             no_new_factual_assertions=True,
             notes=" ",
         )
+
+
+@pytest.mark.parametrize(
+    "scope_field,other_value",
+    [
+        ("session_id", "different-session"),
+        ("match_id", "different-match"),
+        ("evidence_ids", ("different-evidence",)),
+        ("claim_ids", ("different-claim",)),
+        ("windows", ({"period": 1, "from_ms": 1000, "to_ms": 2700000},)),
+    ],
+)
+def test_quality_review_denies_forged_cross_scope_qualification(
+    scope_field: str, other_value: object
+) -> None:
+    """Reviewer reports cannot bind a valid variant to an unrelated source."""
+    source = _source()
+    payload = CommentaryPayload.model_validate(
+        {"lines": [{"claim_id": "claim-1", "text": "Offline proposed copy."}]}
+    )
+    variant = build_audience_variant(
+        source, output_id="variant-safe", payload=payload, language="es", persona="analyst"
+    )
+    verified = (
+        VerificationResult(
+            claim_id="claim-1",
+            status="verified",
+            query_id="query-1",
+            reason="Synthetic deterministic verification",
+            evidence_digest=source.binding.evidence_digest,
+        ),
+    )
+    qualification = qualify_audience_variant(source, variant, verified)
+    forged_source = source.model_copy(update={scope_field: other_value})
+    with pytest.raises(ValueError, match="identical source/variant scope"):
+        record_audience_quality_assessment(
+            forged_source,
+            variant,
+            qualification,
+            reviewer_actor_id="offline-fixture",
+            meaning_preserved=True,
+            football_terms_accurate=True,
+            language_quality_accepted=True,
+            persona_fit=True,
+            no_new_factual_assertions=True,
+            notes="Synthetic test; no real reviewer",
+        )
+
+
+def test_quality_review_denies_forged_unverified_claim_status() -> None:
+    """Claim-verification statuses must not be overwritten in an offline report."""
+    source = _source()
+    payload = CommentaryPayload.model_validate(
+        {"lines": [{"claim_id": "claim-1", "text": "Synthetic adapted copy."}]}
+    )
+    variant = build_audience_variant(
+        source, output_id="variant-status", payload=payload, language="fr", persona="casual_fan"
+    )
+    verification = (
+        VerificationResult(
+            claim_id="claim-1",
+            status="verified",
+            query_id="query-1",
+            reason="Synthetic verification",
+            evidence_digest=source.binding.evidence_digest,
+        ),
+    )
+    qualified = qualify_audience_variant(source, variant, verification)
+    forged = replace(qualified, verification_statuses=("blocked",))
+    with pytest.raises(ValueError, match="current audience qualification"):
+        record_audience_quality_assessment(
+            source,
+            variant,
+            forged,
+            reviewer_actor_id="offline-fixture",
+            meaning_preserved=True,
+            football_terms_accurate=True,
+            language_quality_accepted=True,
+            persona_fit=True,
+            no_new_factual_assertions=True,
+            notes="Synthetic report; not fluent human review",
+        )
+
+
+def test_quality_review_denies_rewritten_source_with_valid_new_digest() -> None:
+    """A source rewrite with unchanged output ID and scope invalidates qualification."""
+    source = _source()
+    proposed = CommentaryPayload.model_validate(
+        {"lines": [{"claim_id": "claim-1", "text": "Synthetic translated draft."}]}
+    )
+    variant = build_audience_variant(
+        source, output_id="variant-bound", payload=proposed, language="es", persona="analyst"
+    )
+    verification = (
+        VerificationResult(
+            claim_id="claim-1",
+            status="verified",
+            query_id="query-1",
+            reason="Synthetic verification",
+            evidence_digest=source.binding.evidence_digest,
+        ),
+    )
+    qualification = qualify_audience_variant(source, variant, verification)
+    revised_payload = CommentaryPayload.model_validate(
+        {"lines": [{"claim_id": "claim-1", "text": "The team recorded three attempts."}]}
+    )
+    revised_source = source.model_copy(
+        update={
+            "payload": revised_payload,
+            "binding": source.binding.model_copy(
+                update={"content_digest": content_digest(revised_payload)}
+            ),
+        }
+    )
+    assert revised_source.output_id == source.output_id
+    assert revised_source.binding.content_digest != source.binding.content_digest
+    with pytest.raises(ValueError, match="current audience qualification"):
+        record_audience_quality_assessment(
+            revised_source,
+            variant,
+            qualification,
+            reviewer_actor_id="offline-fixture",
+            meaning_preserved=True,
+            football_terms_accurate=True,
+            language_quality_accepted=True,
+            persona_fit=True,
+            no_new_factual_assertions=True,
+            notes="Synthetic test; not independently reviewed",
+        )
