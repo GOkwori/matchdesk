@@ -104,7 +104,7 @@ const uuid = {
   claimFirst: '11111111-1111-4111-8111-111111111106',
   revokeFirst: '11111111-1111-4111-8111-111111111107',
 };
-const role = 'matchdesk_grant_ci';
+const role = 'matchdesk_legacy_grant_ci';
 const signature = 'public.matchdesk_consume_producer_execution_grant(uuid,text,text,text,text,text,text,bigint,text)';
 
 /** Only the trusted fixture issuer owns grant-row insertion and revocation. */
@@ -176,11 +176,11 @@ try {
       "SELECT has_function_privilege('" + staleRole + "','" + signature + "','EXECUTE');"
     ), 'f', 'A reinstalled SECURITY DEFINER must not keep old invokers');
     sql([
-      'CREATE ROLE matchdesk_grant_ci NOLOGIN;',
-      'GRANT USAGE ON SCHEMA public TO matchdesk_grant_ci;',
-      'GRANT SELECT, INSERT, UPDATE ON public.matchdesk_producer_cases TO matchdesk_grant_ci;',
-      'GRANT SELECT, INSERT ON public.matchdesk_producer_audit TO matchdesk_grant_ci;',
-      'GRANT EXECUTE ON FUNCTION ' + signature + ' TO matchdesk_grant_ci;',
+      'CREATE ROLE matchdesk_legacy_grant_ci NOLOGIN;',
+      'GRANT USAGE ON SCHEMA public TO matchdesk_legacy_grant_ci;',
+      'GRANT SELECT, INSERT, UPDATE ON public.matchdesk_producer_cases TO matchdesk_legacy_grant_ci;',
+      'GRANT SELECT, INSERT ON public.matchdesk_producer_audit TO matchdesk_legacy_grant_ci;',
+      'GRANT EXECUTE ON FUNCTION ' + signature + ' TO matchdesk_legacy_grant_ci;',
     ].join('\n'));
     assert.equal(sql(
       "SELECT has_function_privilege('" + role + "','" + signature + "','EXECUTE');"
@@ -201,8 +201,8 @@ try {
   await check('grant SECURITY DEFINER runs as column-restricted non-login owner', () => {
     // Reassign the function ONLY inside the disposable CI database. A real
     // environment requires separately approved and reviewed role provisioning.
-    const definer = 'matchdesk_grant_definer_ci';
-    const bystander = 'matchdesk_grant_bystander_ci';
+    const definer = 'matchdesk_legacy_grant_definer_ci';
+    const bystander = 'matchdesk_legacy_grant_bystander_ci';
     sql([
       'BEGIN',
       'REVOKE CREATE ON SCHEMA public FROM PUBLIC',

@@ -59,9 +59,153 @@ jobs:
           set -euo pipefail
           node e2e/producer-store-postgres.mjs 2>&1 | tee artifacts/integration/producer-store-postgres.log
           node e2e/producer-grant-postgres.mjs 2>&1 | tee artifacts/integration/producer-grant-postgres.log
+      - name: Qualify atomic single-use producer grant write on disposable PostgreSQL
+        id: grant_atomicity
+        if: ${{ !cancelled() && steps.producer_storage.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          node e2e/producer-grant-atomic-postgres.mjs 2>&1 | tee artifacts/integration/producer-grant-atomic.log
+      - name: Qualify confirmed grant issuance on disposable PostgreSQL
+        id: confirmed_issuer
+        if: ${{ !cancelled() && steps.grant_atomicity.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          node e2e/producer-confirmation-issuer-postgres.mjs 2>&1 | tee artifacts/integration/producer-confirmation-issuer.log
+      - name: Qualify confirmation staging migration in disposable PostgreSQL
+        id: confirmation_staging
+        if: ${{ !cancelled() && steps.confirmed_issuer.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          node e2e/producer-confirmation-staging-postgres.mjs 2>&1 | tee artifacts/integration/producer-confirmation-staging.log
+      - name: Qualify separate physical issuer and revoker PostgreSQL logins
+        id: physical_issuer
+        if: ${{ !cancelled() && steps.confirmation_staging.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          issuer_password="$(openssl rand -hex 32)"
+          revoker_password="$(openssl rand -hex 32)"
+          echo "::add-mask::$issuer_password"
+          echo "::add-mask::$revoker_password"
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$POSTGRES_PASSWORD" \
+            -e "ISSUER_CI_PASSWORD=$issuer_password" \
+            -e "REVOKER_CI_PASSWORD=$revoker_password" api \
+            /app/.venv/bin/python - setup < e2e/producer-confirmation-issuer-psycopg.py \
+            2>&1 | tee artifacts/integration/producer-issuer-physical.log
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$issuer_password" api \
+            /app/.venv/bin/python - issue < e2e/producer-confirmation-issuer-psycopg.py \
+            2>&1 | tee -a artifacts/integration/producer-issuer-physical.log
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$revoker_password" api \
+            /app/.venv/bin/python - revoke < e2e/producer-confirmation-issuer-psycopg.py \
+            2>&1 | tee -a artifacts/integration/producer-issuer-physical.log
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$POSTGRES_PASSWORD" \
+            -e "ISSUER_CI_PASSWORD=$issuer_password" \
+            -e "REVOKER_CI_PASSWORD=$revoker_password" api \
+            /app/.venv/bin/python - initial < e2e/producer-confirmation-races-psycopg.py \
+            2>&1 | tee artifacts/integration/producer-issuer-races.log
+          # Qualify a third physical login with no issuer/revoker or table DML authority.
+          stager_password="$(openssl rand -hex 32)"
+          echo "::add-mask::$stager_password"
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$POSTGRES_PASSWORD" \
+            -e "STAGER_CI_PASSWORD=$stager_password" api \
+            /app/.venv/bin/python - setup < e2e/producer-confirmation-staging-psycopg.py \
+            2>&1 | tee artifacts/integration/producer-confirmation-stager.log
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$stager_password" \
+            -e "STAGER_CI_PASSWORD=$stager_password" \
+            -e "ISSUER_CI_PASSWORD=$issuer_password" \
+            -e "REVOKER_CI_PASSWORD=$revoker_password" api \
+            /app/.venv/bin/python - exercise < e2e/producer-confirmation-staging-psycopg.py \
+            2>&1 | tee -a artifacts/integration/producer-confirmation-stager.log
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" restart postgres
+          for attempt in $(seq 1 40); do
+            if docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+              pg_isready -U matchdesk -d matchdesk > /dev/null 2>&1; then
+              break
+            fi
+            sleep 1
+          done
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$POSTGRES_PASSWORD" api \
+            /app/.venv/bin/python - verify < e2e/producer-confirmation-issuer-psycopg.py \
+            2>&1 | tee -a artifacts/integration/producer-issuer-physical.log
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$POSTGRES_PASSWORD" api \
+            /app/.venv/bin/python - verify < e2e/producer-confirmation-races-psycopg.py \
+            2>&1 | tee -a artifacts/integration/producer-issuer-races.log
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$POSTGRES_PASSWORD" api \
+            /app/.venv/bin/python - verify < e2e/producer-confirmation-staging-psycopg.py \
+            2>&1 | tee -a artifacts/integration/producer-confirmation-stager.log
+      - name: Qualify grant writer through a physical restricted PostgreSQL login
+        id: grant_psycopg
+        if: ${{ !cancelled() && steps.physical_issuer.outcome == 'success' && steps.grant_atomicity.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          role_password="$(openssl rand -hex 32)"
+          echo "::add-mask::$role_password"
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$POSTGRES_PASSWORD" \
+            -e "GRANT_WRITER_CI_PASSWORD=$role_password" api \
+            /app/.venv/bin/python - setup < e2e/producer-grant-restricted-setup.py \
+            2>&1 | tee artifacts/integration/producer-grant-setup.log
+          # The valid one-use grant must NOT be spent if an unrelated table
+          # has accidentally been granted to this restricted workload login.
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$POSTGRES_PASSWORD" api \
+            /app/.venv/bin/python - elevate < e2e/producer-grant-restricted-setup.py \
+            2>&1 | tee artifacts/integration/producer-grant-extra-dml.log
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$role_password" api \
+            /app/.venv/bin/python - elevated < e2e/producer-grant-restricted-psycopg.py \
+            2>&1 | tee -a artifacts/integration/producer-grant-extra-dml.log
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$POSTGRES_PASSWORD" api \
+            /app/.venv/bin/python - restore < e2e/producer-grant-restricted-setup.py \
+            2>&1 | tee -a artifacts/integration/producer-grant-extra-dml.log
+          # A writer gaining an issuer SECURITY DEFINER function can mint
+          # authority outside the intended role separation: reject before use.
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$POSTGRES_PASSWORD" api \
+            /app/.venv/bin/python - issuer-elevate < e2e/producer-grant-restricted-setup.py \
+            2>&1 | tee artifacts/integration/producer-grant-issuer-drift.log
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$role_password" api \
+            /app/.venv/bin/python - issuer-elevated < e2e/producer-grant-restricted-psycopg.py \
+            2>&1 | tee -a artifacts/integration/producer-grant-issuer-drift.log
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$POSTGRES_PASSWORD" api \
+            /app/.venv/bin/python - issuer-restore < e2e/producer-grant-restricted-setup.py \
+            2>&1 | tee -a artifacts/integration/producer-grant-issuer-drift.log
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$role_password" api \
+            /app/.venv/bin/python - initial < e2e/producer-grant-restricted-psycopg.py \
+            2>&1 | tee artifacts/integration/producer-grant-psycopg.log
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" restart postgres
+          for attempt in $(seq 1 40); do
+            if docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+              pg_isready -U matchdesk -d matchdesk > /dev/null 2>&1; then
+              break
+            fi
+            sleep 1
+          done
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$role_password" api \
+            /app/.venv/bin/python - after-restart < e2e/producer-grant-restricted-psycopg.py \
+            2>&1 | tee -a artifacts/integration/producer-grant-psycopg.log
+          # Independent owner-only reconciliation: the restricted writer has
+          # no SELECT privilege on the case, audit or grant tables.
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$POSTGRES_PASSWORD" api \
+            /app/.venv/bin/python - verify < e2e/producer-grant-restricted-setup.py \
+            2>&1 | tee artifacts/integration/producer-grant-restart-reconciliation.log
       - name: Verify restricted real-Psycopg producer transactions and recovery
         id: psycopg_storage
-        if: ${{ !cancelled() && steps.producer_storage.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.grant_psycopg.outcome == 'success' && steps.producer_storage.outcome == 'success' }}
         run: |
           set -euo pipefail
           # A fresh, masked password exists only in this disposable workflow step.
