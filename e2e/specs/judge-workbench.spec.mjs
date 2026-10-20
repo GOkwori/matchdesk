@@ -6,6 +6,9 @@ test("synthetic judge workbench presents an honest inactive state", async ({ pag
   await expect(page.getByRole("heading", { name: /See the evidence/ })).toBeVisible();
   await expect(page.getByText("LOCAL · SYNTHETIC · READ ONLY")).toBeVisible();
   await expect(page.getByRole("heading", { name: "No active replay evidence" })).toBeVisible();
+  // Both judge navigation links return to the supported studio home route.
+  await expect(page.getByRole("link", { name: /MATCHDESK \/ SUNSET STUDIO/ })).toHaveAttribute("href", "/");
+  await expect(page.getByRole("link", { name: "Back to Sunset Studio" })).toHaveAttribute("href", "/");
   await expect(page.getByRole("button", { name: "Reset" })).toBeDisabled();
   await expect(page.getByRole("button", { name: "End session" })).toBeDisabled();
 });
