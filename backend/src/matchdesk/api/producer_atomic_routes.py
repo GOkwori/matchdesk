@@ -29,8 +29,10 @@ from matchdesk.api.producer_reverification_routes import (
 )
 from matchdesk.domain.producer_atomic_grant_bridge import ProducerAtomicGrantBridge
 from matchdesk.domain.producer_commands import (
+    HostVerifiedActor,
     ProducerCase,
     ProducerCaseReader,
+    _authorize,
     _validate_case,
     apply_producer_command,
     inspect_producer_case,
@@ -81,6 +83,14 @@ def create_atomic_producer_router(
             return _response("Producer command denied", 403)
         except Exception:
             return _response("Producer command unavailable", 503)
+        # Defence in depth: never let a misconfigured host identity adapter
+        # bypass the exact producer role and permitted session at this edge.
+        try:
+            if type(actor) is not HostVerifiedActor:
+                raise PermissionError("Invalid host actor")
+            _authorize(actor, actor.tenant_id, session_id)
+        except (PermissionError, TypeError, ValueError):
+            return _response("Producer command denied", 403)
 
         kind = (
             CreateProducerRequest
@@ -103,6 +113,14 @@ def create_atomic_producer_router(
             if not isinstance(command, (ProducerDecisionRequest, ReverificationRequest)):
                 return _response("Invalid producer command request", 400)
             decision_command = command
+            # The shared command parser normalizes decision reasons, but the
+            # distinct reverification model must enforce the same canonical
+            # audit reason before consulting any grant.
+            if (
+                not decision_command.reason.strip()
+                or decision_command.reason != decision_command.reason.strip()
+            ):
+                return _response("Invalid producer command request", 400)
 
         try:
             if action == "create":
@@ -117,7 +135,12 @@ def create_atomic_producer_router(
                     or case.tenant_id != actor.tenant_id
                     or case.output.session_id != session_id
                     or case.output.output_id != output_id
-                    or case.generation != 1
+                ):
+                    # Scope failures are denials, never observable version
+                    # conflicts that disclose another tenant's case metadata.
+                    return _response("Producer command denied", 403)
+                if (
+                    case.generation != 1
                     or case.review.status != "pending_verification"
                     or case.review.audit[0].actor_id != actor.subject
                     or case.output.binding != create_command.binding
