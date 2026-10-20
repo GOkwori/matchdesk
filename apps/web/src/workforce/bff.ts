@@ -150,6 +150,10 @@ function trustedRequest(request: Request, expectedOrigin: string): boolean {
     h.get("content-type") === "application/json" &&
     !h.has("authorization") && !h.has("forwarded") &&
     !h.has("x-original-host") && !h.has("x-original-url") &&
+    !h.has("x-original-uri") && !h.has("x-forwarded-host") &&
+    !h.has("x-forwarded-proto") && !h.has("x-forwarded-prefix") &&
+    !h.has("x-forwarded-for") && !h.has("x-forwarded-uri") &&
+    !h.has("x-rewrite-url") && !h.has("x-http-method-override") &&
     !h.has("x-matchdesk-workforce") &&
     (!h.has("referer") || h.get("referer")!.startsWith(expectedOrigin + "/"))
   );
