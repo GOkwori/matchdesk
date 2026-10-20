@@ -208,21 +208,35 @@ jobs:
         if: ${{ !cancelled() && steps.grant_psycopg.outcome == 'success' && steps.physical_issuer.outcome == 'success' }}
         run: |
           set -euo pipefail
+          # Qualify the *actual* host provenance store inside the signed
+          # bridge, not merely a synthetic in-memory confirmation reader.
+          # The schema is disposable and must tolerate an exact replay of
+          # its forward-only migration before the later independent gate.
+          for n in 1 2; do
+            docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+              psql --no-psqlrc --set ON_ERROR_STOP=1 --username matchdesk \
+              --dbname matchdesk \
+              < backend/postgres/migrations/013_producer_host_confirmation_provenance.sql \
+              > "artifacts/integration/producer-bridge-provenance-migration-$n.log"
+          done
           bridge_stager_password="$(openssl rand -hex 32)"
           bridge_issuer_password="$(openssl rand -hex 32)"
           bridge_writer_password="$(openssl rand -hex 32)"
           bridge_revoker_password="$(openssl rand -hex 32)"
+          bridge_provenance_password="$(openssl rand -hex 32)"
           echo "::add-mask::$bridge_stager_password"
           echo "::add-mask::$bridge_issuer_password"
           echo "::add-mask::$bridge_writer_password"
           echo "::add-mask::$bridge_revoker_password"
+          echo "::add-mask::$bridge_provenance_password"
           docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
             -e CI=true -e "COMPOSE_PROJECT_NAME=$COMPOSE_PROJECT_NAME" \
             -e "PGPASSWORD=$POSTGRES_PASSWORD" \
             -e "STAGER_CI_PASSWORD=$bridge_stager_password" \
             -e "ISSUER_CI_PASSWORD=$bridge_issuer_password" \
             -e "GRANT_WRITER_CI_PASSWORD=$bridge_writer_password" \
-            -e "REVOKER_CI_PASSWORD=$bridge_revoker_password" api \
+            -e "REVOKER_CI_PASSWORD=$bridge_revoker_password" \
+            -e "BRIDGE_READER_CI_PASSWORD=$bridge_provenance_password" api \
             /app/.venv/bin/python - < e2e/producer-atomic-bridge-psycopg.py \
             2>&1 | tee artifacts/integration/producer-atomic-bridge-psycopg.log
       - name: Verify restricted real-Psycopg producer transactions and recovery
