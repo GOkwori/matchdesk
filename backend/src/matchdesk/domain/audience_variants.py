@@ -21,6 +21,7 @@ class AudienceVariantQualification:
     """Immutable record that one audience variant passed deterministic rechecking."""
 
     source_output_id: str
+    source_content_digest: str
     variant_output_id: str
     language: str
     persona: str
@@ -92,6 +93,7 @@ def qualify_audience_variant(
 
     return AudienceVariantQualification(
         source_output_id=source.output_id,
+        source_content_digest=source.binding.content_digest,
         variant_output_id=variant.output_id,
         language=variant_binding.language,
         persona=variant_binding.persona,
