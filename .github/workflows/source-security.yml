@@ -126,6 +126,7 @@ jobs:
         run: |
           python - <<'PY'
           """Prove each flagged historical value is its documented source-file SHA-256."""
+          import base64
           import hashlib
           import json
           import os
@@ -222,7 +223,58 @@ jobs:
               raise SystemExit('17 October OpenAPI finding is not the reviewed file digest')
           fingerprints.append(entry['fingerprint'])
 
-          if len(fingerprints) != 28 or len(set(fingerprints)) != 28:
+          # One historical synthetic test JWT is reachable through --all even
+          # when this branch did not change the BFF test. No rule-wide, path-wide
+          # or future-token exception is permitted.
+          reviewed = json.loads(
+              Path('docs/evidence/secret-scan-reviewed-synthetic-20261020.json').read_text()
+          )
+          if type(reviewed) is not list or len(reviewed) != 1:
+              raise SystemExit('Unexpected synthetic token review scope')
+          synthetic = reviewed[0]
+          reviewed_commit = '6f96c2cb7e6fb8e1bec378a9e137d7da32cc12c1'
+          reviewed_path = 'apps/web/tests/workforce-bff.test.mjs'
+          synthetic_fingerprint = (
+              f'{reviewed_commit}:{reviewed_path}:generic-api-key:18'
+          )
+          if (
+              type(synthetic) is not dict
+              or set(synthetic) != {'fingerprint', 'line_sha256', 'classification'}
+              or synthetic['fingerprint'] != synthetic_fingerprint
+              or synthetic['classification'] != 'NON_SECRET_SYNTHETIC_JWT'
+          ):
+              raise SystemExit('Unreviewed synthetic JWT fingerprint')
+          line = subprocess.check_output([
+              'git', 'show', f'{reviewed_commit}:{reviewed_path}'
+          ]).decode('utf-8').splitlines()[17]
+          token = re.fullmatch(
+              r"const ACCESS = '([A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+)';",
+              line,
+          )
+          if (
+              token is None
+              or hashlib.sha256(line.encode('utf-8')).hexdigest()
+                  != synthetic['line_sha256']
+          ):
+              raise SystemExit('Synthetic fixture source bytes changed')
+          header_part, claim_part, signature_stub = token[1].split('.')
+          try:
+              def decoded(part):
+                  return json.loads(base64.urlsafe_b64decode(
+                      part + '=' * (-len(part) % 4)
+                  ))
+              header, claims = decoded(header_part), decoded(claim_part)
+          except (ValueError, UnicodeError):
+              raise SystemExit('Historical JWT fixture cannot be verified') from None
+          if (
+              header != {'alg': 'RS256'}
+              or claims != {'sub': '1'}
+              or signature_stub != 'signaturetest123456'
+          ):
+              raise SystemExit('JWT is not the reviewed non-credential fixture')
+          fingerprints.append(synthetic_fingerprint)
+
+          if len(fingerprints) != 29 or len(set(fingerprints)) != 29:
               raise SystemExit('Unexpected exact-fingerprint scope after new digest review')
           output = Path(os.environ['RUNNER_TEMP']) / 'matchdesk-no-ignores' / 'reviewed.ignore'
           output.write_text('\n'.join(fingerprints) + '\n')
@@ -233,8 +285,9 @@ jobs:
               'scope': 'Exact commit/path/rule/line fingerprints only; no path or rule-wide exclusions',
               'squash_commit': squash_commit,
               'records': records,
-              'derived_squash_aliases': squash_aliases}, indent=2) + '\n')
-          print('Recomputed 13 original digests, 13 squash aliases and two exact OpenAPI digests; no path or rule-wide exclusions.')
+              'derived_squash_aliases': squash_aliases,
+              'reviewed_synthetic_fingerprint': synthetic_fingerprint}, indent=2) + '\n')
+          print('Reverified historical digests and one exact synthetic JWT; no path or rule-wide exclusions.')
           PY
       - name: Confirm the scanner still detects a new synthetic key with the same exceptions
         run: |
