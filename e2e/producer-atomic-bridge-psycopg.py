@@ -147,7 +147,7 @@ class Provenance:
                     authorized_case_sha256=claims["authorized_case_sha256"],
                     authorized_audit_digest=claims["authorized_audit_digest"],
                     signed_envelope_sha256=hashlib.sha256(envelope.encode()).hexdigest(),
-                    event_id=hashlib.md5(confirmation_id.encode(), usedforsecurity=False).hexdigest(),
+                    event_id=hashlib.sha256(confirmation_id.encode()).hexdigest()[:32],
                     event_channel="workforce_authenticated_custom_dialog",
                     state="confirmed",
                     confirmed_at_seconds=now - 2,
