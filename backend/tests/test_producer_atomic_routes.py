@@ -229,3 +229,125 @@ def test_atomic_http_rejects_ambiguous_grant_outcome(monkeypatch):
     assert result.status_code == 503
     assert "private database" not in result.text
     assert not writes and reader.case is None
+
+def test_atomic_http_rejects_nonproducer_and_other_session(monkeypatch):
+    """Bridge mistakes cannot grant role or session permissions at HTTP."""
+    from dataclasses import replace
+
+    client, first, reader, writes, _ = fixture(monkeypatch)
+    original = {"binding": first.output.binding.model_dump(mode="json")}
+    actor = HostVerifiedActor(
+        subject="ci-operator",
+        tenant_id=TENANT,
+        issuer="https://login.microsoftonline.com/" + TENANT + "/v2.0",
+        roles=frozenset({"auditor"}),
+        permitted_sessions=frozenset({"demo-preview-only"}),
+    )
+
+    def invalid_actor(self, *, access_token, session_id):
+        """Simulate an incorrectly trusted host adapter returning auditor."""
+        del self, access_token, session_id
+        return actor
+
+    monkeypatch.setattr(ProducerAtomicGrantBridge, "authenticate", invalid_actor)
+    result = client.post(BASE + "/create", headers=HEADERS, json=original)
+    assert result.status_code == 403
+    assert not writes and reader.case is None
+
+    def wrong_session(self, *, access_token, session_id):
+        """Simulate a producer actor without the requested session grant."""
+        del self, access_token, session_id
+        return replace(actor, roles=frozenset({"producer"}), permitted_sessions=frozenset({"other-session"}))
+
+    monkeypatch.setattr(ProducerAtomicGrantBridge, "authenticate", wrong_session)
+    result = client.post(BASE + "/create", headers=HEADERS, json=original)
+    assert result.status_code == 403
+    assert not writes and reader.case is None
+
+
+def test_atomic_http_conceals_cross_tenant_source(monkeypatch):
+    """Wrong-tenant source must deny rather than disclose case/version details."""
+    from dataclasses import replace
+
+    client, first, reader, writes, _ = fixture(monkeypatch)
+
+    class ForeignSource:
+        """Return an out-of-tenant fixture despite a correct caller scope."""
+
+        def resolve(self, *, actor, session_id, output_id):
+            """Intentionally violate the trusted source contract."""
+            del actor, session_id, output_id
+            return replace(first, tenant_id="foreign-tenant")
+
+    bridge = object.__new__(ProducerAtomicGrantBridge)
+    route = create_atomic_producer_router(
+        bridge=bridge, source=ForeignSource(), reader=reader
+    )
+    isolated = TestClient(create_app(producer_atomic_router=route))
+    result = isolated.post(
+        BASE + "/create", headers=HEADERS,
+        json={"binding": first.output.binding.model_dump(mode="json")},
+    )
+    assert result.status_code == 403
+    assert result.headers["Cache-Control"] == "no-store"
+    assert not writes and reader.case is None
+
+
+def test_atomic_http_revoked_grant_never_falls_back(monkeypatch):
+    """A revoked decision is not transformed into legacy approval."""
+    client, first, reader, writes, _ = fixture(monkeypatch)
+
+    def revoked(self, **_kwargs):
+        """Simulate a restricted SQL grant revocation at execution time."""
+        raise PermissionError("revoked grant")
+
+    monkeypatch.setattr(ProducerAtomicGrantBridge, "execute", revoked)
+    result = client.post(
+        BASE + "/create", headers=HEADERS,
+        json={"binding": first.output.binding.model_dump(mode="json")},
+    )
+    assert result.status_code == 403
+    assert "revoked grant" not in result.text
+    assert not writes and reader.case is None
+
+
+def test_atomic_http_failed_cas_does_not_report_approval(monkeypatch):
+    """A competing version prevents a successful HTTP mutation receipt."""
+    client, first, reader, writes, _ = fixture(monkeypatch)
+
+    def conflict(self, **_kwargs):
+        """Simulate one atomic database CAS losing its generation race."""
+        return False
+
+    monkeypatch.setattr(ProducerAtomicGrantBridge, "execute", conflict)
+    result = client.post(
+        BASE + "/create", headers=HEADERS,
+        json={"binding": first.output.binding.model_dump(mode="json")},
+    )
+    assert result.status_code == 409
+    assert result.json()["detail"] == "Producer command not committed; reload"
+    assert result.headers["Cache-Control"] == "no-store"
+    assert not writes and reader.case is None
+
+
+def test_atomic_reverify_rejects_noncanonical_reason_before_grant(monkeypatch):
+    """Whitespace-mutated human reasons cannot enter immutable audit."""
+    client, first, reader, writes, _ = fixture(monkeypatch)
+    created = client.post(
+        BASE + "/create", headers=HEADERS,
+        json={"binding": first.output.binding.model_dump(mode="json")},
+    )
+    assert created.status_code == 201 and len(writes) == 1
+    for reason in (" ", " padded", "padded "):
+        outcome = client.post(
+            BASE + "/reverify",
+            headers=HEADERS,
+            json={
+                "binding": first.output.binding.model_dump(mode="json"),
+                "expected_generation": 1,
+                "reason": reason,
+            },
+        )
+        assert outcome.status_code == 400
+    assert reader.case == first
+    assert len(writes) == 1
