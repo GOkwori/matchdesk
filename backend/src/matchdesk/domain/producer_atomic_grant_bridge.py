@@ -195,6 +195,41 @@ class ProducerAtomicGrantBridge:
         self._issuer_role = issuer_role
         self._writer = writer
 
+    def authenticate(self, *, access_token: str, session_id: str) -> HostVerifiedActor:
+        """Revalidate delegated token and host-owned session membership for HTTP.
+
+        This returns identity only, never a confirmation or execution grant.
+        Execute independently repeats token verification immediately before
+        staging/issuance; receiving this actor alone cannot mutate a case.
+        """
+        try:
+            if (
+                type(access_token) is not str
+                or not access_token
+                or type(session_id) is not str
+                or not session_id
+            ):
+                raise PermissionError("Missing scoped workforce authentication")
+            actor = verify_producer_access_token(
+                access_token,
+                policy=self._policy,
+                keys=self._keys,
+                entitlements=self._entitlements,
+                now=datetime.now(timezone.utc),
+            )
+            if (
+                type(actor) is not HostVerifiedActor
+                or actor.tenant_id != self._policy.tenant_id
+                or actor.issuer != self._policy.issuer
+            ):
+                raise PermissionError("Producer actor failed tenant or issuer trust")
+            _authorize(actor, actor.tenant_id, session_id)
+            return actor
+        except (PermissionError, ValueError, LookupError, TypeError):
+            raise PermissionError("Producer identity denied") from None
+        except Exception:
+            raise RuntimeError("Producer identity unavailable") from None
+
     @staticmethod
     def _invoke(
         connections: Callable[[], DbConnection],
