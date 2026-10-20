@@ -74,8 +74,9 @@ function originsValid(host: WorkforceBffHost): boolean {
       host.backendOrigin === backendUrl.origin &&
       !publicUrl.username && !publicUrl.password &&
       !backendUrl.username && !backendUrl.password &&
-      host.trustedIssuer.startsWith("https://login.microsoftonline.com/") &&
-      /^[0-9a-f-]{36}$/i.test(host.trustedTenantId) &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(host.trustedTenantId) &&
+      host.trustedIssuer === "https://login.microsoftonline.com/" +
+        host.trustedTenantId + "/v2.0" &&
       typeof host.sessions.resolve === "function"
     );
   } catch {
