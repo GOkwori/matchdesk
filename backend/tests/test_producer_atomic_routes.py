@@ -257,7 +257,9 @@ def test_atomic_http_rejects_nonproducer_and_other_session(monkeypatch):
     def wrong_session(self, *, access_token, session_id):
         """Simulate a producer actor without the requested session grant."""
         del self, access_token, session_id
-        return replace(actor, roles=frozenset({"producer"}), permitted_sessions=frozenset({"other-session"}))
+        return replace(
+            actor, roles=frozenset({"producer"}), permitted_sessions=frozenset({"other-session"})
+        )
 
     monkeypatch.setattr(ProducerAtomicGrantBridge, "authenticate", wrong_session)
     result = client.post(BASE + "/create", headers=HEADERS, json=original)
@@ -280,12 +282,11 @@ def test_atomic_http_conceals_cross_tenant_source(monkeypatch):
             return replace(first, tenant_id="foreign-tenant")
 
     bridge = object.__new__(ProducerAtomicGrantBridge)
-    route = create_atomic_producer_router(
-        bridge=bridge, source=ForeignSource(), reader=reader
-    )
+    route = create_atomic_producer_router(bridge=bridge, source=ForeignSource(), reader=reader)
     isolated = TestClient(create_app(producer_atomic_router=route))
     result = isolated.post(
-        BASE + "/create", headers=HEADERS,
+        BASE + "/create",
+        headers=HEADERS,
         json={"binding": first.output.binding.model_dump(mode="json")},
     )
     assert result.status_code == 403
@@ -303,7 +304,8 @@ def test_atomic_http_revoked_grant_never_falls_back(monkeypatch):
 
     monkeypatch.setattr(ProducerAtomicGrantBridge, "execute", revoked)
     result = client.post(
-        BASE + "/create", headers=HEADERS,
+        BASE + "/create",
+        headers=HEADERS,
         json={"binding": first.output.binding.model_dump(mode="json")},
     )
     assert result.status_code == 403
@@ -321,7 +323,8 @@ def test_atomic_http_failed_cas_does_not_report_approval(monkeypatch):
 
     monkeypatch.setattr(ProducerAtomicGrantBridge, "execute", conflict)
     result = client.post(
-        BASE + "/create", headers=HEADERS,
+        BASE + "/create",
+        headers=HEADERS,
         json={"binding": first.output.binding.model_dump(mode="json")},
     )
     assert result.status_code == 409
@@ -334,7 +337,8 @@ def test_atomic_reverify_rejects_noncanonical_reason_before_grant(monkeypatch):
     """Whitespace-mutated human reasons cannot enter immutable audit."""
     client, first, reader, writes, _ = fixture(monkeypatch)
     created = client.post(
-        BASE + "/create", headers=HEADERS,
+        BASE + "/create",
+        headers=HEADERS,
         json={"binding": first.output.binding.model_dump(mode="json")},
     )
     assert created.status_code == 201 and len(writes) == 1
