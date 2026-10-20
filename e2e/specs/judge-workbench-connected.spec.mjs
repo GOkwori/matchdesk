@@ -28,6 +28,16 @@ test("actual judge browser replays, rotates, and revokes a disposable session", 
   await expect(page.getByText("Approval disabled")).toBeVisible();
   await expect(page.getByText("Publication disabled")).toBeVisible();
   await expect(page.getByText("Verified run")).toBeVisible();
+  // Compare the actual rendered evidence and all nine scripted variants,
+  // not merely the presence of their headings or a successful HTTP status.
+  const evidence = page.getByRole("region", { name: "Verified match journey" });
+  const audienceCopy = page.locator(".judge-variants");
+  await expect(page.locator(".judge-variants > div")).toHaveCount(9);
+  const originalEvidence = await evidence.innerText();
+  const originalAudience = await audienceCopy.innerText();
+  await page.getByRole("button", { name: "Replay" }).click();
+  await expect.poll(() => evidence.innerText()).toBe(originalEvidence);
+  await expect.poll(() => audienceCopy.innerText()).toBe(originalAudience);
   // Evidence screenshot excludes the bearer, which never appears in the DOM.
   await info.attach("synthetic-judge-view", {
     body: await page.screenshot({ fullPage: true }), contentType: "image/png",
@@ -37,6 +47,9 @@ test("actual judge browser replays, rotates, and revokes a disposable session", 
   await expect(page.getByRole("heading", { name: "No active replay evidence" })).toBeVisible();
   await page.getByRole("button", { name: "Replay" }).click();
   await expect(page.getByRole("heading", { name: "Match evidence" })).toBeVisible();
+  // A new generation must render the same source-bound facts and audience copy.
+  await expect.poll(() => evidence.innerText()).toBe(originalEvidence);
+  await expect.poll(() => audienceCopy.innerText()).toBe(originalAudience);
   await page.getByRole("button", { name: "End session" }).click();
   await expect(page.getByRole("heading", { name: "No active replay evidence" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Start demo" })).toBeEnabled();
@@ -56,11 +69,20 @@ test("two browsers independently retain their isolated synthetic runs", async ({
     await b.getByRole("button", { name: "Start demo" }).click();
     await expect(a.getByRole("heading", { name: "Match evidence" })).toBeVisible();
     await expect(b.getByRole("heading", { name: "Match evidence" })).toBeVisible();
+    const firstEvidence = a.getByRole("region", { name: "Verified match journey" });
+    const secondEvidence = b.getByRole("region", { name: "Verified match journey" });
+    const firstSnapshot = await firstEvidence.innerText();
+    const secondSnapshot = await secondEvidence.innerText();
+    // Both runs share the same deterministic fixture, never a session capability.
+    expect(firstSnapshot).toBe(secondSnapshot);
     await a.getByRole("button", { name: "Reset" }).click();
     await expect(a.getByText(/Generation 2/)).toBeVisible();
     await b.getByRole("button", { name: "Replay" }).click();
     await expect(b.getByRole("heading", { name: "Match evidence" })).toBeVisible();
+    // Resetting A must not change B's independent run.
+    await expect.poll(() => secondEvidence.innerText()).toBe(secondSnapshot);
     await a.getByRole("button", { name: "Replay" }).click();
+    await expect.poll(() => firstEvidence.innerText()).toBe(firstSnapshot);
     await a.getByRole("button", { name: "End session" }).click();
     await b.getByRole("button", { name: "End session" }).click();
   } finally {
