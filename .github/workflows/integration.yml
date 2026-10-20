@@ -268,6 +268,8 @@ jobs:
             2>&1 | tee artifacts/integration/producer-terminal-issuance-races.log
           grep -Fx "MATCHDESK_P4_TERMINAL_ISSUANCE_SERIALIZED_PASS: terminal-first denies, issuance-first revokes unspent grant" \
             artifacts/integration/producer-terminal-issuance-races.log
+          grep -Fx "MATCHDESK_P4_TERMINAL_ISOLATION_GUARD_PASS: unsupported isolation refused without writes, fresh READ COMMITTED revokes" \
+            artifacts/integration/producer-terminal-issuance-races.log
       - name: Verify restricted real-Psycopg producer transactions and recovery
         id: psycopg_storage
         if: ${{ !cancelled() && steps.producer_bridge_psycopg.outcome == 'success' && steps.producer_storage.outcome == 'success' }}
