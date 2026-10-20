@@ -1,6 +1,7 @@
 """Fail-closed unmounted bridge orchestration with no live identity or DB."""
 
 from contextlib import contextmanager
+from dataclasses import replace
 from datetime import datetime, timezone
 
 import matchdesk.domain.producer_atomic_grant_bridge as bridge_module
@@ -329,4 +330,47 @@ def test_policy_assurance_is_rechecked_immediately_before_grant_staging(monkeypa
             access_token="signed-test-jwt", case=case, action="create", expected_generation=0
         )
     assert confirmations.calls == 0
+    assert not stager.queries and not issuer.queries and not writes
+
+def test_policy_revoked_during_confirmation_denies_before_database(monkeypatch):
+    """A revocation during trusted confirmation lookup cannot reuse stale CA."""
+    handler, case, stager, issuer, writes, confirmation = fixture(monkeypatch)
+    lookup = confirmation.resolve_signed_confirmation
+
+    def revoke_during_lookup(**kwargs):
+        """Emulate independently enforced policy withdrawal mid-decision."""
+        signed = lookup(**kwargs)
+        handler._policy_assurance.allowed = False
+        return signed
+
+    confirmation.resolve_signed_confirmation = revoke_during_lookup
+    with pytest.raises(PermissionError, match="Producer execution denied"):
+        handler.execute(
+            access_token="signed-test-jwt", case=case, action="create", expected_generation=0
+        )
+    assert confirmation.calls == 1
+    assert handler._policy_assurance.calls == 2
+    assert not stager.queries and not issuer.queries and not writes
+
+
+def test_host_entitlement_changed_during_confirmation_denies_before_sql(monkeypatch):
+    """Fresh verification detects actor grant changes after signed preflight."""
+    handler, case, stager, issuer, writes, confirmation = fixture(monkeypatch)
+    original_verify = bridge_module.verify_producer_access_token
+    checks = []
+
+    def revalidate(*args, **kwargs):
+        """Return a different host-granted session set only on final read."""
+        actor = original_verify(*args, **kwargs)
+        checks.append(True)
+        if len(checks) > 1:
+            return replace(actor, permitted_sessions=frozenset({"other-session"}))
+        return actor
+
+    monkeypatch.setattr(bridge_module, "verify_producer_access_token", revalidate)
+    with pytest.raises(PermissionError, match="Producer execution denied"):
+        handler.execute(
+            access_token="signed-test-jwt", case=case, action="create", expected_generation=0
+        )
+    assert len(checks) == 2 and confirmation.calls == 1
     assert not stager.queries and not issuer.queries and not writes

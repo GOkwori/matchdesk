@@ -358,6 +358,34 @@ class ProducerAtomicGrantBridge:
                 or preflight.expected_generation != expected_generation
             ):
                 raise PermissionError("Confirmation scope differs from verified actor")
+            # The trusted confirmation lookup and canonical JSONB hashing can
+            # outlive the earlier policy assessment. Revalidate identity,
+            # current host entitlements, Entra CA assurance and the signed
+            # confirmation's expiry AFTER preflight, BEFORE opening ANY issuer
+            # or staging connection. A revocation cannot be bypassed by the
+            # successful earlier check. This still does not authorize live CA.
+            just_in_time = datetime.now(timezone.utc)
+            refreshed_actor = verify_producer_access_token(
+                access_token,
+                policy=self._policy,
+                keys=self._keys,
+                entitlements=self._entitlements,
+                now=just_in_time,
+            )
+            if type(refreshed_actor) is not HostVerifiedActor or refreshed_actor != actor:
+                raise PermissionError("Producer identity or entitlements changed")
+            _authorize(refreshed_actor, case.tenant_id, case.output.session_id)
+            qualify_producer_policy_assurance(
+                provider=self._policy_assurance,
+                tenant_id=refreshed_actor.tenant_id,
+                subject=refreshed_actor.subject,
+                session_id=case.output.session_id,
+                context_id=context_id,
+                client_ids=self._policy.client_ids,
+                now=just_in_time,
+            )
+            if preflight.confirmation_expires_at <= int(datetime.now(timezone.utc).timestamp()):
+                raise PermissionError("Signed confirmation expired before grant staging")
         except (PermissionError, LookupError, ValueError, TypeError):
             raise PermissionError("Producer execution denied") from None
         except Exception:
