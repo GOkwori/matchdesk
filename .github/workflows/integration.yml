@@ -735,10 +735,12 @@ jobs:
         run: |
           set -euo pipefail
           candidate=qualification/id3h/disposable_backup_restore.sh
-          test "$(git hash-object "$candidate")" = 20fcd1caf52c664d9e6409386a120280e2c4c353
+          test "$(git hash-object "$candidate")" = cbe831a0c1b0e3ff90115857899bbb75ae8a584e
           bash -n "$candidate"
           bash "$candidate" 2>&1 | tee artifacts/integration/id3h-backup-restore.log
           grep -Fx "MATCHDESK_ID3H_DISPOSABLE_RESTORE_PASS" \
+            artifacts/integration/id3h-backup-restore.log >/dev/null
+          grep -Fx "MATCHDESK_ID3H_STALE_RESTORE_QUARANTINE_PASS" \
             artifacts/integration/id3h-backup-restore.log >/dev/null
       - name: Qualify ID3J effective privileges on a real disposable PostgreSQL role
         id: id3j_catalog

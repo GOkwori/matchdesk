@@ -11,8 +11,10 @@ if [[ "${CI:-}" != "true" || "${GITHUB_ACTIONS:-}" != "true" ||
 fi
 
 clone="matchdesk_id3h_restore_ci"
+stale_clone="matchdesk_id3h_stale_ci"
 archive="/tmp/matchdesk-id3h-$(openssl rand -hex 12).dump"
 created=0
+stale_created=0
 
 database() {
   docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres "$@"
@@ -21,6 +23,11 @@ database() {
 cleanup() {
   local status="$?"
   trap - EXIT
+  if [[ "$stale_created" == "1" ]] &&
+     ! database dropdb -U matchdesk --if-exists --force "$stale_clone"; then
+    echo "ID3H stale restored DB cleanup failed" >&2
+    status=1
+  fi
   if [[ "$created" == "1" ]] &&
      ! database dropdb -U matchdesk --if-exists --force "$clone"; then
     echo "ID3H temporary restored DB cleanup failed" >&2
@@ -120,6 +127,103 @@ END;
 $clone_revoke$;
 SQL
 echo "MATCHDESK_ID3H_CLONE_REVOCATION_PASS"
+
+# A stale backup contains a bearer that was active at snapshot time but could
+# subsequently have been revoked. Restore a SECOND disposable clone to prove
+# recovery must quarantine both accounts and session hashes BEFORE reconnecting
+# any application to that restored database. No production endpoint is tested.
+database createdb -U matchdesk -T template0 "$stale_clone"
+stale_created=1
+database pg_restore -U matchdesk --exit-on-error --single-transaction \
+  -d "$stale_clone" "$archive"
+database psql --no-psqlrc -X -v ON_ERROR_STOP=1 -U matchdesk -d "$stale_clone" <<'SQL'
+DO $before_quarantine$
+BEGIN
+    IF (SELECT count(*) FROM public.matchdesk_customer_sessions
+        WHERE token_hash = repeat('d', 64) AND revoked = FALSE) <> 1
+       OR (SELECT count(*) FROM public.matchdesk_customer_accounts
+        WHERE subject = 'ci-registered' AND state = 'active') <> 1 THEN
+        RAISE EXCEPTION 'Stale backup did not contain live bearer and account fixture';
+    END IF;
+END;
+$before_quarantine$;
+
+-- Make the restored identity directory inactive and revoke ALL old bearers in
+-- the same commit. No restored approval, broker identity, or raw bearer is
+-- promoted to runtime authority by this isolated rehearsal.
+BEGIN;
+SET LOCAL lock_timeout = '5s';
+UPDATE public.matchdesk_customer_accounts
+   SET state = 'suspended'
+ WHERE state = 'active';
+UPDATE public.matchdesk_customer_sessions
+   SET revoked = TRUE
+ WHERE revoked = FALSE;
+DO $quarantine$
+BEGIN
+    IF EXISTS (SELECT 1 FROM public.matchdesk_customer_accounts WHERE state = 'active')
+       OR EXISTS (SELECT 1 FROM public.matchdesk_customer_sessions WHERE revoked = FALSE)
+       OR (SELECT count(*) FROM public.matchdesk_customer_sessions
+           WHERE token_hash = repeat('d', 64) AND revoked = TRUE) <> 1 THEN
+        RAISE EXCEPTION 'Stale snapshot quarantine failed';
+    END IF;
+END;
+$quarantine$;
+COMMIT;
+SQL
+
+# An entirely new PostgreSQL transaction must observe the committed quarantine.
+# The restored immutable-revocation and active-account triggers must reject an
+# attempted bearer revival and new session against the suspended identity.
+database psql --no-psqlrc -X -v ON_ERROR_STOP=1 -U matchdesk -d "$stale_clone" <<'SQL'
+DO $after_quarantine$
+DECLARE
+    attempted_at timestamptz := clock_timestamp();
+BEGIN
+    IF (SELECT count(*) FROM public.matchdesk_customer_security_migrations
+         WHERE migration_id = 'P3-05-ID3G-005') <> 1
+       OR EXISTS (SELECT 1 FROM public.matchdesk_customer_accounts WHERE state = 'active')
+       OR EXISTS (SELECT 1 FROM public.matchdesk_customer_sessions WHERE revoked = FALSE)
+       OR (SELECT count(*) FROM public.matchdesk_customer_sessions
+           WHERE token_hash = repeat('d', 64) AND revoked = TRUE) <> 1 THEN
+        RAISE EXCEPTION 'Stale snapshot quarantine not persisted';
+    END IF;
+
+    BEGIN
+        UPDATE public.matchdesk_customer_sessions
+           SET revoked = FALSE
+         WHERE token_hash = repeat('d', 64);
+        RAISE EXCEPTION 'Restored revoked bearer unexpectedly reactivated';
+    EXCEPTION WHEN insufficient_privilege THEN
+        NULL; -- Expected denial from the immutable session trigger.
+    END;
+
+    IF EXISTS (SELECT 1 FROM public.matchdesk_customer_sessions
+               WHERE token_hash = repeat('f', 64)) THEN
+        RAISE EXCEPTION 'Stale fixture bearer collides with an existing session';
+    END IF;
+    BEGIN
+        INSERT INTO public.matchdesk_customer_sessions
+            (token_hash, issuer, tenant_id, subject, account_id, realm,
+             created_at, expires_at, last_seen_at, revoked)
+        SELECT repeat('f', 64), issuer, tenant_id, subject, account_id, 'customer',
+               attempted_at, attempted_at + interval '1 hour', attempted_at, FALSE
+          FROM public.matchdesk_customer_accounts
+         WHERE subject = 'ci-registered'
+           AND tenant_id = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
+        RAISE EXCEPTION 'Suspended restored identity unexpectedly minted a bearer';
+    EXCEPTION WHEN insufficient_privilege THEN
+        NULL; -- Expected denial from the active-account insert trigger.
+    END;
+
+    IF EXISTS (SELECT 1 FROM public.matchdesk_customer_sessions
+               WHERE revoked = FALSE OR token_hash = repeat('f', 64)) THEN
+        RAISE EXCEPTION 'Restored bearer survived quarantine denial probes';
+    END IF;
+END;
+$after_quarantine$;
+SQL
+echo "MATCHDESK_ID3H_STALE_RESTORE_QUARANTINE_PASS"
 
 # An isolated restore must not have changed the original source database.
 database psql --no-psqlrc -X -v ON_ERROR_STOP=1 -U matchdesk -d matchdesk <<'SQL'
