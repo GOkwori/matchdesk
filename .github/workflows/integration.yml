@@ -729,9 +729,42 @@ jobs:
           grep -F "ID3H legacy preflight expects no existing receipt ledger" \
             artifacts/integration/id3h-receipt-rejected.log >/dev/null
           echo "MATCHDESK_ID3H_REPLAY_PROTECTION_PASS"
+      # A restored snapshot can carry host-confirmation events. Install the
+      # exact runtime migration before pg_dump so the offline recovery test
+      # never silently omits this additional producer authority store.
+      - name: Preflight append-only producer provenance schema before backup
+        id: provenance_schema
+        if: ${{ !cancelled() && steps.id3h_replay_preflight.outcome == 'success' && steps.producer_bridge_psycopg.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          for n in 1 2; do
+            docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+              psql --no-psqlrc -X -v ON_ERROR_STOP=1 -U matchdesk -d matchdesk \
+              < backend/postgres/migrations/013_producer_host_confirmation_provenance.sql \
+              > "artifacts/integration/producer-provenance-prebackup-$n.log"
+          done
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+            psql --no-psqlrc -X -v ON_ERROR_STOP=1 -U matchdesk -d matchdesk <<'SQL'
+          DO $provenance$
+          BEGIN
+              IF to_regclass('public.matchdesk_producer_host_confirmation_events') IS NULL
+                 OR to_regclass('public.matchdesk_producer_host_confirmation_terminals') IS NULL
+                 OR (SELECT count(*) FROM pg_catalog.pg_trigger
+                     WHERE tgname IN ('matchdesk_host_confirmation_events_immutable',
+                                      'matchdesk_host_confirmation_terminals_immutable')
+                       AND tgenabled = 'O') <> 2
+                 OR has_function_privilege(
+                     'public', 'public.matchdesk_block_host_confirmation_mutation()', 'EXECUTE'
+                 ) THEN
+                  RAISE EXCEPTION 'Pre-backup producer provenance schema or DDL protection missing';
+              END IF;
+          END;
+          $provenance$;
+          SQL
+          echo 'MATCHDESK_P4_PROVENANCE_SCHEMA_PREBACKUP_PASS'
       - name: Rehearse ID3H isolated backup, restore, and clone revocation
         id: id3h_restore
-        if: ${{ !cancelled() && steps.id3h_replay_preflight.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.id3h_replay_preflight.outcome == 'success' && steps.provenance_schema.outcome == 'success' }}
         run: |
           set -euo pipefail
           candidate=qualification/id3h/disposable_backup_restore.sh
