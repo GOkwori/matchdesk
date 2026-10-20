@@ -496,8 +496,9 @@ def main():
             connections, role=role, signature=signature,
             statement=statement, parameters=parameters,
         )
-        if parameters[6] == "create":
-            create_boundary_receipts.append(("stage" if role == STAGER else "issue", receipt))
+        if parameters[6 if role == STAGER else 7] == "create":
+            stage_name = "stage" if role == STAGER else "issue"
+            create_boundary_receipts.append((stage_name, receipt))
         return receipt
 
     bridge._invoke = observe_create_boundary
