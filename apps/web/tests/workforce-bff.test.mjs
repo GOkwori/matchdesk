@@ -56,13 +56,11 @@ function fixture(overrides = {}) {
         session_id: SID, output_id: OUTPUT,
         generation: action === 'create' ? 1 : 2,
         item_version: 1,
-        ...(action === 'reverify'
-          ? { mode: 'grant_backed_development_only', approval_enabled: false }
-          : { mode: 'grant_backed_development_only', action }),
+        mode: 'signed_atomic_dev_only', action,
         review_status: action === 'reverify' ? 'ready_for_decision'
           : action === 'approve' ? 'approved'
           : action === 'reject' ? 'rejected' : 'pending_verification',
-        publication_enabled: false, private_marker: 'never-return-me',
+        publication_enabled: false,
       }, {
         status: action === 'create' ? 201 : 200,
         headers: { 'Set-Cookie': 'forged=not-relayed' },
@@ -272,25 +270,28 @@ test('backend denials, redirects, invalid receipts and failures redact all secre
 });
 
 
-test('reverification receipts must prove transaction-backed mode and an unapproved state', async () => {
+test('reverification accepts only the exact atomic action-bearing receipt', async () => {
+  const { handle } = fixture();
+  const result = await handle(req('reverify'),
+    ['sessions', SID, 'cases', OUTPUT, 'reverify']);
+  assert.equal(result.status, 200);
+  assert.equal((await result.json()).review_status, 'ready_for_decision');
+
   const variants = [
-    { mode: 'host_authorized_reverification', approval_enabled: false,
-      review_status: 'ready_for_decision' },
-    { mode: 'grant_backed_development_only', approval_enabled: true,
-      review_status: 'ready_for_decision' },
-    { mode: 'grant_backed_development_only', approval_enabled: false,
-      review_status: 'approved' },
-    { mode: 'grant_backed_development_only', approval_enabled: false,
-      review_status: 'ready_for_decision', action: 'approve' },
+    { mode: 'host_authorized_reverification', review_status: 'ready_for_decision', action: 'reverify' },
+    { mode: 'grant_backed_development_only', review_status: 'ready_for_decision' },
+    { mode: 'signed_atomic_dev_only', review_status: 'approved', action: 'reverify' },
+    { mode: 'signed_atomic_dev_only', review_status: 'ready_for_decision', action: 'approve' },
+    { mode: 'signed_atomic_dev_only', review_status: 'ready_for_decision', approval_enabled: false },
+    { mode: 'signed_atomic_dev_only', review_status: 'ready_for_decision', grant_id: 'forged' },
   ];
   for (const variant of variants) {
     const { handle, host } = fixture();
     host.fetchBackend = async () => Response.json({
-      session_id: SID,
-      output_id: OUTPUT,
-      generation: 2,
-      item_version: 1,
-      publication_enabled: false,
+      session_id: SID, output_id: OUTPUT,
+      generation: 2, item_version: 1,
+      action: 'reverify', mode: 'signed_atomic_dev_only',
+      review_status: 'ready_for_decision', publication_enabled: false,
       ...variant,
     });
     const response = await handle(req('reverify'),
@@ -300,33 +301,58 @@ test('reverification receipts must prove transaction-backed mode and an unapprov
   }
 });
 
-test('all producer commands reject legacy boolean grants and impossible review states', async () => {
+test('all producer commands fail closed on legacy or ambiguous upstream receipts', async () => {
   const actionStates = {
     create: 'pending_verification',
     edit: 'pending_verification',
+    reverify: 'ready_for_decision',
     approve: 'approved',
     reject: 'rejected',
   };
   for (const [action, validState] of Object.entries(actionStates)) {
-    for (const variant of [
-      { mode: 'opt_in_development_only', review_status: validState },
-      { mode: undefined, review_status: validState },
-      { mode: 'grant_backed_development_only', review_status: 'ready_for_decision' },
-    ]) {
+    const target = ['sessions', SID, 'cases', OUTPUT, action];
+    const variants = [
+      { mode: 'opt_in_development_only' },
+      { mode: 'grant_backed_development_only' },
+      { mode: undefined },
+      { action: undefined },
+      { action: 'other-action' },
+      { publication_enabled: true },
+      { approval_enabled: true },
+      { grant_id: 'browser-picked-grant' },
+      { command_id: 'host-private-command' },
+      { review_status: 'ready_for_decision' === validState ? 'approved' : 'ready_for_decision' },
+      { generation: action === 'create' ? 2 : 1 },
+      { item_version: 0 },
+    ];
+    for (const variant of variants) {
       const { calls, handle, host } = fixture();
       host.fetchBackend = async (url, init) => {
         calls.push({ url, init });
         return Response.json({
           session_id: SID, output_id: OUTPUT,
-          generation: action === 'create' ? 1 : 2, item_version: 1,
-          action, publication_enabled: false, ...variant,
+          generation: action === 'create' ? 1 : 2,
+          item_version: 1, action, mode: 'signed_atomic_dev_only',
+          review_status: validState, publication_enabled: false,
+          ...variant,
         }, { status: action === 'create' ? 201 : 200 });
       };
-      const response = await handle(req(action),
-        ['sessions', SID, 'cases', OUTPUT, action]);
+      const response = await handle(req(action), target);
       assert.equal(response.status, 503, action + ': ' + JSON.stringify(variant));
       assert.equal((await response.json()).detail, 'Workforce upstream unavailable');
       assert.equal(calls.length, 1);
     }
   }
+});
+
+test('atomic receipt is sanitized to the fixed public state only', async () => {
+  const { handle } = fixture();
+  const response = await handle(req('approve'), ['sessions', SID, 'cases', OUTPUT, 'approve']);
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), {
+    session_id: SID, output_id: OUTPUT,
+    generation: 2, item_version: 1,
+    review_status: 'approved', action: 'approve', publication_enabled: false,
+  });
+  assert.equal(response.headers.get('set-cookie'), null);
 });

@@ -15,6 +15,12 @@ const MAX_REQUEST_BYTES = 32_768;
 const MAX_RESPONSE_BYTES = 8_192;
 const ACTIONS = new Set(["create", "edit", "reverify", "approve", "reject"]);
 const REVIEW_STATES = new Set(["pending_verification", "ready_for_decision", "approved", "rejected"]);
+// An atomic write receipt is a closed protocol, not a generic JSON status.
+// Accept no legacy Boolean/UUID-grant mode, publisher flag or extra fields.
+const ATOMIC_RECEIPT_KEYS = new Set([
+  "session_id", "output_id", "generation", "item_version",
+  "review_status", "action", "mode", "publication_enabled",
+]);
 
 /** The host must independently validate Entra, realm, role, session and expiry. */
 export type VerifiedWorkforceSession = {
@@ -188,26 +194,25 @@ function authorizedSession(
 function receipt(payload: unknown, sessionId: string, outputId: string, action: string): object | null {
   if (payload === null || typeof payload !== "object" || Array.isArray(payload)) return null;
   const value = payload as Record<string, unknown>;
+  // The server's signed-atomic router returns exactly these eight fields.
+  // Legacy grant-backed reverify used a different action-less contract;
+  // accepting that shape would silently downgrade the authorization path.
   if (
+    Object.keys(value).length !== ATOMIC_RECEIPT_KEYS.size ||
+    Object.keys(value).some((key) => !ATOMIC_RECEIPT_KEYS.has(key)) ||
     value.session_id !== sessionId || value.output_id !== outputId ||
+    value.mode !== "signed_atomic_dev_only" ||
+    value.action !== action ||
     value.publication_enabled !== false ||
-    !Number.isSafeInteger(value.generation) || Number(value.generation) < 1 ||
+    !Number.isSafeInteger(value.generation) ||
+    (action === "create" ? value.generation !== 1 : Number(value.generation) < 2) ||
     !Number.isSafeInteger(value.item_version) || Number(value.item_version) < 1 ||
     typeof value.review_status !== "string" || !REVIEW_STATES.has(value.review_status) ||
-    // Unlike other commands, the backend reverify contract has no 'action'
-    // field. Require its *atomic-grant* mode and unapproved decision state.
-    // Every producer action must prove atomic-grant mode in its receipt.
-    // A legacy boolean-grant response must never be presented as a safe write.
-    value.mode !== "grant_backed_development_only" ||
-    (action === "reverify"
-      ? (value.approval_enabled !== false ||
-        value.review_status !== "ready_for_decision" ||
-        value.action !== undefined)
-      : (value.action !== action ||
-        (action === "create" && value.review_status !== "pending_verification") ||
-        (action === "edit" && value.review_status !== "pending_verification") ||
-        (action === "approve" && value.review_status !== "approved") ||
-        (action === "reject" && value.review_status !== "rejected")))
+    (action === "create" && value.review_status !== "pending_verification") ||
+    (action === "edit" && value.review_status !== "pending_verification") ||
+    (action === "reverify" && value.review_status !== "ready_for_decision") ||
+    (action === "approve" && value.review_status !== "approved") ||
+    (action === "reject" && value.review_status !== "rejected")
   ) return null;
   return {
     session_id: sessionId,
