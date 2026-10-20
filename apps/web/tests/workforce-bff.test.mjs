@@ -197,6 +197,34 @@ test('a fixed host origin, private backend and workforce issuer are mandatory', 
   }
 });
 
+test('operator BFF rejects non-tenant-specific or malformed host issuers before session lookup', async () => {
+  const invalid = [
+    { trustedIssuer: 'https://login.microsoftonline.com/common/v2.0' },
+    { trustedIssuer: 'https://login.microsoftonline.com/organizations/v2.0' },
+    { trustedIssuer: 'https://login.microsoftonline.com/ffffffff-ffff-ffff-ffff-ffffffffffff/v2.0' },
+    { trustedIssuer: ISSUER + '/extra' },
+    { trustedIssuer: ISSUER + '?client_id=attacker' },
+    { trustedIssuer: ISSUER + '#fragment' },
+    { trustedIssuer: 'https://login.microsoftonline.com/' + TENANT },
+    { trustedTenantId: '------------------------------------',
+      trustedIssuer: 'https://login.microsoftonline.com/------------------------------------/v2.0' },
+  ];
+  for (const settings of invalid) {
+    let resolved = 0;
+    const { calls, handle } = fixture({
+      host: {
+        ...settings,
+        sessions: { async resolve() { resolved++; throw new Error('private DB must not be called'); } },
+      },
+    });
+    const response = await handle(req(), SEGMENTS);
+    assert.equal(response.status, 503, JSON.stringify(settings));
+    assert.equal((await response.json()).detail, 'Workforce BFF unavailable');
+    assert.equal(resolved, 0);
+    assert.equal(calls.length, 0);
+  }
+});
+
 test('streaming payloads are bounded without trusting Content-Length', async () => {
   const { calls, handle } = fixture();
   const result = await handle(req('create', {
