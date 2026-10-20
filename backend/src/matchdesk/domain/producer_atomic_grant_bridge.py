@@ -363,4 +363,6 @@ class ProducerAtomicGrantBridge:
         except PermissionError:
             raise PermissionError("Producer database authority denied") from None
         except Exception:
-            raise RuntimeError("Producer grant outcome is unreconciled; no automatic retry") from None
+            raise RuntimeError(
+                "Producer grant outcome is unreconciled; no automatic retry"
+            ) from None
