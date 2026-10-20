@@ -11,11 +11,10 @@ from __future__ import annotations
 import re
 from collections.abc import Callable
 from datetime import datetime, timezone
-from typing import Literal, cast
+from typing import cast
 
 from matchdesk.domain.postgres_producer_store import DbConnection
 from matchdesk.domain.producer_confirmation_provenance import HostConfirmationRecord
-from matchdesk.domain.producer_grant_preflight import GrantAction
 
 _ROLE = re.compile(r"matchdesk_[a-z][a-z0-9_]{0,54}\Z")
 _ID = re.compile(r"[a-f0-9]{32}\Z")
@@ -123,14 +122,13 @@ class PostgresHostConfirmationReader:
         try:
             with connection.transaction():
                 with connection.cursor() as cursor:
-                    cursor.execute(
-                        "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY", ()
-                    )
+                    cursor.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY", ())
                     cursor.execute("SET LOCAL search_path TO pg_catalog, public", ())
                     cursor.execute(_PIN, ())
                     role = cursor.fetchone()
                     if (
-                        role is None or len(role) != 3
+                        role is None
+                        or len(role) != 3
                         or role[0] != self._role
                         or role[1] != self._role
                         or role[2] is not True
@@ -170,19 +168,19 @@ class PostgresHostConfirmationReader:
                 token_issuer=cast(str, row[3]),
                 session_id=cast(str, row[4]),
                 output_id=cast(str, row[5]),
-                action=cast(GrantAction, row[6]),
-                expected_generation=cast(int, row[7]),
+                action=row[6],
+                expected_generation=row[7],
                 authorized_case_sha256=cast(str, row[8]),
                 authorized_audit_digest=cast(str, row[9]),
                 signed_envelope_sha256=cast(str, row[10]),
                 event_id=cast(str, row[11]),
                 event_channel="workforce_authenticated_custom_dialog",
-                state=cast(Literal["confirmed", "revoked", "cancelled"], row[13]),
+                state=row[13],
                 confirmed_at_seconds=int(
-                    cast(datetime, row[14]).astimezone(timezone.utc).timestamp()
+                    row[14].astimezone(timezone.utc).timestamp()
                 ),
                 recorded_at_seconds=int(
-                    cast(datetime, row[15]).astimezone(timezone.utc).timestamp()
+                    row[15].astimezone(timezone.utc).timestamp()
                 ),
             )
         except Exception:
