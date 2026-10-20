@@ -148,6 +148,118 @@ BEGIN
 END;
 $before_quarantine$;
 
+-- Test ONLY real grant rows present in the archived disposable CI snapshot.
+-- The owner restores expiry on one otherwise unused old P3 grant inside this
+-- clone so a later denial can be attributed to revocation, not elapsed time.
+-- A similarly unused P4 grant must exist in the archive; no source DB writes.
+DO $producer_snapshot$
+BEGIN
+    IF to_regclass('public.matchdesk_producer_execution_grants') IS NULL
+       OR to_regclass('public.matchdesk_producer_action_grants') IS NULL
+       OR to_regclass('public.matchdesk_producer_confirmations') IS NULL
+       OR (SELECT count(*) FROM public.matchdesk_producer_execution_grants
+           WHERE grant_id = '11111111-1111-4111-8111-111111111104'::uuid
+             AND revoked_at IS NULL AND consumed_at IS NULL) <> 1
+       OR (SELECT count(*) FROM public.matchdesk_producer_action_grants
+           WHERE grant_id = 'ci-wrong-actor-01'
+             AND revoked_at IS NULL AND consumed_at IS NULL) <> 1 THEN
+        RAISE EXCEPTION 'Restored backup missing an unused P3/P4 grant fixture';
+    END IF;
+END;
+$producer_snapshot$;
+UPDATE public.matchdesk_producer_execution_grants
+   SET issued_at = clock_timestamp(),
+       expires_at = clock_timestamp() + interval '120 seconds'
+ WHERE grant_id = '11111111-1111-4111-8111-111111111104'::uuid
+   AND revoked_at IS NULL AND consumed_at IS NULL;
+
+-- The old snapshot's staging schema must also be quarantined. Stage one
+-- deliberately synthetic, valid confirmation IN THE RESTORED CLONE ONLY so
+-- the issuer acceptance/denial probes are deterministic despite CI timing.
+INSERT INTO public.matchdesk_producer_confirmations
+    (confirmation_id, tenant_id, session_id, output_id, actor_id, issuer,
+     action, expected_generation, binding, authorized_case_sha256,
+     authorized_audit_digest, proof_digest, confirmed_at, expires_at)
+VALUES
+    (repeat('f', 32), 'ci-restore-tenant', 'ci-restore-session',
+     'ci-restore-output', 'ci-restore-operator', 'https://restore-ci.invalid',
+     'create', 0, '{}'::jsonb, repeat('a', 64), repeat('b', 64),
+     repeat('c', 64), clock_timestamp(), clock_timestamp() + interval '90 seconds');
+
+-- The newer host-provenance store is append-only. Create a synthetic
+-- un-terminated event inside this OFFLINE restored clone, never the source.
+-- A restored host confirmation is an additional authority dependency and
+-- must acquire a terminal 'revoked' record before any provider reconnect.
+INSERT INTO public.matchdesk_producer_host_confirmation_events
+    (event_id, confirmation_id, tenant_id, actor_id, token_issuer,
+     session_id, output_id, action, expected_generation,
+     authorized_case_sha256, authorized_audit_digest,
+     signed_envelope_sha256, event_channel, confirmed_at, recorded_at)
+VALUES
+    (repeat('e', 32), repeat('f', 32), 'ci-restore-tenant',
+     'ci-restore-operator', 'https://restore-ci.invalid',
+     'ci-restore-session', 'ci-restore-output', 'create', 0,
+     repeat('a', 64), repeat('b', 64), repeat('c', 64),
+     'workforce_authenticated_custom_dialog',
+     clock_timestamp() - interval '1 second', clock_timestamp());
+DO $host_before_quarantine$
+BEGIN
+    IF (SELECT count(*) FROM public.matchdesk_producer_host_confirmation_events e
+        LEFT JOIN public.matchdesk_producer_host_confirmation_terminals t
+          ON t.confirmation_id=e.confirmation_id AND t.tenant_id=e.tenant_id
+        WHERE e.event_id=repeat('e',32) AND e.confirmation_id=repeat('f',32)
+          AND t.confirmation_id IS NULL) <> 1 THEN
+        RAISE EXCEPTION 'Synthetic restored host event is not initially active';
+    END IF;
+END;
+$host_before_quarantine$;
+
+-- Prove these previously granted capabilities really WOULD work absent
+-- recovery quarantine, but ROLLBACK both effects. A fake function or expired
+-- grant cannot accidentally give us a false-positive recovery certificate.
+BEGIN;
+DO $producer_pre_quarantine$
+DECLARE
+    granted boolean;
+BEGIN
+    SELECT public.matchdesk_consume_producer_execution_grant(
+        '11111111-1111-4111-8111-111111111104'::uuid,
+        'ci-grant-tenant', 'ci-grant-producer',
+        'https://ci.example.invalid/v2.0', 'create',
+        'ci-grant-session', 'exact-match', 0, repeat('f', 64)
+    ) INTO granted;
+    IF granted IS DISTINCT FROM TRUE THEN
+        RAISE EXCEPTION 'Restored P3 grant not usable before quarantine';
+    END IF;
+
+    SELECT public.matchdesk_issue_confirmed_producer_grant(
+        repeat('f', 32), 'ci-restore-issue-candidate-00001',
+        'ci-restore-tenant', 'ci-restore-session', 'ci-restore-output',
+        'ci-restore-operator', 'https://restore-ci.invalid',
+        'create', 0, '{}'::jsonb, repeat('a', 64), repeat('b', 64)
+    ) INTO granted;
+    IF granted IS DISTINCT FROM TRUE THEN
+        RAISE EXCEPTION 'Restored P4 confirmation not issuable before quarantine';
+    END IF;
+END;
+$producer_pre_quarantine$;
+ROLLBACK;
+
+DO $producer_pre_quarantine_reset$
+BEGIN
+    IF (SELECT count(*) FROM public.matchdesk_producer_execution_grants
+         WHERE grant_id = '11111111-1111-4111-8111-111111111104'::uuid
+           AND revoked_at IS NULL AND consumed_at IS NULL) <> 1
+       OR (SELECT count(*) FROM public.matchdesk_producer_confirmations
+           WHERE confirmation_id = repeat('f',32)
+             AND revoked_at IS NULL AND consumed_at IS NULL) <> 1
+       OR EXISTS (SELECT 1 FROM public.matchdesk_producer_action_grants
+           WHERE grant_id = 'ci-restore-issue-candidate-00001') THEN
+        RAISE EXCEPTION 'Pre-quarantine rollback left producer authority changed';
+    END IF;
+END;
+$producer_pre_quarantine_reset$;
+
 -- Make the restored identity directory inactive and revoke ALL old bearers in
 -- the same commit. No restored approval, broker identity, or raw bearer is
 -- promoted to runtime authority by this isolated rehearsal.
@@ -159,12 +271,55 @@ UPDATE public.matchdesk_customer_accounts
 UPDATE public.matchdesk_customer_sessions
    SET revoked = TRUE
  WHERE revoked = FALSE;
+-- Invalidate every unspent P3 and P4 producer authorization and all
+-- confirmations in this same offline recovery transaction. Nothing here
+-- changes source grants, historical audit, or a live operator.
+UPDATE public.matchdesk_producer_execution_grants
+   SET revoked_at = clock_timestamp()
+ WHERE consumed_at IS NULL AND revoked_at IS NULL;
+UPDATE public.matchdesk_producer_action_grants
+   SET revoked_at = clock_timestamp()
+ WHERE consumed_at IS NULL AND revoked_at IS NULL;
+UPDATE public.matchdesk_producer_confirmations
+   SET revoked_at = clock_timestamp()
+ WHERE revoked_at IS NULL;
+-- Existing host events are immutable. Append a terminal event for every
+-- restored confirmation without one; do NOT rewrite signed provenance.
+-- Deterministic synthetic terminal IDs make replay observable. Any collision
+-- or failed foreign key aborts the entire recovery transaction.
+INSERT INTO public.matchdesk_producer_host_confirmation_terminals
+    (event_id, confirmation_id, tenant_id, terminal_state)
+SELECT pg_catalog.md5('matchdesk-offline-restore:' || e.event_id),
+       e.confirmation_id, e.tenant_id, 'revoked'
+FROM public.matchdesk_producer_host_confirmation_events e
+WHERE NOT EXISTS (
+    SELECT 1 FROM public.matchdesk_producer_host_confirmation_terminals t
+    WHERE t.confirmation_id=e.confirmation_id AND t.tenant_id=e.tenant_id
+);
 DO $quarantine$
 BEGIN
     IF EXISTS (SELECT 1 FROM public.matchdesk_customer_accounts WHERE state = 'active')
        OR EXISTS (SELECT 1 FROM public.matchdesk_customer_sessions WHERE revoked = FALSE)
        OR (SELECT count(*) FROM public.matchdesk_customer_sessions
-           WHERE token_hash = repeat('d', 64) AND revoked = TRUE) <> 1 THEN
+           WHERE token_hash = repeat('d', 64) AND revoked = TRUE) <> 1
+       OR EXISTS (SELECT 1 FROM public.matchdesk_producer_execution_grants
+                  WHERE consumed_at IS NULL AND revoked_at IS NULL)
+       OR EXISTS (SELECT 1 FROM public.matchdesk_producer_action_grants
+                  WHERE consumed_at IS NULL AND revoked_at IS NULL)
+       OR EXISTS (SELECT 1 FROM public.matchdesk_producer_confirmations
+                  WHERE revoked_at IS NULL)
+       OR EXISTS (
+           SELECT 1 FROM public.matchdesk_producer_host_confirmation_events e
+           LEFT JOIN public.matchdesk_producer_host_confirmation_terminals t
+             ON t.confirmation_id=e.confirmation_id AND t.tenant_id=e.tenant_id
+           WHERE t.confirmation_id IS NULL
+       )
+       OR (SELECT count(*) FROM public.matchdesk_producer_execution_grants
+           WHERE grant_id = '11111111-1111-4111-8111-111111111104'::uuid
+             AND revoked_at IS NOT NULL AND consumed_at IS NULL) <> 1
+       OR (SELECT count(*) FROM public.matchdesk_producer_action_grants
+           WHERE grant_id = 'ci-wrong-actor-01'
+             AND revoked_at IS NOT NULL AND consumed_at IS NULL) <> 1 THEN
         RAISE EXCEPTION 'Stale snapshot quarantine failed';
     END IF;
 END;
@@ -223,6 +378,62 @@ BEGIN
 END;
 $after_quarantine$;
 SQL
+# A SECOND connection validates commit visibility and tests both independently
+# callable producer authorities. They were proven usable BEFORE quarantine;
+# neither can now re-consume or mint a revoked restored authorization.
+database psql --no-psqlrc -X -v ON_ERROR_STOP=1 -U matchdesk -d "$stale_clone" <<'SQL'
+DO $producer_after_quarantine$
+DECLARE
+    granted boolean;
+BEGIN
+    IF EXISTS (SELECT 1 FROM public.matchdesk_producer_execution_grants
+               WHERE consumed_at IS NULL AND revoked_at IS NULL)
+       OR EXISTS (SELECT 1 FROM public.matchdesk_producer_action_grants
+                  WHERE consumed_at IS NULL AND revoked_at IS NULL)
+       OR EXISTS (SELECT 1 FROM public.matchdesk_producer_confirmations
+                  WHERE revoked_at IS NULL)
+       OR EXISTS (
+           SELECT 1 FROM public.matchdesk_producer_host_confirmation_events e
+           LEFT JOIN public.matchdesk_producer_host_confirmation_terminals t
+             ON t.confirmation_id=e.confirmation_id AND t.tenant_id=e.tenant_id
+           WHERE t.confirmation_id IS NULL
+       )
+       OR (SELECT count(*) FROM public.matchdesk_producer_host_confirmation_events e
+           JOIN public.matchdesk_producer_host_confirmation_terminals t
+             ON t.confirmation_id=e.confirmation_id AND t.tenant_id=e.tenant_id
+           WHERE e.event_id=repeat('e',32)
+             AND e.confirmation_id=repeat('f',32)
+             AND t.terminal_state='revoked') <> 1 THEN
+        RAISE EXCEPTION 'Restored producer authority survived committed quarantine';
+    END IF;
+
+    SELECT public.matchdesk_consume_producer_execution_grant(
+        '11111111-1111-4111-8111-111111111104'::uuid,
+        'ci-grant-tenant', 'ci-grant-producer',
+        'https://ci.example.invalid/v2.0', 'create',
+        'ci-grant-session', 'exact-match', 0, repeat('f', 64)
+    ) INTO granted;
+    IF granted IS DISTINCT FROM FALSE THEN
+        RAISE EXCEPTION 'Restored P3 grant was accepted after quarantine';
+    END IF;
+
+    SELECT public.matchdesk_issue_confirmed_producer_grant(
+        repeat('f', 32), 'ci-restore-issue-candidate-00001',
+        'ci-restore-tenant', 'ci-restore-session', 'ci-restore-output',
+        'ci-restore-operator', 'https://restore-ci.invalid',
+        'create', 0, '{}'::jsonb, repeat('a', 64), repeat('b', 64)
+    ) INTO granted;
+    IF granted IS DISTINCT FROM FALSE OR EXISTS (
+        SELECT 1 FROM public.matchdesk_producer_action_grants
+         WHERE grant_id = 'ci-restore-issue-candidate-00001'
+    ) THEN
+        RAISE EXCEPTION 'Restored P4 confirmation minted a new action grant';
+    END IF;
+END;
+$producer_after_quarantine$;
+SQL
+echo "MATCHDESK_ID3H_STALE_HOST_PROVENANCE_QUARANTINE_PASS"
+echo "MATCHDESK_ID3H_STALE_PRODUCER_AUTHORITY_QUARANTINE_PASS"
 echo "MATCHDESK_ID3H_STALE_RESTORE_QUARANTINE_PASS"
 
 # An isolated restore must not have changed the original source database.
@@ -234,7 +445,17 @@ BEGIN
        OR (SELECT count(*) FROM public.matchdesk_customer_sessions
            WHERE token_hash = repeat('d', 64) AND revoked = FALSE) <> 1
        OR (SELECT count(*) FROM public.matchdesk_customer_accounts
-           WHERE subject = 'ci-registered' AND state = 'active') <> 1 THEN
+           WHERE subject = 'ci-registered' AND state = 'active') <> 1
+       OR (SELECT count(*) FROM public.matchdesk_producer_execution_grants
+           WHERE grant_id = '11111111-1111-4111-8111-111111111104'::uuid
+             AND consumed_at IS NULL AND revoked_at IS NULL) <> 1
+       OR (SELECT count(*) FROM public.matchdesk_producer_action_grants
+           WHERE grant_id = 'ci-wrong-actor-01'
+             AND consumed_at IS NULL AND revoked_at IS NULL) <> 1
+       OR EXISTS (SELECT 1 FROM public.matchdesk_producer_confirmations
+                  WHERE confirmation_id = repeat('f',32))
+       OR EXISTS (SELECT 1 FROM public.matchdesk_producer_host_confirmation_events
+                  WHERE event_id=repeat('e',32) AND confirmation_id=repeat('f',32)) THEN
         RAISE EXCEPTION 'ID3H source database changed during restore';
     END IF;
 END;

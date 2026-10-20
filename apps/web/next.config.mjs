@@ -46,11 +46,12 @@ const config = {
   async rewrites() {
     // This URL is operator configuration, never a browser-supplied proxy target.
     const origin = process.env.MATCHDESK_API_ORIGIN ?? "http://127.0.0.1:8000";
-    // Exclude the opt-in judge namespace from the generic proxy at match time.
-    // Other API paths retain the original before-files proxy behavior; the
-    // dedicated Next.js route remains responsible for judge authorization.
+    // A generic browser rewrite must never expose privileged workforce routes.
+    // Future workforce APIs require a separately qualified, fixed-target BFF with
+    // real delegated identity, session and execution-time grant checks.
+    // The local judge adapter also retains its own restricted route handler.
     return [
-      { source: "/api/:path((?!judge-local(?:/|$)).*)", destination: `${origin}/api/:path` },
+      { source: "/api/:path((?!(?:judge-local|workforce)(?:/|$)).*)", destination: `${origin}/api/:path` },
     ];
   },
 };
