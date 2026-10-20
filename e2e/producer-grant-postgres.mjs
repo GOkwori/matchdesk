@@ -186,6 +186,99 @@ try {
       "','public.matchdesk_producer_execution_grants','revoked_at','UPDATE');"
     ), 'f');
   });
+  await check('grant SECURITY DEFINER runs as column-restricted non-login owner', () => {
+    // Reassign the function ONLY inside the disposable CI database. A real
+    // environment requires separately approved and reviewed role provisioning.
+    const definer = 'matchdesk_grant_definer_ci';
+    const bystander = 'matchdesk_grant_bystander_ci';
+    sql([
+      'BEGIN',
+      'REVOKE CREATE ON SCHEMA public FROM PUBLIC',
+      'CREATE ROLE ' + definer +
+        ' NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOREPLICATION NOBYPASSRLS',
+      'CREATE ROLE ' + bystander +
+        ' NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOREPLICATION NOBYPASSRLS',
+      'GRANT USAGE ON SCHEMA public TO ' + definer,
+      'GRANT USAGE ON SCHEMA public TO ' + bystander,
+      // Only the referenced equality/expiry predicates and consumed_at
+      // are available. Issuance and revocation remain owner-only.
+      'GRANT SELECT (grant_id, tenant_id, actor_subject, actor_issuer, ' +
+        'action, session_id, output_id, expected_generation, binding_digest, ' +
+        'revoked_at, consumed_at, expires_at) ' +
+        'ON public.matchdesk_producer_execution_grants TO ' + definer,
+      'GRANT UPDATE (consumed_at) ' +
+        'ON public.matchdesk_producer_execution_grants TO ' + definer,
+      // PostgreSQL requires temporary CREATE for function ownership transfer.
+      // The privilege is revoked within this same transaction, before commit.
+      'GRANT CREATE ON SCHEMA public TO ' + definer,
+      'ALTER FUNCTION ' + signature + ' OWNER TO ' + definer,
+      'REVOKE CREATE ON SCHEMA public FROM ' + definer,
+      'COMMIT',
+    ].join(';\n') + ';');
+    assert.equal(sql(
+      'SELECT count(*) FROM pg_catalog.pg_proc AS p ' +
+      'JOIN pg_catalog.pg_roles AS r ON r.oid=p.proowner ' +
+      "WHERE p.oid='" + signature + "'::regprocedure AND p.prosecdef " +
+      "AND p.provolatile='v' " +
+      "AND p.proconfig @> ARRAY['search_path=pg_catalog']::text[] " +
+      "AND r.rolname='" + definer + "' " +
+      'AND NOT r.rolcanlogin AND NOT r.rolsuper AND NOT r.rolcreatedb ' +
+      'AND NOT r.rolcreaterole AND NOT r.rolinherit ' +
+      'AND NOT r.rolreplication AND NOT r.rolbypassrls'
+    ), '1');
+    assert.equal(sql(
+      'SELECT count(*) FROM pg_catalog.pg_auth_members WHERE ' +
+      "member='" + definer + "'::regrole OR roleid='" + definer + "'::regrole"
+    ), '0');
+    assert.equal(sql(
+      "SELECT has_schema_privilege('" + definer + "','public','CREATE')"
+    ), 'f');
+    assert.equal(sql(
+      "SELECT has_function_privilege('" + role + "','" + signature + "','EXECUTE')"
+    ), 't');
+    assert.equal(sql(
+      "SELECT has_function_privilege('" + bystander + "','" + signature + "','EXECUTE')"
+    ), 'f');
+    for (const [column, privilege, expected] of [
+      ['grant_id', 'SELECT', 't'],
+      ['actor_subject', 'SELECT', 't'],
+      ['binding_digest', 'SELECT', 't'],
+      ['expires_at', 'SELECT', 't'],
+      ['issued_at', 'SELECT', 'f'],
+      ['consumed_at', 'UPDATE', 't'],
+      ['revoked_at', 'UPDATE', 'f'],
+      ['expires_at', 'UPDATE', 'f'],
+      ['binding_digest', 'UPDATE', 'f'],
+    ]) {
+      assert.equal(sql(
+        "SELECT has_column_privilege('" + definer +
+        "','public.matchdesk_producer_execution_grants','" +
+        column + "','" + privilege + "')"
+      ), expected, column + ' ' + privilege);
+    }
+    for (const table of ['matchdesk_producer_cases', 'matchdesk_producer_audit']) {
+      for (const privilege of ['SELECT', 'INSERT', 'UPDATE', 'DELETE']) {
+        assert.equal(sql(
+          "SELECT has_table_privilege('" + definer +
+          "','public." + table + "','" + privilege + "')"
+        ), 'f', table + ' ' + privilege);
+      }
+    }
+    for (const privilege of ['INSERT', 'DELETE', 'TRUNCATE', 'TRIGGER']) {
+      assert.equal(sql(
+        "SELECT has_table_privilege('" + definer +
+        "','public.matchdesk_producer_execution_grants','" + privilege + "')"
+      ), 'f', privilege);
+    }
+    // Explicit negative execution checks protect against privilege drift.
+    sql('BEGIN; SET LOCAL ROLE ' + definer +
+      '; UPDATE public.matchdesk_producer_execution_grants ' +
+      'SET revoked_at=clock_timestamp(); COMMIT;',
+      /permission denied for table/i);
+    sql('BEGIN; SET LOCAL ROLE ' + definer +
+      '; SELECT count(*) FROM public.matchdesk_producer_cases; COMMIT;',
+      /permission denied for table/i);
+  });
   await check('writer cannot list, issue or revoke grants directly', () => {
     writer('SELECT count(*) FROM public.matchdesk_producer_execution_grants;',
       /permission denied for table/i);
