@@ -211,15 +211,18 @@ jobs:
           bridge_stager_password="$(openssl rand -hex 32)"
           bridge_issuer_password="$(openssl rand -hex 32)"
           bridge_writer_password="$(openssl rand -hex 32)"
+          bridge_revoker_password="$(openssl rand -hex 32)"
           echo "::add-mask::$bridge_stager_password"
           echo "::add-mask::$bridge_issuer_password"
           echo "::add-mask::$bridge_writer_password"
+          echo "::add-mask::$bridge_revoker_password"
           docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
             -e CI=true -e "COMPOSE_PROJECT_NAME=$COMPOSE_PROJECT_NAME" \
             -e "PGPASSWORD=$POSTGRES_PASSWORD" \
             -e "STAGER_CI_PASSWORD=$bridge_stager_password" \
             -e "ISSUER_CI_PASSWORD=$bridge_issuer_password" \
-            -e "GRANT_WRITER_CI_PASSWORD=$bridge_writer_password" api \
+            -e "GRANT_WRITER_CI_PASSWORD=$bridge_writer_password" \
+            -e "REVOKER_CI_PASSWORD=$bridge_revoker_password" api \
             /app/.venv/bin/python - < e2e/producer-atomic-bridge-psycopg.py \
             2>&1 | tee artifacts/integration/producer-atomic-bridge-psycopg.log
       - name: Verify restricted real-Psycopg producer transactions and recovery

@@ -42,10 +42,12 @@ ACTOR = "ci-signed-bridge-person"
 STAGER = "matchdesk_stager_executor_ci"
 ISSUER_ROLE = "matchdesk_issuer_executor_ci"
 WRITER = "matchdesk_grant_executor_ci"
+REVOKER = "matchdesk_revoker_executor_ci"
 PASSWORD_ENVS = {
     STAGER: "STAGER_CI_PASSWORD",
     ISSUER_ROLE: "ISSUER_CI_PASSWORD",
     WRITER: "GRANT_WRITER_CI_PASSWORD",
+    REVOKER: "REVOKER_CI_PASSWORD",
 }
 
 
@@ -155,10 +157,15 @@ def states(actor):
         reverified, actor=actor, expected_generation=2,
         command="approve", reason="CI synthetic human signature",
     )
+    rejected = apply_producer_command(
+        reverified, actor=actor, expected_generation=2,
+        command="reject", reason="CI revocation must block rejection mutation",
+    )
     return {
         ("create", 0): created,
         ("reverify", 1): reverified,
         ("approve", 2): approved,
+        ("reject", 2): rejected,
     }
 
 
@@ -245,14 +252,23 @@ def reconcile(approved, ids):
             cur.execute(
                 "SELECT action,consumed_at IS NOT NULL,revoked_at IS NOT NULL "
                 "FROM public.matchdesk_producer_action_grants "
-                "WHERE confirmation_id=ANY(%s) ORDER BY expected_generation",
+                "WHERE confirmation_id=ANY(%s) ORDER BY expected_generation, action",
                 (ids,),
             )
             assert cur.fetchall() == [
                 ("create", True, False),
                 ("reverify", True, False),
                 ("approve", True, False),
+                ("reject", False, True),
             ]
+            cur.execute(
+                "SELECT consumed_at IS NOT NULL, revoked_at IS NOT NULL, "
+                "issued_grant_id IS NOT NULL "
+                "FROM public.matchdesk_producer_confirmations "
+                "WHERE confirmation_id=%s",
+                (ids[-1],),
+            )
+            assert cur.fetchone() == (True, True, True)
 
 
 def main():
@@ -267,7 +283,7 @@ def main():
         ) is None
         or len(os.getenv("PGPASSWORD", "")) < 16
         or any(len(value) < 32 for value in passwords.values())
-        or len(set(passwords.values())) != 3
+        or len(set(passwords.values())) != 4
     ):
         raise RuntimeError("Only disposable CI with distinct masked credentials is allowed")
     actor = HostVerifiedActor(
@@ -294,6 +310,9 @@ def main():
         """Return a separately authenticated connection factory."""
         return lambda: db(role, passwords[role])
 
+    writer = PostgresProducerGrantWriter(
+        physical(WRITER), expected_role=WRITER,
+    )
     bridge = ProducerAtomicGrantBridge(
         policy=ProducerIdentityPolicy(
             issuer=ISSUER, tenant_id=TENANT,
@@ -308,9 +327,7 @@ def main():
         stager_connections=physical(STAGER),
         issuer_connections=physical(ISSUER_ROLE),
         stager_role=STAGER, issuer_role=ISSUER_ROLE,
-        writer=PostgresProducerGrantWriter(
-            physical(WRITER), expected_role=WRITER,
-        ),
+        writer=writer,
     )
     valid = token(rsa_private, step_up=True)
     create = cases[("create", 0)]
@@ -347,11 +364,110 @@ def main():
                     "REVOKE EXECUTE ON FUNCTION " + _ISSUE_SIG + " FROM " + STAGER
                 )
 
-    for action, generation in (("create", 0), ("reverify", 1)):
+    # Simulate an acknowledgement disappearing AFTER the actual writer
+    # committed; the bridge must return UNRECONCILED, never success or retry.
+    # Owner-only readback then proves exactly one durable create grant/audit.
+    durable_commit = writer.commit
+    dropped_acknowledgements = []
+
+    def drop_create_ack(**kwargs):
+        """Drop only the initial post-commit acknowledgement in synthetic CI."""
+        receipt = durable_commit(**kwargs)
+        if kwargs["action"] == "create" and receipt is True:
+            dropped_acknowledgements.append(kwargs["command_id"])
+            raise ConnectionError("CI simulated lost acknowledgement after commit")
+        return receipt
+
+    writer.commit = drop_create_ack
+    try:
+        try:
+            bridge.execute(
+                access_token=valid, case=create, action="create",
+                expected_generation=0,
+            )
+        except RuntimeError as exc:
+            assert "unreconciled" in str(exc) and "simulated" not in str(exc)
+        else:
+            raise AssertionError("Lost commit acknowledgement was treated as success")
+    finally:
+        writer.commit = durable_commit
+    assert len(dropped_acknowledgements) == 1
+    with owner() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT generation, case_json FROM public.matchdesk_producer_cases "
+                "WHERE tenant_id=%s AND session_id=%s AND output_id=%s",
+                (TENANT, create.output.session_id, create.output.output_id),
+            )
+            assert cur.fetchone() == (1, json.loads(_case_json(create)))
+            cur.execute(
+                "SELECT consumed_at IS NOT NULL, revoked_at IS NOT NULL "
+                "FROM public.matchdesk_producer_action_grants "
+                "WHERE confirmation_id=%s",
+                (ids[0],),
+            )
+            assert cur.fetchone() == (True, False)
+    # No blind resend may perform another create after an unknown outcome.
+    assert bridge.execute(
+        access_token=valid, case=create, action="create",
+        expected_generation=0,
+    ) is False
+    assert bridge.execute(
+        access_token=valid, case=cases[("reverify", 1)],
+        action="reverify", expected_generation=1,
+    ) is True
+
+    # Revocation after issuance but before the atomic writer must invalidate
+    # the action grant without appending the rejected case or audit event.
+    revoked_calls = []
+
+    def revoke_before_reject(**kwargs):
+        """Revoke via the independent SCRAM revoker before writer execution."""
+        if kwargs["action"] == "reject":
+            with db(REVOKER, passwords[REVOKER]) as connection:
+                with connection.cursor() as cur:
+                    cur.execute(
+                        "SELECT current_user::text, session_user::text, "
+                        "has_function_privilege(current_user,"
+                        "'public.matchdesk_revoke_confirmed_producer_grant(text)',"
+                        "'EXECUTE'),"
+                        "has_table_privilege(current_user,"
+                        "'public.matchdesk_producer_action_grants','UPDATE')"
+                    )
+                    assert cur.fetchone() == (REVOKER, REVOKER, True, False)
+                    cur.execute(
+                        "SELECT public.matchdesk_revoke_confirmed_producer_grant(%s)",
+                        (ids[-1],),
+                    )
+                    assert cur.fetchone() == (True,)
+            revoked_calls.append(True)
+        return durable_commit(**kwargs)
+
+    writer.commit = revoke_before_reject
+    try:
         assert bridge.execute(
-            access_token=valid, case=cases[(action, generation)],
-            action=action, expected_generation=generation,
-        ) is True
+            access_token=valid, case=cases[("reject", 2)],
+            action="reject", expected_generation=2,
+        ) is False
+    finally:
+        writer.commit = durable_commit
+    assert revoked_calls == [True]
+    with owner() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT generation, case_json #>> '{review,status}' "
+                "FROM public.matchdesk_producer_cases "
+                "WHERE tenant_id=%s AND session_id=%s AND output_id=%s",
+                (TENANT, create.output.session_id, create.output.output_id),
+            )
+            assert cur.fetchone() == (2, "ready_for_decision")
+            cur.execute(
+                "SELECT revoked_at IS NOT NULL, consumed_at IS NOT NULL "
+                "FROM public.matchdesk_producer_action_grants "
+                "WHERE confirmation_id=%s",
+                (ids[-1],),
+            )
+            assert cur.fetchone() == (True, False)
 
     # Two physically independent staged-issuer-writer attempts contend for
     # the SAME signed approval confirmation and proposed case generation.
@@ -393,8 +509,8 @@ def main():
     reconcile(cases[("approve", 2)], ids)
     print(
         "MATCHDESK_P4_REAL_BRIDGE_PASS: separate SCRAM roles, signed synthetic "
-        "JWT/confirmation, three durable generations, one-winner approve race, "
-        "replay/CA/drift denied"
+        "JWT/confirmation, three durable generations, lost-ACK reconciliation, "
+        "revoked pre-write grant denied, one-winner approve race, replay/CA/drift denied"
     )
 
 
