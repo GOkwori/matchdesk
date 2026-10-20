@@ -70,10 +70,13 @@ async def execute_bounded_specialist(
         )
         start_ns = monotonic_ns()
         try:
-            response = await asyncio.wait_for(
-                executor.execute(request, tools),
-                timeout=selected_policy.timeout_ms / 1000,
-            )
+            # A provider may swallow cancellation and return a result after expiry.
+            # Check the host-owned deadline even when the awaited call returns.
+            # This still requires transport-level deadlines for stuck providers.
+            async with asyncio.timeout(selected_policy.timeout_ms / 1000) as deadline:
+                response = await executor.execute(request, tools)
+            if deadline.expired():
+                raise TimeoutError("Specialist result arrived after its host deadline")
         except TimeoutError:
             failures.append("timeout")
             current = record_specialist_attempt(
