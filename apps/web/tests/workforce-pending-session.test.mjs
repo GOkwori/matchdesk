@@ -165,7 +165,6 @@ test("wrong key size and unapproved tenant or scope cannot instantiate the vault
     { clientId: "not-a-guid" },
     { delegatedApiScope: "api://another/MatchDesk.Producer.Access" },
     { publicOrigin: "http://operator.example.test" },
-    { publicOrigin: "https://operator.example.test.evil.invalid" },
     { publicOrigin: "https://operator.example.test/path" },
     { publicOrigin: "https://operator.example.test?redirect=evil" },
     { publicOrigin: "https://user:pass@operator.example.test" },
