@@ -21,6 +21,7 @@ from matchdesk.domain.postgres_producer_store import (
 from matchdesk.domain.producer_commands import (
     HostVerifiedActor,
     _validate_case,
+    apply_producer_command,
     open_producer_case,
 )
 from matchdesk.domain.producer_preview import build_producer_desk_preview
@@ -32,6 +33,8 @@ _GRANTS = {
     "wrong_actor": "ci-real-grant-subject-01",
     "tampered_case": "ci-real-grant-case-tamper-01",
     "tampered_audit": "ci-real-grant-audit-tamper-01",
+    "reverify": "ci-real-grant-reverify-001",
+    "approve": "ci-real-grant-approve-0001",
 }
 
 
@@ -66,6 +69,35 @@ def _fixture() -> tuple[str, str, str, str, str, str, str, str]:
 
 
 
+def _candidate_for(action: str, scope: tuple[str, str, str, str, str, str, str, str]):
+    """Build issuer-bound, deterministic create -> reverify -> approve fixtures.
+
+    These are synthetic CI decisions, NOT genuine operator login or approval.
+    Every new action grant hashes its complete prospective JSONB case and audit.
+    """
+    case = _CASE.validate_json(scope[6])
+    actor = HostVerifiedActor(
+        subject=scope[3],
+        tenant_id=scope[0],
+        issuer=scope[4],
+        roles=frozenset({"producer"}),
+        permitted_sessions=frozenset({scope[1]}),
+    )
+    if action in ("reverify", "approve"):
+        case = apply_producer_command(
+            case, actor=actor, expected_generation=1,
+            command="reverify", reason="CI verified fixture evidence",
+        )
+    if action == "approve":
+        case = apply_producer_command(
+            case, actor=actor, expected_generation=2,
+            command="approve", reason="CI synthetic approval only",
+        )
+    if action not in ("create", "reverify", "approve"):
+        raise ValueError("Unsupported disposable grant fixture action")
+    return case
+
+
 def _verify_after_restart(scope: tuple[str, str, str, str, str, str, str, str]) -> None:
     """Reconcile persisted case, immutable audit, and every grant as DB owner.
 
@@ -86,16 +118,20 @@ def _verify_after_restart(scope: tuple[str, str, str, str, str, str, str, str]) 
                 scope[:3],
             )
             row = cursor.fetchone()
-            assert row is not None and row[0] == 1
+            assert row is not None and row[0] == 3
             case = _CASE.validate_python(row[1])
             _validate_case(case)
             assert case.tenant_id == scope[0]
             assert case.output.session_id == scope[1]
             assert case.output.output_id == scope[2]
             assert case.output.binding.model_dump_json() == scope[5]
-            assert case.generation == 1
-            assert case.review.status == "pending_verification"
-            assert len(case.review.audit) == 1
+            assert case.generation == 3
+            assert case.review.status == "approved"
+            assert len(case.review.audit) == 3
+            assert [entry.action for entry in case.review.audit] == [
+                "review_started", "reverified", "approved",
+            ]
+            assert case == _candidate_for("approve", scope)
             assert case.review.audit[0].actor_id == scope[3]
             assert case.review.audit[0].action == "review_started"
             assert row[2] == _audit_digest(case.review.audit)
@@ -140,6 +176,12 @@ def _verify_after_restart(scope: tuple[str, str, str, str, str, str, str, str]) 
             )
             assert persisted[_GRANTS["tampered_audit"]] == (
                 False, False, None, "create"
+            )
+            assert persisted[_GRANTS["reverify"]] == (
+                False, True, "ci-verified-command-00001", "reverify"
+            )
+            assert persisted[_GRANTS["approve"]] == (
+                False, True, "ci-approved-command-00001", "approve"
             )
     print("MATCHDESK_P4_GRANT_AUDIT_RESTART_RECONCILED: exact case, audit and grants")
 
@@ -255,6 +297,10 @@ def main() -> None:
                 + " TO matchdesk_grant_executor_ci"
             )
             for label, grant_id in _GRANTS.items():
+                # A trusted issuer must pre-authorize the exact CASE and audit
+                # generation, not just a Boolean human-approval indicator.
+                action = label if label in ("reverify", "approve") else "create"
+                candidate = _candidate_for(action, scope)
                 issuer = "https://untrusted-issuer.invalid" if label == "wrong_issuer" else scope[4]
                 actor = "forged-subject" if label == "wrong_actor" else scope[3]
                 cursor.execute(
@@ -262,7 +308,7 @@ def main() -> None:
                     "(grant_id, tenant_id, session_id, output_id, actor_id, issuer, "
                     "action, binding, expected_generation, expires_at, revoked_at, "
                     "authorized_case_sha256, authorized_audit_digest) "
-                    "VALUES (%s,%s,%s,%s,%s,%s,'create',%s::jsonb,0,"
+                    "VALUES (%s,%s,%s,%s,%s,%s,%s,%s::jsonb,%s,"
                     "clock_timestamp() + interval '10 minutes',"
                     "CASE WHEN %s THEN clock_timestamp() ELSE NULL END,"
                     "encode(sha256(convert_to(%s::jsonb::text, 'UTF8')), 'hex'),%s)",
@@ -273,13 +319,15 @@ def main() -> None:
                         scope[2],
                         actor,
                         issuer,
-                        scope[5],
+                        action,
+                        candidate.output.binding.model_dump_json(),
+                        candidate.generation - 1,
                         label == "revoked",
-                        scope[6],
-                        scope[7],
+                        _case_json(candidate),
+                        _audit_digest(candidate.review.audit),
                     ),
                 )
-    print("PASS: synthetic issuer prepared distinct SCRAM login and four bound grants")
+    print("PASS: synthetic issuer prepared distinct SCRAM login and eight bound grants")
 
 
 if __name__ == "__main__":

@@ -15,7 +15,11 @@ import psycopg
 
 from matchdesk.domain.postgres_producer_grant_writer import PostgresProducerGrantWriter
 from matchdesk.domain.postgres_producer_store import _ENTRY, _audit_digest, _case_json
-from matchdesk.domain.producer_commands import HostVerifiedActor, open_producer_case
+from matchdesk.domain.producer_commands import (
+    HostVerifiedActor,
+    apply_producer_command,
+    open_producer_case,
+)
 from matchdesk.domain.producer_preview import build_producer_desk_preview
 from matchdesk.domain.psycopg_producer_driver import producer_connection_factory
 
@@ -27,6 +31,8 @@ _GRANTS = {
     "wrong_actor": "ci-real-grant-subject-01",
     "tampered_case": "ci-real-grant-case-tamper-01",
     "tampered_audit": "ci-real-grant-audit-tamper-01",
+    "reverify": "ci-real-grant-reverify-001",
+    "approve": "ci-real-grant-approve-0001",
 }
 
 
@@ -42,6 +48,25 @@ def _case():
         evidence=preview.evidence,
         accepted_events=preview.events,
     )
+
+
+def _candidate(action: str):
+    """Rebuild the exact review state authorized by the synthetic CI issuer."""
+    case = _case()
+    actor = _actor()
+    if action in ("reverify", "approve"):
+        case = apply_producer_command(
+            case, actor=actor, expected_generation=1,
+            command="reverify", reason="CI verified fixture evidence",
+        )
+    if action == "approve":
+        case = apply_producer_command(
+            case, actor=actor, expected_generation=2,
+            command="approve", reason="CI synthetic approval only",
+        )
+    if action not in ("create", "reverify", "approve"):
+        raise ValueError("Unsupported restricted grant test action")
+    return case
 
 
 def _actor() -> HostVerifiedActor:
@@ -106,26 +131,30 @@ def _physical_role() -> None:
     print("PASS: separate physical login denied direct producer DML and grant reads")
 
 
-def _invoke(grant: str, command: str) -> bool:
-    """Write through the trusted-host adapter, never through the legacy store."""
+def _invoke(grant: str, command: str, *, action: str = "create") -> bool:
+    """Commit only the issuer's exact case with a physical restricted login."""
+    case = _candidate(action)
     return _writer().commit(
         actor=_actor(),
-        case=_case(),
+        case=case,
         grant_id=grant,
         command_id=command,
-        action="create",
-        expected_generation=0,
+        action=action,
+        expected_generation=case.generation - 1,
     )
 
 
-def _direct_sql_tamper(grant: str, *, modify_case: bool = False,
-                       modify_audit: bool = False) -> bool:
-    """Direct restricted EXECUTE must not bypass the issuer-bound proposal."""
-    case = _case()
+def _direct_sql_tamper(
+    grant: str, *, action: str = "create",
+    modify_case: bool = False, modify_audit: bool = False,
+) -> bool:
+    """A direct function invocation cannot alter the issuer-bound approval."""
+    case = _candidate(action)
     payload = json.loads(_case_json(case))
     if modify_case:
         payload["output"]["unauthorized_extra_content"] = "substituted"
     digest = "d" * 64 if modify_audit else _audit_digest(case.review.audit)
+    previous = _audit_digest(case.review.audit[:-1]) if case.generation > 1 else None
     entry = _ENTRY.dump_json(case.review.audit[-1]).decode("utf-8")
     with psycopg.connect(_conninfo()) as connection:
         with connection.cursor() as cursor:
@@ -134,9 +163,9 @@ def _direct_sql_tamper(grant: str, *, modify_case: bool = False,
                 "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s::jsonb,%s::jsonb)",
                 (
                     grant, _actor().subject, _actor().issuer, case.tenant_id,
-                    case.output.session_id, case.output.output_id, "create",
-                    "ci-direct-tamper-command-01", 0, None, digest,
-                    json.dumps(payload, separators=(",", ":")), entry,
+                    case.output.session_id, case.output.output_id, action,
+                    "ci-direct-tamper-command-01", case.generation - 1,
+                    previous, digest, json.dumps(payload, separators=(",", ":")), entry,
                 ),
             )
             result = cursor.fetchone()
@@ -193,13 +222,32 @@ def main() -> None:
         assert _invoke(_GRANTS["wrong_actor"], "ci-wrongactor-command-001") is False
         assert _direct_sql_tamper(_GRANTS["tampered_case"], modify_case=True) is False
         assert _direct_sql_tamper(_GRANTS["tampered_audit"], modify_audit=True) is False
+        # A signed-looking approval grant cannot skip the required
+        # re-verification or consume a future-generation decision early.
+        assert _invoke(_GRANTS["approve"], "ci-premature-command-0001", action="approve") is False
         assert _invoke(_GRANTS["valid"], "ci-valid-command-0000001") is True
         assert _invoke(_GRANTS["valid"], "ci-replayed-command-00001") is False
-        print("PASS: restricted Psycopg create committed once; revoked/issuer/actor/replay denied")
+        assert _invoke(_GRANTS["approve"], "ci-stale-command-000001", action="approve") is False
+        assert _invoke(_GRANTS["approve"], "ci-wrong-action-command", action="reverify") is False
+
+        assert _invoke(_GRANTS["reverify"], "ci-verified-command-00001", action="reverify") is True
+        assert _invoke(_GRANTS["reverify"], "ci-verified-replay-00001", action="reverify") is False
+        # Content substitution or a changed audit root is rejected even when
+        # the restricted caller knows a still-unused approval grant ID.
+        assert _direct_sql_tamper(
+            _GRANTS["approve"], action="approve", modify_case=True,
+        ) is False
+        assert _direct_sql_tamper(
+            _GRANTS["approve"], action="approve", modify_audit=True,
+        ) is False
+        assert _invoke(_GRANTS["approve"], "ci-approved-command-00001", action="approve") is True
+        assert _invoke(_GRANTS["approve"], "ci-approved-replay-00001", action="approve") is False
+        print("MATCHDESK_P4_RESTRICTED_APPROVAL_PASS: create/reverify/approve single-use, no direct DML")
         return
 
-    assert _invoke(_GRANTS["valid"], "ci-restart-replay-00001") is False
-    print("MATCHDESK_P4_REAL_GRANT_PSYCOPG_PASS: restarted restricted login rejects replay")
+    for label, action in (("valid", "create"), ("reverify", "reverify"), ("approve", "approve")):
+        assert _invoke(_GRANTS[label], "ci-restart-replay-00001", action=action) is False
+    print("MATCHDESK_P4_REAL_GRANT_PSYCOPG_PASS: restart denies all decision replays")
 
 
 if __name__ == "__main__":
