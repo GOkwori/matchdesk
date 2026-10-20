@@ -104,6 +104,7 @@ def record_audience_quality_assessment(
         raise ValueError("Quality review requires identical source/variant scope and evidence")
     if (
         qualification.source_output_id != source.output_id
+        or qualification.source_content_digest != source.binding.content_digest
         or qualification.variant_output_id != variant.output_id
         or qualification.variant_content_digest != variant.binding.content_digest
         or qualification.evidence_digest != variant.binding.evidence_digest
