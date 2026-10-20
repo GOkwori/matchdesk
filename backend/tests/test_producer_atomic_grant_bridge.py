@@ -332,6 +332,7 @@ def test_policy_assurance_is_rechecked_immediately_before_grant_staging(monkeypa
     assert confirmations.calls == 0
     assert not stager.queries and not issuer.queries and not writes
 
+
 def test_policy_revoked_during_confirmation_denies_before_database(monkeypatch):
     """A revocation during trusted confirmation lookup cannot reuse stale CA."""
     handler, case, stager, issuer, writes, confirmation = fixture(monkeypatch)
