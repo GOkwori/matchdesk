@@ -170,7 +170,7 @@ class ProducerAtomicGrantBridge:
             type(policy) is not ProducerIdentityPolicy
             or policy.required_auth_context is None
             or policy.max_token_age_seconds > 300
-            or type(confirmation_public_key) is not Ed25519PublicKey
+            or not isinstance(confirmation_public_key, Ed25519PublicKey)
             or not _ROLE.fullmatch(stager_role)
             or not _ROLE.fullmatch(issuer_role)
             or stager_role == issuer_role
