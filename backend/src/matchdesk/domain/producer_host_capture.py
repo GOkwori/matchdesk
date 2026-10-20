@@ -172,9 +172,7 @@ def qualify_host_operator_confirmation(
             expected_generation=preflight.expected_generation,
             authorized_case_sha256=preflight.authorized_case_sha256,
             authorized_audit_digest=preflight.authorized_audit_digest,
-            signed_envelope_sha256=hashlib.sha256(
-                signed_envelope.encode("utf-8")
-            ).hexdigest(),
+            signed_envelope_sha256=hashlib.sha256(signed_envelope.encode("utf-8")).hexdigest(),
             event_id=event.event_id,
             event_channel="workforce_authenticated_custom_dialog",
             state="confirmed",

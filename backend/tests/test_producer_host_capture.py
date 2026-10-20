@@ -6,7 +6,6 @@ from dataclasses import replace
 from datetime import datetime, timezone
 
 import pytest
-
 from matchdesk.domain.producer_grant_preflight import ProducerGrantPreflight
 from matchdesk.domain.producer_host_capture import (
     VerifiedOperatorDialogEvent,
