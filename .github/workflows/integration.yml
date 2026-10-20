@@ -773,7 +773,7 @@ jobs:
         run: |
           set -euo pipefail
           candidate=qualification/id3h/disposable_backup_restore.sh
-          test "$(git hash-object "$candidate")" = 2c4322235f35b4ffa632d15c03fbedf49fd3d791
+          test "$(git hash-object "$candidate")" = 7d0bfa83f9cd5fad9e7ff24ff87d1ab96ec15465
           bash -n "$candidate"
           bash "$candidate" 2>&1 | tee artifacts/integration/id3h-backup-restore.log
           grep -Fx "MATCHDESK_ID3H_DISPOSABLE_RESTORE_PASS" \

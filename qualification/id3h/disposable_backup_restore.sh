@@ -162,8 +162,31 @@ BEGIN
              AND revoked_at IS NULL AND consumed_at IS NULL) <> 1
        OR (SELECT count(*) FROM public.matchdesk_producer_action_grants
            WHERE grant_id = 'ci-wrong-actor-01'
-             AND revoked_at IS NULL AND consumed_at IS NULL) <> 1 THEN
-        RAISE EXCEPTION 'Restored backup missing an unused P3/P4 grant fixture';
+             AND revoked_at IS NULL AND consumed_at IS NULL) <> 1
+       -- The source CI suite already uses ffffffff... confirmations. The
+       -- distinct restore-only 7777... ID must NOT exist in the snapshot.
+       -- Refuse collisions rather than overwriting or skipping test evidence.
+       OR EXISTS (
+           SELECT 1 FROM public.matchdesk_producer_confirmations
+           WHERE confirmation_id = repeat('7',32)
+       )
+       OR EXISTS (
+           SELECT 1 FROM public.matchdesk_producer_action_grants
+           WHERE grant_id = 'ci-restore-issue-candidate-00001'
+       )
+       OR EXISTS (
+           SELECT 1 FROM public.matchdesk_producer_host_confirmation_events
+           WHERE confirmation_id = repeat('7',32)
+              OR event_id = repeat('e',32)
+       )
+       OR EXISTS (
+           SELECT 1 FROM public.matchdesk_producer_host_confirmation_terminals
+           WHERE confirmation_id = repeat('7',32)
+              OR event_id = pg_catalog.md5(
+                 'matchdesk-offline-restore:' || repeat('e',32)
+              )
+       ) THEN
+        RAISE EXCEPTION 'Restored snapshot lacks required producer fixture or test ID is already taken';
     END IF;
 END;
 $producer_snapshot$;
@@ -181,7 +204,7 @@ INSERT INTO public.matchdesk_producer_confirmations
      action, expected_generation, binding, authorized_case_sha256,
      authorized_audit_digest, proof_digest, confirmed_at, expires_at)
 VALUES
-    (repeat('f', 32), 'ci-restore-tenant', 'ci-restore-session',
+    (repeat('7', 32), 'ci-restore-tenant', 'ci-restore-session',
      'ci-restore-output', 'ci-restore-operator', 'https://restore-ci.invalid',
      'create', 0, '{}'::jsonb, repeat('a', 64), repeat('b', 64),
      repeat('c', 64), clock_timestamp(), clock_timestamp() + interval '90 seconds');
@@ -196,7 +219,7 @@ INSERT INTO public.matchdesk_producer_host_confirmation_events
      authorized_case_sha256, authorized_audit_digest,
      signed_envelope_sha256, event_channel, confirmed_at, recorded_at)
 VALUES
-    (repeat('e', 32), repeat('f', 32), 'ci-restore-tenant',
+    (repeat('e', 32), repeat('7', 32), 'ci-restore-tenant',
      'ci-restore-operator', 'https://restore-ci.invalid',
      'ci-restore-session', 'ci-restore-output', 'create', 0,
      repeat('a', 64), repeat('b', 64), repeat('c', 64),
@@ -207,7 +230,7 @@ BEGIN
     IF (SELECT count(*) FROM public.matchdesk_producer_host_confirmation_events e
         LEFT JOIN public.matchdesk_producer_host_confirmation_terminals t
           ON t.confirmation_id=e.confirmation_id AND t.tenant_id=e.tenant_id
-        WHERE e.event_id=repeat('e',32) AND e.confirmation_id=repeat('f',32)
+        WHERE e.event_id=repeat('e',32) AND e.confirmation_id=repeat('7',32)
           AND t.confirmation_id IS NULL) <> 1 THEN
         RAISE EXCEPTION 'Synthetic restored host event is not initially active';
     END IF;
@@ -233,7 +256,7 @@ BEGIN
     END IF;
 
     SELECT public.matchdesk_issue_confirmed_producer_grant(
-        repeat('f', 32), 'ci-restore-issue-candidate-00001',
+        repeat('7', 32), 'ci-restore-issue-candidate-00001',
         'ci-restore-tenant', 'ci-restore-session', 'ci-restore-output',
         'ci-restore-operator', 'https://restore-ci.invalid',
         'create', 0, '{}'::jsonb, repeat('a', 64), repeat('b', 64)
@@ -251,7 +274,7 @@ BEGIN
          WHERE grant_id = '11111111-1111-4111-8111-111111111104'::uuid
            AND revoked_at IS NULL AND consumed_at IS NULL) <> 1
        OR (SELECT count(*) FROM public.matchdesk_producer_confirmations
-           WHERE confirmation_id = repeat('f',32)
+           WHERE confirmation_id = repeat('7',32)
              AND revoked_at IS NULL AND consumed_at IS NULL) <> 1
        OR EXISTS (SELECT 1 FROM public.matchdesk_producer_action_grants
            WHERE grant_id = 'ci-restore-issue-candidate-00001') THEN
@@ -402,7 +425,7 @@ BEGIN
            JOIN public.matchdesk_producer_host_confirmation_terminals t
              ON t.confirmation_id=e.confirmation_id AND t.tenant_id=e.tenant_id
            WHERE e.event_id=repeat('e',32)
-             AND e.confirmation_id=repeat('f',32)
+             AND e.confirmation_id=repeat('7',32)
              AND t.terminal_state='revoked') <> 1 THEN
         RAISE EXCEPTION 'Restored producer authority survived committed quarantine';
     END IF;
@@ -418,7 +441,7 @@ BEGIN
     END IF;
 
     SELECT public.matchdesk_issue_confirmed_producer_grant(
-        repeat('f', 32), 'ci-restore-issue-candidate-00001',
+        repeat('7', 32), 'ci-restore-issue-candidate-00001',
         'ci-restore-tenant', 'ci-restore-session', 'ci-restore-output',
         'ci-restore-operator', 'https://restore-ci.invalid',
         'create', 0, '{}'::jsonb, repeat('a', 64), repeat('b', 64)
@@ -453,9 +476,9 @@ BEGIN
            WHERE grant_id = 'ci-wrong-actor-01'
              AND consumed_at IS NULL AND revoked_at IS NULL) <> 1
        OR EXISTS (SELECT 1 FROM public.matchdesk_producer_confirmations
-                  WHERE confirmation_id = repeat('f',32))
+                  WHERE confirmation_id = repeat('7',32))
        OR EXISTS (SELECT 1 FROM public.matchdesk_producer_host_confirmation_events
-                  WHERE event_id=repeat('e',32) AND confirmation_id=repeat('f',32)) THEN
+                  WHERE event_id=repeat('e',32) AND confirmation_id=repeat('7',32)) THEN
         RAISE EXCEPTION 'ID3H source database changed during restore';
     END IF;
 END;
