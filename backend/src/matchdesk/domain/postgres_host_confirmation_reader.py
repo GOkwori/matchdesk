@@ -176,12 +176,8 @@ class PostgresHostConfirmationReader:
                 event_id=cast(str, row[11]),
                 event_channel="workforce_authenticated_custom_dialog",
                 state=row[13],
-                confirmed_at_seconds=int(
-                    row[14].astimezone(timezone.utc).timestamp()
-                ),
-                recorded_at_seconds=int(
-                    row[15].astimezone(timezone.utc).timestamp()
-                ),
+                confirmed_at_seconds=int(row[14].astimezone(timezone.utc).timestamp()),
+                recorded_at_seconds=int(row[15].astimezone(timezone.utc).timestamp()),
             )
         except Exception:
             raise PermissionError("Malformed host provenance database record") from None
