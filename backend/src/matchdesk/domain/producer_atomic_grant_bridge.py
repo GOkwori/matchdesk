@@ -231,12 +231,15 @@ class ProducerAtomicGrantBridge:
             ):
                 raise PermissionError("Producer actor failed tenant or issuer trust")
             _authorize(actor, actor.tenant_id, session_id)
+            context_id = self._policy.required_auth_context
+            if context_id is None:
+                raise PermissionError("Enforced authentication context not configured")
             qualify_producer_policy_assurance(
                 provider=self._policy_assurance,
                 tenant_id=actor.tenant_id,
                 subject=actor.subject,
                 session_id=session_id,
-                context_id=self._policy.required_auth_context,
+                context_id=context_id,
                 client_ids=self._policy.client_ids,
                 now=datetime.now(timezone.utc),
             )
@@ -312,12 +315,15 @@ class ProducerAtomicGrantBridge:
             if type(actor) is not HostVerifiedActor:
                 raise PermissionError("Host actor is not independently verified")
             _authorize(actor, case.tenant_id, case.output.session_id)
+            context_id = self._policy.required_auth_context
+            if context_id is None:
+                raise PermissionError("Enforced authentication context not configured")
             qualify_producer_policy_assurance(
                 provider=self._policy_assurance,
                 tenant_id=actor.tenant_id,
                 subject=actor.subject,
                 session_id=case.output.session_id,
-                context_id=self._policy.required_auth_context,
+                context_id=context_id,
                 client_ids=self._policy.client_ids,
                 now=now,
             )
