@@ -485,6 +485,22 @@ def main():
             raise ConnectionError("CI simulated lost acknowledgement after commit")
         return receipt
 
+    # Observe only Boolean stage/issue receipts in CI; never log signed
+    # envelopes, grant IDs, actor identifiers or SQL parameters.
+    original_invoke = bridge._invoke
+    create_boundary_receipts = []
+
+    def observe_create_boundary(connections, *, role, signature, statement, parameters):
+        """Retain non-sensitive stage/issue outcome for denied CI paths."""
+        receipt = original_invoke(
+            connections, role=role, signature=signature,
+            statement=statement, parameters=parameters,
+        )
+        if parameters[6] == "create":
+            create_boundary_receipts.append(("stage" if role == STAGER else "issue", receipt))
+        return receipt
+
+    bridge._invoke = observe_create_boundary
     writer.commit = drop_create_ack
     try:
         try:
@@ -498,7 +514,11 @@ def main():
             raise AssertionError("Lost commit acknowledgement was treated as success")
     finally:
         writer.commit = durable_commit
-    assert len(dropped_acknowledgements) == 1
+        bridge._invoke = original_invoke
+    assert len(dropped_acknowledgements) == 1, (
+        "CI create declined before durable writer acknowledgement: "
+        + repr(create_boundary_receipts)
+    )
     with owner() as conn:
         with conn.cursor() as cur:
             cur.execute(
