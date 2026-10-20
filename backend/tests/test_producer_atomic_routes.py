@@ -230,6 +230,7 @@ def test_atomic_http_rejects_ambiguous_grant_outcome(monkeypatch):
     assert "private database" not in result.text
     assert not writes and reader.case is None
 
+
 def test_atomic_http_rejects_nonproducer_and_other_session(monkeypatch):
     """Bridge mistakes cannot grant role or session permissions at HTTP."""
     from dataclasses import replace
