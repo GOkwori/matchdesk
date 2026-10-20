@@ -203,9 +203,28 @@ jobs:
             -e CI=true -e "PGPASSWORD=$POSTGRES_PASSWORD" api \
             /app/.venv/bin/python - verify < e2e/producer-grant-restricted-setup.py \
             2>&1 | tee artifacts/integration/producer-grant-restart-reconciliation.log
+      - name: Qualify signed bridge with distinct physical PostgreSQL logins
+        id: producer_bridge_psycopg
+        if: ${{ !cancelled() && steps.grant_psycopg.outcome == 'success' && steps.physical_issuer.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          bridge_stager_password="$(openssl rand -hex 32)"
+          bridge_issuer_password="$(openssl rand -hex 32)"
+          bridge_writer_password="$(openssl rand -hex 32)"
+          echo "::add-mask::$bridge_stager_password"
+          echo "::add-mask::$bridge_issuer_password"
+          echo "::add-mask::$bridge_writer_password"
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "COMPOSE_PROJECT_NAME=$COMPOSE_PROJECT_NAME" \
+            -e "PGPASSWORD=$POSTGRES_PASSWORD" \
+            -e "STAGER_CI_PASSWORD=$bridge_stager_password" \
+            -e "ISSUER_CI_PASSWORD=$bridge_issuer_password" \
+            -e "GRANT_WRITER_CI_PASSWORD=$bridge_writer_password" api \
+            /app/.venv/bin/python - < e2e/producer-atomic-bridge-psycopg.py \
+            2>&1 | tee artifacts/integration/producer-atomic-bridge-psycopg.log
       - name: Verify restricted real-Psycopg producer transactions and recovery
         id: psycopg_storage
-        if: ${{ !cancelled() && steps.grant_psycopg.outcome == 'success' && steps.producer_storage.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.producer_bridge_psycopg.outcome == 'success' && steps.producer_storage.outcome == 'success' }}
         run: |
           set -euo pipefail
           # A fresh, masked password exists only in this disposable workflow step.
