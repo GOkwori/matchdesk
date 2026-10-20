@@ -416,6 +416,7 @@ def test_host_entitlement_changed_during_confirmation_denies_before_sql(monkeypa
     assert len(checks) == 2 and confirmation.calls == 1
     assert not stager.queries and not issuer.queries and not writes
 
+
 def test_absent_host_confirmation_provenance_denies_before_grant(monkeypatch):
     """A synthetic signed envelope alone cannot provide execution authority."""
     handler, case, stager, issuer, writes, confirmations = fixture(monkeypatch)
