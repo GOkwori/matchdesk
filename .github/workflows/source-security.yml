@@ -248,7 +248,7 @@ jobs:
               'git', 'show', f'{reviewed_commit}:{reviewed_path}'
           ]).decode('utf-8').splitlines()[17]
           token = re.fullmatch(
-              r"const ACCESS = '([A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+)';",
+              r"const ACCESS = '([A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)';",
               line,
           )
           if (
