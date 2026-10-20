@@ -219,6 +219,16 @@ jobs:
               < backend/postgres/migrations/013_producer_host_confirmation_provenance.sql \
               > "artifacts/integration/producer-bridge-provenance-migration-$n.log"
           done
+          # Migration 014 is deliberately applied only AFTER legacy 011/012
+          # issuer qualification, and BEFORE all signed real-host bridge writes.
+          # Both passes must succeed; no live database is touched.
+          for n in 1 2; do
+            docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+              psql --no-psqlrc --set ON_ERROR_STOP=1 --username matchdesk \
+              --dbname matchdesk \
+              < backend/postgres/migrations/014_producer_terminal_revocation_serialization.sql \
+              > "artifacts/integration/producer-serialization-migration-$n.log"
+          done
           bridge_stager_password="$(openssl rand -hex 32)"
           bridge_issuer_password="$(openssl rand -hex 32)"
           bridge_writer_password="$(openssl rand -hex 32)"
@@ -239,6 +249,16 @@ jobs:
             -e "BRIDGE_READER_CI_PASSWORD=$bridge_provenance_password" api \
             /app/.venv/bin/python - < e2e/producer-atomic-bridge-psycopg.py \
             2>&1 | tee artifacts/integration/producer-atomic-bridge-psycopg.log
+          # Real independent issuer and terminal-writer transactions prove
+          # BOTH serialization orders and authoritative grant readback.
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "COMPOSE_PROJECT_NAME=$COMPOSE_PROJECT_NAME" \
+            -e "PGPASSWORD=$POSTGRES_PASSWORD" \
+            -e "ISSUER_CI_PASSWORD=$bridge_issuer_password" api \
+            /app/.venv/bin/python - < e2e/producer-terminal-issuance-races-psycopg.py \
+            2>&1 | tee artifacts/integration/producer-terminal-issuance-races.log
+          grep -Fx "MATCHDESK_P4_TERMINAL_ISSUANCE_SERIALIZED_PASS: terminal-first denies, issuance-first revokes unspent grant" \
+            artifacts/integration/producer-terminal-issuance-races.log
       - name: Verify restricted real-Psycopg producer transactions and recovery
         id: psycopg_storage
         if: ${{ !cancelled() && steps.producer_bridge_psycopg.outcome == 'success' && steps.producer_storage.outcome == 'success' }}
