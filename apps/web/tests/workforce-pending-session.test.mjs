@@ -164,6 +164,11 @@ test("wrong key size and unapproved tenant or scope cannot instantiate the vault
     { apiResourceAppId: "not-a-guid" },
     { clientId: "not-a-guid" },
     { delegatedApiScope: "api://another/MatchDesk.Producer.Access" },
+    { publicOrigin: "http://operator.example.test" },
+    { publicOrigin: "https://operator.example.test.evil.invalid" },
+    { publicOrigin: "https://operator.example.test/path" },
+    { publicOrigin: "https://operator.example.test?redirect=evil" },
+    { publicOrigin: "https://user:pass@operator.example.test" },
   ]) {
     assert.throws(() => vault(new FakeSql(), KEY, { ...POLICY, ...change }),
       /approved host dependencies/);
