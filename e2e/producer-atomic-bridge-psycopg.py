@@ -12,7 +12,9 @@ import json
 import os
 import re
 import secrets
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
+from threading import Barrier
 
 import jwt
 import psycopg
@@ -345,11 +347,36 @@ def main():
                     "REVOKE EXECUTE ON FUNCTION " + _ISSUE_SIG + " FROM " + STAGER
                 )
 
-    for (action, generation), case in cases.items():
+    for action, generation in (("create", 0), ("reverify", 1)):
         assert bridge.execute(
-            access_token=valid, case=case,
+            access_token=valid, case=cases[(action, generation)],
             action=action, expected_generation=generation,
         ) is True
+
+    # Two physically independent staged-issuer-writer attempts contend for
+    # the SAME signed approval confirmation and proposed case generation.
+    # One and only one may consume it; the loser cannot append another audit.
+    start = Barrier(2)
+
+    def competing_approval(_index):
+        """Race one caller against the same immutable signed approval."""
+        start.wait(timeout=15)
+        return bridge.execute(
+            access_token=valid, case=cases[("approve", 2)],
+            action="approve", expected_generation=2,
+        )
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        contenders = [executor.submit(competing_approval, index) for index in (0, 1)]
+        receipts = [future.result(timeout=35) for future in contenders]
+    assert sorted(receipts) == [False, True], receipts
+
+    # The already-consumed confirmation must still reject an entirely new
+    # host-created attempt: no idempotency confusion or second approval.
+    assert bridge.execute(
+        access_token=valid, case=cases[("approve", 2)],
+        action="approve", expected_generation=2,
+    ) is False
     assert bridge.execute(
         access_token=valid, case=create, action="create", expected_generation=0
     ) is False
@@ -366,7 +393,8 @@ def main():
     reconcile(cases[("approve", 2)], ids)
     print(
         "MATCHDESK_P4_REAL_BRIDGE_PASS: separate SCRAM roles, signed synthetic "
-        "JWT/confirmation, three durable generations, replay/CA/drift denied"
+        "JWT/confirmation, three durable generations, one-winner approve race, "
+        "replay/CA/drift denied"
     )
 
 
