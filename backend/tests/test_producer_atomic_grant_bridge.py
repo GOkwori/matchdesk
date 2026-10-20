@@ -1,5 +1,6 @@
 """Fail-closed unmounted bridge orchestration with no live identity or DB."""
 
+import hashlib
 from contextlib import contextmanager
 from dataclasses import replace
 from datetime import datetime, timezone
@@ -10,6 +11,7 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from matchdesk.domain.postgres_producer_grant_writer import PostgresProducerGrantWriter
 from matchdesk.domain.producer_atomic_grant_bridge import ProducerAtomicGrantBridge
 from matchdesk.domain.producer_commands import HostVerifiedActor, open_producer_case
+from matchdesk.domain.producer_confirmation_provenance import HostConfirmationRecord
 from matchdesk.domain.producer_grant_preflight import ProducerGrantPreflight
 from matchdesk.domain.producer_identity import ProducerIdentityPolicy
 from matchdesk.domain.producer_policy_assurance import ProducerPolicyEvidence
@@ -124,6 +126,43 @@ class PolicyAssurance:
         )
 
 
+class Provenance:
+    """Synthetic, host-owned independent confirmation event for CI only."""
+
+    def __init__(self, preflight, envelope):
+        """Match one signed preflight with a separately scoped event."""
+        self.preflight = preflight
+        self.envelope = envelope
+        self.allowed = True
+        self.calls = 0
+
+    def read_verified_confirmation(self, *, confirmation_id, tenant_id):
+        """Return the exact synthetic event only for the expected scope."""
+        self.calls += 1
+        if not self.allowed:
+            return None
+        p = self.preflight
+        now = int(datetime.now(timezone.utc).timestamp())
+        return HostConfirmationRecord(
+            confirmation_id=p.confirmation_id,
+            tenant_id=p.tenant_id,
+            actor_id=p.actor_id,
+            token_issuer=p.token_issuer,
+            session_id=p.session_id,
+            output_id=p.output_id,
+            action=p.action,
+            expected_generation=p.expected_generation,
+            authorized_case_sha256=p.authorized_case_sha256,
+            authorized_audit_digest=p.authorized_audit_digest,
+            signed_envelope_sha256=hashlib.sha256(self.envelope.encode()).hexdigest(),
+            event_id="e" * 32,
+            event_channel="workforce_authenticated_custom_dialog",
+            state="confirmed",
+            confirmed_at_seconds=now - 2,
+            recorded_at_seconds=now - 1,
+        )
+
+
 def fixture(
     monkeypatch,
     *,
@@ -189,6 +228,7 @@ def fixture(
         entitlements=Resolver(),
         policy_assurance=PolicyAssurance(),
         confirmations=confirmation_source,
+        provenance=Provenance(fake_preflight, confirmation or "signed-fixture"),
         confirmation_public_key=Ed25519PrivateKey.generate().public_key(),
         case_hash=Digest(),
         stager_connections=stager,
@@ -374,4 +414,26 @@ def test_host_entitlement_changed_during_confirmation_denies_before_sql(monkeypa
             access_token="signed-test-jwt", case=case, action="create", expected_generation=0
         )
     assert len(checks) == 2 and confirmation.calls == 1
+    assert not stager.queries and not issuer.queries and not writes
+
+def test_absent_host_confirmation_provenance_denies_before_grant(monkeypatch):
+    """A synthetic signed envelope alone cannot provide execution authority."""
+    handler, case, stager, issuer, writes, confirmations = fixture(monkeypatch)
+    handler._provenance.allowed = False
+    with pytest.raises(PermissionError, match="Producer execution denied"):
+        handler.execute(
+            access_token="signed-test-jwt", case=case, action="create", expected_generation=0
+        )
+    assert confirmations.calls == 1 and handler._provenance.calls == 1
+    assert not stager.queries and not issuer.queries and not writes
+
+
+def test_confirmation_provenance_cannot_be_replayed_with_changed_envelope(monkeypatch):
+    """No event correlation means even a preflight-valid changed blob is denied."""
+    handler, case, stager, issuer, writes, _ = fixture(monkeypatch)
+    handler._provenance.envelope = "different-approval"
+    with pytest.raises(PermissionError, match="Producer execution denied"):
+        handler.execute(
+            access_token="signed-test-jwt", case=case, action="create", expected_generation=0
+        )
     assert not stager.queries and not issuer.queries and not writes

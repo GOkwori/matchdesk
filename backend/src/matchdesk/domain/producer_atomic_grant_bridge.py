@@ -22,6 +22,10 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from matchdesk.domain.postgres_producer_grant_writer import PostgresProducerGrantWriter
 from matchdesk.domain.postgres_producer_store import DbConnection
 from matchdesk.domain.producer_commands import HostVerifiedActor, ProducerCase, _authorize
+from matchdesk.domain.producer_confirmation_provenance import (
+    HostConfirmationRecordReader,
+    qualify_host_confirmation_record,
+)
 from matchdesk.domain.producer_grant_preflight import (
     CaseDigestResolver,
     GrantAction,
@@ -161,6 +165,7 @@ class ProducerAtomicGrantBridge:
         entitlements: EntitlementResolver,
         policy_assurance: ProducerPolicyAssuranceProvider,
         confirmations: ConfirmedIntentSource,
+        provenance: HostConfirmationRecordReader,
         confirmation_public_key: Ed25519PublicKey,
         case_hash: CaseDigestResolver,
         stager_connections: Callable[[], DbConnection],
@@ -182,6 +187,7 @@ class ProducerAtomicGrantBridge:
             or not callable(getattr(entitlements, "resolve", None))
             or not callable(getattr(policy_assurance, "assess", None))
             or not callable(getattr(confirmations, "resolve_signed_confirmation", None))
+            or not callable(getattr(provenance, "read_verified_confirmation", None))
             or not callable(getattr(case_hash, "digest_case_jsonb", None))
             or not callable(stager_connections)
             or not callable(issuer_connections)
@@ -194,6 +200,7 @@ class ProducerAtomicGrantBridge:
         self._entitlements = entitlements
         self._policy_assurance = policy_assurance
         self._confirmations = confirmations
+        self._provenance = provenance
         self._confirmation_public_key = confirmation_public_key
         self._case_hash = case_hash
         self._stager_connections = stager_connections
@@ -358,6 +365,15 @@ class ProducerAtomicGrantBridge:
                 or preflight.expected_generation != expected_generation
             ):
                 raise PermissionError("Confirmation scope differs from verified actor")
+            # A valid signature alone cannot prove an authenticated human
+            # interaction. Independently read exact, durable host provenance
+            # before any staging connection is opened.
+            qualify_host_confirmation_record(
+                reader=self._provenance,
+                preflight=preflight,
+                signed_confirmation=signed,
+                now=datetime.now(timezone.utc),
+            )
             # The trusted confirmation lookup and canonical JSONB hashing can
             # outlive the earlier policy assessment. Revalidate identity,
             # current host entitlements, Entra CA assurance and the signed

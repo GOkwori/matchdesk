@@ -28,6 +28,7 @@ from matchdesk.domain.producer_atomic_grant_bridge import (
     ProducerAtomicGrantBridge,
     _ISSUE_SIG,
 )
+from matchdesk.domain.producer_confirmation_provenance import HostConfirmationRecord
 from matchdesk.domain.producer_commands import (
     HostVerifiedActor,
     apply_producer_command,
@@ -116,6 +117,43 @@ class Digest:
     def digest_case_jsonb(self, case_json):
         """Deny unknown JSON rather than replacing canonical hashing."""
         return self.records[case_json]
+
+
+class Provenance:
+    """CI-only read-only event fixture; not a live human confirmation store."""
+
+    def __init__(self, signed):
+        """Bind each signed fixture to one independent event identifier."""
+        self.signed = signed
+        self.allowed = True
+
+    def read_verified_confirmation(self, *, confirmation_id, tenant_id):
+        """Return an exact, fresh confirmation record with revoked-event denial."""
+        if not self.allowed:
+            return None
+        for (action, generation), (_, envelope) in self.signed.items():
+            claims = json.loads(envelope)["claims"]
+            if claims["confirmation_id"] == confirmation_id and claims["tenant_id"] == tenant_id:
+                now = int(datetime.now(timezone.utc).timestamp())
+                return HostConfirmationRecord(
+                    confirmation_id=confirmation_id,
+                    tenant_id=tenant_id,
+                    actor_id=claims["actor_id"],
+                    token_issuer=claims["token_issuer"],
+                    session_id=claims["session_id"],
+                    output_id=claims["output_id"],
+                    action=action,
+                    expected_generation=generation,
+                    authorized_case_sha256=claims["authorized_case_sha256"],
+                    authorized_audit_digest=claims["authorized_audit_digest"],
+                    signed_envelope_sha256=hashlib.sha256(envelope.encode()).hexdigest(),
+                    event_id=hashlib.md5(confirmation_id.encode(), usedforsecurity=False).hexdigest(),
+                    event_channel="workforce_authenticated_custom_dialog",
+                    state="confirmed",
+                    confirmed_at_seconds=now - 2,
+                    recorded_at_seconds=now - 1,
+                )
+        return None
 
 
 class Confirmations:
@@ -352,6 +390,7 @@ def main():
         keys=keys, entitlements=entitlements,
         policy_assurance=assurance,
         confirmations=confirmations,
+        provenance=Provenance(envelopes),
         confirmation_public_key=signer.public_key(),
         case_hash=Digest(hashes),
         stager_connections=physical(STAGER),
