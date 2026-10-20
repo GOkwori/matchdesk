@@ -2,7 +2,8 @@
 -- Only a separately trusted issuer may insert grants or revoke them.
 -- A restricted writer may EXECUTE a fixed SECURITY DEFINER function only,
 -- never read or mutate the grant table or control revocation.
-CREATE TABLE IF NOT EXISTS matchdesk_producer_execution_grants (
+BEGIN;
+CREATE TABLE IF NOT EXISTS public.matchdesk_producer_execution_grants (
     grant_id uuid PRIMARY KEY,
     tenant_id text NOT NULL CHECK (length(btrim(tenant_id)) BETWEEN 1 AND 96),
     actor_subject text NOT NULL CHECK (length(btrim(actor_subject)) BETWEEN 1 AND 128),
@@ -23,7 +24,13 @@ CREATE TABLE IF NOT EXISTS matchdesk_producer_execution_grants (
 -- Never expose grant rows to the ordinary case writer.
 REVOKE ALL ON public.matchdesk_producer_execution_grants FROM PUBLIC;
 
-CREATE OR REPLACE FUNCTION public.matchdesk_consume_producer_execution_grant(
+-- CREATE OR REPLACE preserves existing per-role EXECUTE grants on reapplication.
+-- Re-create the exact function in the SAME transaction to invalidate every
+-- obsolete invoker grant. Dependencies must stop migration, not be cascaded.
+DROP FUNCTION IF EXISTS public.matchdesk_consume_producer_execution_grant(
+    uuid, text, text, text, text, text, text, bigint, text
+);
+CREATE FUNCTION public.matchdesk_consume_producer_execution_grant(
     p_id uuid, p_tenant text, p_actor text, p_issuer text, p_action text,
     p_session text, p_output text, p_generation bigint, p_binding text
 ) RETURNS boolean
@@ -53,3 +60,4 @@ $mdgrant$;
 REVOKE ALL ON FUNCTION public.matchdesk_consume_producer_execution_grant(
     uuid, text, text, text, text, text, text, bigint, text
 ) FROM PUBLIC;
+COMMIT;

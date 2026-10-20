@@ -160,9 +160,21 @@ function grantState(id) {
 }
 
 try {
-  await check('install the least-privilege grant schema twice in disposable PostgreSQL', () => {
+  await check('reapply grant migration without inheriting stale function EXECUTE rights', () => {
     sql(migration);
     sql(migration);
+    // Simulate a stale role-specific grant left by a previous DEV build.
+    // CREATE OR REPLACE FUNCTION would preserve it even after PUBLIC revoke.
+    const staleRole = 'matchdesk_grant_stale_ci';
+    sql('CREATE ROLE ' + staleRole + ' NOLOGIN;\n' +
+      'GRANT EXECUTE ON FUNCTION ' + signature + ' TO ' + staleRole + ';');
+    assert.equal(sql(
+      "SELECT has_function_privilege('" + staleRole + "','" + signature + "','EXECUTE');"
+    ), 't');
+    sql(migration);
+    assert.equal(sql(
+      "SELECT has_function_privilege('" + staleRole + "','" + signature + "','EXECUTE');"
+    ), 'f', 'A reinstalled SECURITY DEFINER must not keep old invokers');
     sql([
       'CREATE ROLE matchdesk_grant_ci NOLOGIN;',
       'GRANT USAGE ON SCHEMA public TO matchdesk_grant_ci;',
