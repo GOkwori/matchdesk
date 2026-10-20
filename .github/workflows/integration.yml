@@ -229,6 +229,15 @@ jobs:
               < backend/postgres/migrations/014_producer_terminal_revocation_serialization.sql \
               > "artifacts/integration/producer-serialization-migration-$n.log"
           done
+          # The issuer SECURITY DEFINER owner is a NOLOGIN role with fixed
+          # minimum table ACLs. Reading the authoritative event/terminal
+          # state is required for SQL-serialized issuance; do not grant these
+          # to the physical issuer LOGIN, writer, stager or PUBLIC.
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+            psql --no-psqlrc --set ON_ERROR_STOP=1 --username matchdesk \
+            --dbname matchdesk \
+            -c "GRANT SELECT ON public.matchdesk_producer_host_confirmation_events, public.matchdesk_producer_host_confirmation_terminals TO matchdesk_issuer_definer_ci" \
+            > artifacts/integration/producer-serialization-definer-acl.log
           bridge_stager_password="$(openssl rand -hex 32)"
           bridge_issuer_password="$(openssl rand -hex 32)"
           bridge_writer_password="$(openssl rand -hex 32)"
