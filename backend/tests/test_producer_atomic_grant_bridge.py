@@ -81,6 +81,7 @@ class Confirmation:
 
 class Resolver:
     """Fake trust dependency; no real keys or grants are provisioned."""
+
     def resolve(self, **_kwargs):
         """Remain inert because verifier calls are patched in the tests."""
         return None
@@ -88,6 +89,7 @@ class Resolver:
 
 class Digest:
     """Provide deterministic test-only case digests."""
+
     def digest_case_jsonb(self, _case_json):
         """Return a stand-in for canonical PostgreSQL hashing."""
         return "a" * 64

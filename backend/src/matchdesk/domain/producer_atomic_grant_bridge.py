@@ -25,7 +25,6 @@ from matchdesk.domain.producer_commands import HostVerifiedActor, ProducerCase, 
 from matchdesk.domain.producer_grant_preflight import (
     CaseDigestResolver,
     GrantAction,
-    GrantPreflightDenied,
     qualify_producer_grant_preflight,
 )
 from matchdesk.domain.producer_identity import (
