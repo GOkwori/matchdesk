@@ -8,7 +8,7 @@ this factory does not enable live Entra, production access or publication.
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Literal, cast
 
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
@@ -94,6 +94,17 @@ def create_atomic_producer_router(
         command = await _body(request, kind)
         if command is None:
             return _response("Invalid producer command request", 400)
+        # Narrow validated client intent models; only the bridge grants authority.
+        if action == "create":
+            if not isinstance(command, CreateProducerRequest):
+                return _response("Invalid producer command request", 400)
+            create_command = command
+        else:
+            if not isinstance(command, (ProducerDecisionRequest, ReverificationRequest)):
+                return _response("Invalid producer command request", 400)
+            decision_command = cast(
+                ProducerDecisionRequest | ReverificationRequest, command
+            )
 
         try:
             if action == "create":
@@ -111,7 +122,7 @@ def create_atomic_producer_router(
                     or case.generation != 1
                     or case.review.status != "pending_verification"
                     or case.review.audit[0].actor_id != actor.subject
-                    or case.output.binding != command.binding
+                    or case.output.binding != create_command.binding
                 ):
                     return _response("Producer source or binding changed", 409)
                 _validate_case(case)
@@ -126,20 +137,22 @@ def create_atomic_producer_router(
                     output_id=output_id,
                 )
                 if (
-                    case.generation != command.expected_generation
-                    or case.output.binding != command.binding
+                    case.generation != decision_command.expected_generation
+                    or case.output.binding != decision_command.binding
                 ):
                     return _response("Producer case changed; reload", 409)
-                expected_generation = command.expected_generation
+                expected_generation = decision_command.expected_generation
                 next_case = await run_in_threadpool(
                     apply_producer_command,
                     case,
                     actor=actor,
                     expected_generation=expected_generation,
                     command=action,
-                    reason=command.reason,
+                    reason=decision_command.reason,
                     revised_output=(
-                        command.revised_output if isinstance(command, ProducerEditRequest) else None
+                        decision_command.revised_output
+                        if isinstance(decision_command, ProducerEditRequest)
+                        else None
                     ),
                 )
         except (PermissionError, LookupError):
@@ -183,26 +196,36 @@ def create_atomic_producer_router(
     @router.post("/sessions/{session_id}/cases/{output_id}/create")
     async def create(session_id: str, output_id: str, request: Request) -> JSONResponse:
         """Create a source-bound unapproved case only through a signed atomic grant."""
-        return await execute(action="create", session_id=session_id, output_id=output_id, request=request)
+        return await execute(
+            action="create", session_id=session_id, output_id=output_id, request=request
+        )
 
     @router.post("/sessions/{session_id}/cases/{output_id}/edit")
     async def edit(session_id: str, output_id: str, request: Request) -> JSONResponse:
         """Edit one precise version and invalidate prior decision state."""
-        return await execute(action="edit", session_id=session_id, output_id=output_id, request=request)
+        return await execute(
+            action="edit", session_id=session_id, output_id=output_id, request=request
+        )
 
     @router.post("/sessions/{session_id}/cases/{output_id}/reverify")
     async def reverify(session_id: str, output_id: str, request: Request) -> JSONResponse:
         """Reverify evidence without granting publication."""
-        return await execute(action="reverify", session_id=session_id, output_id=output_id, request=request)
+        return await execute(
+            action="reverify", session_id=session_id, output_id=output_id, request=request
+        )
 
     @router.post("/sessions/{session_id}/cases/{output_id}/approve")
     async def approve(session_id: str, output_id: str, request: Request) -> JSONResponse:
         """Approve only a reverified generation under a signed one-use grant."""
-        return await execute(action="approve", session_id=session_id, output_id=output_id, request=request)
+        return await execute(
+            action="approve", session_id=session_id, output_id=output_id, request=request
+        )
 
     @router.post("/sessions/{session_id}/cases/{output_id}/reject")
     async def reject(session_id: str, output_id: str, request: Request) -> JSONResponse:
         """Reject an exact-generation case without publishing anything."""
-        return await execute(action="reject", session_id=session_id, output_id=output_id, request=request)
+        return await execute(
+            action="reject", session_id=session_id, output_id=output_id, request=request
+        )
 
     return router

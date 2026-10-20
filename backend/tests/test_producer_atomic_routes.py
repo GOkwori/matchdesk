@@ -9,13 +9,11 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 from fastapi.testclient import TestClient
-
 from matchdesk.api.app import create_app
 from matchdesk.api.producer_atomic_routes import create_atomic_producer_router
 from matchdesk.domain.producer_atomic_grant_bridge import ProducerAtomicGrantBridge
 from matchdesk.domain.producer_commands import (
     HostVerifiedActor,
-    apply_producer_command,
     open_producer_case,
 )
 from matchdesk.domain.producer_preview import build_producer_desk_preview
@@ -66,10 +64,10 @@ def fixture(monkeypatch):
 
         def load(self, tenant_id, session_id, output_id):
             """Read only an exact scoped case after successful prior commit."""
-            if self.case is not None and (
-                tenant_id, session_id, output_id
-            ) == (
-                self.case.tenant_id, self.case.output.session_id, self.case.output.output_id
+            if self.case is not None and (tenant_id, session_id, output_id) == (
+                self.case.tenant_id,
+                self.case.output.session_id,
+                self.case.output.output_id,
             ):
                 return self.case
             return None
@@ -160,7 +158,8 @@ def test_atomic_create_then_reverify_has_no_publish_or_legacy_fallback(monkeypat
     """Only the host-held signed bridge receives a case, never the browser."""
     client, first, reader, writes, auths = fixture(monkeypatch)
     create = client.post(
-        BASE + "/create", headers=HEADERS,
+        BASE + "/create",
+        headers=HEADERS,
         json={"binding": first.output.binding.model_dump(mode="json")},
     )
     assert create.status_code == 201
@@ -223,7 +222,8 @@ def test_atomic_http_rejects_ambiguous_grant_outcome(monkeypatch):
 
     monkeypatch.setattr(ProducerAtomicGrantBridge, "execute", failed)
     result = client.post(
-        BASE + "/create", headers=HEADERS,
+        BASE + "/create",
+        headers=HEADERS,
         json={"binding": first.output.binding.model_dump(mode="json")},
     )
     assert result.status_code == 503
