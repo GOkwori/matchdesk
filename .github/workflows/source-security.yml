@@ -286,7 +286,7 @@ jobs:
           # A 19-character ASCII segment cannot be a real RSA signature; this
           # one-claim test literal is neither a valid Entra token nor authority.
           if (
-              header != {'alg': 'RS256'}
+              header != {'alg': 'RS256', 'typ': 'JWT'}
               or set(claims) != {'sub'}
               or not isinstance(claims['sub'], str)
               or len(claims['sub']) != 1
@@ -299,7 +299,7 @@ jobs:
           entries = ignore.read_text().splitlines()
           if len(entries) != 28 or fingerprint in entries or len(set(entries)) != 28:
               raise SystemExit('Reviewed scanner exception scope is unexpected')
-          ignore.write_text('\\n'.join([*entries, fingerprint]) + '\\n')
+          ignore.write_text('\n'.join([*entries, fingerprint]) + '\n')
           classified = Path('artifacts/secrets/classification.json')
           record = json.loads(classified.read_text())
           record['exact_fingerprint_count'] = len(entries) + 1
@@ -308,7 +308,7 @@ jobs:
               'classification': 'NONWORKING_SYNTHETIC_JWT',
               'proof': 'Only one subject claim; short mock signature cannot verify under RS256',
           }
-          classified.write_text(json.dumps(record, indent=2) + '\\n')
+          classified.write_text(json.dumps(record, indent=2) + '\n')
           print('Verified one immutable inert JWT fixture; exact fingerprint only.')
           PY
       - name: Confirm the scanner still detects a new synthetic key with the same exceptions
