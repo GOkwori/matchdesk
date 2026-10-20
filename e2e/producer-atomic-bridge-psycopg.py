@@ -34,6 +34,7 @@ from matchdesk.domain.producer_commands import (
     open_producer_case,
 )
 from matchdesk.domain.producer_identity import ProducerIdentityPolicy, StaticTrustedKeys
+from matchdesk.domain.producer_policy_assurance import ProducerPolicyEvidence
 from matchdesk.domain.producer_preview import build_producer_desk_preview
 
 TENANT = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
@@ -76,6 +77,33 @@ class Entitlements:
         if self.allowed and (tenant_id, subject) == (TENANT, ACTOR):
             return frozenset({"producer"}), frozenset({"demo-preview-only"})
         return None
+
+
+class PolicyAssurance:
+    """Synthetic CI policy proof, never an authoritative Entra CA query."""
+
+    def __init__(self):
+        """Initialize an explicitly revocable CI-only assurance fixture."""
+        self.allowed = True
+        self.calls = 0
+
+    def assess(self, *, tenant_id, subject, session_id, context_id, client_ids):
+        """Generate scope-bound policy evidence for the offline CI actor only."""
+        self.calls += 1
+        if not self.allowed or (tenant_id, subject) != (TENANT, ACTOR):
+            return None
+        return ProducerPolicyEvidence(
+            tenant_id=tenant_id,
+            subject=subject,
+            session_id=session_id,
+            context_id=context_id,
+            client_ids=client_ids,
+            policy_id="11111111-2222-3333-4444-555555555555",
+            control="multifactor",
+            enforced=True,
+            actor_included=True,
+            verified_at_seconds=int(datetime.now(timezone.utc).timestamp()),
+        )
 
 
 class Digest:
@@ -304,6 +332,7 @@ def main():
                 )
     hashes, envelopes, ids = signed_intents(cases, signer)
     entitlements = Entitlements()
+    assurance = PolicyAssurance()
     confirmations = Confirmations(envelopes)
 
     def physical(role):
@@ -321,6 +350,7 @@ def main():
             required_auth_context="c1", max_token_age_seconds=300,
         ),
         keys=keys, entitlements=entitlements,
+        policy_assurance=assurance,
         confirmations=confirmations,
         confirmation_public_key=signer.public_key(),
         case_hash=Digest(hashes),
@@ -341,6 +371,18 @@ def main():
     else:
         raise AssertionError("Missing Entra authentication context was accepted")
     assert confirmations.calls == 0
+
+    assurance.allowed = False
+    try:
+        bridge.execute(
+            access_token=valid, case=create, action="create", expected_generation=0
+        )
+    except PermissionError:
+        pass
+    else:
+        raise AssertionError("Unenforced host CA policy was allowed")
+    assert confirmations.calls == 0
+    assurance.allowed = True
 
     # Before staging, make the physical stager incorrectly inherit issuer
     # execution. The bridge MUST reject role drift; restore immediately.

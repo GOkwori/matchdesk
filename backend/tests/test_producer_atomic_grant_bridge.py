@@ -11,6 +11,7 @@ from matchdesk.domain.producer_atomic_grant_bridge import ProducerAtomicGrantBri
 from matchdesk.domain.producer_commands import HostVerifiedActor, open_producer_case
 from matchdesk.domain.producer_grant_preflight import ProducerGrantPreflight
 from matchdesk.domain.producer_identity import ProducerIdentityPolicy
+from matchdesk.domain.producer_policy_assurance import ProducerPolicyEvidence
 from matchdesk.domain.producer_preview import build_producer_desk_preview
 
 TENANT = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
@@ -95,6 +96,33 @@ class Digest:
         return "a" * 64
 
 
+class PolicyAssurance:
+    """Only CI-synthetic independent policy evidence, not actual Entra CA."""
+
+    def __init__(self):
+        """Start with a fixture representing enforced operator coverage."""
+        self.allowed = True
+        self.calls = 0
+
+    def assess(self, *, tenant_id, subject, session_id, context_id, client_ids):
+        """Bind evidence to every exact host-supplied identity context."""
+        self.calls += 1
+        if not self.allowed:
+            return None
+        return ProducerPolicyEvidence(
+            tenant_id=tenant_id,
+            subject=subject,
+            session_id=session_id,
+            context_id=context_id,
+            client_ids=client_ids,
+            policy_id="11111111-2222-3333-4444-555555555555",
+            control="multifactor",
+            enforced=True,
+            actor_included=True,
+            verified_at_seconds=int(datetime.now(timezone.utc).timestamp()),
+        )
+
+
 def fixture(
     monkeypatch,
     *,
@@ -158,6 +186,7 @@ def fixture(
         policy=policy,
         keys=Resolver(),
         entitlements=Resolver(),
+        policy_assurance=PolicyAssurance(),
         confirmations=confirmation_source,
         confirmation_public_key=Ed25519PrivateKey.generate().public_key(),
         case_hash=Digest(),
@@ -266,4 +295,39 @@ def test_no_preflight_without_delegated_access_token(monkeypatch):
     with pytest.raises(PermissionError):
         handler.execute(access_token="", case=case, action="create", expected_generation=0)
     assert confirmation.calls == 0
+    assert not stager.queries and not issuer.queries and not writes
+
+def test_no_independent_policy_assurance_denies_before_confirmation_and_sql(monkeypatch):
+    """A signed acrs token is insufficient without independently enforced CA."""
+    handler, case, stager, issuer, writes, confirmations = fixture(monkeypatch)
+    handler._policy_assurance.allowed = False
+    with pytest.raises(PermissionError, match="Producer execution denied"):
+        handler.execute(
+            access_token="signed-test-jwt", case=case, action="create", expected_generation=0
+        )
+    assert confirmations.calls == 0
+    assert not stager.queries and not issuer.queries and not writes
+
+
+def test_http_identity_requires_separate_policy_assurance(monkeypatch):
+    """The host's identity lookup cannot bypass current Entra policy evidence."""
+    handler, _, _, _, _, _ = fixture(monkeypatch)
+    handler._policy_assurance.allowed = False
+    with pytest.raises(PermissionError, match="Producer identity denied"):
+        handler.authenticate(access_token="signed-test-jwt", session_id="demo-preview-only")
+
+
+def test_policy_assurance_is_rechecked_immediately_before_grant_staging(monkeypatch):
+    """Revoked host policy coverage after authentication denies the write."""
+    handler, case, stager, issuer, writes, confirmations = fixture(monkeypatch)
+    actor = handler.authenticate(
+        access_token="signed-test-jwt", session_id="demo-preview-only"
+    )
+    assert actor.subject == "ci-producer"
+    handler._policy_assurance.allowed = False
+    with pytest.raises(PermissionError, match="Producer execution denied"):
+        handler.execute(
+            access_token="signed-test-jwt", case=case, action="create", expected_generation=0
+        )
+    assert confirmations.calls == 0
     assert not stager.queries and not issuer.queries and not writes

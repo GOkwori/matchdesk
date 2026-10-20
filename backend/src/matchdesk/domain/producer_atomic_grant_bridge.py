@@ -33,6 +33,10 @@ from matchdesk.domain.producer_identity import (
     TrustedKeyResolver,
     verify_producer_access_token,
 )
+from matchdesk.domain.producer_policy_assurance import (
+    ProducerPolicyAssuranceProvider,
+    qualify_producer_policy_assurance,
+)
 
 _ROLE = re.compile(r"matchdesk_[a-z][a-z0-9_]{0,54}\Z")
 _STAGE_SIG = (
@@ -155,6 +159,7 @@ class ProducerAtomicGrantBridge:
         policy: ProducerIdentityPolicy,
         keys: TrustedKeyResolver,
         entitlements: EntitlementResolver,
+        policy_assurance: ProducerPolicyAssuranceProvider,
         confirmations: ConfirmedIntentSource,
         confirmation_public_key: Ed25519PublicKey,
         case_hash: CaseDigestResolver,
@@ -175,6 +180,7 @@ class ProducerAtomicGrantBridge:
             or stager_role == issuer_role
             or not callable(getattr(keys, "resolve", None))
             or not callable(getattr(entitlements, "resolve", None))
+            or not callable(getattr(policy_assurance, "assess", None))
             or not callable(getattr(confirmations, "resolve_signed_confirmation", None))
             or not callable(getattr(case_hash, "digest_case_jsonb", None))
             or not callable(stager_connections)
@@ -186,6 +192,7 @@ class ProducerAtomicGrantBridge:
         self._policy = policy
         self._keys = keys
         self._entitlements = entitlements
+        self._policy_assurance = policy_assurance
         self._confirmations = confirmations
         self._confirmation_public_key = confirmation_public_key
         self._case_hash = case_hash
@@ -224,6 +231,15 @@ class ProducerAtomicGrantBridge:
             ):
                 raise PermissionError("Producer actor failed tenant or issuer trust")
             _authorize(actor, actor.tenant_id, session_id)
+            qualify_producer_policy_assurance(
+                provider=self._policy_assurance,
+                tenant_id=actor.tenant_id,
+                subject=actor.subject,
+                session_id=session_id,
+                context_id=self._policy.required_auth_context,
+                client_ids=self._policy.client_ids,
+                now=datetime.now(timezone.utc),
+            )
             return actor
         except (PermissionError, ValueError, LookupError, TypeError):
             raise PermissionError("Producer identity denied") from None
@@ -296,6 +312,15 @@ class ProducerAtomicGrantBridge:
             if type(actor) is not HostVerifiedActor:
                 raise PermissionError("Host actor is not independently verified")
             _authorize(actor, case.tenant_id, case.output.session_id)
+            qualify_producer_policy_assurance(
+                provider=self._policy_assurance,
+                tenant_id=actor.tenant_id,
+                subject=actor.subject,
+                session_id=case.output.session_id,
+                context_id=self._policy.required_auth_context,
+                client_ids=self._policy.client_ids,
+                now=now,
+            )
             signed = self._confirmations.resolve_signed_confirmation(
                 actor=actor,
                 case=case,
