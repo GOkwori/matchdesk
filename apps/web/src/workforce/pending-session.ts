@@ -51,6 +51,19 @@ export class PostgresPendingWorkforceSessions implements WorkforceSessionResolve
           "api://" + policy.apiResourceAppId + "/MatchDesk.Producer.Access") {
       throw new Error("Workforce session vault requires approved host dependencies");
     }
+    // The pending vault must independently enforce the canonical HTTPS origin.
+    // Do not rely on an upstream OIDC adapter to validate host configuration.
+    let origin: URL;
+    try {
+      origin = new URL(policy.publicOrigin);
+    } catch {
+      throw new Error("Workforce session vault requires approved host dependencies");
+    }
+    if (origin.protocol !== "https:" || origin.origin !== policy.publicOrigin ||
+        origin.pathname !== "/" || origin.search !== "" || origin.hash !== "" ||
+        origin.username !== "" || origin.password !== "") {
+      throw new Error("Workforce session vault requires approved host dependencies");
+    }
     this.sql = sql;
     this.policy = policy;
     this.key = Buffer.from(encryptionKey);
