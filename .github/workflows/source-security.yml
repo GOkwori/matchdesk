@@ -222,19 +222,58 @@ jobs:
               raise SystemExit('17 October OpenAPI finding is not the reviewed file digest')
           fingerprints.append(entry['fingerprint'])
 
-          if len(fingerprints) != 28 or len(set(fingerprints)) != 28:
+          # 19 Oct 2026: Gitleaks correctly flagged one JWT-shaped string in
+          # offline BFF tests. That literal was deliberately written as a fake
+          # signature with a synthetic subject; review only the exact historical
+          # commit/path/line, never a rule-wide or filename-wide exemption.
+          synthetic = json.loads(Path(
+              'docs/evidence/secret-scan-reviewed-synthetic-20261019.json'
+          ).read_text())
+          if len(synthetic) != 1:
+              raise SystemExit('Unexpected synthetic fixture review scope')
+          entry = synthetic[0]
+          expected = (
+              '6f96c2cb7e6fb8e1bec378a9e137d7da32cc12c1:'
+              'apps/web/tests/workforce-bff.test.mjs:generic-api-key:18'
+          )
+          if (entry.get('fingerprint') != expected
+                  or entry.get('classification') != 'SYNTHETIC_NON_WORKING_JWT_TEST_FIXTURE'
+                  or entry.get('sha256_line_utf8') !=
+                  'f572ea66a35b1aaadd7e69cd7d6a02c104860924ffc44c0737120f3c22adae57'):
+              raise SystemExit('Synthetic JWT fixture fingerprint or digest changed')
+          commit, path, rule, number = expected.split(':')
+          line = subprocess.check_output([
+              'git', 'show', f'{commit}:{path}'
+          ]).decode('utf-8').splitlines()[int(number) - 1]
+          if not re.fullmatch(
+              r"const ACCESS = '[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+';", line
+          ) or hashlib.sha256(line.encode('utf-8')).hexdigest() != entry['sha256_line_utf8']:
+              raise SystemExit('Historical JWT fixture source bytes changed')
+          from base64 import urlsafe_b64decode
+          parts = line.split("'")[1].split('.')
+          def jwt_part(part):
+              return json.loads(urlsafe_b64decode(part + '=' * (-len(part) % 4)))
+          if (len(parts) != 3
+                  or jwt_part(parts[0]) != {'alg': 'RS256'}
+                  or jwt_part(parts[1]) != {'sub': '1'}
+                  or not re.fullmatch(r'signaturetest[0-9]{6}', parts[2])):
+              raise SystemExit('Flagged JWT-looking bytes are not the proved test fixture')
+          fingerprints.append(expected)
+
+          if len(fingerprints) != 29 or len(set(fingerprints)) != 29:
               raise SystemExit('Unexpected exact-fingerprint scope after new digest review')
           output = Path(os.environ['RUNNER_TEMP']) / 'matchdesk-no-ignores' / 'reviewed.ignore'
           output.write_text('\n'.join(fingerprints) + '\n')
           Path('artifacts/secrets/classification.json').write_text(json.dumps({
-              'status': 'VERIFIED_NON_SECRET_DIGESTS',
+              'status': 'VERIFIED_NON_SECRET_DIGESTS_AND_TEST_FIXTURE',
               'reviewed_record_count': len(records),
+              'reviewed_synthetic_fixtures': synthetic,
               'exact_fingerprint_count': len(fingerprints),
               'scope': 'Exact commit/path/rule/line fingerprints only; no path or rule-wide exclusions',
               'squash_commit': squash_commit,
               'records': records,
               'derived_squash_aliases': squash_aliases}, indent=2) + '\n')
-          print('Recomputed 13 original digests, 13 squash aliases and two exact OpenAPI digests; no path or rule-wide exclusions.')
+          print('Recomputed 28 reviewed digest fingerprints and one exact fake JWT fixture; no path or rule-wide exclusions.')
           PY
       - name: Confirm the scanner still detects a new synthetic key with the same exceptions
         run: |
