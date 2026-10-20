@@ -840,9 +840,32 @@ jobs:
         run: |
           set -euo pipefail
           npm test -- --grep '@visual-capture' 2>&1 | tee ../artifacts/integration/browser-visual.log
+      - name: Qualify physical SELECT-only human-confirmation provenance
+        id: provenance_storage
+        if: ${{ !cancelled() && steps.producer_bridge_psycopg.outcome == 'success' && steps.browser.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          [[ "$COMPOSE_PROJECT_NAME" =~ ^matchdesk-it-[0-9]+-[0-9]+$ ]]
+          for n in 1 2; do
+            docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+              psql --no-psqlrc --set ON_ERROR_STOP=1 --username matchdesk \
+              --dbname matchdesk \
+              < backend/postgres/migrations/013_producer_host_confirmation_provenance.sql \
+              > "artifacts/integration/producer-provenance-migration-$n.log"
+          done
+          reader_password="$(openssl rand -hex 32)"
+          echo "::add-mask::$reader_password"
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "COMPOSE_PROJECT_NAME=$COMPOSE_PROJECT_NAME" \
+            -e "PGPASSWORD=$POSTGRES_PASSWORD" \
+            -e "READER_CI_PASSWORD=$reader_password" api \
+            /app/.venv/bin/python - < e2e/producer-host-provenance-psycopg.py \
+            2>&1 | tee artifacts/integration/producer-host-provenance-psycopg.log
+          grep -Fx "MATCHDESK_P4_REAL_HOST_PROVENANCE_READER_PASS: SELECT-only SCRAM, tenant scope, terminal revocation, DML drift and immutability" \
+            artifacts/integration/producer-host-provenance-psycopg.log
       - name: Install the verified native-image scanner and current database
         id: scanner
-        if: ${{ !cancelled() && steps.runtime.outcome == 'success' && steps.producer_storage.outcome == 'success' && steps.psycopg_storage.outcome == 'success' && steps.customer_sessions_storage.outcome == 'success' && steps.oidc_storage.outcome == 'success' && steps.account_directory.outcome == 'success' && steps.directory_gate.outcome == 'success' && steps.id3g_role_probe.outcome == 'success' && steps.id3g_revocation_qa.outcome == 'success' && steps.id3g_revocation_gate.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.runtime.outcome == 'success' && steps.producer_storage.outcome == 'success' && steps.psycopg_storage.outcome == 'success' && steps.customer_sessions_storage.outcome == 'success' && steps.oidc_storage.outcome == 'success' && steps.account_directory.outcome == 'success' && steps.directory_gate.outcome == 'success' && steps.id3g_role_probe.outcome == 'success' && steps.id3g_revocation_qa.outcome == 'success' && steps.id3g_revocation_gate.outcome == 'success' && steps.provenance_storage.outcome == 'success' }}
         # This is the official 0.75.0 Linux-64bit asset, independently inspected before pinning.
         # No curl-to-shell execution, repository token or downloaded installer is used.
         run: |
