@@ -84,6 +84,24 @@ def record_audience_quality_assessment(
         raise ValueError("Quality review requires an intact source content digest")
     if variant.binding.content_digest != content_digest(variant.payload):
         raise ValueError("Quality review requires an intact variant content digest")
+    # A qualification record is not an authority token. Independently reject a
+    # different session, match, replay generation, evidence set or claim scope
+    # before attributing a reviewer's judgment to this pair. In particular,
+    # a forged qualification can otherwise pair a valid variant with a source
+    # from a different evidence generation.
+    if (
+        source.session_id != variant.session_id
+        or source.match_id != variant.match_id
+        or source.windows != variant.windows
+        or source.evidence_ids != variant.evidence_ids
+        or source.claim_ids != variant.claim_ids
+        or source.payload.kind != variant.payload.kind
+        or source.binding.item_id != variant.binding.item_id
+        or source.binding.item_version != variant.binding.item_version
+        or source.binding.replay_id != variant.binding.replay_id
+        or source.binding.evidence_digest != variant.binding.evidence_digest
+    ):
+        raise ValueError("Quality review requires identical source/variant scope and evidence")
     if (
         qualification.source_output_id != source.output_id
         or qualification.variant_output_id != variant.output_id
@@ -92,6 +110,11 @@ def record_audience_quality_assessment(
         or qualification.language != variant.binding.language
         or qualification.persona != variant.binding.persona
         or qualification.claim_ids != variant.claim_ids
+        or len(qualification.verification_statuses) != len(variant.claim_ids)
+        or any(
+            status not in ("verified", "supported_inference")
+            for status in qualification.verification_statuses
+        )
     ):
         raise ValueError("Quality review must match the current audience qualification")
 
