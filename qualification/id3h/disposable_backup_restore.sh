@@ -196,19 +196,6 @@ UPDATE public.matchdesk_producer_execution_grants
  WHERE grant_id = '11111111-1111-4111-8111-111111111104'::uuid
    AND revoked_at IS NULL AND consumed_at IS NULL;
 
--- The old snapshot's staging schema must also be quarantined. Stage one
--- deliberately synthetic, valid confirmation IN THE RESTORED CLONE ONLY so
--- the issuer acceptance/denial probes are deterministic despite CI timing.
-INSERT INTO public.matchdesk_producer_confirmations
-    (confirmation_id, tenant_id, session_id, output_id, actor_id, issuer,
-     action, expected_generation, binding, authorized_case_sha256,
-     authorized_audit_digest, proof_digest, confirmed_at, expires_at)
-VALUES
-    (repeat('7', 32), 'ci-restore-tenant', 'ci-restore-session',
-     'ci-restore-output', 'ci-restore-operator', 'https://restore-ci.invalid',
-     'create', 0, '{}'::jsonb, repeat('a', 64), repeat('b', 64),
-     repeat('c', 64), clock_timestamp(), clock_timestamp() + interval '90 seconds');
-
 -- The newer host-provenance store is append-only. Create a synthetic
 -- un-terminated event inside this OFFLINE restored clone, never the source.
 -- A restored host confirmation is an additional authority dependency and
@@ -225,6 +212,19 @@ VALUES
      repeat('a', 64), repeat('b', 64), repeat('c', 64),
      'workforce_authenticated_custom_dialog',
      clock_timestamp() - interval '1 second', clock_timestamp());
+-- The old snapshot's staging schema must also be quarantined. Stage one
+-- deliberately synthetic, valid confirmation IN THE RESTORED CLONE ONLY so
+-- the issuer acceptance/denial probes are deterministic despite CI timing.
+INSERT INTO public.matchdesk_producer_confirmations
+    (confirmation_id, tenant_id, session_id, output_id, actor_id, issuer,
+     action, expected_generation, binding, authorized_case_sha256,
+     authorized_audit_digest, proof_digest, confirmed_at, expires_at)
+VALUES
+    (repeat('7', 32), 'ci-restore-tenant', 'ci-restore-session',
+     'ci-restore-output', 'ci-restore-operator', 'https://restore-ci.invalid',
+     'create', 0, '{}'::jsonb, repeat('a', 64), repeat('b', 64),
+     repeat('c', 64), clock_timestamp(), clock_timestamp() + interval '90 seconds');
+
 DO $host_before_quarantine$
 BEGIN
     IF (SELECT count(*) FROM public.matchdesk_producer_host_confirmation_events e

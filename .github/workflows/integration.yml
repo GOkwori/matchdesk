@@ -208,23 +208,66 @@ jobs:
         if: ${{ !cancelled() && steps.grant_psycopg.outcome == 'success' && steps.physical_issuer.outcome == 'success' }}
         run: |
           set -euo pipefail
+          # Qualify the *actual* host provenance store inside the signed
+          # bridge, not merely a synthetic in-memory confirmation reader.
+          # The schema is disposable and must tolerate an exact replay of
+          # its forward-only migration before the later independent gate.
+          for n in 1 2; do
+            docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+              psql --no-psqlrc --set ON_ERROR_STOP=1 --username matchdesk \
+              --dbname matchdesk \
+              < backend/postgres/migrations/013_producer_host_confirmation_provenance.sql \
+              > "artifacts/integration/producer-bridge-provenance-migration-$n.log"
+          done
+          # Migration 014 is deliberately applied only AFTER legacy 011/012
+          # issuer qualification, and BEFORE all signed real-host bridge writes.
+          # Both passes must succeed; no live database is touched.
+          for n in 1 2; do
+            docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+              psql --no-psqlrc --set ON_ERROR_STOP=1 --username matchdesk \
+              --dbname matchdesk \
+              < backend/postgres/migrations/014_producer_terminal_revocation_serialization.sql \
+              > "artifacts/integration/producer-serialization-migration-$n.log"
+          done
+          # The issuer SECURITY DEFINER owner is a NOLOGIN role with fixed
+          # minimum table ACLs. Reading the authoritative event/terminal
+          # state is required for SQL-serialized issuance; do not grant these
+          # to the physical issuer LOGIN, writer, stager or PUBLIC.
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+            psql --no-psqlrc --set ON_ERROR_STOP=1 --username matchdesk \
+            --dbname matchdesk \
+            -c "GRANT SELECT ON public.matchdesk_producer_host_confirmation_events, public.matchdesk_producer_host_confirmation_terminals TO matchdesk_issuer_definer_ci" \
+            > artifacts/integration/producer-serialization-definer-acl.log
           bridge_stager_password="$(openssl rand -hex 32)"
           bridge_issuer_password="$(openssl rand -hex 32)"
           bridge_writer_password="$(openssl rand -hex 32)"
           bridge_revoker_password="$(openssl rand -hex 32)"
+          bridge_provenance_password="$(openssl rand -hex 32)"
           echo "::add-mask::$bridge_stager_password"
           echo "::add-mask::$bridge_issuer_password"
           echo "::add-mask::$bridge_writer_password"
           echo "::add-mask::$bridge_revoker_password"
+          echo "::add-mask::$bridge_provenance_password"
           docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
             -e CI=true -e "COMPOSE_PROJECT_NAME=$COMPOSE_PROJECT_NAME" \
             -e "PGPASSWORD=$POSTGRES_PASSWORD" \
             -e "STAGER_CI_PASSWORD=$bridge_stager_password" \
             -e "ISSUER_CI_PASSWORD=$bridge_issuer_password" \
             -e "GRANT_WRITER_CI_PASSWORD=$bridge_writer_password" \
-            -e "REVOKER_CI_PASSWORD=$bridge_revoker_password" api \
+            -e "REVOKER_CI_PASSWORD=$bridge_revoker_password" \
+            -e "BRIDGE_READER_CI_PASSWORD=$bridge_provenance_password" api \
             /app/.venv/bin/python - < e2e/producer-atomic-bridge-psycopg.py \
             2>&1 | tee artifacts/integration/producer-atomic-bridge-psycopg.log
+          # Real independent issuer and terminal-writer transactions prove
+          # BOTH serialization orders and authoritative grant readback.
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "COMPOSE_PROJECT_NAME=$COMPOSE_PROJECT_NAME" \
+            -e "PGPASSWORD=$POSTGRES_PASSWORD" \
+            -e "ISSUER_CI_PASSWORD=$bridge_issuer_password" api \
+            /app/.venv/bin/python - < e2e/producer-terminal-issuance-races-psycopg.py \
+            2>&1 | tee artifacts/integration/producer-terminal-issuance-races.log
+          grep -Fx "MATCHDESK_P4_TERMINAL_ISSUANCE_SERIALIZED_PASS: terminal-first denies, issuance-first revokes unspent grant" \
+            artifacts/integration/producer-terminal-issuance-races.log
       - name: Verify restricted real-Psycopg producer transactions and recovery
         id: psycopg_storage
         if: ${{ !cancelled() && steps.producer_bridge_psycopg.outcome == 'success' && steps.producer_storage.outcome == 'success' }}
@@ -773,7 +816,7 @@ jobs:
         run: |
           set -euo pipefail
           candidate=qualification/id3h/disposable_backup_restore.sh
-          test "$(git hash-object "$candidate")" = 7d0bfa83f9cd5fad9e7ff24ff87d1ab96ec15465
+          test "$(git hash-object "$candidate")" = 4741ae76584ca76b46db015587c6a7d879f9b09d
           bash -n "$candidate"
           bash "$candidate" 2>&1 | tee artifacts/integration/id3h-backup-restore.log
           grep -Fx "MATCHDESK_ID3H_DISPOSABLE_RESTORE_PASS" \
