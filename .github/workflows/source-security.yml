@@ -286,7 +286,7 @@ jobs:
           # A 19-character ASCII segment cannot be a real RSA signature; this
           # one-claim test literal is neither a valid Entra token nor authority.
           if (
-              header != {'alg': 'RS256', 'typ': 'JWT'}
+              header != {'alg': 'RS256'}
               or set(claims) != {'sub'}
               or not isinstance(claims['sub'], str)
               or len(claims['sub']) != 1
