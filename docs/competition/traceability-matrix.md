@@ -9,7 +9,7 @@
 | R5 | Producer review domain and PostgreSQL compare-and-swap store with append-only audit; studio composer, queue and locked Approve | Real-PostgreSQL CAS, rollback and restart tests; browser journeys | Authenticated producer, approval and publication (unmerged authority work) |
 | R6 | Fan story with computed "How we checked this" rows; Match Centre style preview in the composer | Browser tests; story checks are verifier results in the export | Broadcast overlay and recap formats |
 | R7 | Audience Adapter produces EN/ES/FR × analyst/fan/caption variants citing verified claims only | Workflow tests reject variants citing unverified claims | Human language review of ES/FR |
-| R8 | Routed studio with a seven-stop guided tour, offline support and per-route metadata; loopback judge workbench | 108 studio browser tests at three viewports, axe on every page, visual baselines | Public hosting and recorded video |
+| R8 | Routed studio with a seven-stop guided tour, offline support and per-route metadata; hosted at matchdesk-seven.vercel.app | 108 studio browser tests at three viewports, axe on every page, visual baselines | Recorded video |
 | R9 | Hosted CI, dependency/source-security gates, runtime/browser and native-image qualification with source-bound evidence | Phase 0/1 closure records and Phase 2A evidence | Add live-model/recovery evaluation, visual/accessibility and later deployment qualification |
 
 Source: `backend/src/matchdesk`; tests: `backend/tests`; results: [evidence index](../evidence/INDEX.md).

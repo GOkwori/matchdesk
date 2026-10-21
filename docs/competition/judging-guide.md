@@ -5,7 +5,8 @@ MatchDesk runs on one invented match, Northbridge FC 2–1 Riverside United, rep
 
 ## The three-minute path
 
-Open the studio's home page and choose **Start the 3-minute guided demo**. The tour has
+Open [matchdesk-seven.vercel.app](https://matchdesk-seven.vercel.app) (or run it yourself, below)
+and choose **Start the 3-minute guided demo**. The tour has
 seven stops:
 
 1. **Overview.** The score, the replay slider, and a "try to fool the verifier" panel.
