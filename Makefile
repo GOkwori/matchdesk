@@ -1,13 +1,16 @@
 # Foundation targets never provision cloud infrastructure or claim a release gate.
 PYTHON ?= python
+# CI qualifies 3.12.15. Where uv cannot download that build, override it, for example
+# `make setup SETUP_PYTHON=3.12.13`; the committed lock is still reproduced exactly.
+SETUP_PYTHON ?= 3.12.15
 export PYTHONPATH := backend/src:.
 .PHONY: setup resolve dev api test contracts comments docs foundation lint evidence deploy
 
 # Reproduce the committed locks. Normal setup must never silently re-resolve them.
 # The resolver version used for qualification is uv 0.10.0; see the evidence index.
 setup:
-	uv python install 3.12.15
-	uv sync --locked --no-build --group test --group quality --python 3.12.15
+	uv python install $(SETUP_PYTHON)
+	uv sync --locked --no-build --group test --group quality --python $(SETUP_PYTHON)
 	cd apps/web && npm ci
 
 # Dependency changes are deliberate maintenance work, followed by diff review and CI.

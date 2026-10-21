@@ -131,12 +131,16 @@ class ScopedReadTools:
         return self._events_by_id.get(event_id)
 
     def events_in_window(self, window: MatchWindow) -> tuple[MatchEvent, ...]:
-        """Read immutable accepted events in one half-open match window."""
+        """Read immutable accepted events in one half-open match window.
+
+        A window without a period covers both halves, matching the registered metrics:
+        a specialist must see the same events that the verifier will count.
+        """
         self._require("events_in_window")
         return tuple(
             event
             for event in self._events
-            if event.period == window.period
+            if (window.period is None or event.period == window.period)
             and window.from_ms <= event.match_clock_ms < window.to_ms
         )
 
