@@ -174,3 +174,11 @@ def test_quantity_extraction_ignores_clocks_minutes_and_scorelines(text, counts,
     stated = stated_quantities(text)
     assert stated.counts == counts
     assert stated.percents == percents
+
+
+def test_record_identifiers_in_a_sentence_are_not_quantities() -> None:
+    """E-1366 or nbr-09 name a record; reading them as numbers failed a true live claim."""
+    from matchdesk.domain.claim_text import stated_quantities
+
+    stated = stated_quantities("Okafor (nbr-09) scored E-1366, 14 seconds after CL-0214.")
+    assert stated.counts == (Decimal(14),)

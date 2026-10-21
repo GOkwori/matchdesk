@@ -80,29 +80,64 @@ def _fact_result(
     fact: EventFact,
     evidence: EvidenceRecord,
     events: tuple[MatchEvent, ...],
-) -> tuple[str, str, str]:
-    """Run one registered event-fact query; return (status, query_id, reason)."""
+) -> tuple[str, str, str, float | None, float | None]:
+    """Run one registered event-fact query.
+
+    Returns (status, query_id, reason, expected, observed). A wrong gap carries the
+    stated and recorded seconds, so a writer sent back for revision learns the
+    recorded value rather than guessing again.
+    """
     query_id = "event-" + fact.query.replace(".", "-").replace("_", "-")
     if any(event_id not in claim.evidence_event_ids for event_id in fact.referenced_event_ids()):
-        return "blocked", query_id, "Event fact reads events the claim does not cite"
+        return "blocked", query_id, "Event fact reads events the claim does not cite", None, None
     by_id = {event.event_id: event for event in events}
     target = by_id[fact.event_id]
     if target.match_clock_ms >= evidence.window.to_ms:
-        return "blocked", query_id, "Event fact reads events after the evidence window"
+        return "blocked", query_id, "Event fact reads events after the evidence window", None, None
     if fact.query == "goal_scorer.v1":
         if target.type == "goal" and target.player_id == fact.player_id:
-            return "verified", query_id, "The cited goal event records the stated scorer"
-        return "needs_revision", query_id, "The cited event is not a goal by the stated player"
+            return (
+                "verified",
+                query_id,
+                "The cited goal event records the stated scorer",
+                None,
+                None,
+            )
+        return (
+            "needs_revision",
+            query_id,
+            "The cited event is not a goal by the stated player",
+            None,
+            None,
+        )
     assert fact.from_event_id is not None and fact.gap_seconds is not None
     earlier = by_id[fact.from_event_id]
     if earlier.sequence >= target.sequence:
-        return "needs_revision", query_id, "The cited events are not in the stated order"
+        return (
+            "needs_revision",
+            query_id,
+            "The cited events are not in the stated order",
+            None,
+            None,
+        )
     if fact.from_tag is not None and fact.from_tag not in earlier.tags:
-        return "needs_revision", query_id, f"The earlier event is not tagged {fact.from_tag}"
+        return (
+            "needs_revision",
+            query_id,
+            f"The earlier event is not tagged {fact.from_tag}",
+            None,
+            None,
+        )
     gap = round_half_up((target.match_clock_ms - earlier.match_clock_ms) / 1000, 0)
     if gap != Decimal(fact.gap_seconds):
-        return "needs_revision", query_id, "The recorded gap differs from the stated seconds"
-    return "verified", query_id, "The recorded events and gap match the stated sequence"
+        return (
+            "needs_revision",
+            query_id,
+            "The recorded gap differs from the stated seconds",
+            float(fact.gap_seconds),
+            float(gap),
+        )
+    return "verified", query_id, "The recorded events and gap match the stated sequence", None, None
 
 
 def verify_claim(
@@ -149,7 +184,9 @@ def verify_claim(
         )
 
     if claim.kind == "event_fact" and claim.fact is not None:
-        status, query_id, reason = _fact_result(claim, claim.fact, evidence, events)
+        status, query_id, reason, expected, observed = _fact_result(
+            claim, claim.fact, evidence, events
+        )
         if status == "verified":
             problem = text_binding_problem(claim, names)
             if problem is not None:
@@ -159,6 +196,8 @@ def verify_claim(
             status=status,  # type: ignore[arg-type]
             query_id=query_id,
             reason=reason,
+            expected=expected,
+            observed=observed,
             evidence_digest=evidence_digest,
         )
 
