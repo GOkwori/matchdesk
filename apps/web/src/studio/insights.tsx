@@ -1,6 +1,7 @@
 /** AI insights: replays of the four-specialist workflow on the 58′ goal.
  *
- * generated/agent-trace.json is the run shown first: a recorded live Microsoft Foundry
+ * The screen reads generated/*.view.json, compact views export_demo_data derives from
+ * the recorded traces. generated/agent-trace.json is the run shown first: a recorded live Microsoft Foundry
  * run once there is one (scripts/record_agent_run.py --provider foundry). The
  * deterministic rehearsal (no model) is always available beside it, from
  * generated/agent-trace-rehearsal.json; it is the run in which the verifier sends a
@@ -11,8 +12,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import traceData from "./generated/agent-trace.json";
-import rehearsalData from "./generated/agent-trace-rehearsal.json";
+import traceData from "./generated/agent-trace.view.json";
 import { Icon } from "./icons";
 import { VerdictChip } from "./ui";
 import { TourStep } from "./shell";
@@ -38,9 +38,9 @@ type Trace = {
 };
 
 const shownTrace = traceData as unknown as Trace;
-const rehearsalTrace = rehearsalData as unknown as Trace;
-// When a live run is recorded it comes first; the rehearsal stays one click away.
-const RUNS: Trace[] = shownTrace.provider.kind === "foundry" ? [shownTrace, rehearsalTrace] : [rehearsalTrace];
+// When a live run is recorded it comes first; the rehearsal stays one click away and is
+// fetched only when asked for, which keeps this page inside its JavaScript budget.
+const hasLiveRun = shownTrace.provider.kind === "foundry";
 const ROLE_NAME: Record<Role, string> = {
   tactical_analyst: "Tactical Analyst", narrative_composer: "Narrative Composer",
   editorial_reviewer: "Editorial Reviewer", audience_adapter: "Audience Adapter",
@@ -59,6 +59,7 @@ function result(call: ToolCall): string {
   if (Array.isArray(call.result)) return `${call.result.length} events`;
   if (call.result && typeof call.result === "object") {
     const r = call.result as Record<string, unknown>;
+    if (typeof r.events === "number") return `${r.events} events`;
     return [r.event_id ?? r.claim_id, r.type ?? r.status, r.clock].filter(Boolean).join(" · ");
   }
   return "none";
@@ -146,17 +147,26 @@ function VerificationCard({ step, last }: { step: Verification; last: boolean })
 }
 
 export function InsightsBody() {
-  const [run, setRun] = useState(0);
+  const [rehearsal, setRehearsal] = useState<Trace | null>(null);
+  const [showRehearsal, setShowRehearsal] = useState(false);
+  const pickRehearsal = async () => {
+    if (!rehearsal) {
+      const loaded = await import("./generated/agent-trace-rehearsal.view.json");
+      setRehearsal(loaded.default as unknown as Trace);
+    }
+    setShowRehearsal(true);
+  };
+  const current = showRehearsal && rehearsal ? rehearsal : shownTrace;
   return (
     <>
-      {RUNS.length > 1 && (
+      {hasLiveRun && (
         <div role="group" aria-label="Which run" className="md-seg">
           <span className="md-seg-label">Which run</span>
-          <button type="button" aria-pressed={run === 0} onClick={() => setRun(0)}>Recorded live run</button>
-          <button type="button" aria-pressed={run === 1} onClick={() => setRun(1)}>Rehearsal</button>
+          <button type="button" aria-pressed={!showRehearsal} onClick={() => setShowRehearsal(false)}>Recorded live run</button>
+          <button type="button" aria-pressed={showRehearsal} onClick={pickRehearsal}>Rehearsal</button>
         </div>
       )}
-      <RunView key={run} trace={RUNS[run]} />
+      <RunView key={current === shownTrace ? "shown" : "rehearsal"} trace={current} />
     </>
   );
 }
