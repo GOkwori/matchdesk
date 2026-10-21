@@ -262,8 +262,10 @@ TASKS: Mapping[SpecialistRole, str] = {
         "tactical_inference claims for interpretation. Cite only events you have read."
     ),
     "narrative_composer": (
-        "Write the broadcast story as claims, one sentence each, from the tactical "
-        "claims. Every number in a sentence must equal its assertion; name the player or "
+        "Write the broadcast story as three to five claims, one sentence each, from the "
+        "tactical claims. Every number in a sentence must equal its assertion, and a "
+        "sentence must state its asserted value as a numeral: a sequence_gap fact says "
+        "the seconds ('14 seconds after the corner'), a goal count says the count. Name the player or "
         "team the assertion is about by name, never by an identifier such as E-1366 or "
         "nbr-09. Put the headline in content. If verifier_feedback is present, fix or "
         "drop every failed claim: where it gives an observed value, that is the recorded "
@@ -272,8 +274,9 @@ TASKS: Mapping[SpecialistRole, str] = {
     "editorial_reviewer": (
         "Review the drafted claims. Keep claims a registered query can check and "
         "interpretations that are clearly marked as such; drop any claim that needs data "
-        "the match log does not hold. Return the kept claims and a short note on each drop "
-        "in content."
+        "the match log does not hold. Keep or drop only: return kept claims exactly as "
+        "drafted, never editing their text, assertion or fact. Put a short note on each "
+        "drop in content."
     ),
     "audience_adapter": (
         "Adapt the verified claims for each language (en, es, fr) and persona (analyst, "
@@ -502,7 +505,8 @@ async def run_agent_workflow(
             }
         )
         failed = [r for r in results if r.status not in ("verified", "supported_inference")]
-        state = apply_verification_gate(
+        claims = list(review.proposed_claims)
+        gated = apply_verification_gate(
             state,
             policies=role_policies(executor),
             passed=passed,
@@ -510,13 +514,40 @@ async def run_agent_workflow(
             if passed
             else f"{len(failed)} claim(s) failed verification",
         )
-        if passed:
-            verified = [
-                c
-                for c, r in zip(review.proposed_claims, results, strict=True)
-                if r.status == "verified"
+        if gated.status == "fallback":
+            # The revision budget is spent. Code withholds what never verified, as an
+            # editor drops a sentence they cannot stand up; the story goes on only if
+            # at least one claim did verify. Nothing unverified reaches the adapter.
+            pairs = [
+                (claim, result)
+                for claim, result in zip(claims, results, strict=True)
+                if result.status in ("verified", "supported_inference")
             ]
-            kept = list(review.proposed_claims)
+            if _gate_passes([result for _, result in pairs]):
+                steps.append(
+                    {
+                        "type": "withheld",
+                        "round": rounds,
+                        "claim_ids": [result.claim_id for result in failed],
+                        "reason": (
+                            f"Revision budget spent: {len(failed)} claim(s) that never "
+                            "verified were withheld by code; verified claims go on."
+                        ),
+                    }
+                )
+                claims = [claim for claim, _ in pairs]
+                results = [result for _, result in pairs]
+                passed = True
+                gated = apply_verification_gate(
+                    state,
+                    policies=role_policies(executor),
+                    passed=True,
+                    reason=f"{len(failed)} unverified claim(s) withheld after revision",
+                )
+        state = gated
+        if passed:
+            verified = [c for c, r in zip(claims, results, strict=True) if r.status == "verified"]
+            kept = claims
             state, adapted = await _turn(
                 state,
                 "audience_adapter",

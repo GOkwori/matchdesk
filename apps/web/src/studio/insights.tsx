@@ -24,7 +24,8 @@ type Specialist = {
 type VerdictRow = { claim_id: string; text: string; status: Status; query_id: string; reason: string; expected: number | null; observed: number | null };
 type Verification = { type: "verification"; round: number; passed: boolean; results: VerdictRow[] };
 type Rejected = { type: "rejected_output"; role: Role; reason: string };
-type Step = Specialist | Verification | Rejected;
+type Withheld = { type: "withheld"; round: number; claim_ids: string[]; reason: string };
+type Step = Specialist | Verification | Rejected | Withheld;
 type Role = "tactical_analyst" | "narrative_composer" | "editorial_reviewer" | "audience_adapter";
 type Trace = {
   provider: { kind: "rehearsal" | "foundry"; label: string }; recorded_on?: string; status: string;
@@ -94,20 +95,29 @@ function SpecialistCard({ step, index }: { step: Specialist; index: number }) {
   );
 }
 
-function VerificationCard({ step }: { step: Verification }) {
+/** What the log recorded against what the claim said, in the claim's own unit. */
+function mismatch(r: VerdictRow): string {
+  if (r.query_id === "event-sequence-gap-v1") return `The log records ${r.observed} seconds; the claim said ${r.expected}.`;
+  return `Observed ${percent(r.observed)}, claimed ${percent(r.expected)}.`;
+}
+
+function VerificationCard({ step, last }: { step: Verification; last: boolean }) {
+  const failedText = last
+    ? "A claim failed when recomputed from the event log, and no revision round was left."
+    : "A claim failed when recomputed from the event log, so the workflow sent the draft back to the composer.";
   return (
     <li className={`md-insight ${step.passed ? "md-insight-kept" : "md-trace-failed"}`}>
       <span className="md-insight-top">
         <span className="md-eyebrow">Verifier · round {step.round}</span>
-        <VerdictChip verdict={step.passed ? "verified" : "failed"} label={step.passed ? "Passed" : "Sent back"} />
+        <VerdictChip verdict={step.passed ? "verified" : "failed"} label={step.passed ? "Passed" : last ? "Failed" : "Sent back"} />
       </span>
-      <p>{step.passed ? "Every claim recomputed from the event log. Code, not an agent, made this call." : "A claim failed when recomputed from the event log, so the workflow sent the draft back to the composer."}</p>
+      <p>{step.passed ? "Every claim recomputed from the event log. Code, not an agent, made this call." : failedText}</p>
       <ul className="md-trace-claims" aria-label={`Verification round ${step.round}`}>
         {step.results.map((r) => (
           <li key={r.claim_id}>
             <span className="md-mono">{r.claim_id}</span> <VerdictChip verdict={toVerdict(r.status)} />
             <span className="md-small"> {r.text}</span>
-            {r.status === "needs_revision" && r.observed != null && <span className="md-muted md-small"> Observed {percent(r.observed)}, claimed {percent(r.expected)}.</span>}
+            {r.status === "needs_revision" && r.observed != null && <span className="md-muted md-small"> {mismatch(r)}</span>}
           </li>
         ))}
       </ul>
@@ -163,8 +173,10 @@ export function InsightsBody() {
           <ol className="md-insight-list">
             {trace.steps.slice(0, shown).map((step, i) =>
               step.type === "specialist" ? <SpecialistCard key={i} step={step} index={specialists.indexOf(step)} />
-                : step.type === "verification" ? <VerificationCard key={i} step={step} />
-                  : <li key={i} className="md-insight md-trace-failed"><span className="md-eyebrow">{ROLE_NAME[step.role]} · output rejected</span><p>{step.reason}</p></li>)}
+                : step.type === "verification" ? <VerificationCard key={i} step={step} last={trace.steps[i + 1]?.type === "withheld"} />
+                  : step.type === "withheld"
+                    ? <li key={i} className="md-insight md-trace-failed"><span className="md-insight-top"><span className="md-eyebrow">Verifier · withheld</span><VerdictChip verdict="failed" label="Withheld" /></span><p>Revision ran out, so code withheld {step.claim_ids.length === 1 ? "the claim" : `${step.claim_ids.length} claims`} that never verified ({step.claim_ids.join(", ")}). Only verified claims go on to the audience versions.</p></li>
+                    : <li key={i} className="md-insight md-trace-failed"><span className="md-eyebrow">{ROLE_NAME[step.role]} · output rejected</span><p>{step.reason}</p></li>)}
           </ol>
         </section>
         <aside className="md-split-side md-stack" aria-label="What reaches the producer">
