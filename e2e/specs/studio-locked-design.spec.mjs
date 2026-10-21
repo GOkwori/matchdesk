@@ -46,15 +46,16 @@ test('the site root is the product welcome, and the JSON workbench moved to /dev
   await expect(page.getByLabel('Edit the JSON and validate its structure')).toBeVisible();
 });
 
-test('the guided tour walks all six stops across real routes', async ({ page }) => {
+test('the guided tour walks all seven stops across real routes', async ({ page }) => {
   await open(page, '/');
   await page.getByRole('link', { name: /Start the 3-minute guided demo/ }).click();
   const expected = [
-    ['1 of 6', /\/match\/nbr-riv\?tour=1/, 'Open the goal'],
-    ['2 of 6', /moments\?moment=M-05&tour=2/, 'See the proof'],
-    ['3 of 6', /evidence\/CL-0214\?tour=3/, 'See the review queue'],
-    ['4 of 6', /producer\/queue\?tour=4/, 'Open the composer'],
-    ['5 of 6', /compose\/D-031\?tour=5/, 'See what fans get'],
+    ['1 of 7', /\/match\/nbr-riv\?tour=1/, 'Open the goal'],
+    ['2 of 7', /moments\?moment=M-05&tour=2/, 'See the agents work'],
+    ['3 of 7', /insights\?tour=3/, 'See the proof'],
+    ['4 of 7', /evidence\/CL-0214\?tour=4/, 'See the review queue'],
+    ['5 of 7', /producer\/queue\?tour=5/, 'Open the composer'],
+    ['6 of 7', /compose\/D-031\?tour=6/, 'See what fans get'],
   ];
   for (const [step, url, next] of expected) {
     await expect(page).toHaveURL(url);
@@ -62,16 +63,16 @@ test('the guided tour walks all six stops across real routes', async ({ page }) 
     await expect(tour).toBeVisible();
     await tour.getByRole('link', { name: next }).click();
   }
-  await expect(page).toHaveURL(/story\/.*\?tour=6/);
-  await expect(page.getByText('Guided tour · 6 of 6')).toBeVisible();
+  await expect(page).toHaveURL(/story\/.*\?tour=7/);
+  await expect(page.getByText('Guided tour · 7 of 7')).toBeVisible();
   await page.getByRole('link', { name: /Finish tour/ }).click();
   await expect(page).toHaveURL(/\/$/);
 });
 
 test('every tour card opens on screen and clear of the phone tab bar', async ({ page }) => {
-  for (const [step, route] of [[1, '/match/nbr-riv?tour=1'], [2, '/match/nbr-riv/moments?moment=M-05&tour=2'], [3, '/match/nbr-riv/evidence/CL-0214?tour=3'], [4, '/producer/queue?tour=4'], [5, '/producer/compose/D-031?tour=5']]) {
+  for (const [step, route] of [[1, '/match/nbr-riv?tour=1'], [2, '/match/nbr-riv/moments?moment=M-05&tour=2'], [3, '/match/nbr-riv/insights?tour=3'], [4, '/match/nbr-riv/evidence/CL-0214?tour=4'], [5, '/producer/queue?tour=5'], [6, '/producer/compose/D-031?tour=6']]) {
     await open(page, route);
-    const card = page.getByRole('dialog').filter({ hasText: `Guided tour · ${step} of 6` });
+    const card = page.getByRole('dialog').filter({ hasText: `Guided tour · ${step} of 7` });
     await expect(card).toBeInViewport({ ratio: 1 });
     // The tab bar only exists on phones; elsewhere it is display:none and has no box.
     await expect.poll(() => card.evaluate((el) => {
@@ -123,6 +124,38 @@ test('composer re-verifies live: D-031 becomes eligible only after both blocking
 
   await open(page, '/producer/queue');
   await expect(page.getByRole('link', { name: 'Review' })).toBeVisible();
+});
+
+test('editing a sentence re-verifies its words in the browser', async ({ page }) => {
+  await open(page, '/producer/compose/D-031');
+  const eligibility = page.getByRole('region', { name: 'Eligibility' });
+  const cards = page.getByRole('list', { name: 'Claims in this draft' });
+  await cards.getByRole('listitem').filter({ hasText: 'CL-0216' }).getByRole('button', { name: 'Remove sentence' }).click();
+  await cards.getByRole('listitem').filter({ hasText: 'CL-0215' }).getByRole('button', { name: 'Mark as opinion' }).click();
+  await expect(eligibility.getByText(/Eligible/)).toBeVisible();
+
+  const possession = page.getByRole('textbox', { name: 'Sentence for CL-0214' });
+  await possession.fill('Northbridge have had 60% of possession at the replay point.');
+  const card = cards.getByRole('listitem').filter({ hasText: 'CL-0214' });
+  await expect(card.getByText("Sentence doesn't match the claim")).toBeVisible();
+  await expect(card.getByText('Claim text states a quantity that differs from its assertion')).toBeVisible();
+  await expect(eligibility.getByText('Not eligible')).toBeVisible();
+
+  await possession.fill('Riverside have had 58% of possession at the replay point.');
+  await expect(card.getByText('Claim text does not name the asserted subject')).toBeVisible();
+
+  await possession.fill('Northbridge kept 58% of the ball.');
+  await expect(card.getByText('Verified')).toBeVisible();
+  await expect(eligibility.getByText('Not eligible')).toHaveCount(0);
+});
+
+test('the overview lets a first-time visitor try to fool the verifier', async ({ page }) => {
+  await open(page, '/match/nbr-riv');
+  const panel = page.getByRole('region', { name: /possession/ });
+  await expect(panel.getByText(/matches the log/)).toBeVisible();
+  await panel.getByRole('button', { name: 'Claim 59% instead' }).click();
+  await expect(panel.getByText('Rejected')).toBeVisible();
+  await expect(panel.getByText(/57\.96%/)).toBeVisible();
 });
 
 test('a forged statistic is recalculated and rejected', async ({ page }) => {

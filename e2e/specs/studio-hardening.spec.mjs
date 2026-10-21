@@ -33,7 +33,7 @@ async function open(page, route) {
 
 test.describe('accessibility', () => {
   test('every studio page has zero WCAG 2.2 AA violations, including the tour and the forged-value state', async ({ page }) => {
-    const pages = [...ALL, '/match/nbr-riv?tour=1', '/producer/compose/D-031?tour=5', '/nope-not-a-page'];
+    const pages = [...ALL, '/match/nbr-riv?tour=1', '/match/nbr-riv/insights?tour=3', '/producer/compose/D-031?tour=6', '/nope-not-a-page'];
     for (const route of pages) {
       await page.goto(route);
       await page.locator('h1').first().waitFor();
@@ -182,8 +182,8 @@ test.describe('resilience', () => {
       await expect(page.getByText('You’re offline. The demo keeps working from this device.')).toBeVisible();
       await page.getByRole('button', { name: 'Claim 59% instead' }).click();
       await expect(page.getByText('Failed · needs revision')).toBeVisible();
-      await page.goto('/producer/compose/D-031?tour=5');
-      await expect(page.getByText('Guided tour · 5 of 6')).toBeVisible();
+      await page.goto('/producer/compose/D-031?tour=6');
+      await expect(page.getByText('Guided tour · 6 of 7')).toBeVisible();
       await page.goto(STORY);
       await expect(page.getByRole('heading', { level: 1 })).toContainText('Northbridge');
     } finally {
