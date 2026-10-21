@@ -284,7 +284,8 @@ TASKS: Mapping[SpecialistRole, str] = {
     "audience_adapter": (
         "Adapt the verified claims for each language (en, es, fr) and persona (analyst, "
         "casual_fan, broadcast_caption). Return content as a JSON array of nine objects "
-        "with language, persona, text and claim_ids. Add no new facts, numbers or names."
+        "with language, persona, text and claim_ids; keep each text under 280 characters. "
+        "Add no new facts, numbers or names."
     ),
 }
 

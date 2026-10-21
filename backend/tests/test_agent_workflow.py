@@ -482,3 +482,48 @@ def test_a_full_live_revision_handoff_fits_its_bound() -> None:
     }
     text = _instruction(TASKS["narrative_composer"], handoff)
     assert 4_000 < len(text) < MAX_INSTRUCTION_CHARS
+
+
+class _OptionsFactory:
+    """Records the run options each role's live agent receives."""
+
+    def __init__(self):
+        """Start with no recorded options."""
+        self.options = {}
+
+    def create(self, *, role, config, tools):
+        """Create an agent that records its options and returns an empty proposal."""
+        factory = self
+
+        class _Agent:
+            """A live agent stand-in."""
+
+            async def run(self, prompt, options):
+                """Record the options and answer."""
+                factory.options[role] = options
+
+                class _Result:
+                    """An Agent Framework result."""
+
+                    value = RuntimeProposal(content="ok")
+                    usage_details = None
+
+                return _Result()
+
+        return _Agent()
+
+
+def test_only_the_audience_adapter_gets_the_larger_output_cap() -> None:
+    """Nine texts in three languages need more room; every other turn keeps 1,200."""
+    from matchdesk.domain.foundry_runtime import ADAPTER_MAX_OUTPUT_TOKENS
+
+    factory = _OptionsFactory()
+    executor = FoundryWorkflowExecutor(config=_live_config(), factory=factory)
+    state = start_workflow("wf", LOG[0].match_id, "r", 1, "M-05")
+    for role in ("tactical_analyst", "audience_adapter"):
+        tools = TracedReadTools(ScopedReadTools(role=role, events=LOG), {})
+        at_role = state.model_copy(update={"current_role": role})
+        request = SpecialistRequest(workflow=at_role, role=role, instruction="x")
+        asyncio.run(executor.execute(request, tools, digest="{}"))
+    assert factory.options["tactical_analyst"]["max_tokens"] == 1_200
+    assert factory.options["audience_adapter"]["max_tokens"] == ADAPTER_MAX_OUTPUT_TOKENS

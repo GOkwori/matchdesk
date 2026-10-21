@@ -317,6 +317,10 @@ def _load_default_factory() -> _AgentFactory:
 # ---------------------------------------------------------------------------------------
 
 _MAX_TOOL_CALLS_PER_TURN = 8
+# The audience adapter returns nine texts of up to 400 characters, in three languages,
+# inside one JSON string: more than the 1,200 tokens other turns need. Only that turn
+# gets this larger cap.
+ADAPTER_MAX_OUTPUT_TOKENS = 2_500
 
 # The first live run spent 19 and 28 tool calls in two turns and timed out. The
 # digest already carries what most turns need, so the tool loop is bounded in
@@ -405,7 +409,9 @@ class FoundryWorkflowExecutor:
                 prompt,
                 options={
                     "response_format": RuntimeProposal,
-                    "max_tokens": self._config.max_output_tokens,
+                    "max_tokens": ADAPTER_MAX_OUTPUT_TOKENS
+                    if request.role == "audience_adapter"
+                    else self._config.max_output_tokens,
                     "store": False,
                 },
             )
