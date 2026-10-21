@@ -383,7 +383,9 @@ class FoundryWorkflowExecutor:
         from matchdesk.domain.agent_workflow import TurnTelemetry
 
         self._config.validate_activation()
-        if len(digest) > _MAX_CONTEXT_CHARS or len(request.instruction) > _MAX_INSTRUCTION_CHARS:
+        from matchdesk.domain.agent_workflow import MAX_INSTRUCTION_CHARS
+
+        if len(digest) > _MAX_CONTEXT_CHARS or len(request.instruction) > MAX_INSTRUCTION_CHARS:
             raise ValueError("Live specialist context exceeds bounded size")
         factory = self._factory or _DefaultToolAgentFactory()
         agent = factory.create(role=request.role, config=self._config, tools=role_functions(tools))

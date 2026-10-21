@@ -461,3 +461,24 @@ def test_a_provider_cannot_ask_for_more_than_the_host_allows() -> None:
 
     with pytest.raises(ValidationError):
         role_policies(Greedy())
+
+
+def test_a_full_live_revision_handoff_fits_its_bound() -> None:
+    """Five drafted claims, four tactical ones and their feedback fit one instruction.
+
+    The sixth live run stopped here: its revision hand-off exceeded the old 4,000.
+    """
+    from matchdesk.domain.agent_workflow import MAX_INSTRUCTION_CHARS, TASKS, _instruction
+
+    trace = rehearsal_trace()
+    claims = [c for s in _specialists(trace) for c in s["claims"]][:9]
+    wordy = [{**c, "text": c["text"] + " " + "x" * 200} for c in claims]
+    rows = [r for s in trace["steps"] if s["type"] == "verification" for r in s["results"]]
+    handoff = {
+        "focus": trace["focus"],
+        "tactical_claims": wordy[:4],
+        "previous_claims": wordy[4:9],
+        "verifier_feedback": rows[:5],
+    }
+    text = _instruction(TASKS["narrative_composer"], handoff)
+    assert 4_000 < len(text) < MAX_INSTRUCTION_CHARS
