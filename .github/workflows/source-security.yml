@@ -222,6 +222,26 @@ jobs:
               raise SystemExit('17 October OpenAPI finding is not the reviewed file digest')
           fingerprints.append(entry['fingerprint'])
 
+          # 21 Oct 2026: Claim.v1 gained an optional registered event fact, so the
+          # OpenAPI digest in the manifest changed again. Re-prove the one exact
+          # fingerprint: the flagged line must be the manifest's openapi.json field and
+          # equal SHA-256 of openapi.json at that commit. No rule or path is exempted.
+          newest = json.loads(Path('docs/evidence/secret-scan-reviewed-digests-20261021.json').read_text())
+          if len(newest) != 1:
+              raise SystemExit('Unexpected 21 October digest-review count')
+          entry = newest[0]
+          commit, path, rule, number = entry['fingerprint'].split(':')
+          if (not re.fullmatch(r'[0-9a-f]{40}', commit) or path != 'contracts/manifest.json'
+                  or rule != 'generic-api-key' or number != '13'
+                  or entry.get('digest_of') != 'contracts/openapi.json'):
+              raise SystemExit('21 October digest review identity changed')
+          line = subprocess.check_output(['git', 'show', f'{commit}:{path}']).decode('utf-8').splitlines()[12]
+          parsed = re.fullmatch(r'\s*"openapi\.json": "([0-9a-f]{64})",?', line)
+          actual_digest = hashlib.sha256(subprocess.check_output(['git', 'show', f'{commit}:contracts/openapi.json'])).hexdigest()
+          if parsed is None or parsed[1] != entry.get('sha256') or actual_digest != entry.get('sha256'):
+              raise SystemExit('21 October OpenAPI finding is not the reviewed file digest')
+          fingerprints.append(entry['fingerprint'])
+
           # 19 Oct 2026: Gitleaks correctly flagged one JWT-shaped string in
           # offline BFF tests. That literal was deliberately written as a fake
           # signature with a synthetic subject; review only the exact historical
@@ -260,7 +280,7 @@ jobs:
               raise SystemExit('Flagged JWT-looking bytes are not the proved test fixture')
           fingerprints.append(expected)
 
-          if len(fingerprints) != 29 or len(set(fingerprints)) != 29:
+          if len(fingerprints) != 30 or len(set(fingerprints)) != 30:
               raise SystemExit('Unexpected exact-fingerprint scope after new digest review')
           output = Path(os.environ['RUNNER_TEMP']) / 'matchdesk-no-ignores' / 'reviewed.ignore'
           output.write_text('\n'.join(fingerprints) + '\n')
@@ -273,7 +293,7 @@ jobs:
               'squash_commit': squash_commit,
               'records': records,
               'derived_squash_aliases': squash_aliases}, indent=2) + '\n')
-          print('Recomputed 28 reviewed digest fingerprints and one exact fake JWT fixture; no path or rule-wide exclusions.')
+          print('Recomputed 29 reviewed digest fingerprints and one exact fake JWT fixture; no path or rule-wide exclusions.')
           PY
       - name: Confirm the scanner still detects a new synthetic key with the same exceptions
         run: |
