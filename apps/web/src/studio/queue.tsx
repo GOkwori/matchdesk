@@ -11,8 +11,9 @@ import { draftEligibility, drafts, findClaim, verdictLabel, verdict } from "./da
 
 export function QueueBody() {
   const [states, setStates] = useState<Record<string, "keep" | "opinion" | "removed">>({});
-  useEffect(() => { setStates(loadD031().states); }, []);
-  const d031 = draftEligibility(states);
+  const [failedEdits, setFailedEdits] = useState<string[]>([]);
+  useEffect(() => { const doc = loadD031(); setStates(doc.states); setFailedEdits(doc.failedEdits); }, []);
+  const d031 = draftEligibility(states, failedEdits);
   const fixed = Object.keys(states).length > 0;
 
   return (
@@ -54,7 +55,7 @@ export function QueueBody() {
           {!d031.eligible && <div className="md-banner md-banner-warn md-banner-inline"><span className="md-banner-icon" aria-hidden="true">!</span><span><strong>Approval blocked.</strong> {d031.blocking.join(" and ")} must be resolved first.</span></div>}
           <Link href="/producer/compose/D-031" className="md-btn md-btn-primary">Open in composer <Icon name="arrow" size={16} /></Link>
         </section>
-        <TourStep step={4} />
+        <TourStep step={5} />
       </aside>
     </div>
   );

@@ -19,7 +19,7 @@ export function PublicationBody() {
   const [submitted, setSubmitted] = useState(false);
   useEffect(() => {
     const doc = loadD031();
-    setEligible(draftEligibility(doc.states).eligible);
+    setEligible(draftEligibility(doc.states, doc.failedEdits).eligible);
     setSubmitted(doc.submitted);
   }, []);
   const steps = [

@@ -26,7 +26,7 @@ export function ActivityBody() {
   const [rows, setRows] = useState<Row[]>(BASE_ROWS);
   useEffect(() => {
     const doc = loadD031();
-    if (Object.keys(doc.states).length && draftEligibility(doc.states).eligible) {
+    if (Object.keys(doc.states).length && draftEligibility(doc.states, doc.failedEdits).eligible) {
       setRows([{ time: "now", actor: "Dana Price", initials: "DP", action: doc.submitted ? "Submitted D-031 v4" : "Re-verified D-031 v4", detail: "Eligible on this device", kind: "editorial" }, ...BASE_ROWS]);
     }
   }, []);

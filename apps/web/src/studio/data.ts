@@ -217,8 +217,9 @@ export const d031Sentences: readonly Sentence[] = [
 
 export type SentenceState = "keep" | "opinion" | "removed";
 
-/** A draft is eligible when every kept sentence is verified or explicitly marked as opinion. */
-export function draftEligibility(states: Record<string, SentenceState>): { eligible: boolean; blocking: string[]; verified: number; opinions: number } {
+/** A draft is eligible when every kept sentence is verified or explicitly marked as opinion.
+ * `failedEdits` lists claims whose edited sentence failed re-verification in the composer. */
+export function draftEligibility(states: Record<string, SentenceState>, failedEdits: readonly string[] = []): { eligible: boolean; blocking: string[]; verified: number; opinions: number } {
   const blocking: string[] = [];
   let verified = 0;
   let opinions = 0;
@@ -227,7 +228,7 @@ export function draftEligibility(states: Record<string, SentenceState>): { eligi
     if (state === "removed") continue;
     if (state === "opinion") { opinions += 1; continue; }
     const claim = findClaim(s.claimId);
-    if (claim && verdict(claim) === "verified") verified += 1;
+    if (claim && verdict(claim) === "verified" && !failedEdits.includes(s.claimId)) verified += 1;
     else blocking.push(s.claimId);
   }
   return { eligible: blocking.length === 0, blocking, verified, opinions };
@@ -267,12 +268,13 @@ export const storyCopy: Record<Language, { label: string; headline: [string, str
   },
 };
 
-/** Guided tour: six stops across the real routes; the step lives in the URL (?tour=n). */
+/** Guided tour: seven stops across the real routes; the step lives in the URL (?tour=n). */
 export const tourSteps: readonly { title: string; body: string; next?: string; nextLabel?: string }[] = [
   { title: "Start with the 58′ goal", body: "Open it to see exactly which events prove it happened.", next: "/match/nbr-riv/moments?moment=M-05&tour=2", nextLabel: "Open the goal" },
-  { title: "Every moment links to evidence", body: `This goal is matched to recorded events. Next, see how a statistic is recalculated from all ${eventCountText} of them.`, next: "/match/nbr-riv/evidence/CL-0214?tour=3", nextLabel: "See the proof" },
-  { title: "Claims are recalculated, not trusted", body: "Try a forged value: the verifier recomputes 57.96% from the events, rounds it to 58% and rejects 59%.", next: "/producer/queue?tour=4", nextLabel: "See the review queue" },
-  { title: "One draft is blocked", body: "D-031 has a pending interpretation and an unsupported claim. Fix it in the composer.", next: "/producer/compose/D-031?tour=5", nextLabel: "Open the composer" },
-  { title: "Fix it and it re-verifies instantly", body: "Remove the unsupported sentence and mark the interpretation as opinion. Watch the draft become eligible.", next: `/story/${STORY_SLUG}?tour=6`, nextLabel: "See what fans get" },
+  { title: "Every moment links to evidence", body: "This goal is matched to recorded events. Next, watch four AI specialists write about it, and code check every word.", next: "/match/nbr-riv/insights?tour=3", nextLabel: "See the agents work" },
+  { title: "Agents draft, code decides", body: "The composer claimed 60% possession. The verifier recomputed it from the log, sent the draft back, and the revision passed. Nothing reaches fans without a human.", next: "/match/nbr-riv/evidence/CL-0214?tour=4", nextLabel: "See the proof" },
+  { title: "Claims are recalculated, not trusted", body: `The verifier recomputes 57.96% from all ${eventCountText} events, rounds it to 58% and rejects a forged 59%.`, next: "/producer/queue?tour=5", nextLabel: "See the review queue" },
+  { title: "One draft is blocked", body: "D-031 has a pending interpretation and an unsupported claim. Fix it in the composer.", next: "/producer/compose/D-031?tour=6", nextLabel: "Open the composer" },
+  { title: "Edit it and it re-verifies as you type", body: "Every sentence is checked in your browser. Change 58% to 60% and watch it fail; remove the unsupported sentence and the draft becomes eligible.", next: `/story/${STORY_SLUG}?tour=7`, nextLabel: "See what fans get" },
   { title: "What fans see", body: "A verified story with its checks shown. It only goes out after a human producer approves it." },
 ];
