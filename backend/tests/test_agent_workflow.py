@@ -123,13 +123,36 @@ class _NeverFixes(RehearsalExecutor):
         return SpecialistResponse(role="narrative_composer", proposed_claims=claims, content="x")
 
 
-def test_verification_that_never_passes_ends_in_fallback_without_adaptation() -> None:
-    """The revision budget is bounded; unverified copy never reaches the audience adapter."""
+def test_a_claim_that_never_verifies_is_withheld_and_the_verified_story_goes_on() -> None:
+    """When revision is spent, code drops what never verified; nothing unverified goes on."""
     trace = _run(_NeverFixes())
+    assert trace["status"] == "completed"
+    withheld = [s for s in trace["steps"] if s["type"] == "withheld"]
+    assert len(withheld) == 1 and withheld[0]["claim_ids"] == ["NC-02"]
+    assert "NC-02" not in {c["claim_id"] for c in trace["verified_claims"]}
+    assert all("NC-02" not in v["claim_ids"] for v in trace["variants"])
+    rounds = [s for s in trace["steps"] if s["type"] == "verification"]
+    assert rounds and not any(r["passed"] for r in rounds)
+
+
+class _NothingVerifies(_NeverFixes):
+    """A composer whose only claim is the misstated one, and who never fixes it."""
+
+    def _composer(self, tools, facts, handoff):
+        """Keep only the misstated possession claim."""
+        draft = super()._composer(tools, facts, handoff)
+        claims = tuple(c for c in draft.proposed_claims if c.claim_id == "NC-02")
+        return SpecialistResponse(role="narrative_composer", proposed_claims=claims, content="x")
+
+
+def test_verification_that_never_passes_ends_in_fallback_without_adaptation() -> None:
+    """With no verified claim at all, the run falls back and nothing reaches the adapter."""
+    trace = _run(_NothingVerifies())
     assert trace["status"] == "fallback"
     assert "Verification failed after bounded revision budget" in trace["terminal_reason"]
     assert trace["variants"] == [] and trace["verified_claims"] == []
     assert "audience_adapter" not in [s["role"] for s in _specialists(trace)]
+    assert not [s for s in trace["steps"] if s["type"] == "withheld"]
 
 
 class _MalformedComposer(RehearsalExecutor):
@@ -406,12 +429,15 @@ class _ReviewerRetriedOnce(RehearsalExecutor):
 def test_a_retry_shares_the_role_budget_with_revision_rounds() -> None:
     """With two attempts, one retry leaves no room to revise; a third attempt does."""
     exhausted = _run(_ReviewerRetriedOnce())
-    assert exhausted["status"] == "fallback"
-    assert "bounded revision budget" in exhausted["terminal_reason"]
+    # No revision round was possible, so the misstated claim was withheld, not fixed.
+    assert [s["type"] for s in exhausted["steps"]].count("verification") == 1
+    assert [s["claim_ids"] for s in exhausted["steps"] if s["type"] == "withheld"] == [["NC-02"]]
     revised = _run(_ReviewerRetriedOnce(role_attempts=3))
     assert revised["status"] == "completed" and len(revised["variants"]) == 9
     rounds = [s for s in revised["steps"] if s["type"] == "verification"]
     assert [r["passed"] for r in rounds] == [False, True]
+    assert not [s for s in revised["steps"] if s["type"] == "withheld"]
+    assert "NC-02" in {c["claim_id"] for c in revised["verified_claims"]}
     assert FoundryWorkflowExecutor.role_attempts == 3
 
 
