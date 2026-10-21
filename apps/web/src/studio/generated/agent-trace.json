@@ -1,0 +1,1332 @@
+{
+ "approval": "human producer only",
+ "digest_chars": 2103,
+ "digest_event_count": 1421,
+ "focus": {
+  "event_id": "E-1366",
+  "moment_id": "M-05",
+  "opponent_id": "riv",
+  "player_id": "nbr-09",
+  "team_id": "nbr"
+ },
+ "match_id": "nbr-riv-canonical",
+ "provider": {
+  "kind": "rehearsal",
+  "label": "Rehearsal: deterministic stand-in for the model, no AI"
+ },
+ "published": false,
+ "schema": "matchdesk-agent-trace/1",
+ "status": "completed",
+ "steps": [
+  {
+   "attempts": 1,
+   "claims": [
+    {
+     "claim_id": "TA-01",
+     "evidence_event_ids": [
+      "E-0789",
+      "E-0790",
+      "E-0825"
+     ],
+     "kind": "tactical_inference",
+     "schema_version": "1.0",
+     "text": "Riverside's best spell came between 30 and 45 minutes."
+    },
+    {
+     "assertion": {
+      "comparator": "eq",
+      "decimals": 2,
+      "metric": "possession_time.v1",
+      "schema_version": "1.0",
+      "subject": {
+       "schema_version": "1.0",
+       "team_id": "nbr"
+      },
+      "unit": "ratio",
+      "value": 0.58,
+      "window": {
+       "from_ms": 0,
+       "schema_version": "1.0",
+       "to_ms": 4032000
+      }
+     },
+     "claim_id": "TA-02",
+     "evidence_event_ids": [
+      "E-0001"
+     ],
+     "kind": "measured_stat",
+     "schema_version": "1.0",
+     "text": "Northbridge have had 58% possession."
+    },
+    {
+     "claim_id": "TA-03",
+     "evidence_event_ids": [
+      "E-1359",
+      "E-1366"
+     ],
+     "fact": {
+      "event_id": "E-1366",
+      "from_event_id": "E-1359",
+      "from_tag": "corner",
+      "gap_seconds": 14,
+      "query": "sequence_gap.v1",
+      "schema_version": "1.0"
+     },
+     "kind": "event_fact",
+     "schema_version": "1.0",
+     "text": "The goal came 14 seconds after a corner."
+    }
+   ],
+   "content": "Riverside held 55% of possession from 30 to 45 minutes, their highest share of any block.",
+   "duration_ms": null,
+   "failures": [],
+   "handoff_keys": [
+    "focus"
+   ],
+   "outcome": "proposed",
+   "role": "tactical_analyst",
+   "tokens": null,
+   "tool_calls": [
+    {
+     "args": {
+      "from_minute": 0.0,
+      "metric_id": "possession_time.v1",
+      "team_id": "riv",
+      "to_minute": 15.0
+     },
+     "result": 0.382623,
+     "tool": "metric"
+    },
+    {
+     "args": {
+      "from_minute": 15.0,
+      "metric_id": "possession_time.v1",
+      "team_id": "riv",
+      "to_minute": 30.0
+     },
+     "result": 0.403148,
+     "tool": "metric"
+    },
+    {
+     "args": {
+      "from_minute": 30.0,
+      "metric_id": "possession_time.v1",
+      "team_id": "riv",
+      "to_minute": 45.0
+     },
+     "result": 0.545942,
+     "tool": "metric"
+    },
+    {
+     "args": {
+      "from_minute": 45.0,
+      "metric_id": "possession_time.v1",
+      "team_id": "riv",
+      "to_minute": 60.0
+     },
+     "result": 0.392901,
+     "tool": "metric"
+    },
+    {
+     "args": {
+      "from_minute": 60.0,
+      "metric_id": "possession_time.v1",
+      "team_id": "riv",
+      "to_minute": 67.2
+     },
+     "result": 0.330299,
+     "tool": "metric"
+    },
+    {
+     "args": {
+      "from_minute": 30.0,
+      "to_minute": 45.0,
+      "types": [
+       "goal",
+       "shot"
+      ]
+     },
+     "result": [
+      {
+       "clock": "34:17",
+       "event_id": "E-0687",
+       "outcome": "goal",
+       "player_id": "nbr-09",
+       "team_id": "nbr",
+       "type": "shot"
+      },
+      {
+       "clock": "34:18",
+       "event_id": "E-0688",
+       "outcome": "goal",
+       "player_id": "nbr-09",
+       "team_id": "nbr",
+       "type": "goal"
+      },
+      {
+       "clock": "41:02",
+       "event_id": "E-0789",
+       "outcome": "goal",
+       "player_id": "riv-11",
+       "team_id": "riv",
+       "type": "shot"
+      },
+      {
+       "clock": "41:03",
+       "event_id": "E-0790",
+       "outcome": "goal",
+       "player_id": "riv-11",
+       "team_id": "riv",
+       "type": "goal"
+      },
+      {
+       "clock": "43:53",
+       "event_id": "E-0825",
+       "outcome": "saved",
+       "player_id": "riv-04",
+       "team_id": "riv",
+       "type": "shot"
+      }
+     ],
+     "tool": "events_in_window"
+    },
+    {
+     "args": {
+      "from_minute": 0,
+      "metric_id": "possession_time.v1",
+      "team_id": "nbr",
+      "to_minute": 67.2
+     },
+     "result": 0.579563,
+     "tool": "metric"
+    },
+    {
+     "args": {
+      "from_minute": 0,
+      "to_minute": 1
+     },
+     "result": [
+      {
+       "clock": "00:00",
+       "event_id": "E-0001",
+       "player_id": null,
+       "team_id": null,
+       "type": "period_start"
+      },
+      {
+       "clock": "00:00",
+       "event_id": "E-0002",
+       "outcome": "complete",
+       "player_id": "nbr-09",
+       "team_id": "nbr",
+       "type": "kickoff"
+      },
+      {
+       "clock": "00:02",
+       "event_id": "E-0003",
+       "outcome": "complete",
+       "player_id": "nbr-05",
+       "team_id": "nbr",
+       "type": "recovery"
+      },
+      {
+       "clock": "00:05",
+       "event_id": "E-0004",
+       "outcome": "complete",
+       "player_id": "nbr-03",
+       "team_id": "nbr",
+       "type": "pass"
+      },
+      {
+       "clock": "00:08",
+       "event_id": "E-0005",
+       "outcome": "complete",
+       "player_id": "nbr-02",
+       "team_id": "nbr",
+       "type": "pass"
+      },
+      {
+       "clock": "00:11",
+       "event_id": "E-0006",
+       "outcome": "complete",
+       "player_id": "nbr-07",
+       "team_id": "nbr",
+       "type": "pass"
+      },
+      {
+       "clock": "00:14",
+       "event_id": "E-0007",
+       "outcome": "complete",
+       "player_id": "nbr-09",
+       "team_id": "nbr",
+       "type": "pass"
+      },
+      {
+       "clock": "00:17",
+       "event_id": "E-0008",
+       "outcome": "complete",
+       "player_id": "nbr-09",
+       "team_id": "nbr",
+       "type": "pass"
+      },
+      {
+       "clock": "00:20",
+       "event_id": "E-0009",
+       "outcome": "complete",
+       "player_id": "nbr-08",
+       "team_id": "nbr",
+       "type": "pass"
+      },
+      {
+       "clock": "00:23",
+       "event_id": "E-0010",
+       "outcome": "complete",
+       "player_id": "nbr-07",
+       "team_id": "nbr",
+       "type": "pass"
+      },
+      {
+       "clock": "00:26",
+       "event_id": "E-0011",
+       "outcome": "incomplete",
+       "player_id": "nbr-06",
+       "team_id": "nbr",
+       "type": "pass"
+      },
+      {
+       "clock": "00:29",
+       "event_id": "E-0012",
+       "outcome": "complete",
+       "player_id": "riv-02",
+       "team_id": "riv",
+       "type": "recovery"
+      },
+      {
+       "clock": "00:32",
+       "event_id": "E-0013",
+       "outcome": "complete",
+       "player_id": "riv-10",
+       "team_id": "riv",
+       "type": "pass"
+      },
+      {
+       "clock": "00:35",
+       "event_id": "E-0014",
+       "outcome": "complete",
+       "player_id": "riv-09",
+       "team_id": "riv",
+       "type": "pass"
+      },
+      {
+       "clock": "00:38",
+       "event_id": "E-0015",
+       "outcome": "complete",
+       "player_id": "riv-10",
+       "team_id": "riv",
+       "type": "pass"
+      },
+      {
+       "clock": "00:41",
+       "event_id": "E-0016",
+       "outcome": "complete",
+       "player_id": "riv-03",
+       "team_id": "riv",
+       "type": "pass"
+      },
+      {
+       "clock": "00:44",
+       "event_id": "E-0017",
+       "outcome": "complete",
+       "player_id": "riv-07",
+       "team_id": "riv",
+       "type": "pass"
+      },
+      {
+       "clock": "00:47",
+       "event_id": "E-0018",
+       "outcome": "complete",
+       "player_id": "riv-05",
+       "team_id": "riv",
+       "type": "pass"
+      },
+      {
+       "clock": "00:50",
+       "event_id": "E-0019",
+       "outcome": "complete",
+       "player_id": "riv-07",
+       "team_id": "riv",
+       "type": "carry"
+      },
+      {
+       "clock": "00:53",
+       "event_id": "E-0020",
+       "outcome": "complete",
+       "player_id": "riv-08",
+       "team_id": "riv",
+       "type": "pass"
+      },
+      {
+       "clock": "00:56",
+       "event_id": "E-0021",
+       "outcome": "complete",
+       "player_id": "riv-03",
+       "team_id": "riv",
+       "type": "pass"
+      },
+      {
+       "clock": "00:59",
+       "event_id": "E-0022",
+       "outcome": "incomplete",
+       "player_id": "riv-08",
+       "team_id": "riv",
+       "type": "pass"
+      }
+     ],
+     "tool": "events_in_window"
+    },
+    {
+     "args": {
+      "event_id": "E-1366"
+     },
+     "result": {
+      "clock": "58:17",
+      "event_id": "E-1366",
+      "outcome": "goal",
+      "player_id": "nbr-09",
+      "team_id": "nbr",
+      "type": "goal"
+     },
+     "tool": "event_by_id"
+    },
+    {
+     "args": {
+      "from_minute": 57.78333333333333,
+      "to_minute": 58.33333333333333
+     },
+     "result": [
+      {
+       "clock": "57:47",
+       "event_id": "E-1349",
+       "outcome": "complete",
+       "player_id": "nbr-02",
+       "team_id": "nbr",
+       "type": "pass"
+      },
+      {
+       "clock": "57:49",
+       "event_id": "E-1350",
+       "outcome": "complete",
+       "player_id": "nbr-05",
+       "team_id": "nbr",
+       "type": "pass"
+      },
+      {
+       "clock": "57:50",
+       "event_id": "E-1351",
+       "outcome": "complete",
+       "player_id": "nbr-11",
+       "team_id": "nbr",
+       "type": "pass"
+      },
+      {
+       "clock": "57:52",
+       "event_id": "E-1352",
+       "outcome": "complete",
+       "player_id": "nbr-06",
+       "team_id": "nbr",
+       "type": "carry"
+      },
+      {
+       "clock": "57:53",
+       "event_id": "E-1353",
+       "outcome": "complete",
+       "player_id": "nbr-06",
+       "team_id": "nbr",
+       "type": "pass"
+      },
+      {
+       "clock": "57:55",
+       "event_id": "E-1354",
+       "outcome": "incomplete",
+       "player_id": "nbr-03",
+       "team_id": "nbr",
+       "type": "pass"
+      },
+      {
+       "clock": "57:56",
+       "event_id": "E-1355",
+       "outcome": "complete",
+       "player_id": "riv-02",
+       "team_id": "riv",
+       "type": "recovery"
+      },
+      {
+       "clock": "57:58",
+       "event_id": "E-1356",
+       "outcome": "complete",
+       "player_id": "riv-08",
+       "team_id": "riv",
+       "type": "pass"
+      },
+      {
+       "clock": "57:59",
+       "event_id": "E-1357",
+       "outcome": "complete",
+       "player_id": "riv-09",
+       "team_id": "riv",
+       "type": "pass"
+      },
+      {
+       "clock": "58:01",
+       "event_id": "E-1358",
+       "outcome": "incomplete",
+       "player_id": "riv-11",
+       "team_id": "riv",
+       "type": "pass"
+      },
+      {
+       "clock": "58:03",
+       "event_id": "E-1359",
+       "outcome": "incomplete",
+       "player_id": "nbr-07",
+       "tags": [
+        "corner"
+       ],
+       "team_id": "nbr",
+       "type": "pass"
+      },
+      {
+       "clock": "58:05",
+       "event_id": "E-1360",
+       "outcome": "incomplete",
+       "player_id": "riv-05",
+       "team_id": "riv",
+       "type": "clearance"
+      },
+      {
+       "clock": "58:07",
+       "event_id": "E-1361",
+       "outcome": "complete",
+       "player_id": "nbr-08",
+       "team_id": "nbr",
+       "type": "recovery"
+      },
+      {
+       "clock": "58:09",
+       "event_id": "E-1362",
+       "outcome": "complete",
+       "player_id": "nbr-08",
+       "team_id": "nbr",
+       "type": "pass"
+      },
+      {
+       "clock": "58:12",
+       "event_id": "E-1363",
+       "outcome": "complete",
+       "player_id": "nbr-07",
+       "team_id": "nbr",
+       "type": "carry"
+      },
+      {
+       "clock": "58:15",
+       "event_id": "E-1364",
+       "outcome": "complete",
+       "player_id": "nbr-07",
+       "team_id": "nbr",
+       "type": "pass"
+      },
+      {
+       "clock": "58:16",
+       "event_id": "E-1365",
+       "outcome": "goal",
+       "player_id": "nbr-09",
+       "tags": [
+        "header"
+       ],
+       "team_id": "nbr",
+       "type": "shot"
+      },
+      {
+       "clock": "58:17",
+       "event_id": "E-1366",
+       "outcome": "goal",
+       "player_id": "nbr-09",
+       "team_id": "nbr",
+       "type": "goal"
+      }
+     ],
+     "tool": "events_in_window"
+    }
+   ],
+   "type": "specialist"
+  },
+  {
+   "attempts": 1,
+   "claims": [
+    {
+     "assertion": {
+      "comparator": "eq",
+      "metric": "goals.v1",
+      "schema_version": "1.0",
+      "subject": {
+       "player_id": "nbr-09",
+       "schema_version": "1.0",
+       "team_id": "nbr"
+      },
+      "unit": "count",
+      "value": 2.0,
+      "window": {
+       "from_ms": 0,
+       "schema_version": "1.0",
+       "to_ms": 4032000
+      }
+     },
+     "claim_id": "NC-01",
+     "evidence_event_ids": [
+      "E-0688",
+      "E-1366"
+     ],
+     "kind": "measured_stat",
+     "schema_version": "1.0",
+     "text": "Okafor scored both Northbridge goals."
+    },
+    {
+     "assertion": {
+      "comparator": "eq",
+      "decimals": 2,
+      "metric": "possession_time.v1",
+      "schema_version": "1.0",
+      "subject": {
+       "schema_version": "1.0",
+       "team_id": "nbr"
+      },
+      "unit": "ratio",
+      "value": 0.6,
+      "window": {
+       "from_ms": 0,
+       "schema_version": "1.0",
+       "to_ms": 4032000
+      }
+     },
+     "claim_id": "NC-02",
+     "evidence_event_ids": [
+      "E-0001"
+     ],
+     "kind": "measured_stat",
+     "schema_version": "1.0",
+     "text": "Northbridge have had 60% possession."
+    },
+    {
+     "claim_id": "NC-03",
+     "evidence_event_ids": [
+      "E-1359",
+      "E-1366"
+     ],
+     "fact": {
+      "event_id": "E-1366",
+      "from_event_id": "E-1359",
+      "from_tag": "corner",
+      "gap_seconds": 14,
+      "query": "sequence_gap.v1",
+      "schema_version": "1.0"
+     },
+     "kind": "event_fact",
+     "schema_version": "1.0",
+     "text": "Okafor's header came 14 seconds after a corner."
+    },
+    {
+     "claim_id": "NC-04",
+     "evidence_event_ids": [
+      "E-0688",
+      "E-1366"
+     ],
+     "kind": "event_fact",
+     "schema_version": "1.0",
+     "text": "It is Okafor's first brace of the season."
+    },
+    {
+     "claim_id": "NC-05",
+     "evidence_event_ids": [
+      "E-0789",
+      "E-0790",
+      "E-0825"
+     ],
+     "kind": "tactical_inference",
+     "schema_version": "1.0",
+     "text": "Riverside's best spell came between 30 and 45 minutes."
+    }
+   ],
+   "content": "Headline: Okafor double restores Northbridge lead\n[rehearsal] NC-02 misstates possession by two points and NC-04 needs season data, on purpose, so review and verification have something to catch.",
+   "duration_ms": null,
+   "failures": [],
+   "handoff_keys": [
+    "focus",
+    "tactical_claims"
+   ],
+   "outcome": "proposed",
+   "role": "narrative_composer",
+   "tokens": null,
+   "tool_calls": [
+    {
+     "args": {
+      "from_minute": 0,
+      "metric_id": "goals.v1",
+      "player_id": "nbr-09",
+      "team_id": "nbr",
+      "to_minute": 67.2
+     },
+     "result": 2.0,
+     "tool": "metric"
+    }
+   ],
+   "type": "specialist"
+  },
+  {
+   "attempts": 1,
+   "claims": [
+    {
+     "assertion": {
+      "comparator": "eq",
+      "metric": "goals.v1",
+      "schema_version": "1.0",
+      "subject": {
+       "player_id": "nbr-09",
+       "schema_version": "1.0",
+       "team_id": "nbr"
+      },
+      "unit": "count",
+      "value": 2.0,
+      "window": {
+       "from_ms": 0,
+       "schema_version": "1.0",
+       "to_ms": 4032000
+      }
+     },
+     "claim_id": "NC-01",
+     "evidence_event_ids": [
+      "E-0688",
+      "E-1366"
+     ],
+     "kind": "measured_stat",
+     "schema_version": "1.0",
+     "text": "Okafor scored both Northbridge goals."
+    },
+    {
+     "assertion": {
+      "comparator": "eq",
+      "decimals": 2,
+      "metric": "possession_time.v1",
+      "schema_version": "1.0",
+      "subject": {
+       "schema_version": "1.0",
+       "team_id": "nbr"
+      },
+      "unit": "ratio",
+      "value": 0.6,
+      "window": {
+       "from_ms": 0,
+       "schema_version": "1.0",
+       "to_ms": 4032000
+      }
+     },
+     "claim_id": "NC-02",
+     "evidence_event_ids": [
+      "E-0001"
+     ],
+     "kind": "measured_stat",
+     "schema_version": "1.0",
+     "text": "Northbridge have had 60% possession."
+    },
+    {
+     "claim_id": "NC-03",
+     "evidence_event_ids": [
+      "E-1359",
+      "E-1366"
+     ],
+     "fact": {
+      "event_id": "E-1366",
+      "from_event_id": "E-1359",
+      "from_tag": "corner",
+      "gap_seconds": 14,
+      "query": "sequence_gap.v1",
+      "schema_version": "1.0"
+     },
+     "kind": "event_fact",
+     "schema_version": "1.0",
+     "text": "Okafor's header came 14 seconds after a corner."
+    },
+    {
+     "claim_id": "NC-05",
+     "evidence_event_ids": [
+      "E-0789",
+      "E-0790",
+      "E-0825"
+     ],
+     "kind": "tactical_inference",
+     "schema_version": "1.0",
+     "text": "Riverside's best spell came between 30 and 45 minutes."
+    }
+   ],
+   "content": "Dropped NC-04: the match log holds no season history to check it.",
+   "duration_ms": null,
+   "failures": [],
+   "handoff_keys": [
+    "draft_claims"
+   ],
+   "outcome": "proposed",
+   "role": "editorial_reviewer",
+   "tokens": null,
+   "tool_calls": [],
+   "type": "specialist"
+  },
+  {
+   "passed": false,
+   "results": [
+    {
+     "claim_id": "NC-01",
+     "expected": 2.0,
+     "observed": 2.0,
+     "query_id": "metric-goals-v1",
+     "reason": "Registered metric recomputation satisfies the claim comparator",
+     "status": "verified",
+     "text": "Okafor scored both Northbridge goals."
+    },
+    {
+     "claim_id": "NC-02",
+     "expected": 0.6,
+     "observed": 0.5795628103277061,
+     "query_id": "metric-possession_time-v1",
+     "reason": "Registered metric recomputation does not satisfy the claim comparator",
+     "status": "needs_revision",
+     "text": "Northbridge have had 60% possession."
+    },
+    {
+     "claim_id": "NC-03",
+     "expected": null,
+     "observed": null,
+     "query_id": "event-sequence-gap-v1",
+     "reason": "The recorded events and gap match the stated sequence",
+     "status": "verified",
+     "text": "Okafor's header came 14 seconds after a corner."
+    },
+    {
+     "claim_id": "NC-05",
+     "expected": null,
+     "observed": null,
+     "query_id": "evidence-support-v1",
+     "reason": "All cited evidence events exist; tactical meaning remains an inference",
+     "status": "supported_inference",
+     "text": "Riverside's best spell came between 30 and 45 minutes."
+    }
+   ],
+   "round": 1,
+   "type": "verification"
+  },
+  {
+   "attempts": 1,
+   "claims": [
+    {
+     "assertion": {
+      "comparator": "eq",
+      "metric": "goals.v1",
+      "schema_version": "1.0",
+      "subject": {
+       "player_id": "nbr-09",
+       "schema_version": "1.0",
+       "team_id": "nbr"
+      },
+      "unit": "count",
+      "value": 2.0,
+      "window": {
+       "from_ms": 0,
+       "schema_version": "1.0",
+       "to_ms": 4032000
+      }
+     },
+     "claim_id": "NC-01",
+     "evidence_event_ids": [
+      "E-0688",
+      "E-1366"
+     ],
+     "kind": "measured_stat",
+     "schema_version": "1.0",
+     "text": "Okafor scored both Northbridge goals."
+    },
+    {
+     "assertion": {
+      "comparator": "eq",
+      "decimals": 2,
+      "metric": "possession_time.v1",
+      "schema_version": "1.0",
+      "subject": {
+       "schema_version": "1.0",
+       "team_id": "nbr"
+      },
+      "unit": "ratio",
+      "value": 0.58,
+      "window": {
+       "from_ms": 0,
+       "schema_version": "1.0",
+       "to_ms": 4032000
+      }
+     },
+     "claim_id": "NC-02",
+     "evidence_event_ids": [
+      "E-0001"
+     ],
+     "kind": "measured_stat",
+     "schema_version": "1.0",
+     "text": "Northbridge have had 58% possession."
+    },
+    {
+     "claim_id": "NC-03",
+     "evidence_event_ids": [
+      "E-1359",
+      "E-1366"
+     ],
+     "fact": {
+      "event_id": "E-1366",
+      "from_event_id": "E-1359",
+      "from_tag": "corner",
+      "gap_seconds": 14,
+      "query": "sequence_gap.v1",
+      "schema_version": "1.0"
+     },
+     "kind": "event_fact",
+     "schema_version": "1.0",
+     "text": "Okafor's header came 14 seconds after a corner."
+    },
+    {
+     "claim_id": "NC-05",
+     "evidence_event_ids": [
+      "E-0789",
+      "E-0790",
+      "E-0825"
+     ],
+     "kind": "tactical_inference",
+     "schema_version": "1.0",
+     "text": "Riverside's best spell came between 30 and 45 minutes."
+    }
+   ],
+   "content": "Revised after verification: recomputed every failed number from the log.",
+   "duration_ms": null,
+   "failures": [],
+   "handoff_keys": [
+    "focus",
+    "previous_claims",
+    "tactical_claims",
+    "verifier_feedback"
+   ],
+   "outcome": "proposed",
+   "role": "narrative_composer",
+   "tokens": null,
+   "tool_calls": [
+    {
+     "args": {
+      "from_minute": 0.0,
+      "metric_id": "possession_time.v1",
+      "team_id": "nbr",
+      "to_minute": 67.2
+     },
+     "result": 0.579563,
+     "tool": "metric"
+    }
+   ],
+   "type": "specialist"
+  },
+  {
+   "attempts": 1,
+   "claims": [
+    {
+     "assertion": {
+      "comparator": "eq",
+      "metric": "goals.v1",
+      "schema_version": "1.0",
+      "subject": {
+       "player_id": "nbr-09",
+       "schema_version": "1.0",
+       "team_id": "nbr"
+      },
+      "unit": "count",
+      "value": 2.0,
+      "window": {
+       "from_ms": 0,
+       "schema_version": "1.0",
+       "to_ms": 4032000
+      }
+     },
+     "claim_id": "NC-01",
+     "evidence_event_ids": [
+      "E-0688",
+      "E-1366"
+     ],
+     "kind": "measured_stat",
+     "schema_version": "1.0",
+     "text": "Okafor scored both Northbridge goals."
+    },
+    {
+     "assertion": {
+      "comparator": "eq",
+      "decimals": 2,
+      "metric": "possession_time.v1",
+      "schema_version": "1.0",
+      "subject": {
+       "schema_version": "1.0",
+       "team_id": "nbr"
+      },
+      "unit": "ratio",
+      "value": 0.58,
+      "window": {
+       "from_ms": 0,
+       "schema_version": "1.0",
+       "to_ms": 4032000
+      }
+     },
+     "claim_id": "NC-02",
+     "evidence_event_ids": [
+      "E-0001"
+     ],
+     "kind": "measured_stat",
+     "schema_version": "1.0",
+     "text": "Northbridge have had 58% possession."
+    },
+    {
+     "claim_id": "NC-03",
+     "evidence_event_ids": [
+      "E-1359",
+      "E-1366"
+     ],
+     "fact": {
+      "event_id": "E-1366",
+      "from_event_id": "E-1359",
+      "from_tag": "corner",
+      "gap_seconds": 14,
+      "query": "sequence_gap.v1",
+      "schema_version": "1.0"
+     },
+     "kind": "event_fact",
+     "schema_version": "1.0",
+     "text": "Okafor's header came 14 seconds after a corner."
+    },
+    {
+     "claim_id": "NC-05",
+     "evidence_event_ids": [
+      "E-0789",
+      "E-0790",
+      "E-0825"
+     ],
+     "kind": "tactical_inference",
+     "schema_version": "1.0",
+     "text": "Riverside's best spell came between 30 and 45 minutes."
+    }
+   ],
+   "content": "No claim needs data outside the match log.",
+   "duration_ms": null,
+   "failures": [],
+   "handoff_keys": [
+    "draft_claims"
+   ],
+   "outcome": "proposed",
+   "role": "editorial_reviewer",
+   "tokens": null,
+   "tool_calls": [],
+   "type": "specialist"
+  },
+  {
+   "passed": true,
+   "results": [
+    {
+     "claim_id": "NC-01",
+     "expected": 2.0,
+     "observed": 2.0,
+     "query_id": "metric-goals-v1",
+     "reason": "Registered metric recomputation satisfies the claim comparator",
+     "status": "verified",
+     "text": "Okafor scored both Northbridge goals."
+    },
+    {
+     "claim_id": "NC-02",
+     "expected": 0.58,
+     "observed": 0.5795628103277061,
+     "query_id": "metric-possession_time-v1",
+     "reason": "Registered metric recomputation satisfies the claim comparator",
+     "status": "verified",
+     "text": "Northbridge have had 58% possession."
+    },
+    {
+     "claim_id": "NC-03",
+     "expected": null,
+     "observed": null,
+     "query_id": "event-sequence-gap-v1",
+     "reason": "The recorded events and gap match the stated sequence",
+     "status": "verified",
+     "text": "Okafor's header came 14 seconds after a corner."
+    },
+    {
+     "claim_id": "NC-05",
+     "expected": null,
+     "observed": null,
+     "query_id": "evidence-support-v1",
+     "reason": "All cited evidence events exist; tactical meaning remains an inference",
+     "status": "supported_inference",
+     "text": "Riverside's best spell came between 30 and 45 minutes."
+    }
+   ],
+   "round": 2,
+   "type": "verification"
+  },
+  {
+   "attempts": 1,
+   "claims": [],
+   "content": "[{\"language\": \"en\", \"persona\": \"analyst\", \"text\": \"Okafor has scored both Northbridge goals; his header came 14 seconds after a corner.\", \"claim_ids\": [\"NC-01\", \"NC-03\"]}, {\"language\": \"en\", \"persona\": \"casual_fan\", \"text\": \"Okafor again! A header 14 seconds after a corner puts Northbridge back in front.\", \"claim_ids\": [\"NC-01\", \"NC-03\"]}, {\"language\": \"en\", \"persona\": \"broadcast_caption\", \"text\": \"Okafor · header 14s after a corner\", \"claim_ids\": [\"NC-01\", \"NC-03\"]}, {\"language\": \"es\", \"persona\": \"analyst\", \"text\": \"Okafor ha marcado los dos goles del Northbridge; su cabezazo llegó 14 segundos después de un córner.\", \"claim_ids\": [\"NC-01\", \"NC-03\"]}, {\"language\": \"es\", \"persona\": \"casual_fan\", \"text\": \"¡Okafor otra vez! Un cabezazo 14 segundos después de un córner devuelve la ventaja al Northbridge.\", \"claim_ids\": [\"NC-01\", \"NC-03\"]}, {\"language\": \"es\", \"persona\": \"broadcast_caption\", \"text\": \"Okafor · cabezazo 14 s tras córner\", \"claim_ids\": [\"NC-01\", \"NC-03\"]}, {\"language\": \"fr\", \"persona\": \"analyst\", \"text\": \"Okafor a marqué les deux buts de Northbridge ; sa tête est arrivée 14 secondes après un corner.\", \"claim_ids\": [\"NC-01\", \"NC-03\"]}, {\"language\": \"fr\", \"persona\": \"casual_fan\", \"text\": \"Encore Okafor ! Une tête 14 secondes après un corner, et Northbridge repasse devant.\", \"claim_ids\": [\"NC-01\", \"NC-03\"]}, {\"language\": \"fr\", \"persona\": \"broadcast_caption\", \"text\": \"Okafor · tête 14 s après corner\", \"claim_ids\": [\"NC-01\", \"NC-03\"]}]",
+   "duration_ms": null,
+   "failures": [],
+   "handoff_keys": [
+    "verified_claims"
+   ],
+   "outcome": "proposed",
+   "role": "audience_adapter",
+   "tokens": null,
+   "tool_calls": [
+    {
+     "args": {
+      "claim_id": "NC-01"
+     },
+     "result": {
+      "claim_id": "NC-01",
+      "expected": 2.0,
+      "observed": 2.0,
+      "query_id": "metric-goals-v1",
+      "reason": "Registered metric recomputation satisfies the claim comparator",
+      "status": "verified"
+     },
+     "tool": "verification_result"
+    },
+    {
+     "args": {
+      "claim_id": "NC-02"
+     },
+     "result": {
+      "claim_id": "NC-02",
+      "expected": 0.58,
+      "observed": 0.5795628103277061,
+      "query_id": "metric-possession_time-v1",
+      "reason": "Registered metric recomputation satisfies the claim comparator",
+      "status": "verified"
+     },
+     "tool": "verification_result"
+    },
+    {
+     "args": {
+      "claim_id": "NC-03"
+     },
+     "result": {
+      "claim_id": "NC-03",
+      "expected": null,
+      "observed": null,
+      "query_id": "event-sequence-gap-v1",
+      "reason": "The recorded events and gap match the stated sequence",
+      "status": "verified"
+     },
+     "tool": "verification_result"
+    },
+    {
+     "args": {
+      "claim_id": "NC-05"
+     },
+     "result": {
+      "claim_id": "NC-05",
+      "expected": null,
+      "observed": null,
+      "query_id": "evidence-support-v1",
+      "reason": "All cited evidence events exist; tactical meaning remains an inference",
+      "status": "supported_inference"
+     },
+     "tool": "verification_result"
+    }
+   ],
+   "type": "specialist"
+  }
+ ],
+ "terminal_reason": "All four specialist stages completed within policy",
+ "totals": {
+  "specialist_turns": 6,
+  "tokens": null,
+  "tool_calls": 16,
+  "verification_rounds": 2
+ },
+ "variants": [
+  {
+   "claim_ids": [
+    "NC-01",
+    "NC-03"
+   ],
+   "language": "en",
+   "language_review": "NOT_RUN",
+   "persona": "analyst",
+   "publishable": false,
+   "text": "Okafor has scored both Northbridge goals; his header came 14 seconds after a corner."
+  },
+  {
+   "claim_ids": [
+    "NC-01",
+    "NC-03"
+   ],
+   "language": "en",
+   "language_review": "NOT_RUN",
+   "persona": "casual_fan",
+   "publishable": false,
+   "text": "Okafor again! A header 14 seconds after a corner puts Northbridge back in front."
+  },
+  {
+   "claim_ids": [
+    "NC-01",
+    "NC-03"
+   ],
+   "language": "en",
+   "language_review": "NOT_RUN",
+   "persona": "broadcast_caption",
+   "publishable": false,
+   "text": "Okafor · header 14s after a corner"
+  },
+  {
+   "claim_ids": [
+    "NC-01",
+    "NC-03"
+   ],
+   "language": "es",
+   "language_review": "NOT_RUN",
+   "persona": "analyst",
+   "publishable": false,
+   "text": "Okafor ha marcado los dos goles del Northbridge; su cabezazo llegó 14 segundos después de un córner."
+  },
+  {
+   "claim_ids": [
+    "NC-01",
+    "NC-03"
+   ],
+   "language": "es",
+   "language_review": "NOT_RUN",
+   "persona": "casual_fan",
+   "publishable": false,
+   "text": "¡Okafor otra vez! Un cabezazo 14 segundos después de un córner devuelve la ventaja al Northbridge."
+  },
+  {
+   "claim_ids": [
+    "NC-01",
+    "NC-03"
+   ],
+   "language": "es",
+   "language_review": "NOT_RUN",
+   "persona": "broadcast_caption",
+   "publishable": false,
+   "text": "Okafor · cabezazo 14 s tras córner"
+  },
+  {
+   "claim_ids": [
+    "NC-01",
+    "NC-03"
+   ],
+   "language": "fr",
+   "language_review": "NOT_RUN",
+   "persona": "analyst",
+   "publishable": false,
+   "text": "Okafor a marqué les deux buts de Northbridge ; sa tête est arrivée 14 secondes après un corner."
+  },
+  {
+   "claim_ids": [
+    "NC-01",
+    "NC-03"
+   ],
+   "language": "fr",
+   "language_review": "NOT_RUN",
+   "persona": "casual_fan",
+   "publishable": false,
+   "text": "Encore Okafor ! Une tête 14 secondes après un corner, et Northbridge repasse devant."
+  },
+  {
+   "claim_ids": [
+    "NC-01",
+    "NC-03"
+   ],
+   "language": "fr",
+   "language_review": "NOT_RUN",
+   "persona": "broadcast_caption",
+   "publishable": false,
+   "text": "Okafor · tête 14 s après corner"
+  }
+ ],
+ "verified_claims": [
+  {
+   "assertion": {
+    "comparator": "eq",
+    "metric": "goals.v1",
+    "schema_version": "1.0",
+    "subject": {
+     "player_id": "nbr-09",
+     "schema_version": "1.0",
+     "team_id": "nbr"
+    },
+    "unit": "count",
+    "value": 2.0,
+    "window": {
+     "from_ms": 0,
+     "schema_version": "1.0",
+     "to_ms": 4032000
+    }
+   },
+   "claim_id": "NC-01",
+   "evidence_event_ids": [
+    "E-0688",
+    "E-1366"
+   ],
+   "kind": "measured_stat",
+   "schema_version": "1.0",
+   "text": "Okafor scored both Northbridge goals."
+  },
+  {
+   "assertion": {
+    "comparator": "eq",
+    "decimals": 2,
+    "metric": "possession_time.v1",
+    "schema_version": "1.0",
+    "subject": {
+     "schema_version": "1.0",
+     "team_id": "nbr"
+    },
+    "unit": "ratio",
+    "value": 0.58,
+    "window": {
+     "from_ms": 0,
+     "schema_version": "1.0",
+     "to_ms": 4032000
+    }
+   },
+   "claim_id": "NC-02",
+   "evidence_event_ids": [
+    "E-0001"
+   ],
+   "kind": "measured_stat",
+   "schema_version": "1.0",
+   "text": "Northbridge have had 58% possession."
+  },
+  {
+   "claim_id": "NC-03",
+   "evidence_event_ids": [
+    "E-1359",
+    "E-1366"
+   ],
+   "fact": {
+    "event_id": "E-1366",
+    "from_event_id": "E-1359",
+    "from_tag": "corner",
+    "gap_seconds": 14,
+    "query": "sequence_gap.v1",
+    "schema_version": "1.0"
+   },
+   "kind": "event_fact",
+   "schema_version": "1.0",
+   "text": "Okafor's header came 14 seconds after a corner."
+  }
+ ]
+}
