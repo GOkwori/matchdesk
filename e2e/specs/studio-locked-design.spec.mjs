@@ -204,15 +204,21 @@ test('tactical filters recount shots from real event locations', async ({ page }
   await expect(page.getByRole('heading', { name: /Shot map · first half/ })).toBeVisible();
 });
 
-test('AI proposals wait for a human decision, and a failed proposal recovers', async ({ page }) => {
+test('the recorded agent run replays, the verifier sends a draft back, and verified claims wait for a human', async ({ page }) => {
   await open(page, '/match/nbr-riv/insights');
+  await expect(page.getByRole('note').filter({ hasText: /Rehearsal run|Recorded live run/ })).toBeVisible();
+  await expect(page.getByText('Sent back')).toBeVisible();
+  await expect(page.locator('.md-chip').filter({ hasText: 'Passed' })).toBeVisible();
+  await expect(page.getByText(/Observed 57\.96%, claimed 60\.00%/)).toBeVisible();
   await expect(page.getByText('3 left to review')).toBeVisible();
   await page.getByRole('button', { name: 'Dismiss' }).first().click();
   await expect(page.getByText('2 left to review')).toBeVisible();
   await page.getByRole('button', { name: 'Undo' }).click();
   await expect(page.getByText('3 left to review')).toBeVisible();
-  await page.getByRole('button', { name: 'Try again' }).click();
-  await expect(page.getByText(/No counter-attack goals in this log/)).toBeVisible();
+  await page.getByRole('button', { name: 'Replay step by step' }).click();
+  await expect(page.getByText(/^Step 1 of \d+$/)).toBeVisible();
+  await page.getByRole('button', { name: 'Next step' }).click();
+  await expect(page.getByText(/^Step 2 of \d+$/)).toBeVisible();
 });
 
 test('publication journey reflects the composer fix and keeps approval locked', async ({ page }) => {

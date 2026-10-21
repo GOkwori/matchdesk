@@ -152,7 +152,7 @@ def test_the_screen_shows_the_backend_verdicts() -> None:
     claims = {
         item["claim"]["claim_id"]: item
         for item in build_demo_export()["claims"]
-        if not item.get("forged")
+        if not item.get("forged") and not item.get("story_check")
     }
     assert {cid: c["result"]["status"] for cid, c in claims.items()} == {
         "CL-0213": "verified",
@@ -167,3 +167,12 @@ def test_the_screen_shows_the_backend_verdicts() -> None:
     ]
     forged = next(item for item in build_demo_export()["claims"] if item.get("forged"))
     assert forged["result"]["status"] == "needs_revision"
+    checks = {
+        item["claim"]["claim_id"]: item["result"]
+        for item in build_demo_export()["claims"]
+        if item.get("story_check")
+    }
+    # The fan story's "How we checked this" rows are registered queries, not copy.
+    assert checks["FS-SCORER"]["query_id"] == "event-goal-scorer-v1"
+    assert checks["FS-CORNER-GAP"]["query_id"] == "event-sequence-gap-v1"
+    assert {result["status"] for result in checks.values()} == {"verified"}

@@ -17,9 +17,10 @@ function useBrowserRecheck(): Recheck {
     import("./generated/nbr-riv-events.json").then(
       (module) => {
         const events = expandLog(module.default as unknown as CompactLog);
-        const evidence = { match_id: matchExport.match_id, event_ids: events.map((e) => e.event_id) };
-        const real = verifyClaim(serverClaim("CL-0214").claim, evidence, events);
-        const forged = verifyClaim(serverClaim("CL-0214", true).claim, evidence, events);
+        const evidence = { match_id: matchExport.match_id, event_ids: events.map((e) => e.event_id), window: { from_ms: 0, to_ms: matchExport.replay_end_ms } };
+        const names = matchExport.display_names;
+        const real = verifyClaim(serverClaim("CL-0214").claim, evidence, events, names);
+        const forged = verifyClaim(serverClaim("CL-0214", true).claim, evidence, events, names);
         const same = (browser: Result, server: Omit<Result, "claim_id">) =>
           browser.status === server.status && browser.reason === server.reason && browser.observed === server.observed && browser.expected === server.expected;
         const agrees = same(real, serverClaim("CL-0214").result) && same(forged, serverClaim("CL-0214", true).result);

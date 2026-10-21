@@ -11,7 +11,7 @@ export default function InsightsPage() {
   return (
     <div className="md-page">
       <ScoreStrip crumbs={[{ label: "Overview", href: "/match/nbr-riv" }, { label: "AI insights" }]} />
-      <PageHead title="AI insights" sub="Scripted specialist proposals for this demo (no live model). Each one cites its evidence and waits for you."><TopActions /></PageHead>
+      <PageHead title="AI insights" sub="Four specialists worked on the 58′ goal. Code checked every claim they made; you decide what goes out."><TopActions /></PageHead>
       <Suspense><InsightsBody /></Suspense>
     </div>
   );
