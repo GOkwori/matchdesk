@@ -215,6 +215,16 @@
             "title": "Evidence Event Ids",
             "type": "array"
           },
+          "fact": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EventFact"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "kind": {
             "enum": [
               "measured_stat",
@@ -301,6 +311,93 @@
           "lines"
         ],
         "title": "CommentaryPayload",
+        "type": "object"
+      },
+      "EventFact": {
+        "additionalProperties": false,
+        "description": "A registered, checkable statement about specific events, not about an aggregate.\n\n``goal_scorer.v1``: goal ``event_id`` was scored by ``player_id``.\n``sequence_gap.v1``: ``event_id`` followed ``from_event_id`` by ``gap_seconds`` whole\nseconds (rounded half up), and, when ``from_tag`` is given, the earlier event carries\nthat tag (a corner is a tagged pass in schema 1.0).",
+        "properties": {
+          "event_id": {
+            "maxLength": 96,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_-]+$",
+            "title": "Event Id",
+            "type": "string"
+          },
+          "from_event_id": {
+            "anyOf": [
+              {
+                "maxLength": 96,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9_-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From Event Id"
+          },
+          "from_tag": {
+            "anyOf": [
+              {
+                "maxLength": 96,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9_-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From Tag"
+          },
+          "gap_seconds": {
+            "anyOf": [
+              {
+                "ge": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gap Seconds"
+          },
+          "player_id": {
+            "anyOf": [
+              {
+                "maxLength": 96,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9_-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Player Id"
+          },
+          "query": {
+            "enum": [
+              "goal_scorer.v1",
+              "sequence_gap.v1"
+            ],
+            "title": "Query",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "query",
+          "event_id"
+        ],
+        "title": "EventFact",
         "type": "object"
       },
       "EvidenceRecord": {
