@@ -74,8 +74,28 @@ export default function JudgeWorkbench() {
   const gate = useRef(false);
 
   useEffect(() => {
-    // Do not allow a late response to rehydrate a session after page disposal.
-    return () => { revision.current++; sessionRef.current = null; };
+    // The host keeps at most eight live sessions for fifteen minutes. Revoke this
+    // page's session when it is closed, reloaded or navigated away from, so that
+    // repeated visits cannot exhaust capacity and lock other judges out.
+    const release = () => {
+      const live = sessionRef.current;
+      sessionRef.current = null;
+      if (!live) return;
+      void fetch("/api/judge-local/sessions/" + live.session_id, {
+        method: "DELETE",
+        headers: { Authorization: "Bearer " + live.token },
+        credentials: "omit",
+        cache: "no-store",
+        keepalive: true,
+      }).catch(() => undefined);
+    };
+    window.addEventListener("pagehide", release);
+    return () => {
+      // Do not allow a late response to rehydrate a session after page disposal.
+      revision.current++;
+      window.removeEventListener("pagehide", release);
+      release();
+    };
   }, []);
 
   /** All requests carry one disposable capability and no cookies. */
@@ -176,7 +196,7 @@ export default function JudgeWorkbench() {
   }
 
   return <main className="judge-main">
-    <header className="judge-top"><Link href="/sunset-v3" className="judge-brand">MATCHDESK<span> / SUNSET STUDIO</span></Link>
+    <header className="judge-top"><Link href="/" className="judge-brand">MATCHDESK<span> / SUNSET STUDIO</span></Link>
       <span className="judge-mode">LOCAL · SYNTHETIC · READ ONLY</span></header>
     <div className="judge-hero">
       <p className="judge-eyebrow">DEMONSTRATION WORKBENCH · PHASE 5</p>
@@ -236,6 +256,6 @@ export default function JudgeWorkbench() {
       <span aria-hidden="true">◎</span><h2>No active replay evidence</h2>
       <p>Start the demo, or replay after a token reset. Nothing shown here is a live match.</p>
     </section>}
-    <footer className="judge-footer">MatchDesk · Synthetic-only competition workbench · No real data, real producer approval, or broadcast publishing · <Link href="/sunset-v3">Back to Sunset Studio</Link></footer>
+    <footer className="judge-footer">MatchDesk · Synthetic-only competition workbench · No real data, real producer approval, or broadcast publishing · <Link href="/">Back to the studio</Link></footer>
   </main>;
 }

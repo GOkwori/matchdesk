@@ -69,6 +69,18 @@ test("two browsers independently retain their isolated synthetic runs", async ({
   }
 });
 
+test("leaving the page releases its session, so repeated visits never exhaust capacity", async ({ page }) => {
+  // The host allows eight live sessions. Ten visits that each start a run and then
+  // reload must all succeed, because each reload revokes the previous session.
+  expect(process.env.MATCHDESK_LOCAL_JUDGE_ENABLED).toBe("1");
+  for (let visit = 1; visit <= 10; visit++) {
+    await page.goto("/judge");
+    await page.getByRole("button", { name: "Start demo" }).click();
+    await expect(page.getByRole("heading", { name: "Match evidence" })).toBeVisible();
+  }
+  await page.getByRole("button", { name: "End session" }).click();
+});
+
 test("local bridge denies cross-origin and forwarded header spoofing", async ({ request }) => {
   expect(process.env.MATCHDESK_LOCAL_JUDGE_ENABLED).toBe("1");
   const url = "/api/judge-local/sessions";
