@@ -108,7 +108,7 @@ claimed ${claimed}%  ·  `}<span className={pass ? "md-pass" : "md-fail"}>{pass 
       <div role="status" aria-live="polite">
         {forged && <div className="md-banner md-banner-error"><span className="md-banner-icon" aria-hidden="true">!</span><strong>Rejected</strong><span>The log gives {observed}%, which rounds to {roundedPct}, not {claimed}%. A forged number can’t pass verification, so it can’t reach approval.</span></div>}
       </div>
-      <TourStep step={3} />
+      <TourStep step={4} />
     </>
   );
 }

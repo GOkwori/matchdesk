@@ -54,7 +54,7 @@ export function StoryBody() {
           </ul>
           <p className="md-muted md-small">{copy.note}</p>
         </details>
-        <TourStep step={6} />
+        <TourStep step={7} />
       </main>
     </div>
   );

@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { Icon } from "./icons";
 import { Crest, KpiTile, NextStep, StatBars, VerdictChip } from "./ui";
 import { TourStep } from "./shell";
-import { clock, fixture, momentsUntil, moments, REPLAY_END_SECONDS, scoreAt, type Moment } from "./data";
+import { clock, eventCountText, fixture, momentsUntil, moments, REPLAY_END_SECONDS, scoreAt, serverClaim, type Moment } from "./data";
 
 const goalIcon = (m: Moment) => (m.kind === "Goal" ? "ball" : m.kind === "Corner" ? "flag" : m.kind === "Substitution" ? "swap" : "card");
 
@@ -116,9 +116,34 @@ export function OverviewBody() {
         </section>
         <div className="md-split-side">
           <NextStep title="D-031 can’t be approved yet" body="One claim needs a decision and one has no supporting evidence. Fix both and the draft re-verifies instantly." href="/producer/compose/D-031" action="Fix in composer" />
+          <ForgedCheck />
           <StatBars />
         </div>
       </div>
     </>
+  );
+}
+
+/** One-click proof on the landing screen: a forged statistic is recomputed and rejected.
+ * Both verdicts are the backend verifier's own results from the export. */
+function ForgedCheck() {
+  const [forged, setForged] = useState(false);
+  const real = serverClaim("CL-0214");
+  const fake = serverClaim("CL-0214", true);
+  const shown = forged ? fake : real;
+  const claimed = Math.round((shown.claim.assertion?.value ?? 0) * 100);
+  const observed = ((real.result.observed ?? 0) * 100).toFixed(2);
+  return (
+    <section className="md-panel" aria-labelledby="md-forge-title">
+      <span className="md-eyebrow">Try to fool the verifier</span>
+      <h2 id="md-forge-title" className="md-sel-title">“Northbridge have had {claimed}% possession”</h2>
+      <p className="md-muted">Recomputed from all {eventCountText} events: {observed}%.</p>
+      <div aria-live="polite">
+        {forged
+          ? <p><VerdictChip verdict="failed" label="Rejected" /> {claimed}% is not what the log says, so it can’t reach approval.</p>
+          : <p><VerdictChip verdict="verified" /> {claimed}% matches the log at whole-percent precision.</p>}
+      </div>
+      <button type="button" className="md-btn md-btn-secondary" aria-pressed={forged} onClick={() => setForged((f) => !f)}>{forged ? "Restore 58%" : "Claim 59% instead"}</button>
+    </section>
   );
 }

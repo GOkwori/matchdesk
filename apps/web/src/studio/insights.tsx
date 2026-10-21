@@ -12,6 +12,7 @@ import { useState } from "react";
 import traceData from "./generated/agent-trace.json";
 import { Icon } from "./icons";
 import { VerdictChip } from "./ui";
+import { TourStep } from "./shell";
 import { STORY_SLUG, toVerdict } from "./data";
 import type { Claim, Status } from "./verifier";
 
@@ -158,6 +159,7 @@ export function InsightsBody() {
             </span>
           </div>
           <p className="md-muted md-small" aria-live="polite">Step {Math.min(shown, trace.steps.length)} of {trace.steps.length}</p>
+          <TourStep step={3} />
           <ol className="md-insight-list">
             {trace.steps.slice(0, shown).map((step, i) =>
               step.type === "specialist" ? <SpecialistCard key={i} step={step} index={specialists.indexOf(step)} />

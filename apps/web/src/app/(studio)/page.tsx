@@ -50,7 +50,7 @@ export default function WelcomePage() {
           <div className="md-welcome-copy">
             <span className="md-eyebrow">Football intelligence · explained · verified</span>
             <h1>Turn football moments into <span className="md-accent-text">verifiable stories.</span></h1>
-            <p>AI-assisted analysis. Deterministic verification. Human control. See it work on a replayed match in three minutes.</p>
+            <p>AI agents draft the story. Code checks every number and every name against the event log. A producer decides what fans see. Watch it on a replayed match in three minutes.</p>
             <div className="md-btn-row">
               <Link href="/match/nbr-riv?tour=1" className="md-btn md-btn-primary md-btn-lg">Start the 3-minute guided demo <Icon name="arrow" size={18} /></Link>
               <Link href="/match/nbr-riv" className="md-btn md-btn-secondary md-btn-lg">Explore on my own</Link>
