@@ -1,6 +1,6 @@
 # MatchDesk judge golden path — offline synthetic qualification
 
-**State: deterministic offline golden path merged and separately qualified; bounded in-memory judge sessions merged on `development`. A new opt-in loopback API and interactive judge screen are under PR qualification, not yet accepted as a running browser demo. Manual demo acceptance remains NOT RUN.**
+**State: deterministic offline golden path, kept as a command-line check. The earlier opt-in localhost judge screen (`/judge`), its loopback API and its in-memory sessions were retired on 21 October 2026: they needed a Python host on the viewer's own machine, so they could not run on the hosted studio, and the studio's guided tour now covers the same walkthrough on the canonical match. See the [judging guide](judging-guide.md).**
 
 The local runner uses only pre-existing deterministic MatchDesk domain components. It recomputes synthetic events, detects match moments, queries the registered first-half goal metric, binds an evidence-backed commentary claim, deliberately submits a false numerical claim for rejection, and creates nine scripted English/Spanish/French × analyst/casual-fan/caption audience variants.
 
@@ -13,10 +13,8 @@ PYTHONPATH=backend/src python scripts/judge_demo.py
 PYTHONPATH=backend/src python -m pytest backend/tests/test_judge_golden_path.py
 ```
 
-The runner prints JSON only to stdout; it does not create a session. A separate, merged and tested in-memory session primitive provides bounded isolation and token reset, but its opt-in browser host and UI must pass their own PR checks and local rehearsal. [Issue #64](https://github.com/GOkwori/matchdesk/issues/64) remains open. For repeated inspection, re-run the command against the same pinned Git SHA; compare the sorted JSON values and record the source SHA with the actual test output.
+The runner prints JSON only to stdout; it does not create a session. For repeated inspection, re-run the command against the same pinned Git SHA; compare the sorted JSON values and record the source SHA with the actual test output.
 
 The deliberate false claim must return `needs_revision`; the good claim must be `verified`; every audience variant must retain the exact evidence digest and remain `NOT_RUN` for human language review. The `producer_review` fields must remain `authenticated: false`, `approval_enabled: false` and `publication_enabled: false`.
 
 Before presenting as competition-ready, separately qualify the browser golden path, its opt-in localhost access policy, exact-source CI, a human demo rehearsal and the submission content. The original seven Batch 1 PNGs, independent WCAG 2.2 AA assessment, live workforce identity and protected `main` promotion are still distinct gates.
-
-For the new isolated localhost host and screen (candidate only), see [the opt-in judge workbench instructions](judge-loopback-workbench.md). Normal Compose/default API remains unchanged and the new browser bridge is disabled unless expressly enabled by the local operator.
