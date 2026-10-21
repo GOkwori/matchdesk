@@ -316,8 +316,9 @@ def test_a_provider_error_is_retried_and_recorded_without_its_url() -> None:
     trace = _run(executor)
     assert trace["status"] != "completed" and trace["variants"] == []
     first = _specialists(trace)[0]
-    assert first["failures"] == ["retryable_failure", "retryable_failure"]
-    assert first["errors"] == ["RuntimeError: Service unavailable at <url> x"] * 2
+    # The live provider asks for three attempts per role.
+    assert first["failures"] == ["retryable_failure"] * 3
+    assert first["errors"] == ["RuntimeError: Service unavailable at <url> x"] * 3
     text = json.dumps(trace)
     assert "secret.example" not in text and "test-model" not in text
     assert trace["provider"]["label"] == "Microsoft Foundry via Agent Framework"
@@ -380,3 +381,57 @@ def test_the_real_agent_factory_applies_the_tool_loop_bounds() -> None:
     )
     loop = agent.client.function_invocation_configuration
     assert (loop["max_function_calls"], loop["max_iterations"]) == (8, 4)
+
+
+class _ReviewerRetriedOnce(RehearsalExecutor):
+    """The rehearsal, except the reviewer's first answer fails its contract once."""
+
+    def __init__(self, role_attempts=None):
+        """Optionally ask the host for more attempts per role."""
+        super().__init__()
+        self.failed = False
+        if role_attempts is not None:
+            self.role_attempts = role_attempts
+
+    async def execute(self, request, tools, *, digest):
+        """Fail the first editorial turn, as a malformed live proposal would."""
+        if request.role == "editorial_reviewer" and not self.failed:
+            self.failed = True
+            from matchdesk.domain.runtime_resilience import RetryableSpecialistError
+
+            raise RetryableSpecialistError("ValidationError: fact on a measured claim")
+        return await super().execute(request, tools, digest=digest)
+
+
+def test_a_retry_shares_the_role_budget_with_revision_rounds() -> None:
+    """With two attempts, one retry leaves no room to revise; a third attempt does."""
+    exhausted = _run(_ReviewerRetriedOnce())
+    assert exhausted["status"] == "fallback"
+    assert "bounded revision budget" in exhausted["terminal_reason"]
+    revised = _run(_ReviewerRetriedOnce(role_attempts=3))
+    assert revised["status"] == "completed" and len(revised["variants"]) == 9
+    rounds = [s for s in revised["steps"] if s["type"] == "verification"]
+    assert [r["passed"] for r in rounds] == [False, True]
+    assert FoundryWorkflowExecutor.role_attempts == 3
+
+
+def test_the_summary_explains_each_failed_verdict(capsys) -> None:
+    """A failed claim's reason and numbers appear in the run annotation."""
+    from scripts.record_agent_run import report
+
+    report(rehearsal_trace())
+    out = capsys.readouterr().out
+    assert "NC-02 needs_revision:" in out and "observed 0.5795" in out
+
+
+def test_a_provider_cannot_ask_for_more_than_the_host_allows() -> None:
+    """Budgets a provider requests are validated against RolePolicy's limits."""
+    from matchdesk.domain.agent_workflow import role_policies
+
+    class Greedy(RehearsalExecutor):
+        """Asks for six attempts per role."""
+
+        role_attempts = 6
+
+    with pytest.raises(ValidationError):
+        role_policies(Greedy())

@@ -29,6 +29,7 @@ from matchdesk.domain.models import (
     VerificationResult,
 )
 from matchdesk.domain.orchestration import (
+    DEFAULT_ROLE_POLICIES,
     RolePolicy,
     SpecialistRole,
     WorkflowState,
@@ -280,6 +281,32 @@ TASKS: Mapping[SpecialistRole, str] = {
 }
 
 
+def role_policies(executor: WorkflowExecutor) -> Mapping[SpecialistRole, RolePolicy]:
+    """The host budgets for this provider: deadline per turn and attempts per role.
+
+    A live turn makes one model round trip per tool round, so a provider may ask for
+    a longer deadline. Retries and revision rounds share one attempt budget per role,
+    so a provider whose output is sometimes retried may ask for one more attempt, or a
+    single retry would leave no room to revise a claim the verifier sent back. The
+    host still enforces both, within the limits ``RolePolicy`` allows.
+    """
+    timeout_ms = getattr(executor, "turn_timeout_ms", None)
+    attempts = getattr(executor, "role_attempts", None)
+    if timeout_ms is None and attempts is None:
+        return DEFAULT_ROLE_POLICIES
+    # Validate, not copy: RolePolicy's own limits still bound what a provider asks for.
+    return {
+        role: RolePolicy.model_validate(
+            {
+                **policy.model_dump(),
+                "timeout_ms": timeout_ms if timeout_ms is not None else policy.timeout_ms,
+                "max_attempts": attempts if attempts is not None else policy.max_attempts,
+            }
+        )
+        for role, policy in DEFAULT_ROLE_POLICIES.items()
+    }
+
+
 async def _turn(
     state: WorkflowState,
     role: SpecialistRole,
@@ -302,17 +329,13 @@ async def _turn(
     )
     traced = TracedReadTools(scoped, verification)
     adapter = _BoundAdapter(executor, digest, traced)
-    # A live turn makes several model round trips (one per tool call), so a provider
-    # may ask for a longer per-turn deadline than the default; the host still owns it.
-    timeout_ms = getattr(executor, "turn_timeout_ms", None)
-    policy = RolePolicy(role=role, timeout_ms=timeout_ms) if timeout_ms else None
     started = clock()
     result = await execute_bounded_specialist(
         state,
         instruction=_instruction(TASKS[role], handoff),
         executor=adapter,
         tools=scoped,
-        policy=policy,
+        policy=role_policies(executor)[role],
     )
     finished = clock()
     tokens = [usage.total_tokens for usage in adapter.telemetry if usage.total_tokens is not None]
@@ -479,6 +502,7 @@ async def run_agent_workflow(
         failed = [r for r in results if r.status not in ("verified", "supported_inference")]
         state = apply_verification_gate(
             state,
+            policies=role_policies(executor),
             passed=passed,
             reason="All claims verified"
             if passed

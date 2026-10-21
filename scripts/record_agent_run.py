@@ -59,6 +59,13 @@ def report(trace: dict[str, Any]) -> None:
         elif step["type"] == "verification":
             verdicts = [row.get("status") for row in step.get("results", [])]
             lines.append(f"verification round {step.get('round')}: {verdicts}")
+            for row in step.get("results", []):
+                if row.get("status") not in ("verified", "supported_inference"):
+                    lines.append(
+                        f"  {row.get('claim_id')} {row.get('status')}: {row.get('reason')} "
+                        f"(expected {row.get('expected')}, observed {row.get('observed')}) "
+                        f"text: {str(row.get('text', ''))[:160]}"
+                    )
         else:
             lines.append(f"{step['type']}: {step.get('reason', '')}")
     level = "notice" if trace["status"] == "completed" else "error"
