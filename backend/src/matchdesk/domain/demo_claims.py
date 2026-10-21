@@ -11,6 +11,7 @@ from typing import Any
 from matchdesk.domain import canonical_match as canonical
 from matchdesk.domain.models import (
     Claim,
+    EventFact,
     EvidenceRecord,
     MatchEvent,
     MatchWindow,
@@ -22,6 +23,13 @@ from matchdesk.domain.verification import verify_claim
 REPLAY_END_MS = canonical.clock_ms(67, 12)
 SCORER = "nbr-09"
 FORGED_POSSESSION = 0.59
+# The display names the demo's sentences use. Verification requires each sentence to
+# name its subject and state its value with these exact names.
+DISPLAY_NAMES: dict[str, str] = {
+    **canonical.PLAYER_NAMES,
+    canonical.HOME: "Northbridge",
+    canonical.AWAY: "Riverside",
+}
 
 
 def replay_window(to_ms: int = REPLAY_END_MS) -> MatchWindow:
@@ -96,9 +104,39 @@ def claims(to_ms: int = REPLAY_END_MS) -> tuple[Claim, ...]:
     )
 
 
+def story_checks() -> tuple[Claim, ...]:
+    """The fan story's "How we checked this" rows, as registered event facts.
+
+    These replace hand-written "matches the event log" labels: the screen shows what the
+    verifier returns for each one.
+    """
+    return (
+        Claim(
+            claim_id="FS-SCORER",
+            text="Okafor scored the goal at 58:17.",
+            kind="event_fact",
+            fact=EventFact(query="goal_scorer.v1", event_id="E-1366", player_id=SCORER),
+            evidence_event_ids=("E-1366",),
+        ),
+        Claim(
+            claim_id="FS-CORNER-GAP",
+            text="The goal came 14 seconds after a corner.",
+            kind="event_fact",
+            fact=EventFact(
+                query="sequence_gap.v1",
+                event_id="E-1366",
+                from_event_id="E-1359",
+                from_tag="corner",
+                gap_seconds=14,
+            ),
+            evidence_event_ids=("E-1359", "E-1366"),
+        ),
+    )
+
+
 def _result(claim: Claim, evidence: EvidenceRecord, events: tuple[MatchEvent, ...]) -> Any:
     """Run the real verifier and keep the fields the screen and the parity test compare."""
-    result = verify_claim(claim, evidence, events)
+    result = verify_claim(claim, evidence, events, names=DISPLAY_NAMES)
     return {
         "status": result.status,
         "query_id": result.query_id,
@@ -127,7 +165,7 @@ def claim_export(events: tuple[MatchEvent, ...]) -> list[dict[str, Any]]:
                 if to_ms > REPLAY_END_MS:
                     break
                 claim_at = next(c for c in claims(to_ms) if c.claim_id == claim.claim_id)
-                status = verify_claim(claim_at, evidence, events).status
+                status = verify_claim(claim_at, evidence, events, names=DISPLAY_NAMES).status
                 if status != previous:
                     timeline.append({"from_ms": to_ms - 1, "status": status})
                     previous = status
@@ -136,6 +174,15 @@ def claim_export(events: tuple[MatchEvent, ...]) -> list[dict[str, Any]]:
                 "claim": claim.model_dump(mode="json", exclude_none=True),
                 "result": _result(claim, evidence, events),
                 "timeline": timeline,
+            }
+        )
+    for check in story_checks():
+        exported.append(
+            {
+                "claim": check.model_dump(mode="json", exclude_none=True),
+                "result": _result(check, evidence, events),
+                "timeline": [],
+                "story_check": True,
             }
         )
     forged = _result(possession_claim(FORGED_POSSESSION), evidence, events)

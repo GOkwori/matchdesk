@@ -25,12 +25,17 @@ const sources = {
 test('the fixture covers every verifier outcome', () => {
   const statuses = new Set(fixture.cases.map((c) => c.expected.status));
   assert.deepEqual([...statuses].sort(), ['blocked', 'needs_revision', 'supported_inference', 'verified']);
-  assert.ok(fixture.cases.length >= 25);
+  assert.ok(fixture.cases.length >= 45);
+  const queries = new Set(fixture.cases.map((c) => c.expected.query_id));
+  for (const q of ['claim-text-binding-v1', 'evidence-window-v1', 'event-goal-scorer-v1', 'event-sequence-gap-v1']) {
+    assert.ok(queries.has(q), q);
+  }
 });
 
 for (const item of fixture.cases) {
   test(`parity: ${item.name}`, () => {
-    const result = verifyClaim(item.claim, fixture.evidence[item.evidence], sources[item.events]);
+    const names = item.with_names ? fixture.display_names : null;
+    const result = verifyClaim(item.claim, fixture.evidence[item.evidence], sources[item.events], names);
     const { claim_id, ...actual } = result;
     assert.equal(claim_id, item.claim.claim_id);
     assert.deepEqual(actual, item.expected);
@@ -38,9 +43,13 @@ for (const item of fixture.cases) {
 }
 
 test('the claims shown on screen are the ones the backend verified', () => {
-  const evidence = { match_id: exportData.match_id, event_ids: sources.canonical.map((e) => e.event_id) };
+  const evidence = {
+    match_id: exportData.match_id,
+    event_ids: sources.canonical.map((e) => e.event_id),
+    window: { from_ms: 0, to_ms: exportData.replay_end_ms },
+  };
   for (const item of exportData.claims) {
-    const { claim_id, ...actual } = verifyClaim(item.claim, evidence, sources.canonical);
+    const { claim_id, ...actual } = verifyClaim(item.claim, evidence, sources.canonical, exportData.display_names);
     assert.deepEqual(actual, item.result, claim_id);
   }
 });

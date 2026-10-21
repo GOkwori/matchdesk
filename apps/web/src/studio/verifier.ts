@@ -24,14 +24,25 @@ export type Assertion = {
   unit: string;
   decimals?: number | null;
 };
+export type EventFact = {
+  query: "goal_scorer.v1" | "sequence_gap.v1";
+  event_id: string;
+  player_id?: string | null;
+  from_event_id?: string | null;
+  from_tag?: string | null;
+  gap_seconds?: number | null;
+};
 export type Claim = {
   claim_id: string;
   text: string;
   kind: "measured_stat" | "event_fact" | "tactical_inference";
   assertion?: Assertion | null;
+  fact?: EventFact | null;
   evidence_event_ids: readonly string[];
 };
-export type Evidence = { match_id: string; event_ids: readonly string[] };
+/** Display names the prose uses, by player or team identity. */
+export type Names = Readonly<Record<string, string>>;
+export type Evidence = { match_id: string; event_ids: readonly string[]; window?: Window };
 export type Result = {
   claim_id: string;
   status: Status;
@@ -55,6 +66,7 @@ export type VEvent = {
   xg: number | null;
   x: number | null;
   end_x: number | null;
+  tags: readonly string[];
 };
 
 /** Column-oriented log, as written by matchdesk.domain.verifier_parity.compact_events. */
@@ -71,6 +83,7 @@ export type CompactLog = {
   xg: readonly (number | null)[];
   x: readonly (number | null)[];
   end_x: readonly (number | null)[];
+  tags?: readonly (readonly string[])[];
 };
 
 export function expandLog(log: CompactLog): VEvent[] {
@@ -87,6 +100,7 @@ export function expandLog(log: CompactLog): VEvent[] {
     xg: log.xg[i],
     x: log.x[i],
     end_x: log.end_x[i],
+    tags: log.tags ? log.tags[i] : [],
   }));
 }
 
@@ -225,9 +239,80 @@ function comparisonPasses(comparator: string, expected: number, observed: number
   throw new Error(`unsupported comparator: ${comparator}`);
 }
 
+/* ---------- Claim text (matchdesk.domain.claim_text) ---------- */
+
+const NUMBER_WORDS: Readonly<Record<string, number>> = {
+  zero: 0, one: 1, once: 1, two: 2, twice: 2, both: 2, brace: 2, double: 2, three: 3, thrice: 3,
+  "hat-trick": 3, "hat trick": 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10,
+  eleven: 11, twelve: 12,
+};
+const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\\-]/g, "\\$&");
+const B = "(?<![A-Za-z0-9_])";
+const E = "(?![A-Za-z0-9_])";
+const WORDS = new RegExp(`${B}(${Object.keys(NUMBER_WORDS).sort((a, b) => b.length - a.length).map(escapeRegExp).join("|")})${E}`, "g");
+const CLOCK = /[0-9]{1,3}:[0-9]{2}/g;
+const SCORELINE = new RegExp(`${B}[0-9]+\\s*[-–—]\\s*[0-9]+${E}`, "g");
+const MINUTE = new RegExp(`${B}[0-9]+\\s*(?:'|′|’|(?:st|nd|rd|th|mins?|minutes?)${E})`, "g");
+const PERCENT = new RegExp(`${B}([0-9]+(?:\\.[0-9]+)?)\\s*(?:%|per\\s?cent${E})`, "g");
+const DIGITS = new RegExp(`${B}[0-9]+(?:\\.[0-9]+)?${E}`, "g");
+export const TEXT_QUERY_ID = "claim-text-binding-v1";
+
+/** The counts and percentages a sentence states, ignoring clocks, scorelines and minutes. */
+export function statedQuantities(text: string): { counts: number[]; percents: number[] } {
+  let lowered = text.toLowerCase().replace(/’/g, "'");
+  lowered = lowered.replace(CLOCK, " ").replace(SCORELINE, " ");
+  const percents = [...lowered.matchAll(PERCENT)].map((m) => Number(m[1]));
+  lowered = lowered.replace(PERCENT, " ").replace(MINUTE, " ");
+  const counts = [...lowered.matchAll(DIGITS)].map((m) => Number(m[0]));
+  for (const m of lowered.matchAll(WORDS)) counts.push(NUMBER_WORDS[m[1]]);
+  return { counts, percents };
+}
+
+function expectedQuantity(claim: Claim): ["count" | "percent", number] | null {
+  const assertion = claim.assertion;
+  if (assertion) {
+    if (assertion.unit === "count") return ["count", assertion.value];
+    if (assertion.unit === "ratio") {
+      const places = assertion.decimals == null ? 6 : Math.max(assertion.decimals - 2, 0);
+      return ["percent", Number(roundHalfUp(assertion.value * 100, places))];
+    }
+    return null;
+  }
+  if (claim.fact && claim.fact.gap_seconds != null) return ["count", claim.fact.gap_seconds];
+  return null;
+}
+
+function subjectId(claim: Claim): string | null {
+  if (claim.assertion) return claim.assertion.subject.player_id || claim.assertion.subject.team_id || null;
+  if (claim.fact) return claim.fact.player_id ?? null;
+  return null;
+}
+
+/** Why the sentence does not match its structured claim, or null if it does. */
+export function textBindingProblem(claim: Claim, names?: Names | null): string | null {
+  const expected = expectedQuantity(claim);
+  if (expected) {
+    const [kind, value] = expected;
+    const stated = statedQuantities(claim.text);
+    const found = kind === "count" ? stated.counts : stated.percents;
+    if (found.some((q) => q !== value)) return "Claim text states a quantity that differs from its assertion";
+    if (names && !found.includes(value)) return "Claim text does not state the asserted value";
+  }
+  if (names) {
+    const subject = subjectId(claim);
+    if (subject != null) {
+      const name = names[subject];
+      if (name === undefined) return "Claim subject has no registered display name";
+      if (!new RegExp(B + escapeRegExp(name.toLowerCase()) + E).test(claim.text.toLowerCase())) return "Claim text does not name the asserted subject";
+    }
+  }
+  return null;
+}
+
 /* ---------- Verification (matchdesk.domain.verification) ---------- */
 
 const queryId = (metric: string) => `metric-${metric.replace(/\./g, "-")}`;
+const COUNTED_TYPES: Readonly<Record<string, string>> = { "goals.v1": "goal", "shots.v1": "shot" };
 
 function validateEvidence(claim: Claim, evidence: Evidence, events: readonly VEvent[]): string | null {
   if (!events.length) return "No accepted events are available for verification";
@@ -239,13 +324,54 @@ function validateEvidence(claim: Claim, evidence: Evidence, events: readonly VEv
   return null;
 }
 
+function factResult(claim: Claim, fact: EventFact, evidence: Evidence, events: readonly VEvent[]): [Status, string, string] {
+  const query = "event-" + fact.query.replace(/\./g, "-").replace(/_/g, "-");
+  const referenced = fact.from_event_id == null ? [fact.event_id] : [fact.from_event_id, fact.event_id];
+  if (referenced.some((id) => !claim.evidence_event_ids.includes(id))) return ["blocked", query, "Event fact reads events the claim does not cite"];
+  const byId = new Map(events.map((e) => [e.event_id, e]));
+  const target = byId.get(fact.event_id) as VEvent;
+  if (evidence.window && target.match_clock_ms >= evidence.window.to_ms) return ["blocked", query, "Event fact reads events after the evidence window"];
+  if (fact.query === "goal_scorer.v1") {
+    return target.type === "goal" && target.player_id === fact.player_id
+      ? ["verified", query, "The cited goal event records the stated scorer"]
+      : ["needs_revision", query, "The cited event is not a goal by the stated player"];
+  }
+  const earlier = byId.get(fact.from_event_id as string) as VEvent;
+  if (earlier.sequence >= target.sequence) return ["needs_revision", query, "The cited events are not in the stated order"];
+  if (fact.from_tag != null && !earlier.tags.includes(fact.from_tag)) return ["needs_revision", query, `The earlier event is not tagged ${fact.from_tag}`];
+  const gap = Number(roundHalfUp((target.match_clock_ms - earlier.match_clock_ms) / 1000, 0));
+  if (gap !== fact.gap_seconds) return ["needs_revision", query, "The recorded gap differs from the stated seconds"];
+  return ["verified", query, "The recorded events and gap match the stated sequence"];
+}
+
+function citesCountedEvents(claim: Claim, assertion: Assertion, events: readonly VEvent[], type: string): boolean {
+  const { window, subject } = assertion;
+  const counted = new Set(events.filter((e) => e.type === type
+    && (window.period == null || e.period === window.period)
+    && window.from_ms <= e.match_clock_ms && e.match_clock_ms < window.to_ms
+    && (subject.team_id == null || e.team_id === subject.team_id)
+    && (subject.player_id == null || e.player_id === subject.player_id)).map((e) => e.event_id));
+  return claim.evidence_event_ids.every((id) => counted.has(id));
+}
+
 /** Verify one claim against evidence and accepted events, exactly as the backend does. */
-export function verifyClaim(claim: Claim, evidence: Evidence, events: readonly VEvent[]): Result {
+export function verifyClaim(claim: Claim, evidence: Evidence, events: readonly VEvent[], names?: Names | null): Result {
   const base = { claim_id: claim.claim_id, expected: null, observed: null };
   const blocking = validateEvidence(claim, evidence, events);
   if (blocking) return { ...base, status: "blocked", query_id: "evidence-binding-v1", reason: blocking };
+  if (claim.assertion && evidence.window && claim.assertion.window.to_ms > evidence.window.to_ms) {
+    return { ...base, status: "blocked", query_id: "evidence-window-v1", reason: "Claim window extends past the evidence window" };
+  }
   if (claim.kind === "tactical_inference") {
     return { ...base, status: "supported_inference", query_id: "evidence-support-v1", reason: "All cited evidence events exist; tactical meaning remains an inference" };
+  }
+  if (claim.kind === "event_fact" && claim.fact) {
+    let [status, query_id, reason] = factResult(claim, claim.fact, evidence, events);
+    if (status === "verified") {
+      const problem = textBindingProblem(claim, names);
+      if (problem) [status, query_id, reason] = ["needs_revision", TEXT_QUERY_ID, problem];
+    }
+    return { ...base, status, query_id, reason };
   }
   if (claim.kind === "event_fact") {
     return { ...base, status: "needs_revision", query_id: "event-fact-semantic-v1", reason: "Event-fact prose has no registered semantic assertion; evidence existence alone cannot verify the text" };
@@ -264,13 +390,17 @@ export function verifyClaim(claim: Claim, evidence: Evidence, events: readonly V
     if (!(error instanceof MetricError)) throw error;
     return { ...base, status: "blocked", query_id: queryId(assertion.metric), reason: `Metric recomputation failed: ${error.message}`, expected: assertion.value };
   }
-  const passed = comparisonPasses(assertion.comparator ?? "eq", assertion.value, observed, assertion.decimals);
-  return {
-    claim_id: claim.claim_id,
-    status: passed ? "verified" : "needs_revision",
-    query_id: queryId(assertion.metric),
-    reason: passed ? "Registered metric recomputation satisfies the claim comparator" : "Registered metric recomputation does not satisfy the claim comparator",
-    expected: assertion.value,
-    observed,
-  };
+  let passed = comparisonPasses(assertion.comparator ?? "eq", assertion.value, observed, assertion.decimals);
+  let query_id = queryId(assertion.metric);
+  let reason = passed ? "Registered metric recomputation satisfies the claim comparator" : "Registered metric recomputation does not satisfy the claim comparator";
+  const countedType = COUNTED_TYPES[assertion.metric];
+  if (passed && countedType !== undefined && !citesCountedEvents(claim, assertion, events, countedType)) {
+    passed = false;
+    reason = "Claim cites events the registered metric does not count";
+  }
+  if (passed) {
+    const problem = textBindingProblem(claim, names);
+    if (problem) { passed = false; query_id = TEXT_QUERY_ID; reason = problem; }
+  }
+  return { claim_id: claim.claim_id, status: passed ? "verified" : "needs_revision", query_id, reason, expected: assertion.value, observed };
 }

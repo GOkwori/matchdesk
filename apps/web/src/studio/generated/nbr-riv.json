@@ -128,6 +128,61 @@
     },
     {
       "claim": {
+        "claim_id": "FS-SCORER",
+        "evidence_event_ids": [
+          "E-1366"
+        ],
+        "fact": {
+          "event_id": "E-1366",
+          "player_id": "nbr-09",
+          "query": "goal_scorer.v1",
+          "schema_version": "1.0"
+        },
+        "kind": "event_fact",
+        "schema_version": "1.0",
+        "text": "Okafor scored the goal at 58:17."
+      },
+      "result": {
+        "expected": null,
+        "observed": null,
+        "query_id": "event-goal-scorer-v1",
+        "reason": "The cited goal event records the stated scorer",
+        "status": "verified"
+      },
+      "story_check": true,
+      "timeline": []
+    },
+    {
+      "claim": {
+        "claim_id": "FS-CORNER-GAP",
+        "evidence_event_ids": [
+          "E-1359",
+          "E-1366"
+        ],
+        "fact": {
+          "event_id": "E-1366",
+          "from_event_id": "E-1359",
+          "from_tag": "corner",
+          "gap_seconds": 14,
+          "query": "sequence_gap.v1",
+          "schema_version": "1.0"
+        },
+        "kind": "event_fact",
+        "schema_version": "1.0",
+        "text": "The goal came 14 seconds after a corner."
+      },
+      "result": {
+        "expected": null,
+        "observed": null,
+        "query_id": "event-sequence-gap-v1",
+        "reason": "The recorded events and gap match the stated sequence",
+        "status": "verified"
+      },
+      "story_check": true,
+      "timeline": []
+    },
+    {
+      "claim": {
         "assertion": {
           "comparator": "eq",
           "decimals": 2,
@@ -184,6 +239,16 @@
       ]
     ],
     "total": 4
+  },
+  "display_names": {
+    "nbr": "Northbridge",
+    "nbr-04": "Mensah",
+    "nbr-09": "Okafor",
+    "riv": "Riverside",
+    "riv-06": "Haddad",
+    "riv-07": "Barros",
+    "riv-11": "Lindqvist",
+    "riv-14": "Kovac"
   },
   "event_count": 1421,
   "evidence_digest": "3888f12dc8bae13471e425b54e919d762d9794cfbb9ef2320fe683bf702acac1",
