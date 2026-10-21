@@ -336,7 +336,7 @@ class _SlowExecutor(RehearsalExecutor):
 
 def test_a_provider_sets_its_own_turn_deadline_and_the_host_enforces_it() -> None:
     """The live executor asks for a longer deadline; the host still times turns out."""
-    assert FoundryWorkflowExecutor.turn_timeout_ms == 90_000
+    assert FoundryWorkflowExecutor.turn_timeout_ms == 120_000
     trace = _run(_SlowExecutor())
     assert _specialists(trace)[0]["failures"] == ["timeout", "timeout"]
     assert trace["status"] != "completed"
@@ -351,3 +351,32 @@ def test_the_recorder_reports_a_run_as_one_annotation(capsys) -> None:
     assert out.startswith("::notice title=Agent run summary::status completed")
     assert out.count("\n") == 0 and "tactical_analyst: proposed" in out
     assert "verification round 1: ['verified', 'needs_revision'" in out
+
+
+def test_the_live_tool_loop_is_bounded_in_calls_rounds_and_time() -> None:
+    """A live turn cannot spend its deadline on tools: Agent Framework enforces the caps."""
+    from agent_framework import normalize_function_invocation_configuration
+    from matchdesk.domain.foundry_runtime import TOOL_LOOP
+
+    loop = normalize_function_invocation_configuration(dict(TOOL_LOOP))
+    assert loop["max_function_calls"] == 8 and loop["max_iterations"] == 4
+    assert loop["max_duration_seconds"] == 60
+    # The tool loop ends well inside the host's per-turn deadline.
+    assert loop["max_duration_seconds"] * 1000 < FoundryWorkflowExecutor.turn_timeout_ms
+
+
+def test_the_real_agent_factory_applies_the_tool_loop_bounds() -> None:
+    """Constructing the live agent makes no call; its client carries the bounds."""
+    from matchdesk.domain.foundry_runtime import _DefaultToolAgentFactory, role_functions
+
+    config = FoundryRuntimeConfig(
+        enabled=True,
+        project_endpoint="https://example.services.ai.azure.com/api/projects/p",
+        model="m",
+    )
+    tools = TracedReadTools(ScopedReadTools(role="tactical_analyst", events=LOG), {})
+    agent = _DefaultToolAgentFactory().create(
+        role="tactical_analyst", config=config, tools=role_functions(tools)
+    )
+    loop = agent.client.function_invocation_configuration
+    assert (loop["max_function_calls"], loop["max_iterations"]) == (8, 4)
