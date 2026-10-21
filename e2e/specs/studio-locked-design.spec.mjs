@@ -237,9 +237,15 @@ test('tactical filters recount shots from real event locations', async ({ page }
   await expect(page.getByRole('heading', { name: /Shot map · first half/ })).toBeVisible();
 });
 
-test('the recorded agent run replays, the verifier sends a draft back, and verified claims wait for a human', async ({ page }) => {
+test('the live run shows first, the rehearsal sends a draft back, and verified claims wait for a human', async ({ page }) => {
   await open(page, '/match/nbr-riv/insights');
-  await expect(page.getByRole('note').filter({ hasText: /Rehearsal run|Recorded live run/ })).toBeVisible();
+  const runs = page.getByRole('group', { name: 'Which run' });
+  await expect(runs.getByRole('button', { name: 'Recorded live run' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('note').filter({ hasText: 'Microsoft Foundry via Agent Framework' })).toBeVisible();
+  await expect(page.getByText(/rejected by the claim contract, so the host retried/)).toBeVisible();
+  await expect(page.getByText('9 versions of the 58′ story')).toBeVisible();
+  await runs.getByRole('button', { name: 'Rehearsal' }).click();
+  await expect(page.getByRole('note').filter({ hasText: 'Rehearsal run' })).toBeVisible();
   await expect(page.getByText('Sent back')).toBeVisible();
   await expect(page.locator('.md-chip').filter({ hasText: 'Passed' })).toBeVisible();
   await expect(page.getByText(/Observed 57\.96%, claimed 60\.00%/)).toBeVisible();

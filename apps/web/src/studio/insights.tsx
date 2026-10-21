@@ -1,15 +1,18 @@
-/** AI insights: a replay of one recorded run of the four-specialist workflow on the 58′ goal.
+/** AI insights: replays of the four-specialist workflow on the 58′ goal.
  *
- * Everything here comes from generated/agent-trace.json, written by
- * scripts/record_agent_run.py. The trace says which provider produced it: the
- * deterministic rehearsal (no model) or a recorded live Microsoft Foundry run. Verdicts in
- * it come from the real verifier and are re-checked by the backend test suite.
+ * generated/agent-trace.json is the run shown first: a recorded live Microsoft Foundry
+ * run once there is one (scripts/record_agent_run.py --provider foundry). The
+ * deterministic rehearsal (no model) is always available beside it, from
+ * generated/agent-trace-rehearsal.json; it is the run in which the verifier sends a
+ * misstated claim back. Every verdict in both comes from the real verifier and is
+ * re-checked by the backend test suite.
  */
 "use client";
 
 import Link from "next/link";
 import { useState } from "react";
 import traceData from "./generated/agent-trace.json";
+import rehearsalData from "./generated/agent-trace-rehearsal.json";
 import { Icon } from "./icons";
 import { VerdictChip } from "./ui";
 import { TourStep } from "./shell";
@@ -34,16 +37,16 @@ type Trace = {
   totals: { specialist_turns: number; tool_calls: number; verification_rounds: number; tokens: number | null };
 };
 
-const trace = traceData as unknown as Trace;
+const shownTrace = traceData as unknown as Trace;
+const rehearsalTrace = rehearsalData as unknown as Trace;
+// When a live run is recorded it comes first; the rehearsal stays one click away.
+const RUNS: Trace[] = shownTrace.provider.kind === "foundry" ? [shownTrace, rehearsalTrace] : [rehearsalTrace];
 const ROLE_NAME: Record<Role, string> = {
   tactical_analyst: "Tactical Analyst", narrative_composer: "Narrative Composer",
   editorial_reviewer: "Editorial Reviewer", audience_adapter: "Audience Adapter",
 };
 const LANGUAGE: Record<string, string> = { en: "English", es: "Español", fr: "Français" };
 const PERSONA: Record<string, string> = { analyst: "Analyst", casual_fan: "Fan", broadcast_caption: "Caption" };
-const live = trace.provider.kind === "foundry";
-const specialists = trace.steps.filter((s): s is Specialist => s.type === "specialist");
-const rounds = trace.steps.filter((s): s is Verification => s.type === "verification");
 
 type Decision = "open" | "kept" | "dismissed";
 
@@ -65,8 +68,24 @@ function percent(value: number | null): string {
   return value == null ? "—" : value <= 1 ? `${(value * 100).toFixed(2)}%` : String(value);
 }
 
-function SpecialistCard({ step, index }: { step: Specialist; index: number }) {
-  const draft = step.role === "narrative_composer" && specialists.slice(0, index).some((s) => s.role === "narrative_composer");
+function plural(n: number, noun: string): string {
+  return `${n} ${noun}${n === 1 ? "" : "s"}`;
+}
+
+/** Why an attempt failed, in plain words: the host classifies it, the model does not. */
+function failureNote(failures: string[]): string | null {
+  if (!failures.length) return null;
+  const rejected = failures.filter((f) => f === "retryable_failure").length;
+  const late = failures.filter((f) => f === "timeout").length;
+  const parts = [];
+  if (rejected) parts.push(`${rejected === 1 ? "An answer was" : `${rejected} answers were`} rejected by the claim contract`);
+  if (late) parts.push(`${late === 1 ? "an attempt" : `${late} attempts`} ran past the host deadline`);
+  return `${parts.join("; ")}, so the host retried. Nothing from a rejected answer was used.`.replace(/^./, (c) => c.toUpperCase());
+}
+
+function SpecialistCard({ step, revision, variants }: { step: Specialist; revision: boolean; variants: number }) {
+  const draft = step.role === "narrative_composer" && revision;
+  const note = failureNote(step.failures);
   return (
     <li className="md-insight">
       <span className="md-insight-top">
@@ -77,6 +96,7 @@ function SpecialistCard({ step, index }: { step: Specialist; index: number }) {
           {step.failures.length ? ` · ${step.failures.length} failed attempt${step.failures.length === 1 ? "" : "s"}` : ""}
         </span>
       </span>
+      {note && <p className="md-muted md-small">{note}</p>}
       {step.content && step.role !== "audience_adapter" && <p>{step.content.split("\n")[0]}</p>}
       {step.content.includes("[rehearsal]") && <p className="md-muted md-small">{step.content.split("\n").find((l) => l.startsWith("[rehearsal]"))}</p>}
       {step.claims.length > 0 && (
@@ -84,7 +104,7 @@ function SpecialistCard({ step, index }: { step: Specialist; index: number }) {
           {step.claims.map((c) => <li key={c.claim_id}><span className="md-mono">{c.claim_id}</span> {c.text}</li>)}
         </ul>
       )}
-      {step.role === "audience_adapter" && <p>{trace.variants.length} versions, each citing only verified claims.</p>}
+      {step.role === "audience_adapter" && <p>{variants} versions, each citing only verified claims.</p>}
       {step.tool_calls.length > 0 && (
         <details className="md-trace-tools">
           <summary>Tool calls</summary>
@@ -126,6 +146,25 @@ function VerificationCard({ step, last }: { step: Verification; last: boolean })
 }
 
 export function InsightsBody() {
+  const [run, setRun] = useState(0);
+  return (
+    <>
+      {RUNS.length > 1 && (
+        <div role="group" aria-label="Which run" className="md-seg">
+          <span className="md-seg-label">Which run</span>
+          <button type="button" aria-pressed={run === 0} onClick={() => setRun(0)}>Recorded live run</button>
+          <button type="button" aria-pressed={run === 1} onClick={() => setRun(1)}>Rehearsal</button>
+        </div>
+      )}
+      <RunView key={run} trace={RUNS[run]} />
+    </>
+  );
+}
+
+function RunView({ trace }: { trace: Trace }) {
+  const live = trace.provider.kind === "foundry";
+  const specialists = trace.steps.filter((s): s is Specialist => s.type === "specialist");
+  const rounds = trace.steps.filter((s): s is Verification => s.type === "verification");
   const [shown, setShown] = useState(trace.steps.length);
   const [decisions, setDecisions] = useState<Record<string, Decision>>({});
   const open = trace.verified_claims.filter((c) => (decisions[c.claim_id] ?? "open") === "open").length;
@@ -133,8 +172,8 @@ export function InsightsBody() {
   const stepping = shown < trace.steps.length;
   const pipeline = [
     { name: "Tactical Analyst", detail: `${specialists[0]?.tool_calls.length ?? 0} tool calls` },
-    { name: "Narrative Composer", detail: `${specialists.filter((s) => s.role === "narrative_composer").length} drafts` },
-    { name: "Editorial Reviewer", detail: `${specialists.filter((s) => s.role === "editorial_reviewer").length} reviews` },
+    { name: "Narrative Composer", detail: plural(specialists.filter((s) => s.role === "narrative_composer").length, "draft") },
+    { name: "Editorial Reviewer", detail: plural(specialists.filter((s) => s.role === "editorial_reviewer").length, "review") },
     { name: "Verifier (code)", detail: `${rounds.length} round${rounds.length === 1 ? "" : "s"}` },
     { name: "Audience Adapter", detail: `${trace.variants.length} versions` },
   ];
@@ -144,7 +183,7 @@ export function InsightsBody() {
       <div className={`md-banner ${live ? "md-banner-success" : "md-banner-info"}`} role="note">
         <span className="md-banner-icon" aria-hidden="true">{live ? "✓" : "i"}</span>
         <strong>{live ? "Recorded live run" : "Rehearsal run"}</strong>
-        <span>{trace.provider.label}{trace.recorded_on ? ` · ${trace.recorded_on}` : ""}. {trace.totals.specialist_turns} specialist turns, {trace.totals.tool_calls} tool calls, {trace.totals.verification_rounds} verification rounds{trace.totals.tokens != null ? `, ${trace.totals.tokens.toLocaleString("en-GB")} tokens` : ""}.</span>
+        <span>{trace.provider.label}{trace.recorded_on ? ` · ${trace.recorded_on}` : ""}. {plural(trace.totals.specialist_turns, "specialist turn")}, {plural(trace.totals.tool_calls, "tool call")}, {plural(trace.totals.verification_rounds, "verification round")}{trace.totals.tokens != null ? `, ${trace.totals.tokens.toLocaleString("en-GB")} tokens` : ""}.</span>
       </div>
       <ol className="md-roles" aria-label="Workflow">
         {pipeline.map((p) => (
@@ -172,7 +211,9 @@ export function InsightsBody() {
           <TourStep step={3} />
           <ol className="md-insight-list">
             {trace.steps.slice(0, shown).map((step, i) =>
-              step.type === "specialist" ? <SpecialistCard key={i} step={step} index={specialists.indexOf(step)} />
+              step.type === "specialist"
+                ? <SpecialistCard key={i} step={step} variants={trace.variants.length}
+                    revision={specialists.slice(0, specialists.indexOf(step)).some((s) => s.role === "narrative_composer")} />
                 : step.type === "verification" ? <VerificationCard key={i} step={step} last={trace.steps[i + 1]?.type === "withheld"} />
                   : step.type === "withheld"
                     ? <li key={i} className="md-insight md-trace-failed"><span className="md-insight-top"><span className="md-eyebrow">Verifier · withheld</span><VerdictChip verdict="failed" label="Withheld" /></span><p>Revision ran out, so code withheld {step.claim_ids.length === 1 ? "the claim" : `${step.claim_ids.length} claims`} that never verified ({step.claim_ids.join(", ")}). Only verified claims go on to the audience versions.</p></li>

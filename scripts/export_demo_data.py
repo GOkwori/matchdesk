@@ -14,6 +14,8 @@ Files:
   58:17 goal. The deterministic rehearsal is regenerated here; a live Foundry recording
   (scripts/record_agent_run.py --provider foundry) is never overwritten or compared,
   because a model does not answer twice the same way. Tests re-verify its verdicts.
+- apps/web/src/studio/generated/agent-trace-rehearsal.json: the rehearsal, always
+  regenerated, so AI insights can show it beside a live recording.
 """
 
 from __future__ import annotations
@@ -32,6 +34,7 @@ TARGET = ROOT / "apps/web/src/studio/generated/nbr-riv.json"
 EVENTS = ROOT / "apps/web/src/studio/generated/nbr-riv-events.json"
 PARITY = ROOT / "apps/web/tests/verifier-parity.json"
 TRACE = ROOT / "apps/web/src/studio/generated/agent-trace.json"
+REHEARSAL = ROOT / "apps/web/src/studio/generated/agent-trace-rehearsal.json"
 
 
 def render() -> str:
@@ -64,7 +67,14 @@ def committed_trace_is_live() -> bool:
 
 def outputs() -> dict[Path, str]:
     """Every generated file and its expected text."""
-    files = {TARGET: render(), EVENTS: render_events(), PARITY: render_parity()}
+    files = {
+        TARGET: render(),
+        EVENTS: render_events(),
+        PARITY: render_parity(),
+        REHEARSAL: render_trace(),
+    }
+    # agent-trace.json holds the recorded live run once there is one; until then it is
+    # the rehearsal too. AI insights shows both when they differ.
     if not committed_trace_is_live():
         files[TRACE] = render_trace()
     return files

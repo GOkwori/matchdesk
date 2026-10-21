@@ -25,6 +25,7 @@ from pydantic import ValidationError
 
 ROOT = Path(__file__).resolve().parents[2]
 TRACE = ROOT / "apps/web/src/studio/generated/agent-trace.json"
+REHEARSAL_TRACE = ROOT / "apps/web/src/studio/generated/agent-trace-rehearsal.json"
 LOG = canonical.generate_canonical_match()
 
 
@@ -90,12 +91,13 @@ def test_rehearsal_is_deterministic() -> None:
     )
 
 
-def test_committed_trace_verdicts_match_the_verifier_today() -> None:
-    """Whatever produced the committed trace, every verdict in it must still hold.
+@pytest.mark.parametrize("path", [TRACE, REHEARSAL_TRACE], ids=["shown", "rehearsal"])
+def test_committed_trace_verdicts_match_the_verifier_today(path: Path) -> None:
+    """Whatever produced a committed trace, every verdict in it must still hold.
 
     This is the check the live-recording workflow runs before a trace is accepted.
     """
-    trace = json.loads(TRACE.read_text(encoding="utf-8"))
+    trace = json.loads(path.read_text(encoding="utf-8"))
     evidence = evidence_record(LOG)
     reviews = [step for step in _specialists(trace) if step["role"] == "editorial_reviewer"]
     rounds = [s for s in trace["steps"] if s["type"] == "verification"]
@@ -538,7 +540,7 @@ def test_a_completed_trace_round_trips_through_its_annotations(capsys) -> None:
     """The committed file can be rebuilt exactly from the run's annotations."""
     from scripts.record_agent_run import TRACE_TITLE, decode_trace, publish_trace
 
-    text = TRACE.read_text(encoding="utf-8")
+    text = REHEARSAL_TRACE.read_text(encoding="utf-8")
     parts = publish_trace(text)
     lines = capsys.readouterr().out.strip().splitlines()
     assert len(lines) == len(parts) and lines[0].startswith(f"::notice title={TRACE_TITLE} part 1")

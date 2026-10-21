@@ -23,8 +23,9 @@ MatchDesk separates writing from truth:
 What you can try in three minutes, on an invented match (Northbridge FC 2–1 Riverside
 United, 1,421 events):
 
-- Watch the agents work on the 58th-minute goal: the composer claims 60% possession,
-  the verifier recomputes 57.96% from the log and sends the draft back.
+- Replay a live run of the agents on Microsoft Foundry for the 58th-minute goal, and a
+  rehearsal in which the composer claims 60% possession and the verifier recomputes
+  57.96% from the log and sends the draft back.
 - Claim 59% yourself and watch it rejected, in the browser, from the raw events.
 - Edit a sentence in the composer and see it re-verified as you type.
 - Read the fan story with its "How we checked this" panel, every row a computed check.
