@@ -1,17 +1,18 @@
-# Intended demonstration script
+# Demo script (2 minutes)
 
-Status: planned narrative, not a claim that these scenes can currently be recorded.
-Target duration: 1 minute 55 seconds. Replace every planned scene with actual application
-footage only after its functional and evidence gates pass.
+Recorded from the studio's guided tour on the synthetic Northbridge v Riverside replay.
+Narration is first person.
 
-| Time | Intended scene | First-person narration |
-|---|---|---|
-| 0-15s | Synthetic turning point | I want to show not just the story, but why it is supported. |
-| 15-40s | Select claim and inspect events | Here are the source events and the calculation behind this sentence. |
-| 40-70s | Agent handoffs and labelled error injection | This is a controlled test. The incorrect claim is blocked rather than published. |
-| 70-95s | Producer approval and overlay | I review the exact version before it goes on screen. |
-| 95-110s | Audience and language variants | The presentation changes; the underlying facts must not. |
-| 110-115s | Architecture and evidence | The repository records the implementation and what the tests demonstrate. |
+| Time | Screen | Action | Narration |
+| --- | --- | --- | --- |
+| 0:00 | Home | Show the headline | "MatchDesk lets AI draft football stories, but only code can certify a fact, and only a producer can publish." |
+| 0:10 | Overview | Click **Claim 59% instead** | "Here is the idea in one click. Northbridge had 57.96% of possession. Claim 59% and it is rejected, recomputed from every event." |
+| 0:25 | Moments | Open the 58′ goal | "Every moment is detected by rules and tied to the events that prove it: a corner, then a header fourteen seconds later." |
+| 0:40 | AI insights | Step through the run | "Four specialists worked on this goal through role-scoped tools. The composer claimed 60% possession. The verifier recomputed it and sent the draft back. The revision passed." |
+| 1:05 | Evidence | Show the calculation | "This is the proof: the formula, the events, the result, checked on the server and again in your browser." |
+| 1:20 | Composer | Remove the season claim, mark the interpretation; then change 58 to 60 | "Fix the draft and it becomes eligible. Change a number and it fails as I type. The sentence itself is checked, not just the data behind it." |
+| 1:40 | Fan story | Switch to Español | "Fans get the verified story in their language, with every check shown. Approval stays with a human." |
+| 1:55 | Home | End | "AI-assisted. Verified. Human-led." |
 
-No unlicensed footage, real team branding, fabricated live behaviour or undisclosed
-fixture is permitted. Keep product AI and synthetic-data limitations explicit.
+Say which provider the Insights screen shows (rehearsal or recorded live run); the
+banner on that screen states it.

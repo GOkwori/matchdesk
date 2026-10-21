@@ -8,12 +8,21 @@ My priority is the path from a synthetic match event to a publishable explanatio
 The design keeps statistics in deterministic code, uses specialist AI agents to
 interpret and present evidence, and gives the producer control over publication.
 
-**Owner: George Okwori. Current stage: Phase 3 in progress; P3-01/P3-02/P3-03 TESTED; P3-04/P3-05 IN PROGRESS.**
-Phase 0, Phase 1 and Phase 2 are VERIFIED / COMPLETED. The deterministic engine,
-bounded specialist workflow, evidence verification and controlled Agent Framework /
-Foundry runtime have source-bound test evidence. Phase 3 has added immutable producer review, exact-binding publication authorisation,
-versioned broadcast draft contracts, and offline audience/producer operations;
-there is still no deployed or authenticated publishing service.
+**Owner: George Okwori. Current stage: competition build. Phases 0–3 of the delivery plan are merged; Phase 4 (submission) is in progress.**
+
+What runs today, on one invented match (Northbridge FC 2–1 Riverside United, 1,421
+synthetic events):
+
+- Four specialist agents (Tactical Analyst, Narrative Composer, Editorial Reviewer,
+  Audience Adapter) run end to end through role-scoped, traced tools. The Insights
+  screen replays that run step by step and names its provider.
+- Every claim is recomputed from the event log, and the sentence itself is checked: it
+  must name its subject and state the number it asserts. A failed claim goes back to
+  the composer. The same verifier runs, ported exactly, in the browser.
+- The studio has a seven-stop guided tour, a "try to fool the verifier" panel, and a
+  composer that re-verifies a sentence as you edit it.
+- Producer approval and publishing are not enabled; there is no deployed or
+  authenticated publishing service. Start with the [judging guide](docs/competition/judging-guide.md).
 
 ## What is implemented
 
@@ -30,10 +39,10 @@ hand-off. It does not call a model and it does not give an agent publishing auth
 Later Phase 2 slices add evidence verification, scoped specialists, one bounded
 live Foundry invocation and tested retry/recovery and model-evaluation controls.
 
-At the latest tested P3-02 source, 290 Python tests passed with 96.73% measured
-branch-aware package coverage. Ruff, formatting, strict mypy, frontend build,
-dependency audit, source security, runtime/browser integration and native-image
-qualification passed on the same exact commit.
+The development branch has 1,294 Python tests, a 45-case Python/TypeScript verifier
+parity fixture and 108 studio browser tests (three viewports, axe on every page).
+Ruff, formatting, strict mypy, frontend build, dependency audit and source security
+run in hosted CI on every pull request.
 
 PostgreSQL now has a reviewed producer-case migration, a pinned Psycopg driver,
 real adapter qualification with a restricted disposable database role, atomic
@@ -52,10 +61,10 @@ flowchart LR
     S[Seeded synthetic simulator - TESTED] --> I[Ingest and deterministic intelligence - TESTED]
     I --> E[Evidence and claim contracts - implemented]
     E --> C[Bounded four-specialist control plane - TESTED]
-    C --> A[Bounded Agent Framework / Foundry integration - TESTED]
-    A --> V[Deterministic claim verification - TESTED]
+    C --> A[Agent Framework / Foundry workflow with traced tools - TESTED]
+    A --> V[Claim and sentence verification, Python and browser - TESTED]
     V --> P[Producer review and exact-binding domain gate - TESTED]
-    P --> O[Authenticated publishing and audience outputs - PLANNED]
+    P --> O[Authenticated publishing - PLANNED]
 ```
 
 The [solution design](docs/solution-design/02-architecture.md) explains the deterministic, specialist, verification and producer trust boundaries, plus the later authenticated publication path.
