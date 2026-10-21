@@ -12,6 +12,7 @@ and cannot approve or publish anything.
 from __future__ import annotations
 
 import json
+import re
 import time
 from dataclasses import dataclass, field
 from typing import Any, Callable, Literal, Mapping, Protocol
@@ -28,6 +29,7 @@ from matchdesk.domain.models import (
     VerificationResult,
 )
 from matchdesk.domain.orchestration import (
+    RolePolicy,
     SpecialistRole,
     WorkflowState,
     apply_verification_gate,
@@ -185,6 +187,21 @@ class WorkflowExecutor(Protocol):
         """Return one role's proposal using only the given tools and the match digest."""
 
 
+_URL = re.compile(r"https?://\S+")
+MAX_ERROR_CHARS = 300
+
+
+def describe_error(error: BaseException) -> str:
+    """A short, non-secret description of a provider error for the trace.
+
+    Endpoint URLs are removed; the message is cut to a fixed length. The trace is
+    committed, so it never carries a credential, an endpoint or a deployment name.
+    """
+    message = _URL.sub("<url>", " ".join(str(error).split()))
+    text = f"{type(error).__name__}: {message}" if message else type(error).__name__
+    return text[:MAX_ERROR_CHARS]
+
+
 @dataclass
 class _BoundAdapter:
     """Adapt a WorkflowExecutor to the host's bounded executor, collecting telemetry.
@@ -197,6 +214,7 @@ class _BoundAdapter:
     digest: str
     tools: TracedReadTools
     telemetry: list[TurnTelemetry] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
 
     async def execute(self, request: SpecialistRequest, tools: Any) -> SpecialistResponse:
         """Run one turn with the traced tools instead of the raw scoped tools."""
@@ -204,7 +222,14 @@ class _BoundAdapter:
         try:
             response, usage = await self.executor.execute(request, self.tools, digest=self.digest)
         except (ValidationError, json.JSONDecodeError) as error:
+            self.errors.append(describe_error(error))
             raise RetryableSpecialistError("Specialist output failed its contract") from error
+        except RetryableSpecialistError as error:
+            self.errors.append(str(error))
+            raise
+        except TimeoutError:
+            self.errors.append("TimeoutError: the turn exceeded its host deadline")
+            raise
         self.telemetry.append(usage)
         return response
 
@@ -277,9 +302,17 @@ async def _turn(
     )
     traced = TracedReadTools(scoped, verification)
     adapter = _BoundAdapter(executor, digest, traced)
+    # A live turn makes several model round trips (one per tool call), so a provider
+    # may ask for a longer per-turn deadline than the default; the host still owns it.
+    timeout_ms = getattr(executor, "turn_timeout_ms", None)
+    policy = RolePolicy(role=role, timeout_ms=timeout_ms) if timeout_ms else None
     started = clock()
     result = await execute_bounded_specialist(
-        state, instruction=_instruction(TASKS[role], handoff), executor=adapter, tools=scoped
+        state,
+        instruction=_instruction(TASKS[role], handoff),
+        executor=adapter,
+        tools=scoped,
+        policy=policy,
     )
     finished = clock()
     tokens = [usage.total_tokens for usage in adapter.telemetry if usage.total_tokens is not None]
@@ -290,6 +323,7 @@ async def _turn(
             "attempts": sum(attempt.role == role for attempt in result.state.attempts)
             - sum(attempt.role == role for attempt in state.attempts),
             "failures": list(result.failure_kinds),
+            "errors": list(adapter.errors),
             "outcome": "proposed" if result.response is not None else result.state.status,
             "handoff_keys": sorted(handoff),
             "tool_calls": [

@@ -79,6 +79,7 @@
    ],
    "content": "Riverside held 55% of possession from 30 to 45 minutes, their highest share of any block.",
    "duration_ms": null,
+   "errors": [],
    "failures": [],
    "handoff_keys": [
     "focus"
@@ -658,6 +659,7 @@
    ],
    "content": "Headline: Okafor double restores Northbridge lead\n[rehearsal] NC-02 misstates possession by two points and NC-04 needs season data, on purpose, so review and verification have something to catch.",
    "duration_ms": null,
+   "errors": [],
    "failures": [],
    "handoff_keys": [
     "focus",
@@ -769,6 +771,7 @@
    ],
    "content": "Dropped NC-04: the match log holds no season history to check it.",
    "duration_ms": null,
+   "errors": [],
    "failures": [],
    "handoff_keys": [
     "draft_claims"
@@ -910,6 +913,7 @@
    ],
    "content": "Revised after verification: recomputed every failed number from the log.",
    "duration_ms": null,
+   "errors": [],
    "failures": [],
    "handoff_keys": [
     "focus",
@@ -1022,6 +1026,7 @@
    ],
    "content": "No claim needs data outside the match log.",
    "duration_ms": null,
+   "errors": [],
    "failures": [],
    "handoff_keys": [
     "draft_claims"
@@ -1080,6 +1085,7 @@
    "claims": [],
    "content": "[{\"language\": \"en\", \"persona\": \"analyst\", \"text\": \"Okafor has scored both Northbridge goals; his header came 14 seconds after a corner.\", \"claim_ids\": [\"NC-01\", \"NC-03\"]}, {\"language\": \"en\", \"persona\": \"casual_fan\", \"text\": \"Okafor again! A header 14 seconds after a corner puts Northbridge back in front.\", \"claim_ids\": [\"NC-01\", \"NC-03\"]}, {\"language\": \"en\", \"persona\": \"broadcast_caption\", \"text\": \"Okafor · header 14s after a corner\", \"claim_ids\": [\"NC-01\", \"NC-03\"]}, {\"language\": \"es\", \"persona\": \"analyst\", \"text\": \"Okafor ha marcado los dos goles del Northbridge; su cabezazo llegó 14 segundos después de un córner.\", \"claim_ids\": [\"NC-01\", \"NC-03\"]}, {\"language\": \"es\", \"persona\": \"casual_fan\", \"text\": \"¡Okafor otra vez! Un cabezazo 14 segundos después de un córner devuelve la ventaja al Northbridge.\", \"claim_ids\": [\"NC-01\", \"NC-03\"]}, {\"language\": \"es\", \"persona\": \"broadcast_caption\", \"text\": \"Okafor · cabezazo 14 s tras córner\", \"claim_ids\": [\"NC-01\", \"NC-03\"]}, {\"language\": \"fr\", \"persona\": \"analyst\", \"text\": \"Okafor a marqué les deux buts de Northbridge ; sa tête est arrivée 14 secondes après un corner.\", \"claim_ids\": [\"NC-01\", \"NC-03\"]}, {\"language\": \"fr\", \"persona\": \"casual_fan\", \"text\": \"Encore Okafor ! Une tête 14 secondes après un corner, et Northbridge repasse devant.\", \"claim_ids\": [\"NC-01\", \"NC-03\"]}, {\"language\": \"fr\", \"persona\": \"broadcast_caption\", \"text\": \"Okafor · tête 14 s après corner\", \"claim_ids\": [\"NC-01\", \"NC-03\"]}]",
    "duration_ms": null,
+   "errors": [],
    "failures": [],
    "handoff_keys": [
     "verified_claims"
