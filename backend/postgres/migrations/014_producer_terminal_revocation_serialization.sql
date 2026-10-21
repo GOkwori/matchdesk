@@ -23,6 +23,12 @@ DECLARE
     verified public.matchdesk_producer_confirmations%ROWTYPE;
     inserted_id text;
 BEGIN
+    -- A REPEATABLE READ or SERIALIZABLE transaction can hold a stale snapshot
+    -- across this advisory lock and miss a committed terminal revocation.
+    -- Reject unsupported isolation before taking a lock or minting a grant.
+    IF pg_catalog.current_setting('transaction_isolation') <> 'read committed' THEN
+        RETURN FALSE;
+    END IF;
     -- FIRST serialize before locking the staged confirmation.
     -- The terminal INSERT trigger obtains the same advisory xact lock.
     -- This establishes a single PostgreSQL serialization point for issuance
@@ -147,6 +153,13 @@ AS $serialized_terminal$
 DECLARE
     parent_id text;
 BEGIN
+    -- A stale transaction snapshot could otherwise commit a terminal row but
+    -- miss a grant issued after that snapshot began. Fail closed before any
+    -- terminal insert/revocation rather than silently switch isolation.
+    IF pg_catalog.current_setting('transaction_isolation') <> 'read committed' THEN
+        RAISE EXCEPTION 'Terminal revocation requires READ COMMITTED'
+            USING ERRCODE = '0A000';
+    END IF;
     IF NEW.confirmation_id IS NULL OR NEW.tenant_id IS NULL
        OR NEW.terminal_state NOT IN ('revoked', 'cancelled') THEN
         RAISE EXCEPTION 'Invalid terminal confirmation scope';
