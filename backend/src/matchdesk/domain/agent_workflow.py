@@ -44,7 +44,10 @@ from matchdesk.domain.specialists import ScopedReadTools, SpecialistRequest, Spe
 from matchdesk.domain.verification import verify_claim
 
 TRACE_SCHEMA = "matchdesk-agent-trace/1"
-MAX_INSTRUCTION_CHARS = 4_000
+# A revision hand-off carries the tactical claims, the previous draft and the
+# verifier's feedback: about nine claims. 4,000 characters held the rehearsal but not
+# a live draft of five claims with assertions; the digest bound is the same 16,000.
+MAX_INSTRUCTION_CHARS = 16_000
 MAX_EVENTS_PER_READ = 40
 LANGUAGES = ("en", "es", "fr")
 PERSONAS = ("analyst", "casual_fan", "broadcast_caption")
@@ -281,7 +284,8 @@ TASKS: Mapping[SpecialistRole, str] = {
     "audience_adapter": (
         "Adapt the verified claims for each language (en, es, fr) and persona (analyst, "
         "casual_fan, broadcast_caption). Return content as a JSON array of nine objects "
-        "with language, persona, text and claim_ids. Add no new facts, numbers or names."
+        "with language, persona, text and claim_ids; keep each text under 280 characters. "
+        "Add no new facts, numbers or names."
     ),
 }
 
