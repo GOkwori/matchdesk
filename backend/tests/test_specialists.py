@@ -108,6 +108,18 @@ def test_tactical_tools_can_read_events_windows_and_registered_metrics() -> None
         tools.evidence_record("evidence-1")
 
 
+def test_whole_match_window_reads_the_same_events_the_metrics_count() -> None:
+    """A window without a period spans both halves, exactly as compute_metric does."""
+    events = generate_scenario("late_winner", 7).events
+    tools = ScopedReadTools(role="tactical_analyst", events=events)
+    whole = MatchWindow(from_ms=0, to_ms=events[-1].match_clock_ms + 1)
+
+    read = tools.events_in_window(whole)
+    assert {event.period for event in read} == {1, 2}
+    goals = sum(event.type == "goal" and event.team_id == "home" for event in read)
+    assert tools.metric("goals.v1", Subject(team_id="home"), whole) == goals > 0
+
+
 def test_narrative_and_editorial_roles_can_read_evidence_and_verification() -> None:
     """Narrative and editorial specialists can inspect deterministic checker output."""
     events = _events()
