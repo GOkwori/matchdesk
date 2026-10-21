@@ -628,3 +628,10 @@ html[data-md-text="large"] body.md-root { zoom: 1.125; }
 @media (prefers-reduced-motion: reduce) { .md-skel-block { animation: none; } }
 html[data-md-motion="reduce"] .md-skel-block { animation: none; }
 .md-recheck { margin: 0; display: flex; gap: 8px; align-items: baseline; font-size: 13px; color: var(--md-text-body); }
+/* Agent run replay (Insights). */
+.md-trace-claims { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.md-trace-claims li { display: flex; flex-wrap: wrap; gap: 6px; align-items: baseline; }
+.md-trace-tools summary { cursor: pointer; color: var(--md-accent-soft); font-size: 12px; font-weight: 700; }
+.md-trace-tools ol { margin: 6px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--md-muted); overflow-wrap: anywhere; }
+.md-trace-tools code { font-family: var(--md-font-mono); color: var(--md-text); }
+.md-trace-failed { border-color: rgba(255, 133, 142, 0.55); }

@@ -10,6 +10,10 @@ Files:
   re-verifies against.
 - apps/web/tests/verifier-parity.json: claims run through the real verifier, which the
   TypeScript port must reproduce exactly.
+- apps/web/src/studio/generated/agent-trace.json: the four-specialist workflow on the
+  58:17 goal. The deterministic rehearsal is regenerated here; a live Foundry recording
+  (scripts/record_agent_run.py --provider foundry) is never overwritten or compared,
+  because a model does not answer twice the same way. Tests re-verify its verdicts.
 """
 
 from __future__ import annotations
@@ -19,6 +23,7 @@ import json
 from pathlib import Path
 
 from matchdesk.domain import canonical_match as canonical
+from matchdesk.domain.agent_demo import rehearsal_trace
 from matchdesk.domain.demo_export import build_demo_export
 from matchdesk.domain.verifier_parity import compact_events, parity_fixture
 
@@ -26,6 +31,7 @@ ROOT = Path(__file__).resolve().parents[1]
 TARGET = ROOT / "apps/web/src/studio/generated/nbr-riv.json"
 EVENTS = ROOT / "apps/web/src/studio/generated/nbr-riv-events.json"
 PARITY = ROOT / "apps/web/tests/verifier-parity.json"
+TRACE = ROOT / "apps/web/src/studio/generated/agent-trace.json"
 
 
 def render() -> str:
@@ -44,9 +50,24 @@ def render_parity() -> str:
     return json.dumps(parity_fixture(), indent=1, sort_keys=True, ensure_ascii=False) + "\n"
 
 
+def render_trace() -> str:
+    """Return the deterministic rehearsal trace."""
+    return json.dumps(rehearsal_trace(), indent=1, sort_keys=True, ensure_ascii=False) + "\n"
+
+
+def committed_trace_is_live() -> bool:
+    """True when the committed trace is a live recording, which must be kept as is."""
+    if not TRACE.exists():
+        return False
+    return bool(json.loads(TRACE.read_text(encoding="utf-8"))["provider"]["kind"] == "foundry")
+
+
 def outputs() -> dict[Path, str]:
     """Every generated file and its expected text."""
-    return {TARGET: render(), EVENTS: render_events(), PARITY: render_parity()}
+    files = {TARGET: render(), EVENTS: render_events(), PARITY: render_parity()}
+    if not committed_trace_is_live():
+        files[TRACE] = render_trace()
+    return files
 
 
 def main() -> int:
