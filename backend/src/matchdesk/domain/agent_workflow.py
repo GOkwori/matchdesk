@@ -283,9 +283,9 @@ TASKS: Mapping[SpecialistRole, str] = {
     ),
     "audience_adapter": (
         "Adapt the verified claims for each language (en, es, fr) and persona (analyst, "
-        "casual_fan, broadcast_caption). Return content as a JSON array of nine objects "
-        "with language, persona, text and claim_ids; keep each text under 280 characters. "
-        "Add no new facts, numbers or names."
+        "casual_fan, broadcast_caption): nine variants, one per pair, each with language, "
+        "persona, text under 280 characters and the claim_ids it draws on, citing only "
+        "the claims you were given. Add no new facts, numbers or names."
     ),
 }
 
@@ -584,7 +584,11 @@ async def run_agent_workflow(
         "focus": dict(focus),
         "digest_chars": len(digest_text),
         "digest_event_count": digest["event_count"],
-        "status": "completed" if variants else state.status,
+        # A run whose stages all finished but whose audience versions were rejected has
+        # not completed: it has no output a producer could review.
+        "status": "completed"
+        if variants
+        else ("adapter_rejected" if state.status == "completed" else state.status),
         "terminal_reason": state.terminal_reason,
         "steps": steps,
         "verified_claims": [_claim_json(c) for c in verified],

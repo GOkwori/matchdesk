@@ -15,7 +15,9 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import base64
 import datetime as dt
+import gzip
 import json
 import os
 from pathlib import Path
@@ -72,6 +74,29 @@ def report(trace: dict[str, Any]) -> None:
     _annotation(level, "Agent run summary", lines)
 
 
+TRACE_PART_CHARS = 60_000
+TRACE_TITLE = "agent-trace.json.gz.b64"
+
+
+def publish_trace(text: str) -> list[str]:
+    """Print a completed trace as gzip+base64 annotations; return the parts.
+
+    The run's artifact is kept too, but annotations are readable through the checks
+    API wherever artifact storage is not. The trace holds nothing secret: it is the
+    file that gets committed. Decode with ``decode_trace``.
+    """
+    encoded = base64.b64encode(gzip.compress(text.encode("utf-8"), mtime=0)).decode("ascii")
+    parts = [encoded[i : i + TRACE_PART_CHARS] for i in range(0, len(encoded), TRACE_PART_CHARS)]
+    for index, part in enumerate(parts, start=1):
+        print(f"::notice title={TRACE_TITLE} part {index} of {len(parts)}::{part}")
+    return parts
+
+
+def decode_trace(parts: list[str]) -> str:
+    """Rebuild the trace text from its annotation parts, in order."""
+    return gzip.decompress(base64.b64decode("".join(parts))).decode("utf-8")
+
+
 def main() -> int:
     """Run the workflow once and write the trace."""
     parser = argparse.ArgumentParser(description=__doc__)
@@ -90,12 +115,13 @@ def main() -> int:
         trace["recorded_on"] = dt.date.today().isoformat()
     else:
         trace = asyncio.run(record_agent_run(RehearsalExecutor(), clock=lambda: None))
+    text = json.dumps(trace, indent=1, sort_keys=True, ensure_ascii=False) + "\n"
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(
-        json.dumps(trace, indent=1, sort_keys=True, ensure_ascii=False) + "\n", encoding="utf-8"
-    )
+    args.out.write_text(text, encoding="utf-8")
     if os.environ.get("GITHUB_ACTIONS") == "true":
         report(trace)
+        if trace["status"] == "completed":
+            publish_trace(text)
     totals = trace["totals"]
     print(
         f"{trace['provider']['kind']}: {trace['status']}, {totals['specialist_turns']} turns, "
