@@ -501,11 +501,16 @@ class _OptionsFactory:
             async def run(self, prompt, options):
                 """Record the options and answer."""
                 factory.options[role] = options
+                schema = options["response_format"]
 
                 class _Result:
-                    """An Agent Framework result."""
+                    """An Agent Framework result in the schema the turn asked for."""
 
-                    value = RuntimeProposal(content="ok")
+                    value = (
+                        RuntimeProposal(content="ok")
+                        if schema is RuntimeProposal
+                        else schema(variants=())
+                    )
                     usage_details = None
 
                 return _Result()
@@ -527,3 +532,64 @@ def test_only_the_audience_adapter_gets_the_larger_output_cap() -> None:
         asyncio.run(executor.execute(request, tools, digest="{}"))
     assert factory.options["tactical_analyst"]["max_tokens"] == 1_200
     assert factory.options["audience_adapter"]["max_tokens"] == ADAPTER_MAX_OUTPUT_TOKENS
+
+
+def test_a_completed_trace_round_trips_through_its_annotations(capsys) -> None:
+    """The committed file can be rebuilt exactly from the run's annotations."""
+    from scripts.record_agent_run import TRACE_TITLE, decode_trace, publish_trace
+
+    text = TRACE.read_text(encoding="utf-8")
+    parts = publish_trace(text)
+    lines = capsys.readouterr().out.strip().splitlines()
+    assert len(lines) == len(parts) and lines[0].startswith(f"::notice title={TRACE_TITLE} part 1")
+    assert decode_trace([line.split("::", 2)[2] for line in lines]) == text
+
+
+def test_the_live_adapter_returns_typed_variants_the_workflow_accepts() -> None:
+    """The adapter's schema is a typed list; the workflow still checks what it cites."""
+    from matchdesk.domain.agent_workflow import _variants
+    from matchdesk.domain.foundry_runtime import AudienceProposal, AudienceVariant
+
+    rows = [
+        AudienceVariant(language=lang, persona=persona, text="Okafor scored.", claim_ids=("C1",))
+        for lang in ("en", "es", "fr")
+        for persona in ("analyst", "casual_fan", "broadcast_caption")
+    ]
+    response = AudienceProposal(variants=tuple(rows)).to_specialist_response("audience_adapter")
+    assert len(_variants(response.content, {"C1"})) == 9
+    with pytest.raises(ValueError):
+        _variants(response.content, {"C2"})
+
+
+def test_the_adapter_turn_asks_for_the_typed_schema() -> None:
+    """Only the audience adapter's live turn uses AudienceProposal."""
+    from matchdesk.domain.foundry_runtime import AudienceProposal
+
+    factory = _OptionsFactory()
+    executor = FoundryWorkflowExecutor(config=_live_config(), factory=factory)
+    state = start_workflow("wf", LOG[0].match_id, "r", 1, "M-05")
+    for role in ("tactical_analyst", "audience_adapter"):
+        tools = TracedReadTools(ScopedReadTools(role=role, events=LOG), {})
+        at_role = state.model_copy(update={"current_role": role})
+        request = SpecialistRequest(workflow=at_role, role=role, instruction="x")
+        asyncio.run(executor.execute(request, tools, digest="{}"))
+    assert factory.options["tactical_analyst"]["response_format"] is RuntimeProposal
+    assert factory.options["audience_adapter"]["response_format"] is AudienceProposal
+
+
+class _AdapterReturnsProse(RehearsalExecutor):
+    """The rehearsal, except the adapter answers in prose."""
+
+    async def execute(self, request, tools, *, digest):
+        """Replace the adapter's variants with text that is not JSON."""
+        response, usage = await super().execute(request, tools, digest=digest)
+        if request.role == "audience_adapter":
+            response = SpecialistResponse(role="audience_adapter", content="Here you go!")
+        return response, usage
+
+
+def test_rejected_variants_mean_the_run_did_not_complete() -> None:
+    """All stages ran, but with no audience versions there is nothing to review."""
+    trace = _run(_AdapterReturnsProse())
+    assert trace["status"] == "adapter_rejected" and trace["variants"] == []
+    assert [s["type"] for s in trace["steps"]][-1] == "rejected_output"

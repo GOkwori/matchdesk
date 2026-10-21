@@ -100,6 +100,35 @@ class RuntimeProposal(BaseModel):
         )
 
 
+class AudienceVariant(BaseModel):
+    """One audience version of the verified story, as the live adapter returns it."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    language: Literal["en", "es", "fr"]
+    persona: Literal["analyst", "casual_fan", "broadcast_caption"]
+    text: str = Field(min_length=1, max_length=400)
+    claim_ids: tuple[str, ...]
+
+
+class AudienceProposal(BaseModel):
+    """The audience adapter's structured answer: its variants as a typed list.
+
+    The first live run to reach the adapter returned prose where a JSON array was
+    expected inside ``content``. A typed schema lets structured output enforce the
+    shape; the workflow still checks coverage and that only verified claims are cited.
+    """
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    variants: tuple[AudienceVariant, ...]
+
+    def to_specialist_response(self, role: SpecialistRole) -> SpecialistResponse:
+        """Hand the variants to the workflow as the JSON array it validates."""
+        rows = [variant.model_dump(mode="json") for variant in self.variants]
+        return SpecialistResponse(role=role, content=json.dumps(rows, ensure_ascii=False))
+
+
 class _AgentLike(Protocol):
     """Minimal Agent Framework surface consumed by this adapter."""
 
@@ -249,23 +278,23 @@ def _optional_text(value: Any) -> str | None:
     return text_value or None
 
 
-def _extract_proposal(result: Any) -> RuntimeProposal:
-    """Extract one RuntimeProposal from common Agent Framework response shapes."""
+def _extract_proposal(result: Any, schema: type[Any] = RuntimeProposal) -> Any:
+    """Extract one structured proposal from common Agent Framework response shapes."""
     value = getattr(result, "value", None)
-    if isinstance(value, RuntimeProposal):
+    if isinstance(value, schema):
         return value
 
     parsed = getattr(result, "parsed", None)
-    if isinstance(parsed, RuntimeProposal):
+    if isinstance(parsed, schema):
         return parsed
 
     text = getattr(result, "text", None)
     if isinstance(text, str):
-        return RuntimeProposal.model_validate_json(text)
+        return schema.model_validate_json(text)
 
-    if isinstance(result, RuntimeProposal):
+    if isinstance(result, schema):
         return result
-    raise ValueError("Foundry runtime did not return the required RuntimeProposal")
+    raise ValueError(f"Foundry runtime did not return the required {schema.__name__}")
 
 
 class _DefaultAgentFactory:
@@ -402,20 +431,22 @@ class FoundryWorkflowExecutor:
             "detected moments. Call a read function only for a figure it lacks, "
             f"at most {_MAX_TOOL_CALLS_PER_TURN} calls in total, batched where you can. "
             "Set fact only on event_fact claims and leave it null on every other claim. "
-            "Return only the structured RuntimeProposal schema."
+            "Return only the structured schema you are given."
         )
+        adapter = request.role == "audience_adapter"
+        schema: type[Any] = AudienceProposal if adapter else RuntimeProposal
         try:
             result = await agent.run(
                 prompt,
                 options={
-                    "response_format": RuntimeProposal,
+                    "response_format": schema,
                     "max_tokens": ADAPTER_MAX_OUTPUT_TOKENS
-                    if request.role == "audience_adapter"
+                    if adapter
                     else self._config.max_output_tokens,
                     "store": False,
                 },
             )
-            proposal = _extract_proposal(result)
+            proposal = _extract_proposal(result, schema)
         except (ValidationError, PermissionError, TimeoutError):
             raise
         except Exception as error:
