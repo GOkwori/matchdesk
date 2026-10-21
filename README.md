@@ -74,6 +74,8 @@ uv run --no-sync make lint
 cd apps/web && npm run build
 ```
 
+If uv cannot download Python 3.12.15 on your machine, run `make setup SETUP_PYTHON=3.12.13`
+(or another 3.12 patch release uv offers); the lock is reproduced unchanged.
 `make setup` rejects a stale Python lock; `npm ci` rejects a mismatched npm lock.
 `make resolve` is a separate maintenance operation. Review its dependency changes
 and run the full checks before committing. The [initial compatibility decision](docs/decisions/ADR-0005-build-compatibility.md)
