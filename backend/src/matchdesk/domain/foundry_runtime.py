@@ -15,10 +15,11 @@ from dataclasses import dataclass
 from importlib import import_module
 from typing import Any, Literal, Mapping, Protocol, cast
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from matchdesk.domain.models import Claim
 from matchdesk.domain.orchestration import SpecialistRole
+from matchdesk.domain.runtime_resilience import RetryableSpecialistError
 from matchdesk.domain.specialists import ScopedReadTools, SpecialistRequest, SpecialistResponse
 
 _ENV_ENABLED = "MATCHDESK_FOUNDRY_ENABLED"
@@ -350,6 +351,9 @@ class FoundryWorkflowExecutor:
     """
 
     kind: Literal["foundry"] = "foundry"
+    label = "Microsoft Foundry via Agent Framework"
+    # Each tool call is another model round trip; 30 s suits the rehearsal, not this.
+    turn_timeout_ms = 90_000
 
     def __init__(
         self,
@@ -360,11 +364,6 @@ class FoundryWorkflowExecutor:
         """Create a fail-closed executor; no network call occurs during construction."""
         self._config = FoundryRuntimeConfig.from_env() if config is None else config
         self._factory = factory
-
-    @property
-    def label(self) -> str:
-        """Provider label for the trace; the deployment name, never a credential."""
-        return f"Microsoft Foundry via Agent Framework ({self._config.model or 'unset'})"
 
     async def execute(self, request: SpecialistRequest, tools: Any, *, digest: str) -> Any:
         """Run one tool-using specialist turn and return its proposal with token usage."""
@@ -383,15 +382,24 @@ class FoundryWorkflowExecutor:
             "Use your read functions for anything the digest does not hold. "
             "Return only the structured RuntimeProposal schema."
         )
-        result = await agent.run(
-            prompt,
-            options={
-                "response_format": RuntimeProposal,
-                "max_tokens": self._config.max_output_tokens,
-                "store": False,
-            },
-        )
-        proposal = _extract_proposal(result)
+        try:
+            result = await agent.run(
+                prompt,
+                options={
+                    "response_format": RuntimeProposal,
+                    "max_tokens": self._config.max_output_tokens,
+                    "store": False,
+                },
+            )
+            proposal = _extract_proposal(result)
+        except (ValidationError, PermissionError, TimeoutError):
+            raise
+        except Exception as error:
+            # Service, transport and empty-output errors are the provider's failure, not
+            # a host bug: retry within the role's budget and keep a non-secret reason.
+            from matchdesk.domain.agent_workflow import describe_error
+
+            raise RetryableSpecialistError(describe_error(error)) from error
         usage = getattr(result, "usage_details", None)
         return (
             proposal.to_specialist_response(request.role),

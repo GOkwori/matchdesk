@@ -292,3 +292,62 @@ def test_validation_error_type_is_what_bad_claims_raise() -> None:
     """The retry path relies on pydantic raising ValidationError for a bad claim."""
     with pytest.raises(ValidationError):
         Claim.model_validate({"claim_id": "bad"})
+
+
+class _FailingFactory:
+    """Every live agent fails the way a provider does: a service error naming its URL."""
+
+    def create(self, *, role, config, tools):
+        """Create an agent whose run raises a transport-style error."""
+
+        class _Agent:
+            """A live agent stand-in that always fails."""
+
+            async def run(self, prompt, options):
+                """Fail like an unavailable service."""
+                raise RuntimeError("Service unavailable at https://secret.example/api x")
+
+        return _Agent()
+
+
+def test_a_provider_error_is_retried_and_recorded_without_its_url() -> None:
+    """A service error ends the run cleanly, with a reason that names no endpoint."""
+    executor = FoundryWorkflowExecutor(config=_live_config(), factory=_FailingFactory())
+    trace = _run(executor)
+    assert trace["status"] != "completed" and trace["variants"] == []
+    first = _specialists(trace)[0]
+    assert first["failures"] == ["retryable_failure", "retryable_failure"]
+    assert first["errors"] == ["RuntimeError: Service unavailable at <url> x"] * 2
+    text = json.dumps(trace)
+    assert "secret.example" not in text and "test-model" not in text
+    assert trace["provider"]["label"] == "Microsoft Foundry via Agent Framework"
+
+
+class _SlowExecutor(RehearsalExecutor):
+    """The rehearsal, but each turn outlasts the deadline it asks the host for."""
+
+    turn_timeout_ms = 20
+
+    async def execute(self, request, tools, *, digest):
+        """Sleep past the requested deadline."""
+        await asyncio.sleep(0.2)
+        return await super().execute(request, tools, digest=digest)
+
+
+def test_a_provider_sets_its_own_turn_deadline_and_the_host_enforces_it() -> None:
+    """The live executor asks for a longer deadline; the host still times turns out."""
+    assert FoundryWorkflowExecutor.turn_timeout_ms == 90_000
+    trace = _run(_SlowExecutor())
+    assert _specialists(trace)[0]["failures"] == ["timeout", "timeout"]
+    assert trace["status"] != "completed"
+
+
+def test_the_recorder_reports_a_run_as_one_annotation(capsys) -> None:
+    """The run summary is one GitHub annotation, readable without logs or artifacts."""
+    from scripts.record_agent_run import report
+
+    report(rehearsal_trace())
+    out = capsys.readouterr().out.strip()
+    assert out.startswith("::notice title=Agent run summary::status completed")
+    assert out.count("\n") == 0 and "tactical_analyst: proposed" in out
+    assert "verification round 1: ['verified', 'needs_revision'" in out
