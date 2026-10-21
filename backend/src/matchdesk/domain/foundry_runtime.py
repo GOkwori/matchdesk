@@ -364,6 +364,9 @@ class FoundryWorkflowExecutor:
     label = "Microsoft Foundry via Agent Framework"
     # Each tool round is another model call; 30 s suits the rehearsal, not this.
     turn_timeout_ms = 120_000
+    # A malformed proposal is retried; one more attempt keeps a revision round
+    # available after a retry (the host allows up to five).
+    role_attempts = 3
 
     def __init__(
         self,
@@ -392,6 +395,7 @@ class FoundryWorkflowExecutor:
             "The digest already holds the score, whole-match metrics, key events and "
             "detected moments. Call a read function only for a figure it lacks, "
             f"at most {_MAX_TOOL_CALLS_PER_TURN} calls in total, batched where you can. "
+            "Set fact only on event_fact claims and leave it null on every other claim. "
             "Return only the structured RuntimeProposal schema."
         )
         try:
