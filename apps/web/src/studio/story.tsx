@@ -4,7 +4,12 @@
 import { useState } from "react";
 import { Crest, Logo } from "./ui";
 import { TourStep } from "./shell";
-import { storyCopy, type Language } from "./data";
+import { storyCheck, storyCopy, type Language } from "./data";
+
+/** One "How we checked this" row: the verifier's verdict on a registered event fact. */
+function CheckRow({ label, verified, matches, failed }: { label: string; verified: boolean; matches: string; failed: string }) {
+  return <li><span>{label}</span>{verified ? <span className="md-ok">✓ {matches}</span> : <span className="md-bad">✕ {failed}</span>}</li>;
+}
 
 export function StoryBody() {
   const [lang, setLang] = useState<Language>("en");
@@ -43,8 +48,8 @@ export function StoryBody() {
         <details className="md-panel md-checks" open>
           <summary>{copy.title}</summary>
           <ul>
-            <li><span>{copy.checks[0]}</span><span className="md-ok">✓ {copy.matches}</span></li>
-            <li><span>{copy.checks[1]}</span><span className="md-ok">✓ {copy.matches}</span></li>
+            <CheckRow label={copy.checks[0]} verified={storyCheck("FS-SCORER").result.status === "verified"} matches={copy.matches} failed={copy.failed} />
+            <CheckRow label={copy.checks[1]} verified={storyCheck("FS-CORNER-GAP").result.status === "verified"} matches={copy.matches} failed={copy.failed} />
             <li><span>{copy.checks[2]}</span><span className="md-muted">○ {copy.notChecked}</span></li>
           </ul>
           <p className="md-muted md-small">{copy.note}</p>

@@ -37,7 +37,8 @@
     "reason": "Registered metric recomputation satisfies the claim comparator",
     "status": "verified"
    },
-   "name": "demo CL-0213"
+   "name": "demo CL-0213",
+   "with_names": false
   },
   {
    "claim": {
@@ -78,7 +79,8 @@
     "reason": "Registered metric recomputation satisfies the claim comparator",
     "status": "verified"
    },
-   "name": "demo CL-0214"
+   "name": "demo CL-0214",
+   "with_names": false
   },
   {
    "claim": {
@@ -101,7 +103,8 @@
     "reason": "All cited evidence events exist; tactical meaning remains an inference",
     "status": "supported_inference"
    },
-   "name": "demo CL-0215"
+   "name": "demo CL-0215",
+   "with_names": false
   },
   {
    "claim": {
@@ -123,7 +126,8 @@
     "reason": "Event-fact prose has no registered semantic assertion; evidence existence alone cannot verify the text",
     "status": "needs_revision"
    },
-   "name": "demo CL-0216"
+   "name": "demo CL-0216",
+   "with_names": false
   },
   {
    "claim": {
@@ -162,7 +166,8 @@
     "reason": "Registered metric recomputation does not satisfy the claim comparator",
     "status": "needs_revision"
    },
-   "name": "demo CL-0213 at 50:00"
+   "name": "demo CL-0213 at 50:00",
+   "with_names": false
   },
   {
    "claim": {
@@ -203,7 +208,8 @@
     "reason": "Registered metric recomputation satisfies the claim comparator",
     "status": "verified"
    },
-   "name": "demo CL-0214 at 50:00"
+   "name": "demo CL-0214 at 50:00",
+   "with_names": false
   },
   {
    "claim": {
@@ -226,7 +232,8 @@
     "reason": "All cited evidence events exist; tactical meaning remains an inference",
     "status": "supported_inference"
    },
-   "name": "demo CL-0215 at 50:00"
+   "name": "demo CL-0215 at 50:00",
+   "with_names": false
   },
   {
    "claim": {
@@ -248,7 +255,8 @@
     "reason": "Event-fact prose has no registered semantic assertion; evidence existence alone cannot verify the text",
     "status": "needs_revision"
    },
-   "name": "demo CL-0216 at 50:00"
+   "name": "demo CL-0216 at 50:00",
+   "with_names": false
   },
   {
    "claim": {
@@ -289,7 +297,8 @@
     "reason": "Registered metric recomputation does not satisfy the claim comparator",
     "status": "needs_revision"
    },
-   "name": "forged possession 59%"
+   "name": "forged possession 59%",
+   "with_names": false
   },
   {
    "claim": {
@@ -326,7 +335,8 @@
     "reason": "Registered metric recomputation does not satisfy the claim comparator",
     "status": "needs_revision"
    },
-   "name": "possession exact eq without precision"
+   "name": "possession exact eq without precision",
+   "with_names": false
   },
   {
    "claim": {
@@ -364,7 +374,8 @@
     "reason": "Registered metric recomputation satisfies the claim comparator",
     "status": "verified"
    },
-   "name": "away possession at three decimals"
+   "name": "away possession at three decimals",
+   "with_names": false
   },
   {
    "claim": {
@@ -402,7 +413,8 @@
     "reason": "Registered metric recomputation satisfies the claim comparator",
     "status": "verified"
    },
-   "name": "possession second half observed"
+   "name": "possession second half observed",
+   "with_names": false
   },
   {
    "claim": {
@@ -440,7 +452,8 @@
     "reason": "Metric recomputation failed: possession_time.v1 requires a team-only subject",
     "status": "blocked"
    },
-   "name": "possession needs a team-only subject"
+   "name": "possession needs a team-only subject",
+   "with_names": false
   },
   {
    "claim": {
@@ -462,7 +475,7 @@
     },
     "claim_id": "P-05",
     "evidence_event_ids": [
-     "E-0001"
+     "E-0060"
     ],
     "kind": "measured_stat",
     "schema_version": "1.0",
@@ -477,7 +490,8 @@
     "reason": "Registered metric recomputation satisfies the claim comparator",
     "status": "verified"
    },
-   "name": "shots gte"
+   "name": "shots gte",
+   "with_names": false
   },
   {
    "claim": {
@@ -499,7 +513,7 @@
     },
     "claim_id": "P-06",
     "evidence_event_ids": [
-     "E-0001"
+     "E-0060"
     ],
     "kind": "measured_stat",
     "schema_version": "1.0",
@@ -514,7 +528,8 @@
     "reason": "Registered metric recomputation does not satisfy the claim comparator",
     "status": "needs_revision"
    },
-   "name": "shots lte fails"
+   "name": "shots lte fails",
+   "with_names": false
   },
   {
    "claim": {
@@ -537,7 +552,7 @@
     },
     "claim_id": "P-07",
     "evidence_event_ids": [
-     "E-0001"
+     "E-0084"
     ],
     "kind": "measured_stat",
     "schema_version": "1.0",
@@ -552,7 +567,8 @@
     "reason": "Registered metric recomputation satisfies the claim comparator",
     "status": "verified"
    },
-   "name": "away shots first half"
+   "name": "away shots first half",
+   "with_names": false
   },
   {
    "claim": {
@@ -590,7 +606,8 @@
     "reason": "Registered metric recomputation satisfies the claim comparator",
     "status": "verified"
    },
-   "name": "pass accuracy exact"
+   "name": "pass accuracy exact",
+   "with_names": false
   },
   {
    "claim": {
@@ -629,7 +646,8 @@
     "reason": "Registered metric recomputation satisfies the claim comparator",
     "status": "verified"
    },
-   "name": "pass accuracy at two decimals"
+   "name": "pass accuracy at two decimals",
+   "with_names": false
   },
   {
    "claim": {
@@ -666,7 +684,8 @@
     "reason": "Registered metric recomputation satisfies the claim comparator",
     "status": "verified"
    },
-   "name": "synthetic xg sum"
+   "name": "synthetic xg sum",
+   "with_names": false
   },
   {
    "claim": {
@@ -704,7 +723,8 @@
     "reason": "Registered metric recomputation satisfies the claim comparator",
     "status": "verified"
    },
-   "name": "final third entries"
+   "name": "final third entries",
+   "with_names": false
   },
   {
    "claim": {
@@ -741,7 +761,8 @@
     "reason": "Claim unit ratio does not match registered metric unit count",
     "status": "blocked"
    },
-   "name": "unit mismatch"
+   "name": "unit mismatch",
+   "with_names": false
   },
   {
    "claim": {
@@ -778,7 +799,8 @@
     "reason": "Metric is not registered: dribbles.v1",
     "status": "blocked"
    },
-   "name": "unregistered metric"
+   "name": "unregistered metric",
+   "with_names": false
   },
   {
    "claim": {
@@ -815,7 +837,8 @@
     "reason": "Claim cites events that are not bound by the evidence record",
     "status": "blocked"
    },
-   "name": "claim cites an event the record does not bind"
+   "name": "claim cites an event the record does not bind",
+   "with_names": false
   },
   {
    "claim": {
@@ -856,7 +879,127 @@
     "reason": "Verification input contains events outside the evidence match",
     "status": "blocked"
    },
-   "name": "events from another match"
+   "name": "events from another match",
+   "with_names": false
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "metric": "goals.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "player_id": "nbr-09",
+      "schema_version": "1.0",
+      "team_id": "nbr"
+     },
+     "unit": "count",
+     "value": 2.0,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 4032000
+     }
+    },
+    "claim_id": "T-01",
+    "evidence_event_ids": [
+     "E-0688",
+     "E-1366"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Okafor scored a hat-trick."
+   },
+   "events": "canonical",
+   "evidence": "EV-D031",
+   "expected": {
+    "expected": 2.0,
+    "observed": 2.0,
+    "query_id": "claim-text-binding-v1",
+    "reason": "Claim text states a quantity that differs from its assertion",
+    "status": "needs_revision"
+   },
+   "name": "text: a contradicting quantity fails without display names",
+   "with_names": false
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "metric": "goals.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "player_id": "nbr-09",
+      "schema_version": "1.0",
+      "team_id": "nbr"
+     },
+     "unit": "count",
+     "value": 2.0,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 4032000
+     }
+    },
+    "claim_id": "T-02",
+    "evidence_event_ids": [
+     "E-0002"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Okafor scored both goals."
+   },
+   "events": "canonical",
+   "evidence": "EV-D031",
+   "expected": {
+    "expected": 2.0,
+    "observed": 2.0,
+    "query_id": "metric-goals-v1",
+    "reason": "Claim cites events the registered metric does not count",
+    "status": "needs_revision"
+   },
+   "name": "citation: a kick-off cannot evidence a goal count",
+   "with_names": false
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "metric": "goals.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "player_id": "nbr-09",
+      "schema_version": "1.0",
+      "team_id": "nbr"
+     },
+     "unit": "count",
+     "value": 2.0,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 5400000
+     }
+    },
+    "claim_id": "T-03",
+    "evidence_event_ids": [
+     "E-0688",
+     "E-1366"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Okafor finished with two goals."
+   },
+   "events": "canonical",
+   "evidence": "EV-D031",
+   "expected": {
+    "expected": null,
+    "observed": null,
+    "query_id": "evidence-window-v1",
+    "reason": "Claim window extends past the evidence window",
+    "status": "blocked"
+   },
+   "name": "window: a claim cannot speak past the evidence window",
+   "with_names": false
   },
   {
    "claim": {
@@ -897,7 +1040,8 @@
     "reason": "No accepted events are available for verification",
     "status": "blocked"
    },
-   "name": "no accepted events"
+   "name": "no accepted events",
+   "with_names": false
   },
   {
    "claim": {
@@ -935,7 +1079,8 @@
     "reason": "Claim cites events that are not present in accepted event input",
     "status": "blocked"
    },
-   "name": "record binds an event missing from the log"
+   "name": "record binds an event missing from the log",
+   "with_names": false
   },
   {
    "claim": {
@@ -959,7 +1104,7 @@
     },
     "claim_id": "P-16",
     "evidence_event_ids": [
-     "ca-p2-start"
+     "ca-goal-home"
     ],
     "kind": "measured_stat",
     "schema_version": "1.0",
@@ -974,9 +1119,528 @@
     "reason": "Registered metric recomputation satisfies the claim comparator",
     "status": "verified"
    },
-   "name": "scenario home goal by player"
+   "name": "scenario home goal by player",
+   "with_names": false
+  },
+  {
+   "claim": {
+    "claim_id": "FS-SCORER",
+    "evidence_event_ids": [
+     "E-1366"
+    ],
+    "fact": {
+     "event_id": "E-1366",
+     "player_id": "nbr-09",
+     "query": "goal_scorer.v1",
+     "schema_version": "1.0"
+    },
+    "kind": "event_fact",
+    "schema_version": "1.0",
+    "text": "Okafor scored the goal at 58:17."
+   },
+   "events": "canonical",
+   "evidence": "EV-D031",
+   "expected": {
+    "expected": null,
+    "observed": null,
+    "query_id": "event-goal-scorer-v1",
+    "reason": "The cited goal event records the stated scorer",
+    "status": "verified"
+   },
+   "name": "story check FS-SCORER",
+   "with_names": true
+  },
+  {
+   "claim": {
+    "claim_id": "FS-CORNER-GAP",
+    "evidence_event_ids": [
+     "E-1359",
+     "E-1366"
+    ],
+    "fact": {
+     "event_id": "E-1366",
+     "from_event_id": "E-1359",
+     "from_tag": "corner",
+     "gap_seconds": 14,
+     "query": "sequence_gap.v1",
+     "schema_version": "1.0"
+    },
+    "kind": "event_fact",
+    "schema_version": "1.0",
+    "text": "The goal came 14 seconds after a corner."
+   },
+   "events": "canonical",
+   "evidence": "EV-D031",
+   "expected": {
+    "expected": null,
+    "observed": null,
+    "query_id": "event-sequence-gap-v1",
+    "reason": "The recorded events and gap match the stated sequence",
+    "status": "verified"
+   },
+   "name": "story check FS-CORNER-GAP",
+   "with_names": true
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "metric": "goals.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "player_id": "nbr-09",
+      "schema_version": "1.0",
+      "team_id": "nbr"
+     },
+     "unit": "count",
+     "value": 2.0,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 4032000
+     }
+    },
+    "claim_id": "N-01",
+    "evidence_event_ids": [
+     "E-0688",
+     "E-1366"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Okafor scored both goals."
+   },
+   "events": "canonical",
+   "evidence": "EV-D031",
+   "expected": {
+    "expected": 2.0,
+    "observed": 2.0,
+    "query_id": "metric-goals-v1",
+    "reason": "Registered metric recomputation satisfies the claim comparator",
+    "status": "verified"
+   },
+   "name": "named: the true sentence verifies",
+   "with_names": true
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "metric": "goals.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "player_id": "nbr-09",
+      "schema_version": "1.0",
+      "team_id": "nbr"
+     },
+     "unit": "count",
+     "value": 2.0,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 4032000
+     }
+    },
+    "claim_id": "N-02",
+    "evidence_event_ids": [
+     "E-0688",
+     "E-1366"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Okafor scored a hat-trick."
+   },
+   "events": "canonical",
+   "evidence": "EV-D031",
+   "expected": {
+    "expected": 2.0,
+    "observed": 2.0,
+    "query_id": "claim-text-binding-v1",
+    "reason": "Claim text states a quantity that differs from its assertion",
+    "status": "needs_revision"
+   },
+   "name": "named: a hat-trick sentence is sent back",
+   "with_names": true
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "metric": "goals.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "player_id": "nbr-09",
+      "schema_version": "1.0",
+      "team_id": "nbr"
+     },
+     "unit": "count",
+     "value": 2.0,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 4032000
+     }
+    },
+    "claim_id": "N-03",
+    "evidence_event_ids": [
+     "E-0688",
+     "E-1366"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Lindqvist scored twice."
+   },
+   "events": "canonical",
+   "evidence": "EV-D031",
+   "expected": {
+    "expected": 2.0,
+    "observed": 2.0,
+    "query_id": "claim-text-binding-v1",
+    "reason": "Claim text does not name the asserted subject",
+    "status": "needs_revision"
+   },
+   "name": "named: the wrong player is sent back",
+   "with_names": true
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "metric": "goals.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "player_id": "nbr-09",
+      "schema_version": "1.0",
+      "team_id": "nbr"
+     },
+     "unit": "count",
+     "value": 2.0,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 4032000
+     }
+    },
+    "claim_id": "N-04",
+    "evidence_event_ids": [
+     "E-0688",
+     "E-1366"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Okafor was on the scoresheet."
+   },
+   "events": "canonical",
+   "evidence": "EV-D031",
+   "expected": {
+    "expected": 2.0,
+    "observed": 2.0,
+    "query_id": "claim-text-binding-v1",
+    "reason": "Claim text does not state the asserted value",
+    "status": "needs_revision"
+   },
+   "name": "named: a sentence without the value is sent back",
+   "with_names": true
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "decimals": 2,
+     "metric": "possession_time.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "nbr"
+     },
+     "unit": "ratio",
+     "value": 0.58,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 4032000
+     }
+    },
+    "claim_id": "CL-0214",
+    "evidence_event_ids": [
+     "E-0001",
+     "E-0841",
+     "E-0842",
+     "E-1421"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Northbridge have had 60% possession."
+   },
+   "events": "canonical",
+   "evidence": "EV-D031",
+   "expected": {
+    "expected": 0.58,
+    "observed": 0.5795628103277061,
+    "query_id": "claim-text-binding-v1",
+    "reason": "Claim text states a quantity that differs from its assertion",
+    "status": "needs_revision"
+   },
+   "name": "named: a different percentage is sent back",
+   "with_names": true
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "metric": "possession_time.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "xyz"
+     },
+     "unit": "ratio",
+     "value": 0.0,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 4032000
+     }
+    },
+    "claim_id": "N-05",
+    "evidence_event_ids": [
+     "E-0001"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "They had 0% possession."
+   },
+   "events": "canonical",
+   "evidence": "EV-D031",
+   "expected": {
+    "expected": 0.0,
+    "observed": 0.0,
+    "query_id": "claim-text-binding-v1",
+    "reason": "Claim subject has no registered display name",
+    "status": "needs_revision"
+   },
+   "name": "named: an unnamed subject has no display name",
+   "with_names": true
+  },
+  {
+   "claim": {
+    "claim_id": "F-01",
+    "evidence_event_ids": [
+     "E-1366"
+    ],
+    "fact": {
+     "event_id": "E-1366",
+     "player_id": "nbr-04",
+     "query": "goal_scorer.v1",
+     "schema_version": "1.0"
+    },
+    "kind": "event_fact",
+    "schema_version": "1.0",
+    "text": "Mensah scored at 58:17."
+   },
+   "events": "canonical",
+   "evidence": "EV-D031",
+   "expected": {
+    "expected": null,
+    "observed": null,
+    "query_id": "event-goal-scorer-v1",
+    "reason": "The cited event is not a goal by the stated player",
+    "status": "needs_revision"
+   },
+   "name": "fact: wrong scorer",
+   "with_names": true
+  },
+  {
+   "claim": {
+    "claim_id": "F-01",
+    "evidence_event_ids": [
+     "E-0002"
+    ],
+    "fact": {
+     "event_id": "E-0002",
+     "player_id": "nbr-09",
+     "query": "goal_scorer.v1",
+     "schema_version": "1.0"
+    },
+    "kind": "event_fact",
+    "schema_version": "1.0",
+    "text": "Okafor scored from the kick-off."
+   },
+   "events": "canonical",
+   "evidence": "EV-D031",
+   "expected": {
+    "expected": null,
+    "observed": null,
+    "query_id": "event-goal-scorer-v1",
+    "reason": "The cited event is not a goal by the stated player",
+    "status": "needs_revision"
+   },
+   "name": "fact: a non-goal is not a goal",
+   "with_names": true
+  },
+  {
+   "claim": {
+    "claim_id": "F-01",
+    "evidence_event_ids": [
+     "E-1359",
+     "E-1366"
+    ],
+    "fact": {
+     "event_id": "E-1366",
+     "from_event_id": "E-1359",
+     "from_tag": "corner",
+     "gap_seconds": 15,
+     "query": "sequence_gap.v1",
+     "schema_version": "1.0"
+    },
+    "kind": "event_fact",
+    "schema_version": "1.0",
+    "text": "A goal 15 seconds after the corner."
+   },
+   "events": "canonical",
+   "evidence": "EV-D031",
+   "expected": {
+    "expected": null,
+    "observed": null,
+    "query_id": "event-sequence-gap-v1",
+    "reason": "The recorded gap differs from the stated seconds",
+    "status": "needs_revision"
+   },
+   "name": "fact: wrong gap",
+   "with_names": true
+  },
+  {
+   "claim": {
+    "claim_id": "F-01",
+    "evidence_event_ids": [
+     "E-1359",
+     "E-1366"
+    ],
+    "fact": {
+     "event_id": "E-1366",
+     "from_event_id": "E-1359",
+     "from_tag": "throw_in",
+     "gap_seconds": 14,
+     "query": "sequence_gap.v1",
+     "schema_version": "1.0"
+    },
+    "kind": "event_fact",
+    "schema_version": "1.0",
+    "text": "A goal 14 seconds after it."
+   },
+   "events": "canonical",
+   "evidence": "EV-D031",
+   "expected": {
+    "expected": null,
+    "observed": null,
+    "query_id": "event-sequence-gap-v1",
+    "reason": "The earlier event is not tagged throw_in",
+    "status": "needs_revision"
+   },
+   "name": "fact: wrong tag",
+   "with_names": true
+  },
+  {
+   "claim": {
+    "claim_id": "F-01",
+    "evidence_event_ids": [
+     "E-1366"
+    ],
+    "fact": {
+     "event_id": "E-1366",
+     "from_event_id": "E-1359",
+     "from_tag": "corner",
+     "gap_seconds": 14,
+     "query": "sequence_gap.v1",
+     "schema_version": "1.0"
+    },
+    "kind": "event_fact",
+    "schema_version": "1.0",
+    "text": "A goal 14 seconds after the corner."
+   },
+   "events": "canonical",
+   "evidence": "EV-D031",
+   "expected": {
+    "expected": null,
+    "observed": null,
+    "query_id": "event-sequence-gap-v1",
+    "reason": "Event fact reads events the claim does not cite",
+    "status": "blocked"
+   },
+   "name": "fact: uncited event",
+   "with_names": true
+  },
+  {
+   "claim": {
+    "claim_id": "F-01",
+    "evidence_event_ids": [
+     "E-1359",
+     "E-1366"
+    ],
+    "fact": {
+     "event_id": "E-1359",
+     "from_event_id": "E-1366",
+     "gap_seconds": 14,
+     "query": "sequence_gap.v1",
+     "schema_version": "1.0"
+    },
+    "kind": "event_fact",
+    "schema_version": "1.0",
+    "text": "The corner came 14 seconds after the goal."
+   },
+   "events": "canonical",
+   "evidence": "EV-D031",
+   "expected": {
+    "expected": null,
+    "observed": null,
+    "query_id": "event-sequence-gap-v1",
+    "reason": "The cited events are not in the stated order",
+    "status": "needs_revision"
+   },
+   "name": "fact: events out of order",
+   "with_names": true
+  },
+  {
+   "claim": {
+    "claim_id": "F-01",
+    "evidence_event_ids": [
+     "E-1359",
+     "E-1366"
+    ],
+    "fact": {
+     "event_id": "E-1366",
+     "from_event_id": "E-1359",
+     "from_tag": "corner",
+     "gap_seconds": 14,
+     "query": "sequence_gap.v1",
+     "schema_version": "1.0"
+    },
+    "kind": "event_fact",
+    "schema_version": "1.0",
+    "text": "A goal 15 seconds after the corner."
+   },
+   "events": "canonical",
+   "evidence": "EV-D031",
+   "expected": {
+    "expected": null,
+    "observed": null,
+    "query_id": "claim-text-binding-v1",
+    "reason": "Claim text states a quantity that differs from its assertion",
+    "status": "needs_revision"
+   },
+   "name": "fact: a true gap stated with the wrong number",
+   "with_names": true
   }
  ],
+ "display_names": {
+  "nbr": "Northbridge",
+  "nbr-04": "Mensah",
+  "nbr-09": "Okafor",
+  "riv": "Riverside",
+  "riv-06": "Haddad",
+  "riv-07": "Barros",
+  "riv-11": "Lindqvist",
+  "riv-14": "Kovac"
+ },
  "evidence": {
   "EV-D031": {
    "engine_version": "matchdesk-canonical-1",
@@ -2541,6 +3205,18 @@
    7,
    8,
    9
+  ],
+  "tags": [
+   [],
+   [],
+   [],
+   [],
+   [],
+   [],
+   [],
+   [],
+   [],
+   []
   ],
   "team": [
    null,

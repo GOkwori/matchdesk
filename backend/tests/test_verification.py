@@ -37,7 +37,7 @@ def test_measured_claim_is_verified_by_registered_metric_recomputation() -> None
             value=1.0,
             unit="count",
         ),
-        evidence_event_ids=(events[-2].event_id,),
+        evidence_event_ids=("ca-shot-home",),
     )
 
     result = verify_claim(claim, evidence, events)
@@ -64,7 +64,7 @@ def test_wrong_measured_value_requires_revision() -> None:
             value=2.0,
             unit="count",
         ),
-        evidence_event_ids=(events[-2].event_id,),
+        evidence_event_ids=("ca-shot-home",),
     )
 
     result = verify_claim(claim, evidence, events)
@@ -155,7 +155,7 @@ def test_metric_unit_mismatch_is_blocked() -> None:
             value=1.0,
             unit="ratio",
         ),
-        evidence_event_ids=(events[-2].event_id,),
+        evidence_event_ids=("ca-shot-home",),
     )
 
     result = verify_claim(claim, evidence, events)
@@ -180,7 +180,7 @@ def test_gte_and_lte_comparators_are_recomputed() -> None:
                 value=value,
                 unit="count",
             ),
-            evidence_event_ids=(events[-2].event_id,),
+            evidence_event_ids=("ca-shot-home",),
         )
 
         assert verify_claim(claim, evidence, events).status == "verified"

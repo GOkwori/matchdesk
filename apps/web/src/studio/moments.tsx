@@ -6,7 +6,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Icon } from "./icons";
 import { GoalPitch, VerdictChip } from "./ui";
 import { TourStep } from "./shell";
-import { clock, eventCountText, findMoment, moments, scoreAt, type Moment } from "./data";
+import { clock, eventCountText, findMoment, keySeconds, moments, scoreAt, storyCheck, type Moment } from "./data";
 
 const kindIcon = { Goal: "ball", Corner: "flag", Substitution: "swap", "Yellow card": "card" } as const;
 
@@ -15,7 +15,17 @@ function signals(m: Moment): { label: string; value: string }[] {
   const before = scoreAt(m.seconds - 1);
   const after = scoreAt(m.seconds);
   const rows = [{ label: "Logged event", value: `${m.event} · ${m.kind} at ${clock(m.seconds)}` }];
-  if (m.id === "M-05") rows.push({ label: "Preceding corner", value: "E-1359 at 58:03, 14 seconds earlier" });
+  if (m.id === "M-05") {
+    // Computed by the registered sequence_gap.v1 query, not written by hand.
+    const gap = storyCheck("FS-CORNER-GAP");
+    const fact = gap.claim.fact!;
+    rows.push({
+      label: "Preceding corner",
+      value: gap.result.status === "verified"
+        ? `${fact.from_event_id} at ${clock(keySeconds(fact.from_event_id!))}, ${fact.gap_seconds} seconds earlier · verified`
+        : `Not verified: ${gap.result.reason}`,
+    });
+  }
   if (m.kind === "Goal") rows.push({ label: "Score change", value: `${before.home}–${before.away} → ${after.home}–${after.away}` });
   return rows;
 }

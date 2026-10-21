@@ -11,10 +11,18 @@ from __future__ import annotations
 from typing import Any, Literal
 
 from matchdesk.domain import canonical_match as canonical
-from matchdesk.domain.demo_claims import claims, evidence_record, possession_claim, replay_window
+from matchdesk.domain.demo_claims import (
+    DISPLAY_NAMES,
+    claims,
+    evidence_record,
+    possession_claim,
+    replay_window,
+    story_checks,
+)
 from matchdesk.domain.metrics import compute_metric
 from matchdesk.domain.models import (
     Claim,
+    EventFact,
     EvidenceRecord,
     MatchEvent,
     MatchWindow,
@@ -44,6 +52,7 @@ def compact_events(events: tuple[MatchEvent, ...]) -> dict[str, Any]:
         "xg": [event.xg for event in events],
         "x": [event.location.x if event.location else None for event in events],
         "end_x": [event.end_location.x if event.end_location else None for event in events],
+        "tags": [list(event.tags) for event in events],
     }
 
 
@@ -70,12 +79,15 @@ def _assertion(
 
 
 def _measured(
-    claim_id: str, assertion: MetricAssertion, cites: tuple[str, ...] = ("E-0001",)
+    claim_id: str,
+    assertion: MetricAssertion,
+    cites: tuple[str, ...] = ("E-0001",),
+    text: str = "Parity case.",
 ) -> Claim:
     """Wrap an assertion in a measured claim citing one canonical event by default."""
     return Claim(
         claim_id=claim_id,
-        text="Parity case.",
+        text=text,
         kind="measured_stat",
         assertion=assertion,
         evidence_event_ids=cites,
@@ -95,6 +107,38 @@ def parity_fixture() -> dict[str, Any]:
     def observed(metric: str, subject: Subject, window: MatchWindow) -> float:
         """Recompute a metric on the canonical log to build an exactly-true claim."""
         return compute_metric(metric, log, subject, window)
+
+    def first(event_type: str, team: str, window: MatchWindow) -> tuple[str]:
+        """Cite the first counted event, so count claims cite what the metric counts."""
+        return (
+            next(
+                event.event_id
+                for event in log
+                if event.type == event_type
+                and event.team_id == team
+                and (window.period is None or event.period == window.period)
+                and window.from_ms <= event.match_clock_ms < window.to_ms
+            ),
+        )
+
+    okafor = Subject(team_id=canonical.HOME, player_id="nbr-09")
+    okafor_goals = _assertion("goals.v1", okafor, 2, "count")
+
+    def fact(text: str, event_fact: EventFact, cites: tuple[str, ...]) -> Claim:
+        """An event-fact claim with a registered query."""
+        return Claim(
+            claim_id="F-01", text=text, kind="event_fact", fact=event_fact, evidence_event_ids=cites
+        )
+
+    def gap(seconds: int, tag: str = "corner") -> EventFact:
+        """The corner-to-goal sequence before Okafor's header."""
+        return EventFact(
+            query="sequence_gap.v1",
+            event_id="E-1366",
+            from_event_id="E-1359",
+            from_tag=tag,
+            gap_seconds=seconds,
+        )
 
     pass_acc = observed("pass_accuracy.v1", home, first_half)
     xg = observed("synthetic_xg.v1", away, replay_window())
@@ -145,13 +189,21 @@ def parity_fixture() -> dict[str, Any]:
         ),
         (
             "shots gte",
-            _measured("P-05", _assertion("shots.v1", home, 10, "count", comparator="gte")),
+            _measured(
+                "P-05",
+                _assertion("shots.v1", home, 10, "count", comparator="gte"),
+                first("shot", canonical.HOME, replay_window()),
+            ),
             "canonical",
             evidence,
         ),
         (
             "shots lte fails",
-            _measured("P-06", _assertion("shots.v1", home, 10, "count", comparator="lte")),
+            _measured(
+                "P-06",
+                _assertion("shots.v1", home, 10, "count", comparator="lte"),
+                first("shot", canonical.HOME, replay_window()),
+            ),
             "canonical",
             evidence,
         ),
@@ -166,6 +218,7 @@ def parity_fixture() -> dict[str, Any]:
                     "count",
                     window=first_half,
                 ),
+                first("shot", canonical.AWAY, first_half),
             ),
             "canonical",
             evidence,
@@ -228,6 +281,31 @@ def parity_fixture() -> dict[str, Any]:
             evidence,
         ),
         ("events from another match", possession_claim(), "scenario", evidence),
+        (
+            "text: a contradicting quantity fails without display names",
+            _measured("T-01", okafor_goals, ("E-0688", "E-1366"), "Okafor scored a hat-trick."),
+            "canonical",
+            evidence,
+        ),
+        (
+            "citation: a kick-off cannot evidence a goal count",
+            _measured("T-02", okafor_goals, ("E-0002",), "Okafor scored both goals."),
+            "canonical",
+            evidence,
+        ),
+        (
+            "window: a claim cannot speak past the evidence window",
+            _measured(
+                "T-03",
+                _assertion(
+                    "goals.v1", okafor, 2, "count", window=MatchWindow(from_ms=0, to_ms=5_400_000)
+                ),
+                ("E-0688", "E-1366"),
+                "Okafor finished with two goals.",
+            ),
+            "canonical",
+            evidence,
+        ),
         ("no accepted events", possession_claim(), "empty", evidence),
     ]
     scenario_evidence = EvidenceRecord(
@@ -270,23 +348,102 @@ def parity_fixture() -> dict[str, Any]:
                     "count",
                     window=MatchWindow(period=1, from_ms=0, to_ms=2_100_000),
                 ),
-                (scenario[-2].event_id,),
+                ("ca-goal-home",),
             ),
             "scenario",
             scenario_evidence,
         )
     )
 
+    named: list[tuple[str, Claim]] = [
+        *[(f"story check {c.claim_id}", c) for c in story_checks()],
+        (
+            "named: the true sentence verifies",
+            _measured("N-01", okafor_goals, ("E-0688", "E-1366"), "Okafor scored both goals."),
+        ),
+        (
+            "named: a hat-trick sentence is sent back",
+            _measured("N-02", okafor_goals, ("E-0688", "E-1366"), "Okafor scored a hat-trick."),
+        ),
+        (
+            "named: the wrong player is sent back",
+            _measured("N-03", okafor_goals, ("E-0688", "E-1366"), "Lindqvist scored twice."),
+        ),
+        (
+            "named: a sentence without the value is sent back",
+            _measured("N-04", okafor_goals, ("E-0688", "E-1366"), "Okafor was on the scoresheet."),
+        ),
+        (
+            "named: a different percentage is sent back",
+            possession_claim().model_copy(update={"text": "Northbridge have had 60% possession."}),
+        ),
+        (
+            "named: an unnamed subject has no display name",
+            _measured(
+                "N-05",
+                _assertion("possession_time.v1", Subject(team_id="xyz"), 0, "ratio"),
+                ("E-0001",),
+                "They had 0% possession.",
+            ),
+        ),
+        (
+            "fact: wrong scorer",
+            fact(
+                "Mensah scored at 58:17.",
+                EventFact(query="goal_scorer.v1", event_id="E-1366", player_id="nbr-04"),
+                ("E-1366",),
+            ),
+        ),
+        (
+            "fact: a non-goal is not a goal",
+            fact(
+                "Okafor scored from the kick-off.",
+                EventFact(query="goal_scorer.v1", event_id="E-0002", player_id="nbr-09"),
+                ("E-0002",),
+            ),
+        ),
+        (
+            "fact: wrong gap",
+            fact("A goal 15 seconds after the corner.", gap(15), ("E-1359", "E-1366")),
+        ),
+        (
+            "fact: wrong tag",
+            fact("A goal 14 seconds after it.", gap(14, "throw_in"), ("E-1359", "E-1366")),
+        ),
+        ("fact: uncited event", fact("A goal 14 seconds after the corner.", gap(14), ("E-1366",))),
+        (
+            "fact: events out of order",
+            fact(
+                "The corner came 14 seconds after the goal.",
+                EventFact(
+                    query="sequence_gap.v1",
+                    event_id="E-1359",
+                    from_event_id="E-1366",
+                    gap_seconds=14,
+                ),
+                ("E-1359", "E-1366"),
+            ),
+        ),
+        (
+            "fact: a true gap stated with the wrong number",
+            fact("A goal 15 seconds after the corner.", gap(14), ("E-1359", "E-1366")),
+        ),
+    ]
     sources = {"canonical": log, "scenario": scenario, "empty": ()}
     exported = []
     records: dict[str, Any] = {}
-    for name, claim, source, record in cases:
+    all_cases = [(name, claim, source, record, False) for name, claim, source, record in cases]
+    all_cases += [(name, claim, "canonical", evidence, True) for name, claim in named]
+    for name, claim, source, record, with_names in all_cases:
         records[record.evidence_id] = record.model_dump(mode="json", exclude_none=True)
-        result = verify_claim(claim, record, sources[source])
+        result = verify_claim(
+            claim, record, sources[source], names=DISPLAY_NAMES if with_names else None
+        )
         exported.append(
             {
                 "name": name,
                 "events": source,
+                "with_names": with_names,
                 "claim": claim.model_dump(mode="json", exclude_none=True),
                 "evidence": record.evidence_id,
                 "expected": {
@@ -300,6 +457,7 @@ def parity_fixture() -> dict[str, Any]:
         )
     return {
         "schema": PARITY_SCHEMA,
+        "display_names": DISPLAY_NAMES,
         "scenario_events": compact_events(scenario),
         "evidence": records,
         "cases": exported,
