@@ -14,8 +14,9 @@ What runs today, on one invented match (Northbridge FC 2–1 Riverside United, 1
 synthetic events):
 
 - Four specialist agents (Tactical Analyst, Narrative Composer, Editorial Reviewer,
-  Audience Adapter) run end to end through role-scoped, traced tools. The Insights
-  screen replays that run step by step and names its provider.
+  Audience Adapter) run end to end through role-scoped, traced tools. AI insights
+  replays a live run recorded on Microsoft Foundry, step by step, beside the
+  deterministic rehearsal.
 - Every claim is recomputed from the event log, and the sentence itself is checked: it
   must name its subject and state the number it asserts. A failed claim goes back to
   the composer. The same verifier runs, ported exactly, in the browser.

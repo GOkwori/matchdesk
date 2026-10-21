@@ -11,9 +11,11 @@ seven stops:
 
 1. **Overview.** The score, the replay slider, and a "try to fool the verifier" panel.
 2. **The 58′ goal.** Why it was detected and which events prove it.
-3. **AI insights.** A replay of the four-specialist run: tool calls, claims, a
-   verification round that sends a 60% possession claim back, and the revision that
-   passes.
+3. **AI insights.** A recorded live run of the four specialists on Microsoft Foundry,
+   step by step: tool calls, a malformed answer rejected by the claim contract and
+   retried, an unchecked sentence dropped by the reviewer, Okafor's goal verified by
+   code, and nine audience versions. Switch to **Rehearsal** to watch the verifier send
+   a 60% possession claim back and the revision pass.
 4. **Evidence.** The 58% claim recomputed from all events, in the server and again in
    your browser; claim 59% and it is rejected.
 5. **Review queue.** Draft D-031 is blocked by an unchecked interpretation and a
@@ -28,7 +30,7 @@ seven stops:
 | --- | --- |
 | Event log, metrics, moment detection | Deterministic code over synthetic data |
 | Claim verification (numbers, names, citations, event facts) | Real; the same verifier runs in Python and, ported exactly, in the browser |
-| Four-specialist workflow | Real orchestration, role-scoped tools and verification loop. The Insights screen names its provider: the deterministic rehearsal, or a recorded live Foundry run |
+| Four-specialist workflow | Real orchestration, role-scoped tools and verification loop. AI insights shows a live run recorded on Microsoft Foundry on 21 October 2026 (replayed, not called on page load) beside the deterministic rehearsal; every verdict in both is re-checked by the test suite |
 | Audience variants | Produced by the Audience Adapter; human language review not run |
 | Producer approval and publishing | Not enabled; Approve is shown locked |
 | Identity, hosting of the backend | Not part of the demo |

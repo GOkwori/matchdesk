@@ -14,6 +14,8 @@ Files:
   58:17 goal. The deterministic rehearsal is regenerated here; a live Foundry recording
   (scripts/record_agent_run.py --provider foundry) is never overwritten or compared,
   because a model does not answer twice the same way. Tests re-verify its verdicts.
+- apps/web/src/studio/generated/agent-trace-rehearsal.json: the rehearsal, always
+  regenerated, so AI insights can show it beside a live recording.
 """
 
 from __future__ import annotations
@@ -21,6 +23,7 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+from typing import Any
 
 from matchdesk.domain import canonical_match as canonical
 from matchdesk.domain.agent_demo import rehearsal_trace
@@ -32,6 +35,32 @@ TARGET = ROOT / "apps/web/src/studio/generated/nbr-riv.json"
 EVENTS = ROOT / "apps/web/src/studio/generated/nbr-riv-events.json"
 PARITY = ROOT / "apps/web/tests/verifier-parity.json"
 TRACE = ROOT / "apps/web/src/studio/generated/agent-trace.json"
+REHEARSAL = ROOT / "apps/web/src/studio/generated/agent-trace-rehearsal.json"
+VIEWS = {
+    TRACE: ROOT / "apps/web/src/studio/generated/agent-trace.view.json",
+    REHEARSAL: ROOT / "apps/web/src/studio/generated/agent-trace-rehearsal.view.json",
+}
+_VIEW_FIELDS = ("event_id", "claim_id", "type", "status", "clock")
+
+
+def trace_view(trace: dict[str, Any]) -> dict[str, Any]:
+    """The part of a recorded trace AI insights draws, derived and never edited.
+
+    Tool results shrink to what the screen prints (an event count, or an event's id,
+    type and clock), and the adapter's content, which repeats the variants, is dropped.
+    The full trace stays the verified record; this keeps the page inside its budget.
+    """
+    view = json.loads(json.dumps(trace))
+    for step in view["steps"]:
+        if step.get("role") == "audience_adapter":
+            step["content"] = ""
+        for call in step.get("tool_calls", []):
+            result = call["result"]
+            if isinstance(result, list):
+                call["result"] = {"events": len(result)}
+            elif isinstance(result, dict):
+                call["result"] = {k: result[k] for k in _VIEW_FIELDS if k in result}
+    return view
 
 
 def render() -> str:
@@ -64,9 +93,20 @@ def committed_trace_is_live() -> bool:
 
 def outputs() -> dict[Path, str]:
     """Every generated file and its expected text."""
-    files = {TARGET: render(), EVENTS: render_events(), PARITY: render_parity()}
+    files = {
+        TARGET: render(),
+        EVENTS: render_events(),
+        PARITY: render_parity(),
+        REHEARSAL: render_trace(),
+    }
+    # agent-trace.json holds the recorded live run once there is one; until then it is
+    # the rehearsal too. AI insights shows both when they differ.
     if not committed_trace_is_live():
         files[TRACE] = render_trace()
+    for source, view in VIEWS.items():
+        text = files.get(source) or source.read_text(encoding="utf-8")
+        files[view] = json.dumps(trace_view(json.loads(text)), sort_keys=True, ensure_ascii=False)
+        files[view] += "\n"
     return files
 
 
