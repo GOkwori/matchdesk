@@ -255,12 +255,14 @@ const SCORELINE = new RegExp(`${B}[0-9]+\\s*[-–—]\\s*[0-9]+${E}`, "g");
 const MINUTE = new RegExp(`${B}[0-9]+\\s*(?:'|′|’|(?:st|nd|rd|th|mins?|minutes?)${E})`, "g");
 const PERCENT = new RegExp(`${B}([0-9]+(?:\\.[0-9]+)?)\\s*(?:%|per\\s?cent${E})`, "g");
 const DIGITS = new RegExp(`${B}[0-9]+(?:\\.[0-9]+)?${E}`, "g");
+// Identifiers such as E-1366, nbr-09 or CL-0214 name a record; they state no quantity.
+const IDENTIFIER = new RegExp(`${B}[a-z]+-[0-9]+${E}`, "g");
 export const TEXT_QUERY_ID = "claim-text-binding-v1";
 
-/** The counts and percentages a sentence states, ignoring clocks, scorelines and minutes. */
+/** The counts and percentages a sentence states, ignoring clocks, scorelines, minutes and IDs. */
 export function statedQuantities(text: string): { counts: number[]; percents: number[] } {
   let lowered = text.toLowerCase().replace(/’/g, "'");
-  lowered = lowered.replace(CLOCK, " ").replace(SCORELINE, " ");
+  lowered = lowered.replace(IDENTIFIER, " ").replace(CLOCK, " ").replace(SCORELINE, " ");
   const percents = [...lowered.matchAll(PERCENT)].map((m) => Number(m[1]));
   lowered = lowered.replace(PERCENT, " ").replace(MINUTE, " ");
   const counts = [...lowered.matchAll(DIGITS)].map((m) => Number(m[0]));
@@ -324,24 +326,27 @@ function validateEvidence(claim: Claim, evidence: Evidence, events: readonly VEv
   return null;
 }
 
-function factResult(claim: Claim, fact: EventFact, evidence: Evidence, events: readonly VEvent[]): [Status, string, string] {
+type FactOutcome = [Status, string, string, number | null, number | null];
+
+/** One registered event-fact query; a wrong gap carries the stated and recorded seconds. */
+function factResult(claim: Claim, fact: EventFact, evidence: Evidence, events: readonly VEvent[]): FactOutcome {
   const query = "event-" + fact.query.replace(/\./g, "-").replace(/_/g, "-");
   const referenced = fact.from_event_id == null ? [fact.event_id] : [fact.from_event_id, fact.event_id];
-  if (referenced.some((id) => !claim.evidence_event_ids.includes(id))) return ["blocked", query, "Event fact reads events the claim does not cite"];
+  if (referenced.some((id) => !claim.evidence_event_ids.includes(id))) return ["blocked", query, "Event fact reads events the claim does not cite", null, null];
   const byId = new Map(events.map((e) => [e.event_id, e]));
   const target = byId.get(fact.event_id) as VEvent;
-  if (evidence.window && target.match_clock_ms >= evidence.window.to_ms) return ["blocked", query, "Event fact reads events after the evidence window"];
+  if (evidence.window && target.match_clock_ms >= evidence.window.to_ms) return ["blocked", query, "Event fact reads events after the evidence window", null, null];
   if (fact.query === "goal_scorer.v1") {
     return target.type === "goal" && target.player_id === fact.player_id
-      ? ["verified", query, "The cited goal event records the stated scorer"]
-      : ["needs_revision", query, "The cited event is not a goal by the stated player"];
+      ? ["verified", query, "The cited goal event records the stated scorer", null, null]
+      : ["needs_revision", query, "The cited event is not a goal by the stated player", null, null];
   }
   const earlier = byId.get(fact.from_event_id as string) as VEvent;
-  if (earlier.sequence >= target.sequence) return ["needs_revision", query, "The cited events are not in the stated order"];
-  if (fact.from_tag != null && !earlier.tags.includes(fact.from_tag)) return ["needs_revision", query, `The earlier event is not tagged ${fact.from_tag}`];
+  if (earlier.sequence >= target.sequence) return ["needs_revision", query, "The cited events are not in the stated order", null, null];
+  if (fact.from_tag != null && !earlier.tags.includes(fact.from_tag)) return ["needs_revision", query, `The earlier event is not tagged ${fact.from_tag}`, null, null];
   const gap = Number(roundHalfUp((target.match_clock_ms - earlier.match_clock_ms) / 1000, 0));
-  if (gap !== fact.gap_seconds) return ["needs_revision", query, "The recorded gap differs from the stated seconds"];
-  return ["verified", query, "The recorded events and gap match the stated sequence"];
+  if (gap !== fact.gap_seconds) return ["needs_revision", query, "The recorded gap differs from the stated seconds", fact.gap_seconds as number, gap];
+  return ["verified", query, "The recorded events and gap match the stated sequence", null, null];
 }
 
 function citesCountedEvents(claim: Claim, assertion: Assertion, events: readonly VEvent[], type: string): boolean {
@@ -366,12 +371,12 @@ export function verifyClaim(claim: Claim, evidence: Evidence, events: readonly V
     return { ...base, status: "supported_inference", query_id: "evidence-support-v1", reason: "All cited evidence events exist; tactical meaning remains an inference" };
   }
   if (claim.kind === "event_fact" && claim.fact) {
-    let [status, query_id, reason] = factResult(claim, claim.fact, evidence, events);
+    let [status, query_id, reason, expected, observed] = factResult(claim, claim.fact, evidence, events);
     if (status === "verified") {
       const problem = textBindingProblem(claim, names);
       if (problem) [status, query_id, reason] = ["needs_revision", TEXT_QUERY_ID, problem];
     }
-    return { ...base, status, query_id, reason };
+    return { ...base, status, query_id, reason, expected, observed };
   }
   if (claim.kind === "event_fact") {
     return { ...base, status: "needs_revision", query_id: "event-fact-semantic-v1", reason: "Event-fact prose has no registered semantic assertion; evidence existence alone cannot verify the text" };

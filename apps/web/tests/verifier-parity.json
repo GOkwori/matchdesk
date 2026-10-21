@@ -1499,8 +1499,8 @@
    "events": "canonical",
    "evidence": "EV-D031",
    "expected": {
-    "expected": null,
-    "observed": null,
+    "expected": 15.0,
+    "observed": 14.0,
     "query_id": "event-sequence-gap-v1",
     "reason": "The recorded gap differs from the stated seconds",
     "status": "needs_revision"
@@ -1628,6 +1628,68 @@
     "status": "needs_revision"
    },
    "name": "fact: a true gap stated with the wrong number",
+   "with_names": true
+  },
+  {
+   "claim": {
+    "claim_id": "F-01",
+    "evidence_event_ids": [
+     "E-1359",
+     "E-1366"
+    ],
+    "fact": {
+     "event_id": "E-1366",
+     "from_event_id": "E-1359",
+     "from_tag": "corner",
+     "gap_seconds": 14,
+     "query": "sequence_gap.v1",
+     "schema_version": "1.0"
+    },
+    "kind": "event_fact",
+    "schema_version": "1.0",
+    "text": "Okafor's goal (E-1366, nbr-09) came 14 seconds after the corner (E-1359)."
+   },
+   "events": "canonical",
+   "evidence": "EV-D031",
+   "expected": {
+    "expected": null,
+    "observed": null,
+    "query_id": "event-sequence-gap-v1",
+    "reason": "The recorded events and gap match the stated sequence",
+    "status": "verified"
+   },
+   "name": "fact: event identifiers in the sentence are not quantities",
+   "with_names": true
+  },
+  {
+   "claim": {
+    "claim_id": "F-01",
+    "evidence_event_ids": [
+     "E-1359",
+     "E-1366"
+    ],
+    "fact": {
+     "event_id": "E-1366",
+     "from_event_id": "E-1359",
+     "from_tag": "corner",
+     "gap_seconds": 3,
+     "query": "sequence_gap.v1",
+     "schema_version": "1.0"
+    },
+    "kind": "event_fact",
+    "schema_version": "1.0",
+    "text": "E-1366 came 3 seconds after E-1359."
+   },
+   "events": "canonical",
+   "evidence": "EV-D031",
+   "expected": {
+    "expected": 3.0,
+    "observed": 14.0,
+    "query_id": "event-sequence-gap-v1",
+    "reason": "The recorded gap differs from the stated seconds",
+    "status": "needs_revision"
+   },
+   "name": "fact: a wrong gap stated with event identifiers",
    "with_names": true
   }
  ],

@@ -264,8 +264,10 @@ TASKS: Mapping[SpecialistRole, str] = {
     "narrative_composer": (
         "Write the broadcast story as claims, one sentence each, from the tactical "
         "claims. Every number in a sentence must equal its assertion; name the player or "
-        "team the assertion is about. Put the headline in content. If verifier_feedback "
-        "is present, fix or drop every failed claim, using your tools to recompute."
+        "team the assertion is about by name, never by an identifier such as E-1366 or "
+        "nbr-09. Put the headline in content. If verifier_feedback is present, fix or "
+        "drop every failed claim: where it gives an observed value, that is the recorded "
+        "value, so restate the claim with it; drop a claim you cannot make match."
     ),
     "editorial_reviewer": (
         "Review the drafted claims. Keep claims a registered query can check and "

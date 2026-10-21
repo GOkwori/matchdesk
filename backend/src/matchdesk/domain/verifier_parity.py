@@ -428,6 +428,18 @@ def parity_fixture() -> dict[str, Any]:
             "fact: a true gap stated with the wrong number",
             fact("A goal 15 seconds after the corner.", gap(14), ("E-1359", "E-1366")),
         ),
+        (
+            "fact: event identifiers in the sentence are not quantities",
+            fact(
+                "Okafor's goal (E-1366, nbr-09) came 14 seconds after the corner (E-1359).",
+                gap(14),
+                ("E-1359", "E-1366"),
+            ),
+        ),
+        (
+            "fact: a wrong gap stated with event identifiers",
+            fact("E-1366 came 3 seconds after E-1359.", gap(3), ("E-1359", "E-1366")),
+        ),
     ]
     sources = {"canonical": log, "scenario": scenario, "empty": ()}
     exported = []

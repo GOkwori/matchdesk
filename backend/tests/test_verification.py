@@ -197,3 +197,28 @@ def test_empty_event_input_is_blocked() -> None:
     )
 
     assert verify_claim(claim, evidence, ()).status == "blocked"
+
+
+def test_a_wrong_gap_reports_the_stated_and_recorded_seconds() -> None:
+    """A writer sent back learns the recorded gap instead of guessing again."""
+    from matchdesk.domain import canonical_match as canonical
+    from matchdesk.domain.demo_claims import evidence_record
+    from matchdesk.domain.models import EventFact
+
+    claim = Claim(
+        claim_id="F-GAP",
+        text="Okafor scored 3 seconds after the corner.",
+        kind="event_fact",
+        fact=EventFact(
+            query="sequence_gap.v1",
+            event_id="E-1366",
+            from_event_id="E-1359",
+            from_tag="corner",
+            gap_seconds=3,
+        ),
+        evidence_event_ids=("E-1359", "E-1366"),
+    )
+    log = canonical.generate_canonical_match()
+    result = verify_claim(claim, evidence_record(log), log)
+    assert result.status == "needs_revision"
+    assert (result.expected, result.observed) == (3, 14)

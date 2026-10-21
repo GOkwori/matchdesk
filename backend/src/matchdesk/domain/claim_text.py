@@ -62,6 +62,8 @@ _SCORELINE = re.compile(_B + r"[0-9]+\s*[-\u2013\u2014]\s*[0-9]+" + _E)
 _MINUTE = re.compile(_B + r"[0-9]+\s*(?:'|\u2032|\u2019|(?:st|nd|rd|th|mins?|minutes?)" + _E + ")")
 _PERCENT = re.compile(_B + r"([0-9]+(?:\.[0-9]+)?)\s*(?:%|per\s?cent" + _E + ")")
 _DIGITS = re.compile(_B + r"[0-9]+(?:\.[0-9]+)?" + _E)
+# Identifiers such as E-1366, nbr-09 or CL-0214 name a record; they state no quantity.
+_IDENTIFIER = re.compile(_B + r"[a-z]+-[0-9]+" + _E)
 
 TEXT_QUERY_ID = "claim-text-binding-v1"
 
@@ -75,8 +77,9 @@ class StatedQuantities:
 
 
 def stated_quantities(text: str) -> StatedQuantities:
-    """Extract stated counts and percentages, ignoring clocks, scorelines and minutes."""
+    """Extract stated counts and percentages, ignoring clocks, scorelines, minutes and IDs."""
     lowered = text.lower().replace("’", "'")
+    lowered = _IDENTIFIER.sub(" ", lowered)
     lowered = _CLOCK.sub(" ", lowered)
     lowered = _SCORELINE.sub(" ", lowered)
     percents = tuple(Decimal(match) for match in _PERCENT.findall(lowered))
