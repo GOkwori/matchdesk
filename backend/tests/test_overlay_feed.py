@@ -67,5 +67,7 @@ def test_stat_card_numbers_match_their_claims() -> None:
 
 def test_the_published_feed_file_is_current() -> None:
     """The downloadable copy in the studio is exactly this feed."""
-    path = Path(__file__).resolve().parents[2] / "apps/web/public/overlays/nbr-riv.json"
+    path = (
+        Path(__file__).resolve().parents[2] / "apps/web/src/studio/generated/nbr-riv-overlays.json"
+    )
     assert json.loads(path.read_text(encoding="utf-8")) == json.loads(json.dumps(FEED))

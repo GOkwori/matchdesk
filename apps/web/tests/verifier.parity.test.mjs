@@ -61,7 +61,7 @@ test('round half up matches Python decimal rounding of the shortest form', () =>
 });
 
 test('every overlay cue re-verifies in the browser with the same verdict', () => {
-  const feed = read('../public/overlays/nbr-riv.json');
+  const feed = read('../src/studio/generated/nbr-riv-overlays.json');
   const events = sources.canonical;
   const evidence = { match_id: feed.match_id, event_ids: events.map((e) => e.event_id), window: { from_ms: 0, to_ms: feed.replay_end_ms } };
   const byId = new Map(feed.claims.map((c) => [c.claim_id, c]));

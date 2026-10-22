@@ -37,7 +37,7 @@ EVENTS = ROOT / "apps/web/src/studio/generated/nbr-riv-events.json"
 PARITY = ROOT / "apps/web/tests/verifier-parity.json"
 TRACE = ROOT / "apps/web/src/studio/generated/agent-trace.json"
 REHEARSAL = ROOT / "apps/web/src/studio/generated/agent-trace-rehearsal.json"
-OVERLAYS = ROOT / "apps/web/public/overlays/nbr-riv.json"
+OVERLAYS = ROOT / "apps/web/src/studio/generated/nbr-riv-overlays.json"
 VIEWS = {
     TRACE: ROOT / "apps/web/src/studio/generated/agent-trace.view.json",
     REHEARSAL: ROOT / "apps/web/src/studio/generated/agent-trace-rehearsal.view.json",

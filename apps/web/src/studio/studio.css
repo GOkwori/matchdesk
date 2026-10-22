@@ -845,3 +845,4 @@ html[data-md-motion="reduce"] .md-lt { animation: none; }
 .md-squad a > .md-subtle { grid-area: acts; }
 .md-form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 12px; margin: 12px 0; }
 .md-form-grid select { min-height: 40px; border-radius: 8px; border: 1px solid var(--md-control-line); background: var(--md-canvas); color: var(--md-text); padding: 0 10px; font: inherit; font-weight: 500; }
+.md-page > .md-lr { animation: none; }

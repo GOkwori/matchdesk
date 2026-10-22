@@ -55,7 +55,7 @@ may only translate a free-form question into a query plan. See
 Live Intelligence replays the log at 1× to 60× with statistics recomputed as the clock
 moves and timed broadcast overlays whose claims are re-verified in the browser before they
 appear. The same cues are published as a machine-readable feed,
-[`apps/web/public/overlays/nbr-riv.json`](apps/web/public/overlays/nbr-riv.json)
+[`/overlays/nbr-riv.json`](apps/web/src/app/overlays/nbr-riv.json/route.ts)
 (schema `matchdesk-overlay-feed/1`, built by `matchdesk.domain.overlay_feed`), with every
 persona (fan, analyst, caption), language (EN, ES, FR) and the full claim behind each
 number. Viewers can pick a favourite club and player, a persona, a language and one focus

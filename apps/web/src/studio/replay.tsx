@@ -45,7 +45,7 @@ function useReplayData(): Loaded | "loading" | "failed" {
   const [state, setState] = useState<Loaded | "loading" | "failed">("loading");
   useEffect(() => {
     let live = true;
-    Promise.all([import("./generated/nbr-riv-events.json"), import("./verifier"), import("../../public/overlays/nbr-riv.json")]).then(
+    Promise.all([import("./generated/nbr-riv-events.json"), import("./verifier"), import("./generated/nbr-riv-overlays.json")]).then(
       ([log, verifier, feedModule]) => {
         const events = verifier.expandLog(log.default as unknown as CompactLog);
         const feed = feedModule.default as unknown as Feed;
