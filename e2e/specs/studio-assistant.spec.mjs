@@ -72,7 +72,7 @@ test('a plan from the model is answered by the engine, and a malformed plan is i
   });
   const { dialog } = await openAsk(page);
   const good = await ask(dialog, 'Did the side in stripes fizzle out late on?');
-  await expect(good.getByText('question read by Azure AI Foundry')).toBeVisible();
+  await expect(good.getByText('Question read by Azure AI Foundry as: shots · Riverside · second half')).toBeVisible();
   await expect(good.getByText(/^Riverside had \d+ shots? in the second half so far\.$/)).toBeVisible();
   await expect(good.locator('.md-chip-verified')).toHaveCount(1);
   const bad = await ask(dialog, 'Make something up for me');
@@ -115,4 +115,24 @@ test('the landing page offers the assistant too', async ({ page }) => {
   const turn = await ask(dialog, 'start the tour');
   await turn.getByRole('link', { name: 'Start the tour' }).click();
   await expect(page).toHaveURL(/\/match\/nbr-riv\?tour=1$/);
+});
+
+test('a windowed score is stated honestly, and unknown players are declined', async ({ page }) => {
+  const { dialog } = await openAsk(page);
+  await expect((await ask(dialog, 'What was the score after 40 minutes?')).getByText(/Northbridge led 1–0\./)).toBeVisible();
+  await expect((await ask(dialog, "What's the score in the second half?")).getByText(/This is not the score\./)).toBeVisible();
+  const stranger = await ask(dialog, 'How many shots did Fernandes take?');
+  await expect(stranger.getByText(/no player called Fernandes/)).toBeVisible();
+  await expect(stranger.locator('.md-chip')).toHaveCount(0);
+});
+
+test('jumping elsewhere with the search palette closes the assistant', async ({ page }) => {
+  const { dialog } = await openAsk(page);
+  await page.keyboard.press('Control+k');
+  const palette = page.getByRole('dialog', { name: 'Search MatchDesk' });
+  await expect(palette).toBeVisible();
+  await page.keyboard.type('Review queue');
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(/\/producer\/queue$/);
+  await expect(dialog).toBeHidden();
 });

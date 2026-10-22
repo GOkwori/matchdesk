@@ -14,16 +14,17 @@ A question box in the studio that guides people around the app and answers quest
 | Kind | Examples | How |
 |---|---|---|
 | Measured stats | "How many shots did Northbridge have in the second half?" "Possession after 60 minutes?" "Okafor's shots" | Metric × subject × window, computed and verified |
-| Comparisons | "Who had more shots?" | One verified line per team, then a comparison derived from those two lines and labelled as such |
+| Comparisons | "Who had more shots?" | One verified line per team, then a comparison from the unrounded figures, labelled as derived |
+| Score in a window | "Score after 40 minutes?" "Score in the second half?" | A lead or a draw only for windows that start at kick-off; otherwise "goals in this window only, not the score" |
 | Score and scorers | "What's the score?" "Who scored?" | `goals.v1` per team; one `goal_scorer.v1` fact per goal |
 | Guidance | "What does Eligible mean?" "How do I approve a draft?" "Start the tour" | Help index with a link |
-| Out of scope | "Who will win?" "What about Arsenal?" | A clear refusal with what it can do instead |
+| Out of scope | "Who will win?" "What about Arsenal?" "Shots on target?" "Which player had the most shots?" | A clear refusal with what it can do instead. Statistics outside the six registered metrics, unknown or unranked players, and time phrases it cannot read exactly are declined, never answered as a nearby question |
 
 Metrics: goals, shots, pass accuracy, synthetic xG, final-third entries, possession (teams only). Windows: whole match so far, first or second half, before/after/between minute marks, last N minutes.
 
 ## Optional: understanding free-form questions with Azure AI Foundry
 
-When the host enables it (`MATCHDESK_ASSISTANT_FOUNDRY_ENABLED=true`, off by default), a question the built-in parser cannot read is sent to `POST /api/assistant/plan`. The service asks a Foundry model to return only a JSON query plan in a fixed schema. The plan is validated on the server and again in the browser, then answered by the same deterministic engine. Limits: questions of at most 300 characters, a small output token cap, a per-session request budget and a global switch. If the service is off, slow or fails, the assistant says it can't read that question and offers the suggested ones.
+When the host enables it (`MATCHDESK_ASSISTANT_FOUNDRY_ENABLED=true`, off by default), a question the built-in parser cannot read is sent to `POST /api/assistant/plan`. The service asks a Foundry model to return only a JSON query plan in a fixed schema. The plan is validated on the server and again in the browser, then answered by the same deterministic engine. The answer shows how the question was read (for example "shots · Riverside · second half"), so a misreading is visible. Limits: questions of at most 300 characters, 200 output tokens, a 7-second timeout (shorter than the browser's 8-second wait), at most 20 calls a minute and 400 a day per API replica, and a global switch. The budget is shared by everyone using that replica: it bounds cost, not fairness. Any model or client fault returns the "not understood" plan, with no error detail. If the service is off, slow or fails, the assistant says it can't read that question and offers the suggested ones.
 
 ## Accessibility
 

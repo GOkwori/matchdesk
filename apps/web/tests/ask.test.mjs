@@ -119,9 +119,10 @@ test('it declines what it cannot check, and says why', () => {
   assert.match(answer('How did Arsenal do last season?').text, /only know this synthetic match/);
   assert.match(answer('Okafor possession').text, /measured for teams, not players/);
   assert.match(answer('shots after 80 minutes').text, /replay stops at 67:12/);
+  assert.match(answer('shots before 70 minutes').note, /replay stops at 67:12/);
   assert.match(answer('shots between 50 and 40 minutes').text, /start must come before the end/);
   assert.equal(answer('tell me a joke about cheese').kind, 'unknown');
-  assert.equal(answer('who is the best player').kind, 'unknown');
+  assert.equal(answer('who is the best player').kind, 'decline');
   assert.equal(answer('').kind, 'unknown');
 });
 
@@ -143,10 +144,69 @@ test('plans from a model are accepted only in the exact schema', () => {
     { intent: 'help', topic: 'not-a-topic' }, { intent: 'out_of_scope', reason: 'whatever' }, { intent: 'execute', command: 'approve' },
   ];
   for (const plan of bad) assert.equal(validatePlan(plan, ctx), null, JSON.stringify(plan));
-  assert.deepEqual(validatePlan({ intent: 'scorers' }, ctx), { intent: 'scorers', window: {} });
+  assert.deepEqual(validatePlan({ intent: 'scorers' }, ctx), { intent: 'scorers', subjects: [], window: {} });
 });
 
 test('help and declines work before the event log has loaded', () => {
   assert.equal(ask('What does Eligible mean?', null, ctx).answer.kind, 'help');
   assert.match(ask("What's the score?", null, ctx).answer.text, /still loading/);
+});
+
+test('review: a windowed score never claims a lead it cannot show', () => {
+  const after40 = answer('What was the score after 40 minutes?');
+  assert.equal(after40.scope, 'Kick-off to 40:00');
+  assert.equal(after40.derived, 'Northbridge led 1–0.');
+  const second = answer("What's the score in the second half?");
+  assert.match(second.derived, /^Goals in this window only: .*This is not the score\.$/);
+  assert.equal(answer('score at half time').derived, "It's level, 1–1.");
+  assert.equal(answer('what was the half-time score').derived, "It's level, 1–1.");
+  assert.equal(answer('how many goals since the 40th minute').derived, 'Level: the same number of goals each.');
+});
+
+test('review: questions it cannot answer exactly are declined, never answered as a different question', () => {
+  const declined = [
+    'How many shots did Fernandes take?', 'Which player had the most shots?', 'Who is the top scorer?',
+    'shots on target', 'how many own goals', 'How many goals did Riverside concede?', 'shots conceded by Northbridge',
+    'Okafor assists', 'corners', 'yellow cards', 'how many fouls', 'how many passes did Mensah make',
+    'shots in the last 5 minutes of the first half', 'Northbridge, Riverside and Okafor shots', 'shots in stoppage time',
+  ];
+  for (const q of declined) assert.equal(answer(q).kind, 'decline', q);
+  assert.match(answer('How many shots did Fernandes take?').text, /no player called Fernandes/);
+});
+
+test('review: hyphenated halves, single minutes and explanation questions read correctly', () => {
+  assert.equal(answer('second-half possession').scope, 'Second half, to 67:12');
+  assert.equal(answer('first-half shots').scope, 'First half');
+  assert.equal(answer('possession in the 2nd half').scope, 'Second half, to 67:12');
+  assert.equal(answer('shots in the 30th minute').scope, '29:00 to 30:00');
+  assert.equal(answer('what is xG?').kind, 'help');
+  assert.equal(answer('how is possession calculated?').kind, 'help');
+  assert.match(answer('shots in the last 100 minutes').note, /only 67:12 long/);
+  const okafor = answer('When did Okafor score?');
+  assert.deepEqual(okafor.lines.map((l) => l.claim.fact.player_id), ['nbr-09', 'nbr-09']);
+  assert.match(answer('did Okafor score in the first half?').lines[0].claim.text, /^Okafor scored for Northbridge at 34:18\.$/);
+});
+
+test('review: no pass accuracy without passes, and no level call from rounded figures', () => {
+  const kovac = answer('Kovac');
+  assert.equal(kovac.kind, 'decline');
+  const thin = answerPlan({ intent: 'metric', metric: 'pass_accuracy.v1', subjects: ['riv'], window: { from_minute: 60, to_minute: 61 } }, ctx);
+  if (thin.kind === 'match') for (const l of thin.lines) assert.doesNotMatch(l.claim.text, /completed 0%/);
+  const close = answerPlan({ intent: 'metric', metric: 'pass_accuracy.v1', subjects: [], window: { from_minute: 0, to_minute: 3 } }, ctx);
+  assert.equal(close.kind, 'match');
+  assert.doesNotMatch(close.derived ?? '', /^Level/);
+});
+
+test('review: the plan check cannot be bypassed with prototype keys, duplicates or mixed windows', () => {
+  const bad = [
+    { intent: 'constructor' }, { intent: '__proto__' }, { intent: 'toString' },
+    { intent: 'metric', metric: 'toString', subjects: [], window: {} },
+    { intent: 'metric', metric: 'shots.v1', subjects: ['constructor'], window: {} },
+    { intent: 'summary', subject: '__proto__', window: {} },
+    { intent: 'metric', metric: 'shots.v1', subjects: ['nbr', 'nbr'], window: {} },
+    { intent: 'metric', metric: 'shots.v1', subjects: [], window: { period: 2, from_minute: 60 } },
+    { intent: 'metric', metric: 'shots.v1', subjects: [], window: { last_minutes: 0 } },
+    Object.assign(Object.create({ intent: 'score' }), {}),
+  ];
+  for (const plan of bad) assert.equal(validatePlan(plan, ctx), null, JSON.stringify(plan));
 });

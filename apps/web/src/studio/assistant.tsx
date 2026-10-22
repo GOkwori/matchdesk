@@ -2,9 +2,10 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Icon } from "./icons";
-import { answerPlan, parseQuestion, SUGGESTIONS, validatePlan, type Answer, type CheckedLine, type MatchContext, type Plan } from "./ask";
+import { answerPlan, describePlan, needsEvents, parseQuestion, SUGGESTIONS, validatePlan, type Answer, type CheckedLine, type MatchContext, type Plan } from "./ask";
 import { expandLog, type CompactLog, type Status } from "./verifier";
 import exportData from "./generated/nbr-riv.json";
 
@@ -13,7 +14,8 @@ const TEAMS: Record<string, string> = { nbr: NAMES.nbr ?? "Northbridge", riv: NA
 const MAX_QUESTION = 300;
 const PLANNER_TIMEOUT_MS = 8000;
 
-type Entry = { id: number; question: string; answer: Answer; via: "rules" | "foundry" };
+type Entry = { id: number; question: string; answer: Answer; via: "rules" | "foundry"; readAs?: string };
+const LOOKUP = { names: NAMES, teams: TEAMS };
 
 const STATUS: Record<Status, { label: string; tone: string }> = {
   verified: { label: "Verified", tone: "verified" },
@@ -81,7 +83,8 @@ function Reply({ entry, onLink }: { entry: Entry; onLink: () => void }) {
   if (answer.kind === "match") {
     return (
       <div className="md-ask-answer">
-        <p className="md-ask-scope">{answer.scope}{entry.via === "foundry" && <span className="md-ask-via"> · question read by Azure AI Foundry</span>}</p>
+        <p className="md-ask-scope">{answer.scope}</p>
+        {entry.via === "foundry" && <p className="md-ask-via">Question read by Azure AI Foundry as: {entry.readAs}</p>}
         <ul className="md-ask-lines">{answer.lines.map((line) => <Line key={line.claim.claim_id} line={line} />)}</ul>
         {answer.derived && <p className="md-ask-derived"><span className="md-visually-hidden">Conclusion: </span>{answer.derived} <span className="md-ask-muted">(from the checked figures above)</span></p>}
         {answer.note && <p className="md-ask-muted">{answer.note}</p>}
@@ -103,10 +106,13 @@ export function Assistant({ request }: { request: { id: number; question: string
   const input = useRef<HTMLInputElement>(null);
   const log = useRef<HTMLDivElement>(null);
   const [ctx, setCtx] = useState<MatchContext | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [entries, setEntries] = useState<Entry[]>([]);
   const [question, setQuestion] = useState("");
   const [busy, setBusy] = useState(false);
-  const pending = useRef<string | null>(null);
+  const busyRef = useRef(false);
+  const [pending, setPending] = useState<string | null>(null);
+  const pathname = usePathname();
 
   useEffect(() => {
     let live = true;
@@ -119,27 +125,40 @@ export function Assistant({ request }: { request: { id: number; question: string
         replayEndMs: exportData.replay_end_ms,
         matchId: exportData.match_id,
       });
-    });
+    }).catch(() => { if (live) setLoadFailed(true); });
     return () => { live = false; };
+  }, []);
+
+  const add = useCallback((entry: Omit<Entry, "id">) => {
+    setEntries((current) => [...current, { ...entry, id: (current.at(-1)?.id ?? 0) + 1 }].slice(-12));
   }, []);
 
   const submit = useCallback(async (raw: string) => {
     const text = raw.trim().slice(0, MAX_QUESTION);
-    if (!text || busy) return;
-    if (!ctx) { pending.current = text; return; }
+    if (!text || busyRef.current) return;
     setQuestion("");
-    let plan: Plan = parseQuestion(text, ctx);
+    input.current?.focus();
+    let plan: Plan = parseQuestion(text, LOOKUP);
     let via: Entry["via"] = "rules";
     if (plan.intent === "unknown") {
+      busyRef.current = true;
       setBusy(true);
       const proposed = await planWithFoundry(text);
+      busyRef.current = false;
       setBusy(false);
-      const checked = proposed === null ? null : validatePlan(proposed, ctx);
+      const checked = proposed === null ? null : validatePlan(proposed, LOOKUP);
       if (checked && checked.intent !== "unknown") { plan = checked; via = "foundry"; }
     }
-    const answer = answerPlan(plan, ctx);
-    setEntries((current) => [...current, { id: (current.at(-1)?.id ?? 0) + 1, question: text, answer, via }].slice(-12));
-  }, [busy, ctx]);
+    if (needsEvents(plan) && !ctx) {
+      if (loadFailed) {
+        add({ question: text, via, answer: { kind: "decline", text: "The match data couldn't be loaded, so I can't check figures right now. Questions about the app still work." } });
+      } else {
+        setPending(text);
+      }
+      return;
+    }
+    add({ question: text, via, answer: answerPlan(plan, ctx), readAs: via === "foundry" ? describePlan(plan, LOOKUP) : undefined });
+  }, [add, ctx, loadFailed]);
 
   // Open (again) whenever the host forwards a request, and ask its question if it carried one.
   useEffect(() => {
@@ -149,15 +168,22 @@ export function Assistant({ request }: { request: { id: number; question: string
     else input.current?.focus();
   }, [request.id]);
 
-  // A question asked while the log was still loading is answered as soon as it arrives.
+  // A figure asked for while the log was still loading is answered as soon as it arrives.
   useEffect(() => {
-    if (ctx && pending.current) { const text = pending.current; pending.current = null; void submit(text); }
-  }, [ctx, submit]);
+    if ((ctx || loadFailed) && pending) { const text = pending; setPending(null); void submit(text); }
+  }, [ctx, loadFailed, pending, submit]);
 
+  // Leaving the page (a link, the palette, Back) closes the panel rather than covering the new page.
+  const shownOn = useRef(pathname);
+  useEffect(() => {
+    if (pathname !== shownOn.current) { shownOn.current = pathname; dialog.current?.close(); }
+  }, [pathname]);
+
+  const lastId = entries.at(-1)?.id;
   useEffect(() => {
     const last = log.current?.lastElementChild;
     if (last instanceof HTMLElement) last.scrollIntoView({ block: "nearest" });
-  }, [entries.length]);
+  }, [lastId]);
 
   const close = () => dialog.current?.close();
 
@@ -186,6 +212,7 @@ export function Assistant({ request }: { request: { id: number; question: string
           </article>
         ))}
         {busy && <p className="md-ask-muted" role="status">Reading your question…</p>}
+        {!busy && pending && !ctx && <p className="md-ask-muted" role="status">Loading the event log. Your question will be answered as soon as it arrives.</p>}
       </div>
       <form className="md-ask-form" onSubmit={(e) => { e.preventDefault(); void submit(question); }}>
         <label htmlFor="md-ask-input" className="md-visually-hidden">Your question</label>
@@ -195,7 +222,8 @@ export function Assistant({ request }: { request: { id: number; question: string
         />
         <button type="submit" className="md-ask-send" disabled={!question.trim() || busy}>Ask</button>
       </form>
-      {!ctx && <p className="md-ask-muted md-ask-loading" role="status">Loading the event log…</p>}
+      {!ctx && !loadFailed && <p className="md-ask-muted md-ask-loading" role="status">Loading the event log…</p>}
+      {loadFailed && <p className="md-ask-muted md-ask-loading" role="status">The match data couldn't be loaded. Questions about the app still work.</p>}
     </dialog>
   );
 }

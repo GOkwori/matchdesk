@@ -13,7 +13,12 @@ from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field
 
-from matchdesk.domain.assistant_planner import MAX_QUESTION_CHARS, AssistantPlanner, PlannerBusy
+from matchdesk.domain.assistant_planner import (
+    MAX_QUESTION_CHARS,
+    AssistantPlanner,
+    PlannerBusy,
+    QuestionRejected,
+)
 from matchdesk.domain.foundry_runtime import FoundryRuntimeUnavailable
 
 _log = logging.getLogger("matchdesk.assistant")
@@ -42,8 +47,11 @@ def create_assistant_router(planner: AssistantPlanner) -> APIRouter:
             return JSONResponse(
                 status_code=503, content={"detail": "The assistant planner is unavailable"}
             )
-        except ValueError as error:
-            return JSONResponse(status_code=422, content={"detail": str(error)})
+        except QuestionRejected:
+            return JSONResponse(
+                status_code=422,
+                content={"detail": f"Ask a question of 1 to {MAX_QUESTION_CHARS} characters"},
+            )
         except Exception:  # noqa: BLE001 - a model or network fault must never surface as a guess
             _log.warning("assistant planner call failed", exc_info=True)
             return JSONResponse(status_code=200, content={"plan": {"intent": "unknown"}})

@@ -30,7 +30,8 @@ _ENV_MODEL = "FOUNDRY_MODEL"
 
 MAX_QUESTION_CHARS = 300
 MAX_OUTPUT_TOKENS = 200
-TIMEOUT_SECONDS = 10.0
+# Shorter than the browser's 8 s wait, so the server never pays for an abandoned call.
+TIMEOUT_SECONDS = 7.0
 PER_MINUTE = 20
 PER_DAY = 400
 
@@ -51,6 +52,7 @@ HELP_TOPICS: tuple[str, ...] = (
     "search",
     "settings",
     "activity",
+    "metrics",
     "what",
 )
 METRIC_IDS = (
@@ -110,6 +112,15 @@ class PlannedQuestion(BaseModel):
         unknown: dict[str, Any] = {"intent": "unknown"}
         if any(subject not in SUBJECTS for subject in self.subjects):
             return unknown
+        if len(set(self.subjects)) != len(self.subjects):
+            return unknown
+        kinds = [
+            self.period is not None,
+            self.from_minute is not None or self.to_minute is not None,
+            self.last_minutes is not None,
+        ]
+        if sum(kinds) > 1:
+            return unknown
         if self.intent == "metric":
             if self.metric is None:
                 return unknown
@@ -119,8 +130,10 @@ class PlannedQuestion(BaseModel):
                 "subjects": list(self.subjects),
                 "window": window,
             }
-        if self.intent in ("score", "scorers"):
-            return {"intent": self.intent, "window": window}
+        if self.intent == "score":
+            return {"intent": "score", "window": window}
+        if self.intent == "scorers":
+            return {"intent": "scorers", "subjects": list(self.subjects), "window": window}
         if self.intent == "summary":
             if len(self.subjects) != 1:
                 return unknown
@@ -181,6 +194,10 @@ class AssistantPlannerConfig:
             raise FoundryRuntimeUnavailable(
                 "The assistant planner needs a Foundry endpoint and model"
             )
+
+
+class QuestionRejected(ValueError):
+    """The question itself is empty or too long."""
 
 
 class PlannerBusy(RuntimeError):
@@ -280,7 +297,7 @@ class AssistantPlanner:
         self._config.validate_activation()
         text = " ".join(question.split())
         if not text or len(text) > MAX_QUESTION_CHARS:
-            raise ValueError(f"Ask a question of 1 to {MAX_QUESTION_CHARS} characters")
+            raise QuestionRejected(f"Ask a question of 1 to {MAX_QUESTION_CHARS} characters")
         self._limit.take()
         agent = self._factory.create(self._config)
         result = await asyncio.wait_for(

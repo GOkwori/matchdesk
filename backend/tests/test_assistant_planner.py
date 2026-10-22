@@ -132,7 +132,7 @@ def test_a_structured_plan_becomes_the_browser_plan() -> None:
         ),
         (
             PlannedQuestion(intent="scorers", from_minute=30, to_minute=60),
-            {"intent": "scorers", "window": {"from_minute": 30, "to_minute": 60}},
+            {"intent": "scorers", "subjects": [], "window": {"from_minute": 30, "to_minute": 60}},
         ),
         (PlannedQuestion(intent="help", topic="eligible"), {"intent": "help", "topic": "eligible"}),
         (
@@ -160,6 +160,8 @@ def test_plans_outside_the_vocabulary_become_unknown() -> None:
         PlannedQuestion(intent="metric"),
         PlannedQuestion(intent="help", topic="delete everything"),
         PlannedQuestion(intent="summary", subjects=["nbr", "riv"]),
+        PlannedQuestion(intent="metric", metric="shots.v1", subjects=["nbr", "nbr"]),
+        PlannedQuestion(intent="metric", metric="shots.v1", period=2, from_minute=60),
         PlannedQuestion(intent="unknown"),
     ):
         planner, _ = _planner(_Result(planned))
@@ -206,6 +208,23 @@ def test_the_route_answers_with_a_plan_and_degrades_safely() -> None:
                 module.TIMEOUT_SECONDS = original
         assert response.status_code == 200
         assert response.json() == {"plan": {"intent": "unknown"}}
+
+
+def test_errors_from_the_model_or_client_never_reach_the_caller() -> None:
+    """A ValueError raised inside the model call carries no detail back."""
+
+    class _Exploding:
+        """An agent whose client fails with a revealing message."""
+
+        async def run(self, prompt: str, **kwargs: Any) -> Any:
+            """Fail like a misconfigured client."""
+            raise ValueError("bad endpoint https://secret.example/tenant/1234")
+
+    planner = AssistantPlanner(config=ON, factory=_Factory(_Exploding()))  # type: ignore[arg-type]
+    response = _client(planner).post("/api/assistant/plan", json={"question": "q"})
+    assert response.status_code == 200
+    assert response.json() == {"plan": {"intent": "unknown"}}
+    assert "secret" not in response.text
 
 
 def test_inputs_and_volume_are_bounded() -> None:
