@@ -1,0 +1,1495 @@
+{
+ "claims": [
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "metric": "goals.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "nbr"
+     },
+     "unit": "count",
+     "value": 1.0,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 2059000
+     }
+    },
+    "claim_id": "OV-E-0688-NBR",
+    "evidence_event_ids": [
+     "E-0688"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Northbridge scored 1 goal up to 34:19."
+   },
+   "claim_id": "OV-E-0688-NBR",
+   "evidence_event_ids": [
+    "E-0688"
+   ],
+   "observed": 1.0,
+   "query_id": "metric-goals-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Northbridge scored 1 goal up to 34:19."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "metric": "goals.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "riv"
+     },
+     "unit": "count",
+     "value": 0.0,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 2059000
+     }
+    },
+    "claim_id": "OV-E-0688-RIV",
+    "evidence_event_ids": [
+     "E-0001"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Riverside scored 0 goals up to 34:19."
+   },
+   "claim_id": "OV-E-0688-RIV",
+   "evidence_event_ids": [
+    "E-0001"
+   ],
+   "observed": 0.0,
+   "query_id": "metric-goals-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Riverside scored 0 goals up to 34:19."
+  },
+  {
+   "claim": {
+    "claim_id": "OV-E-0688-SCORER",
+    "evidence_event_ids": [
+     "E-0688"
+    ],
+    "fact": {
+     "event_id": "E-0688",
+     "player_id": "nbr-09",
+     "query": "goal_scorer.v1",
+     "schema_version": "1.0"
+    },
+    "kind": "event_fact",
+    "schema_version": "1.0",
+    "text": "Okafor scored for Northbridge at 34:18."
+   },
+   "claim_id": "OV-E-0688-SCORER",
+   "evidence_event_ids": [
+    "E-0688"
+   ],
+   "observed": null,
+   "query_id": "event-goal-scorer-v1",
+   "reason": "The cited goal event records the stated scorer",
+   "status": "verified",
+   "text": "Okafor scored for Northbridge at 34:18."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "metric": "goals.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "nbr"
+     },
+     "unit": "count",
+     "value": 1.0,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 2464000
+     }
+    },
+    "claim_id": "OV-E-0790-NBR",
+    "evidence_event_ids": [
+     "E-0688"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Northbridge scored 1 goal up to 41:04."
+   },
+   "claim_id": "OV-E-0790-NBR",
+   "evidence_event_ids": [
+    "E-0688"
+   ],
+   "observed": 1.0,
+   "query_id": "metric-goals-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Northbridge scored 1 goal up to 41:04."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "metric": "goals.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "riv"
+     },
+     "unit": "count",
+     "value": 1.0,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 2464000
+     }
+    },
+    "claim_id": "OV-E-0790-RIV",
+    "evidence_event_ids": [
+     "E-0790"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Riverside scored 1 goal up to 41:04."
+   },
+   "claim_id": "OV-E-0790-RIV",
+   "evidence_event_ids": [
+    "E-0790"
+   ],
+   "observed": 1.0,
+   "query_id": "metric-goals-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Riverside scored 1 goal up to 41:04."
+  },
+  {
+   "claim": {
+    "claim_id": "OV-E-0790-SCORER",
+    "evidence_event_ids": [
+     "E-0790"
+    ],
+    "fact": {
+     "event_id": "E-0790",
+     "player_id": "riv-11",
+     "query": "goal_scorer.v1",
+     "schema_version": "1.0"
+    },
+    "kind": "event_fact",
+    "schema_version": "1.0",
+    "text": "Lindqvist scored for Riverside at 41:03."
+   },
+   "claim_id": "OV-E-0790-SCORER",
+   "evidence_event_ids": [
+    "E-0790"
+   ],
+   "observed": null,
+   "query_id": "event-goal-scorer-v1",
+   "reason": "The cited goal event records the stated scorer",
+   "status": "verified",
+   "text": "Lindqvist scored for Riverside at 41:03."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "metric": "goals.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "nbr"
+     },
+     "unit": "count",
+     "value": 2.0,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 3498000
+     }
+    },
+    "claim_id": "OV-E-1366-NBR",
+    "evidence_event_ids": [
+     "E-0688",
+     "E-1366"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Northbridge scored 2 goals up to 58:18."
+   },
+   "claim_id": "OV-E-1366-NBR",
+   "evidence_event_ids": [
+    "E-0688",
+    "E-1366"
+   ],
+   "observed": 2.0,
+   "query_id": "metric-goals-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Northbridge scored 2 goals up to 58:18."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "metric": "goals.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "riv"
+     },
+     "unit": "count",
+     "value": 1.0,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 3498000
+     }
+    },
+    "claim_id": "OV-E-1366-RIV",
+    "evidence_event_ids": [
+     "E-0790"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Riverside scored 1 goal up to 58:18."
+   },
+   "claim_id": "OV-E-1366-RIV",
+   "evidence_event_ids": [
+    "E-0790"
+   ],
+   "observed": 1.0,
+   "query_id": "metric-goals-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Riverside scored 1 goal up to 58:18."
+  },
+  {
+   "claim": {
+    "claim_id": "OV-E-1366-SCORER",
+    "evidence_event_ids": [
+     "E-1366"
+    ],
+    "fact": {
+     "event_id": "E-1366",
+     "player_id": "nbr-09",
+     "query": "goal_scorer.v1",
+     "schema_version": "1.0"
+    },
+    "kind": "event_fact",
+    "schema_version": "1.0",
+    "text": "Okafor scored for Northbridge at 58:17."
+   },
+   "claim_id": "OV-E-1366-SCORER",
+   "evidence_event_ids": [
+    "E-1366"
+   ],
+   "observed": null,
+   "query_id": "event-goal-scorer-v1",
+   "reason": "The cited goal event records the stated scorer",
+   "status": "verified",
+   "text": "Okafor scored for Northbridge at 58:17."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "decimals": 2,
+     "metric": "possession_time.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "riv"
+     },
+     "unit": "ratio",
+     "value": 0.55,
+     "window": {
+      "from_ms": 1800000,
+      "schema_version": "1.0",
+      "to_ms": 2700000
+     }
+    },
+    "claim_id": "OV-SPELL-RIV",
+    "evidence_event_ids": [
+     "E-0001"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Riverside had 55% possession between 30′ and 45′."
+   },
+   "claim_id": "OV-SPELL-RIV",
+   "evidence_event_ids": [
+    "E-0001"
+   ],
+   "observed": 0.5459422222222222,
+   "query_id": "metric-possession_time-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Riverside had 55% possession between 30′ and 45′."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "metric": "tackles.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "player_id": "riv-03",
+      "schema_version": "1.0"
+     },
+     "unit": "count",
+     "value": 7.0,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 3600000
+     }
+    },
+    "claim_id": "OV-SPOT-TACKLES",
+    "evidence_event_ids": [
+     "E-0001"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Sorensen made 7 tackles up to 60:00."
+   },
+   "claim_id": "OV-SPOT-TACKLES",
+   "evidence_event_ids": [
+    "E-0001"
+   ],
+   "observed": 7.0,
+   "query_id": "metric-tackles-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Sorensen made 7 tackles up to 60:00."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "decimals": 2,
+     "metric": "possession_time.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "nbr"
+     },
+     "unit": "ratio",
+     "value": 0.62,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 900000
+     }
+    },
+    "claim_id": "OV-STATS-15-POSS",
+    "evidence_event_ids": [
+     "E-0001"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Northbridge have had 62% possession up to 15:00."
+   },
+   "claim_id": "OV-STATS-15-POSS",
+   "evidence_event_ids": [
+    "E-0001"
+   ],
+   "observed": 0.6173766666666667,
+   "query_id": "metric-possession_time-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Northbridge have had 62% possession up to 15:00."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "metric": "shots.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "nbr"
+     },
+     "unit": "count",
+     "value": 2.0,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 900000
+     }
+    },
+    "claim_id": "OV-STATS-15-SHOTS-NBR",
+    "evidence_event_ids": [
+     "E-0060",
+     "E-0227"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Northbridge had 2 shots up to 15:00."
+   },
+   "claim_id": "OV-STATS-15-SHOTS-NBR",
+   "evidence_event_ids": [
+    "E-0060",
+    "E-0227"
+   ],
+   "observed": 2.0,
+   "query_id": "metric-shots-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Northbridge had 2 shots up to 15:00."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "metric": "shots.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "riv"
+     },
+     "unit": "count",
+     "value": 2.0,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 900000
+     }
+    },
+    "claim_id": "OV-STATS-15-SHOTS-RIV",
+    "evidence_event_ids": [
+     "E-0084",
+     "E-0252"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Riverside had 2 shots up to 15:00."
+   },
+   "claim_id": "OV-STATS-15-SHOTS-RIV",
+   "evidence_event_ids": [
+    "E-0084",
+    "E-0252"
+   ],
+   "observed": 2.0,
+   "query_id": "metric-shots-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Riverside had 2 shots up to 15:00."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "decimals": 2,
+     "metric": "possession_time.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "nbr"
+     },
+     "unit": "ratio",
+     "value": 0.61,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 1800000
+     }
+    },
+    "claim_id": "OV-STATS-30-POSS",
+    "evidence_event_ids": [
+     "E-0001"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Northbridge have had 61% possession up to 30:00."
+   },
+   "claim_id": "OV-STATS-30-POSS",
+   "evidence_event_ids": [
+    "E-0001"
+   ],
+   "observed": 0.6071144444444444,
+   "query_id": "metric-possession_time-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Northbridge have had 61% possession up to 30:00."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "metric": "shots.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "nbr"
+     },
+     "unit": "count",
+     "value": 4.0,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 1800000
+     }
+    },
+    "claim_id": "OV-STATS-30-SHOTS-NBR",
+    "evidence_event_ids": [
+     "E-0060",
+     "E-0227",
+     "E-0358",
+     "E-0422"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Northbridge had 4 shots up to 30:00."
+   },
+   "claim_id": "OV-STATS-30-SHOTS-NBR",
+   "evidence_event_ids": [
+    "E-0060",
+    "E-0227",
+    "E-0358",
+    "E-0422"
+   ],
+   "observed": 4.0,
+   "query_id": "metric-shots-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Northbridge had 4 shots up to 30:00."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "metric": "shots.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "riv"
+     },
+     "unit": "count",
+     "value": 4.0,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 1800000
+     }
+    },
+    "claim_id": "OV-STATS-30-SHOTS-RIV",
+    "evidence_event_ids": [
+     "E-0084",
+     "E-0252",
+     "E-0326",
+     "E-0588"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Riverside had 4 shots up to 30:00."
+   },
+   "claim_id": "OV-STATS-30-SHOTS-RIV",
+   "evidence_event_ids": [
+    "E-0084",
+    "E-0252",
+    "E-0326",
+    "E-0588"
+   ],
+   "observed": 4.0,
+   "query_id": "metric-shots-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Riverside had 4 shots up to 30:00."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "decimals": 2,
+     "metric": "possession_time.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "nbr"
+     },
+     "unit": "ratio",
+     "value": 0.56,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 2700000
+     }
+    },
+    "claim_id": "OV-STATS-45-POSS",
+    "evidence_event_ids": [
+     "E-0001"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Northbridge have had 56% possession up to 45:00."
+   },
+   "claim_id": "OV-STATS-45-POSS",
+   "evidence_event_ids": [
+    "E-0001"
+   ],
+   "observed": 0.5560955555555556,
+   "query_id": "metric-possession_time-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Northbridge have had 56% possession up to 45:00."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "metric": "shots.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "nbr"
+     },
+     "unit": "count",
+     "value": 5.0,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 2700000
+     }
+    },
+    "claim_id": "OV-STATS-45-SHOTS-NBR",
+    "evidence_event_ids": [
+     "E-0060",
+     "E-0227",
+     "E-0358",
+     "E-0422",
+     "E-0687"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Northbridge had 5 shots up to 45:00."
+   },
+   "claim_id": "OV-STATS-45-SHOTS-NBR",
+   "evidence_event_ids": [
+    "E-0060",
+    "E-0227",
+    "E-0358",
+    "E-0422",
+    "E-0687"
+   ],
+   "observed": 5.0,
+   "query_id": "metric-shots-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Northbridge had 5 shots up to 45:00."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "metric": "shots.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "riv"
+     },
+     "unit": "count",
+     "value": 6.0,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 2700000
+     }
+    },
+    "claim_id": "OV-STATS-45-SHOTS-RIV",
+    "evidence_event_ids": [
+     "E-0084",
+     "E-0252",
+     "E-0326",
+     "E-0588",
+     "E-0789",
+     "E-0825"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Riverside had 6 shots up to 45:00."
+   },
+   "claim_id": "OV-STATS-45-SHOTS-RIV",
+   "evidence_event_ids": [
+    "E-0084",
+    "E-0252",
+    "E-0326",
+    "E-0588",
+    "E-0789",
+    "E-0825"
+   ],
+   "observed": 6.0,
+   "query_id": "metric-shots-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Riverside had 6 shots up to 45:00."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "decimals": 2,
+     "metric": "possession_time.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "nbr"
+     },
+     "unit": "ratio",
+     "value": 0.57,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 3600000
+     }
+    },
+    "claim_id": "OV-STATS-60-POSS",
+    "evidence_event_ids": [
+     "E-0001"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Northbridge have had 57% possession up to 60:00."
+   },
+   "claim_id": "OV-STATS-60-POSS",
+   "evidence_event_ids": [
+    "E-0001"
+   ],
+   "observed": 0.5688463888888889,
+   "query_id": "metric-possession_time-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Northbridge have had 57% possession up to 60:00."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "metric": "shots.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "nbr"
+     },
+     "unit": "count",
+     "value": 14.0,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 3600000
+     }
+    },
+    "claim_id": "OV-STATS-60-SHOTS-NBR",
+    "evidence_event_ids": [
+     "E-0060",
+     "E-0227",
+     "E-0358",
+     "E-0422",
+     "E-0687",
+     "E-0940",
+     "E-0957",
+     "E-1109",
+     "E-1163",
+     "E-1181",
+     "E-1215",
+     "E-1252",
+     "E-1319",
+     "E-1365"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Northbridge had 14 shots up to 60:00."
+   },
+   "claim_id": "OV-STATS-60-SHOTS-NBR",
+   "evidence_event_ids": [
+    "E-0060",
+    "E-0227",
+    "E-0358",
+    "E-0422",
+    "E-0687",
+    "E-0940",
+    "E-0957",
+    "E-1109",
+    "E-1163",
+    "E-1181",
+    "E-1215",
+    "E-1252",
+    "E-1319",
+    "E-1365"
+   ],
+   "observed": 14.0,
+   "query_id": "metric-shots-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Northbridge had 14 shots up to 60:00."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "metric": "shots.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "riv"
+     },
+     "unit": "count",
+     "value": 8.0,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 3600000
+     }
+    },
+    "claim_id": "OV-STATS-60-SHOTS-RIV",
+    "evidence_event_ids": [
+     "E-0084",
+     "E-0252",
+     "E-0326",
+     "E-0588",
+     "E-0789",
+     "E-0825",
+     "E-1084",
+     "E-1190"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Riverside had 8 shots up to 60:00."
+   },
+   "claim_id": "OV-STATS-60-SHOTS-RIV",
+   "evidence_event_ids": [
+    "E-0084",
+    "E-0252",
+    "E-0326",
+    "E-0588",
+    "E-0789",
+    "E-0825",
+    "E-1084",
+    "E-1190"
+   ],
+   "observed": 8.0,
+   "query_id": "metric-shots-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Riverside had 8 shots up to 60:00."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "decimals": 2,
+     "metric": "possession_time.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "nbr"
+     },
+     "unit": "ratio",
+     "value": 0.58,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 4032000
+     }
+    },
+    "claim_id": "OV-STATS-67-POSS",
+    "evidence_event_ids": [
+     "E-0001"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Northbridge have had 58% possession up to 67:12."
+   },
+   "claim_id": "OV-STATS-67-POSS",
+   "evidence_event_ids": [
+    "E-0001"
+   ],
+   "observed": 0.5795628103277061,
+   "query_id": "metric-possession_time-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Northbridge have had 58% possession up to 67:12."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "metric": "shots.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "nbr"
+     },
+     "unit": "count",
+     "value": 14.0,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 4032000
+     }
+    },
+    "claim_id": "OV-STATS-67-SHOTS-NBR",
+    "evidence_event_ids": [
+     "E-0060",
+     "E-0227",
+     "E-0358",
+     "E-0422",
+     "E-0687",
+     "E-0940",
+     "E-0957",
+     "E-1109",
+     "E-1163",
+     "E-1181",
+     "E-1215",
+     "E-1252",
+     "E-1319",
+     "E-1365"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Northbridge had 14 shots up to 67:12."
+   },
+   "claim_id": "OV-STATS-67-SHOTS-NBR",
+   "evidence_event_ids": [
+    "E-0060",
+    "E-0227",
+    "E-0358",
+    "E-0422",
+    "E-0687",
+    "E-0940",
+    "E-0957",
+    "E-1109",
+    "E-1163",
+    "E-1181",
+    "E-1215",
+    "E-1252",
+    "E-1319",
+    "E-1365"
+   ],
+   "observed": 14.0,
+   "query_id": "metric-shots-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Northbridge had 14 shots up to 67:12."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "metric": "shots.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "riv"
+     },
+     "unit": "count",
+     "value": 9.0,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 4032000
+     }
+    },
+    "claim_id": "OV-STATS-67-SHOTS-RIV",
+    "evidence_event_ids": [
+     "E-0084",
+     "E-0252",
+     "E-0326",
+     "E-0588",
+     "E-0789",
+     "E-0825",
+     "E-1084",
+     "E-1190",
+     "E-1390"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Riverside had 9 shots up to 67:12."
+   },
+   "claim_id": "OV-STATS-67-SHOTS-RIV",
+   "evidence_event_ids": [
+    "E-0084",
+    "E-0252",
+    "E-0326",
+    "E-0588",
+    "E-0789",
+    "E-0825",
+    "E-1084",
+    "E-1190",
+    "E-1390"
+   ],
+   "observed": 9.0,
+   "query_id": "metric-shots-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Riverside had 9 shots up to 67:12."
+  }
+ ],
+ "cues": [
+  {
+   "claim_ids": [
+    "OV-STATS-15-POSS",
+    "OV-STATS-15-SHOTS-NBR",
+    "OV-STATS-15-SHOTS-RIV"
+   ],
+   "clock": "15:00",
+   "cue_id": "Q-001",
+   "duration_ms": 8000,
+   "event_ids": [],
+   "kind": "stats",
+   "players": [],
+   "status": "verified",
+   "t_ms": 900000,
+   "team": null,
+   "text": {
+    "analyst": {
+     "en": "15′ · Possession NBR 62% · RIV 38% · Shots 2–2",
+     "es": "15′ · Posesión NBR 62 % · RIV 38 % · Tiros 2–2",
+     "fr": "15′ · Possession NBR 62 % · RIV 38 % · Tirs 2–2"
+    },
+    "caption": {
+     "en": "POSS 62–38 · SHOTS 2–2",
+     "es": "POSESIÓN 62–38 · TIROS 2–2",
+     "fr": "POSSESSION 62–38 · TIRS 2–2"
+    },
+    "fan": {
+     "en": "After 15 minutes: Northbridge 62% of the ball, shots 2–2",
+     "es": "Tras 15 minutos: Northbridge 62 % del balón, tiros 2–2",
+     "fr": "Après 15 minutes : Northbridge 62 % du ballon, tirs 2–2"
+    }
+   }
+  },
+  {
+   "claim_ids": [],
+   "clock": "27:40",
+   "cue_id": "Q-002",
+   "duration_ms": 8000,
+   "event_ids": [
+    "E-0561"
+   ],
+   "kind": "card",
+   "players": [
+    "riv-06"
+   ],
+   "status": "logged",
+   "t_ms": 1660000,
+   "team": "riv",
+   "text": {
+    "analyst": {
+     "en": "Yellow card 27:40 · Haddad (Riverside)",
+     "es": "Tarjeta amarilla 27:40 · Haddad (Riverside)",
+     "fr": "Carton jaune 27:40 · Haddad (Riverside)"
+    },
+    "caption": {
+     "en": "28′ YELLOW CARD · Haddad",
+     "es": "28′ TARJETA AMARILLA · Haddad",
+     "fr": "28′ CARTON JAUNE · Haddad"
+    },
+    "fan": {
+     "en": "Yellow card: Haddad (Riverside)",
+     "es": "Tarjeta amarilla: Haddad (Riverside)",
+     "fr": "Carton jaune: Haddad (Riverside)"
+    }
+   }
+  },
+  {
+   "claim_ids": [
+    "OV-STATS-30-POSS",
+    "OV-STATS-30-SHOTS-NBR",
+    "OV-STATS-30-SHOTS-RIV"
+   ],
+   "clock": "30:00",
+   "cue_id": "Q-003",
+   "duration_ms": 8000,
+   "event_ids": [],
+   "kind": "stats",
+   "players": [],
+   "status": "verified",
+   "t_ms": 1800000,
+   "team": null,
+   "text": {
+    "analyst": {
+     "en": "30′ · Possession NBR 61% · RIV 39% · Shots 4–4",
+     "es": "30′ · Posesión NBR 61 % · RIV 39 % · Tiros 4–4",
+     "fr": "30′ · Possession NBR 61 % · RIV 39 % · Tirs 4–4"
+    },
+    "caption": {
+     "en": "POSS 61–39 · SHOTS 4–4",
+     "es": "POSESIÓN 61–39 · TIROS 4–4",
+     "fr": "POSSESSION 61–39 · TIRS 4–4"
+    },
+    "fan": {
+     "en": "After 30 minutes: Northbridge 61% of the ball, shots 4–4",
+     "es": "Tras 30 minutos: Northbridge 61 % del balón, tiros 4–4",
+     "fr": "Après 30 minutes : Northbridge 61 % du ballon, tirs 4–4"
+    }
+   }
+  },
+  {
+   "claim_ids": [
+    "OV-E-0688-SCORER",
+    "OV-E-0688-NBR",
+    "OV-E-0688-RIV"
+   ],
+   "clock": "34:18",
+   "cue_id": "Q-004",
+   "duration_ms": 8000,
+   "event_ids": [
+    "E-0688"
+   ],
+   "kind": "goal",
+   "players": [
+    "nbr-09"
+   ],
+   "status": "verified",
+   "t_ms": 2058000,
+   "team": "nbr",
+   "text": {
+    "analyst": {
+     "en": "GOAL 34:18 · Okafor (Northbridge) · Northbridge 1–0 Riverside",
+     "es": "GOL 34:18 · Okafor (Northbridge) · Northbridge 1–0 Riverside",
+     "fr": "BUT 34:18 · Okafor (Northbridge) · Northbridge 1–0 Riverside"
+    },
+    "caption": {
+     "en": "35′ GOAL · Okafor · NBR 1–0 RIV",
+     "es": "35′ GOL · Okafor · NBR 1–0 RIV",
+     "fr": "35′ BUT · Okafor · NBR 1–0 RIV"
+    },
+    "fan": {
+     "en": "GOAL! Okafor scores for Northbridge. It's 1–0.",
+     "es": "¡GOL! Okafor marca para el Northbridge. 1–0.",
+     "fr": "BUT ! Okafor marque pour Northbridge. 1–0."
+    }
+   }
+  },
+  {
+   "claim_ids": [
+    "OV-E-0790-SCORER",
+    "OV-E-0790-NBR",
+    "OV-E-0790-RIV"
+   ],
+   "clock": "41:03",
+   "cue_id": "Q-005",
+   "duration_ms": 8000,
+   "event_ids": [
+    "E-0790"
+   ],
+   "kind": "goal",
+   "players": [
+    "riv-11"
+   ],
+   "status": "verified",
+   "t_ms": 2463000,
+   "team": "riv",
+   "text": {
+    "analyst": {
+     "en": "GOAL 41:03 · Lindqvist (Riverside) · Northbridge 1–1 Riverside",
+     "es": "GOL 41:03 · Lindqvist (Riverside) · Northbridge 1–1 Riverside",
+     "fr": "BUT 41:03 · Lindqvist (Riverside) · Northbridge 1–1 Riverside"
+    },
+    "caption": {
+     "en": "42′ GOAL · Lindqvist · NBR 1–1 RIV",
+     "es": "42′ GOL · Lindqvist · NBR 1–1 RIV",
+     "fr": "42′ BUT · Lindqvist · NBR 1–1 RIV"
+    },
+    "fan": {
+     "en": "GOAL! Lindqvist scores for Riverside. It's 1–1.",
+     "es": "¡GOL! Lindqvist marca para el Riverside. 1–1.",
+     "fr": "BUT ! Lindqvist marque pour Riverside. 1–1."
+    }
+   }
+  },
+  {
+   "claim_ids": [
+    "OV-STATS-45-POSS",
+    "OV-STATS-45-SHOTS-NBR",
+    "OV-STATS-45-SHOTS-RIV"
+   ],
+   "clock": "45:00",
+   "cue_id": "Q-006",
+   "duration_ms": 8000,
+   "event_ids": [],
+   "kind": "stats",
+   "players": [],
+   "status": "verified",
+   "t_ms": 2700000,
+   "team": null,
+   "text": {
+    "analyst": {
+     "en": "45′ · Possession NBR 56% · RIV 44% · Shots 5–6",
+     "es": "45′ · Posesión NBR 56 % · RIV 44 % · Tiros 5–6",
+     "fr": "45′ · Possession NBR 56 % · RIV 44 % · Tirs 5–6"
+    },
+    "caption": {
+     "en": "POSS 56–44 · SHOTS 5–6",
+     "es": "POSESIÓN 56–44 · TIROS 5–6",
+     "fr": "POSSESSION 56–44 · TIRS 5–6"
+    },
+    "fan": {
+     "en": "After 45 minutes: Northbridge 56% of the ball, shots 5–6",
+     "es": "Tras 45 minutos: Northbridge 56 % del balón, tiros 5–6",
+     "fr": "Après 45 minutes : Northbridge 56 % du ballon, tirs 5–6"
+    }
+   }
+  },
+  {
+   "claim_ids": [
+    "OV-SPELL-RIV"
+   ],
+   "clock": "45:00",
+   "cue_id": "Q-007",
+   "duration_ms": 8000,
+   "event_ids": [],
+   "kind": "spell",
+   "players": [],
+   "status": "verified",
+   "t_ms": 2700000,
+   "team": "riv",
+   "text": {
+    "analyst": {
+     "en": "Control shift · Riverside 55% possession, 30′–45′",
+     "es": "Cambio de control · Riverside 55 % de posesión, 30′–45′",
+     "fr": "Bascule · Riverside 55 % de possession, 30′–45′"
+    },
+    "caption": {
+     "en": "RIV 55% POSS · 30′–45′",
+     "es": "RIV 55 % POSESIÓN · 30′–45′",
+     "fr": "RIV 55 % POSSESSION · 30′–45′"
+    },
+    "fan": {
+     "en": "Riverside had 55% of the ball from 30′ to 45′",
+     "es": "Riverside tuvo el 55 % del balón del 30′ al 45′",
+     "fr": "Riverside a eu 55 % du ballon de la 30e à la 45e"
+    }
+   }
+  },
+  {
+   "claim_ids": [
+    "OV-E-1366-SCORER",
+    "OV-E-1366-NBR",
+    "OV-E-1366-RIV"
+   ],
+   "clock": "58:17",
+   "cue_id": "Q-008",
+   "duration_ms": 8000,
+   "event_ids": [
+    "E-1366"
+   ],
+   "kind": "goal",
+   "players": [
+    "nbr-09"
+   ],
+   "status": "verified",
+   "t_ms": 3497000,
+   "team": "nbr",
+   "text": {
+    "analyst": {
+     "en": "GOAL 58:17 · Okafor (Northbridge) · Northbridge 2–1 Riverside",
+     "es": "GOL 58:17 · Okafor (Northbridge) · Northbridge 2–1 Riverside",
+     "fr": "BUT 58:17 · Okafor (Northbridge) · Northbridge 2–1 Riverside"
+    },
+    "caption": {
+     "en": "59′ GOAL · Okafor · NBR 2–1 RIV",
+     "es": "59′ GOL · Okafor · NBR 2–1 RIV",
+     "fr": "59′ BUT · Okafor · NBR 2–1 RIV"
+    },
+    "fan": {
+     "en": "GOAL! Okafor scores for Northbridge. It's 2–1.",
+     "es": "¡GOL! Okafor marca para el Northbridge. 2–1.",
+     "fr": "BUT ! Okafor marque pour Northbridge. 2–1."
+    }
+   }
+  },
+  {
+   "claim_ids": [
+    "OV-STATS-60-POSS",
+    "OV-STATS-60-SHOTS-NBR",
+    "OV-STATS-60-SHOTS-RIV"
+   ],
+   "clock": "60:00",
+   "cue_id": "Q-009",
+   "duration_ms": 8000,
+   "event_ids": [],
+   "kind": "stats",
+   "players": [],
+   "status": "verified",
+   "t_ms": 3600000,
+   "team": null,
+   "text": {
+    "analyst": {
+     "en": "60′ · Possession NBR 57% · RIV 43% · Shots 14–8",
+     "es": "60′ · Posesión NBR 57 % · RIV 43 % · Tiros 14–8",
+     "fr": "60′ · Possession NBR 57 % · RIV 43 % · Tirs 14–8"
+    },
+    "caption": {
+     "en": "POSS 57–43 · SHOTS 14–8",
+     "es": "POSESIÓN 57–43 · TIROS 14–8",
+     "fr": "POSSESSION 57–43 · TIRS 14–8"
+    },
+    "fan": {
+     "en": "After 60 minutes: Northbridge 57% of the ball, shots 14–8",
+     "es": "Tras 60 minutos: Northbridge 57 % del balón, tiros 14–8",
+     "fr": "Après 60 minutes : Northbridge 57 % du ballon, tirs 14–8"
+    }
+   }
+  },
+  {
+   "claim_ids": [
+    "OV-SPOT-TACKLES"
+   ],
+   "clock": "60:00",
+   "cue_id": "Q-010",
+   "duration_ms": 8000,
+   "event_ids": [],
+   "kind": "spotlight",
+   "players": [
+    "riv-03"
+   ],
+   "status": "verified",
+   "t_ms": 3600000,
+   "team": "riv",
+   "text": {
+    "analyst": {
+     "en": "Tackles leader at 60′ · Sorensen (Riverside) · 7",
+     "es": "Líder en entradas al 60′ · Sorensen (Riverside) · 7",
+     "fr": "Meilleur tacleur à la 60e · Sorensen (Riverside) · 7"
+    },
+    "caption": {
+     "en": "TACKLES · Sorensen 7",
+     "es": "ENTRADAS · Sorensen 7",
+     "fr": "TACLES · Sorensen 7"
+    },
+    "fan": {
+     "en": "Sorensen has made 7 tackles, the most on the pitch",
+     "es": "Sorensen lleva 7 entradas, más que nadie",
+     "fr": "Sorensen compte 7 tacles, le plus haut total du match"
+    }
+   }
+  },
+  {
+   "claim_ids": [],
+   "clock": "63:04",
+   "cue_id": "Q-011",
+   "duration_ms": 8000,
+   "event_ids": [
+    "E-1402"
+   ],
+   "kind": "card",
+   "players": [
+    "nbr-04"
+   ],
+   "status": "logged",
+   "t_ms": 3784000,
+   "team": "nbr",
+   "text": {
+    "analyst": {
+     "en": "Yellow card 63:04 · Mensah (Northbridge)",
+     "es": "Tarjeta amarilla 63:04 · Mensah (Northbridge)",
+     "fr": "Carton jaune 63:04 · Mensah (Northbridge)"
+    },
+    "caption": {
+     "en": "64′ YELLOW CARD · Mensah",
+     "es": "64′ TARJETA AMARILLA · Mensah",
+     "fr": "64′ CARTON JAUNE · Mensah"
+    },
+    "fan": {
+     "en": "Yellow card: Mensah (Northbridge)",
+     "es": "Tarjeta amarilla: Mensah (Northbridge)",
+     "fr": "Carton jaune: Mensah (Northbridge)"
+    }
+   }
+  },
+  {
+   "claim_ids": [],
+   "clock": "67:08",
+   "cue_id": "Q-012",
+   "duration_ms": 8000,
+   "event_ids": [
+    "E-1421"
+   ],
+   "kind": "substitution",
+   "players": [
+    "riv-07",
+    "riv-14"
+   ],
+   "status": "logged",
+   "t_ms": 4028000,
+   "team": "riv",
+   "text": {
+    "analyst": {
+     "en": "Substitution 67:08 · Riverside · Kovac ↑ Barros ↓",
+     "es": "Cambio 67:08 · Riverside · Kovac ↑ Barros ↓",
+     "fr": "Remplacement 67:08 · Riverside · Kovac ↑ Barros ↓"
+    },
+    "caption": {
+     "en": "68′ SUBSTITUTION · Kovac ↑ Barros ↓",
+     "es": "68′ CAMBIO · Kovac ↑ Barros ↓",
+     "fr": "68′ REMPLACEMENT · Kovac ↑ Barros ↓"
+    },
+    "fan": {
+     "en": "Substitution · Riverside: Kovac ↑ Barros ↓",
+     "es": "Cambio · Riverside: Kovac ↑ Barros ↓",
+     "fr": "Remplacement · Riverside: Kovac ↑ Barros ↓"
+    }
+   }
+  },
+  {
+   "claim_ids": [
+    "OV-STATS-67-POSS",
+    "OV-STATS-67-SHOTS-NBR",
+    "OV-STATS-67-SHOTS-RIV"
+   ],
+   "clock": "67:12",
+   "cue_id": "Q-013",
+   "duration_ms": 8000,
+   "event_ids": [],
+   "kind": "stats",
+   "players": [],
+   "status": "verified",
+   "t_ms": 4032000,
+   "team": null,
+   "text": {
+    "analyst": {
+     "en": "67′ · Possession NBR 58% · RIV 42% · Shots 14–9",
+     "es": "67′ · Posesión NBR 58 % · RIV 42 % · Tiros 14–9",
+     "fr": "67′ · Possession NBR 58 % · RIV 42 % · Tirs 14–9"
+    },
+    "caption": {
+     "en": "POSS 58–42 · SHOTS 14–9",
+     "es": "POSESIÓN 58–42 · TIROS 14–9",
+     "fr": "POSSESSION 58–42 · TIRS 14–9"
+    },
+    "fan": {
+     "en": "After 67 minutes: Northbridge 58% of the ball, shots 14–9",
+     "es": "Tras 67 minutos: Northbridge 58 % del balón, tiros 14–9",
+     "fr": "Après 67 minutes : Northbridge 58 % du ballon, tirs 14–9"
+    }
+   }
+  }
+ ],
+ "languages": [
+  "en",
+  "es",
+  "fr"
+ ],
+ "match_id": "nbr-riv-canonical",
+ "note": "Timed cues for on-screen graphics. Numbers come only from claims the verifier checked against the event log; cards and substitutions are logged events with no registered query yet. Spanish and French are AI-assisted templates awaiting native review. Nothing here is published: a producer decides.",
+ "personas": [
+  "analyst",
+  "fan",
+  "caption"
+ ],
+ "replay_end_ms": 4032000,
+ "schema": "matchdesk-overlay-feed/1",
+ "synthetic": true,
+ "teams": {
+  "nbr": "Northbridge",
+  "riv": "Riverside"
+ }
+}

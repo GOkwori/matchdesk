@@ -40,8 +40,8 @@ hand-off. It does not call a model and it does not give an agent publishing auth
 Later Phase 2 slices add evidence verification, scoped specialists, one bounded
 live Foundry invocation and tested retry/recovery and model-evaluation controls.
 
-The submission build has 1,288 Python tests, a 47-case Python/TypeScript verifier
-parity fixture and 108 studio browser tests (three viewports, axe on every page).
+The submission build has 1,596 Python tests, a 92-case Python/TypeScript verifier
+parity fixture and 186 studio browser tests (three viewports, axe on every page).
 Ruff, formatting, strict mypy, frontend build, dependency audit and source security
 run in hosted CI on every pull request.
 
@@ -51,6 +51,17 @@ writes every number: each factual sentence is built as a claim and checked by th
 parity-tested verifier before it is shown. An optional Foundry planner, off by default,
 may only translate a free-form question into a query plan. See
 [the design](docs/design/ask-matchdesk.md).
+
+Live Intelligence replays the log at 1× to 60× with statistics recomputed as the clock
+moves and timed broadcast overlays whose claims are re-verified in the browser before they
+appear. The same cues are published as a machine-readable feed,
+[`/overlays/nbr-riv.json`](apps/web/src/app/overlays/nbr-riv.json/route.ts)
+(schema `matchdesk-overlay-feed/1`, built by `matchdesk.domain.overlay_feed`), with every
+persona (fan, analyst, caption), language (EN, ES, FR) and the full claim behind each
+number. Viewers can pick a favourite club and player, a persona, a language and one focus
+statistic; player-focus pages state each player's figures as verified sentences, and
+Tactical Analysis labels each five-minute spell as control, chaos or contested by a
+published rule, with the verified sentences that justify it.
 
 PostgreSQL now has a reviewed producer-case migration, a pinned Psycopg driver,
 real adapter qualification with a restricted disposable database role, atomic

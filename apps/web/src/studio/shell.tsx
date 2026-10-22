@@ -7,7 +7,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Icon, type IconName } from "./icons";
 import { Logo } from "./ui";
 import { openAssistant } from "./assistant-host";
-import { claims, drafts, eventCountText, moments, STORY_SLUG, tourSteps } from "./data";
+import { claims, drafts, eventCountText, moments, squads, STORY_SLUG, tourSteps } from "./data";
 
 type NavItem = { href: string; label: string; icon: IconName; match: (path: string) => boolean; badge?: string };
 
@@ -16,6 +16,7 @@ const NAV: NavItem[] = [
   { href: "/match/nbr-riv/live", label: "Live Intelligence", icon: "globe", match: (p) => p.startsWith("/match/nbr-riv/live") },
   { href: "/match/nbr-riv/moments", label: "Moments & Timeline", icon: "list", match: (p) => p.startsWith("/match/nbr-riv/moments") },
   { href: "/match/nbr-riv/tactical", label: "Tactical Analysis", icon: "pitch", match: (p) => p.startsWith("/match/nbr-riv/tactical") },
+  { href: "/match/nbr-riv/players", label: "Players", icon: "user", match: (p) => p.startsWith("/match/nbr-riv/player") },
   { href: "/match/nbr-riv/insights", label: "AI Insights", icon: "sparkle", match: (p) => p.startsWith("/match/nbr-riv/insights") },
   { href: "/match/nbr-riv/evidence/CL-0213", label: "Evidence & Verification", icon: "shield", match: (p) => p.startsWith("/match/nbr-riv/evidence") },
   { href: "/producer/queue", label: "Producer Tools", icon: "monitor", match: (p) => p.startsWith("/producer"), badge: "2" },
@@ -131,6 +132,9 @@ function CommandPalette() {
     { label: "Live Intelligence", hint: "Screen", href: "/match/nbr-riv/live" },
     { label: "Tactical Analysis", hint: "Screen", href: "/match/nbr-riv/tactical" },
     { label: "AI insights", hint: "Screen", href: "/match/nbr-riv/insights" },
+    { label: "Players", hint: "Screen", href: "/match/nbr-riv/players" },
+    { label: "My match", hint: "Settings", href: "/workspace/settings#my-match" },
+    ...[...squads.nbr, ...squads.riv].map((pl) => ({ label: pl.name, hint: `${pl.player_id} · player`, href: `/match/nbr-riv/player/${pl.player_id}` })),
     { label: "Publication journey", hint: "Screen", href: "/producer/publish/D-031" },
     { label: "Activity & Audit", hint: "Screen", href: "/workspace/activity" },
     { label: "Settings & Help", hint: "Screen", href: "/workspace/settings" },

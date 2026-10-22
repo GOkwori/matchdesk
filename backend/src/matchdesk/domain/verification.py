@@ -295,4 +295,13 @@ def _cites_counted_events(claim: Claim, events: tuple[MatchEvent, ...], counted_
         and (subject.team_id is None or event.team_id == subject.team_id)
         and (subject.player_id is None or event.player_id == subject.player_id)
     }
-    return all(event_id in counted for event_id in claim.evidence_event_ids)
+    if counted:
+        return all(event_id in counted for event_id in claim.evidence_event_ids)
+    # Nothing to count: a zero cites the window it read, so every cited event must lie in it.
+    inside = {
+        event.event_id
+        for event in events
+        if (window.period is None or event.period == window.period)
+        and window.from_ms <= event.match_clock_ms < window.to_ms
+    }
+    return all(event_id in inside for event_id in claim.evidence_event_ids)

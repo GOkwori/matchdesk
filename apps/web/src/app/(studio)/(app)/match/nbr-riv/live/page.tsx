@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Icon, type IconName } from "../../../../../../studio/icons";
 import { Comparison, ShotMap } from "../../../../../../studio/pitchviz";
+import { ReplayHost } from "../../../../../../studio/replay-host";
 import { TopActions } from "../../../../../../studio/shell";
 import { PageHead, ScoreStrip, StatBars } from "../../../../../../studio/ui";
 import { clock, eventCountText, fixture, matchExport, playerName, recentEvents, shots } from "../../../../../../studio/data";
@@ -21,7 +22,8 @@ export default function LivePage() {
   return (
     <div className="md-page">
       <ScoreStrip crumbs={[{ label: "Overview", href: "/match/nbr-riv" }, { label: "Live Intelligence" }]} />
-      <PageHead title="Live Intelligence" sub={`The newest events in the log, every shot, and what the detection rules found across ${eventCountText} events.`}><TopActions /></PageHead>
+      <PageHead title="Live Intelligence" sub={`Replay the match with timed, verified overlays, then the newest events, every shot, and what the detection rules found across ${eventCountText} events.`}><TopActions /></PageHead>
+      <ReplayHost />
       <div className="md-three">
         <section className="md-panel md-feed" aria-labelledby="md-feed-title">
           <div className="md-panel-head"><h2 id="md-feed-title">Latest events</h2><span className="md-muted md-mono">to {fixture.latestEvent}</span></div>

@@ -6,7 +6,7 @@
 import { test, expect } from '@playwright/test';
 
 const STORY = '/story/okafor-header-restores-northbridge-lead';
-const ROUTES = ['/', '/about', '/match/nbr-riv', '/match/nbr-riv/live', '/match/nbr-riv/moments', '/match/nbr-riv/tactical', '/match/nbr-riv/insights', '/match/nbr-riv/evidence/CL-0214', '/producer/queue', '/producer/compose/D-031', '/producer/publish/D-031', '/workspace/activity', '/workspace/settings', STORY, '/design-system'];
+const ROUTES = ['/', '/about', '/match/nbr-riv', '/match/nbr-riv/live', '/match/nbr-riv/moments', '/match/nbr-riv/tactical', '/match/nbr-riv/players', '/match/nbr-riv/player/riv-11', '/match/nbr-riv/insights', '/match/nbr-riv/evidence/CL-0214', '/producer/queue', '/producer/compose/D-031', '/producer/publish/D-031', '/workspace/activity', '/workspace/settings', STORY, '/design-system'];
 
 /** Static pages are pre-rendered; wait for hydration before interacting. */
 async function open(page, route) {

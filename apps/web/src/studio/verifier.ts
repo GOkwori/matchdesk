@@ -573,7 +573,11 @@ function citesCountedEvents(claim: Claim, assertion: Assertion, events: readonly
     && window.from_ms <= e.match_clock_ms && e.match_clock_ms < window.to_ms
     && (subject.team_id == null || e.team_id === subject.team_id)
     && (subject.player_id == null || e.player_id === subject.player_id)).map((e) => e.event_id));
-  return claim.evidence_event_ids.every((id) => counted.has(id));
+  if (counted.size) return claim.evidence_event_ids.every((id) => counted.has(id));
+  // Nothing to count: a zero cites the window it read, so every cited event must lie in it.
+  const inside = new Set(events.filter((e) => (window.period == null || e.period === window.period)
+    && window.from_ms <= e.match_clock_ms && e.match_clock_ms < window.to_ms).map((e) => e.event_id));
+  return claim.evidence_event_ids.every((id) => inside.has(id));
 }
 
 /** Verify one claim against evidence and accepted events, exactly as the backend does. */

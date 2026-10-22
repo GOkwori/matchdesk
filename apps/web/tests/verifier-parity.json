@@ -2948,6 +2948,82 @@
    "claim": {
     "assertion": {
      "comparator": "eq",
+     "metric": "goals.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "riv"
+     },
+     "unit": "count",
+     "value": 0.0,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 2059000
+     }
+    },
+    "claim_id": "B-33",
+    "evidence_event_ids": [
+     "E-0002"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Riverside scored 0 goals up to 34:19."
+   },
+   "events": "canonical",
+   "evidence": "EV-D031",
+   "expected": {
+    "expected": 0.0,
+    "observed": 0.0,
+    "query_id": "metric-goals-v1",
+    "reason": "Registered metric recomputation satisfies the claim comparator",
+    "status": "verified"
+   },
+   "name": "binding: a zero cites an event in the window it read",
+   "with_names": true
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "metric": "goals.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "riv"
+     },
+     "unit": "count",
+     "value": 0.0,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 2059000
+     }
+    },
+    "claim_id": "B-34",
+    "evidence_event_ids": [
+     "E-0790"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Riverside scored 0 goals up to 34:19."
+   },
+   "events": "canonical",
+   "evidence": "EV-D031",
+   "expected": {
+    "expected": 0.0,
+    "observed": 0.0,
+    "query_id": "metric-goals-v1",
+    "reason": "Claim cites events the registered metric does not count",
+    "status": "needs_revision"
+   },
+   "name": "binding: a zero cannot cite an event outside its window",
+   "with_names": true
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
      "metric": "tackles.v1",
      "schema_version": "1.0",
      "subject": {
@@ -2962,7 +3038,7 @@
       "to_ms": 4032000
      }
     },
-    "claim_id": "B-33",
+    "claim_id": "B-35",
     "evidence_event_ids": [
      "E-0001"
     ],

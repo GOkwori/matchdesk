@@ -67,6 +67,20 @@ export function playerName(id: string | null | undefined): string {
   return names[id] ?? `#${Number(id.split("-")[1])}`;
 }
 
+/** Both squads as the export lists them: shirt, position and whether the player started. */
+export type SquadPlayer = { player_id: string; name: string; position: "GK" | "DF" | "MF" | "FW"; shirt: number; starter: boolean };
+export const squads = (matchExport as unknown as { squads: Record<"nbr" | "riv", SquadPlayer[]> }).squads;
+export const POSITION_LABEL: Record<SquadPlayer["position"], string> = { GK: "Goalkeeper", DF: "Defender", MF: "Midfielder", FW: "Forward" };
+
+/** A squad player and their club, or undefined for an unknown id. */
+export function findPlayer(id: string): (SquadPlayer & { club: "nbr" | "riv" }) | undefined {
+  for (const club of ["nbr", "riv"] as const) {
+    const found = squads[club].find((p) => p.player_id === id);
+    if (found) return { ...found, club };
+  }
+  return undefined;
+}
+
 export type Team = "NBR" | "RIV";
 export type MomentKind = "Goal" | "Yellow card" | "Corner" | "Substitution";
 
