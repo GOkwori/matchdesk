@@ -46,7 +46,10 @@ const config = {
   async rewrites() {
     // This URL is operator configuration, never a browser-supplied proxy target.
     const origin = process.env.MATCHDESK_API_ORIGIN ?? "http://127.0.0.1:8000";
-    return [{ source: "/api/:path*", destination: `${origin}/api/:path*` }];
+    // A generic browser rewrite must never expose privileged workforce routes:
+    // those go only through the fixed-target workforce BFF route handler, with
+    // delegated identity, session and execution-time grant checks.
+    return [{ source: "/api/:path((?!workforce(?:/|$)).*)", destination: `${origin}/api/:path` }];
   },
 };
 export default config;

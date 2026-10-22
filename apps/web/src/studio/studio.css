@@ -639,3 +639,90 @@ html[data-md-motion="reduce"] .md-skel-block { animation: none; }
 .md-cc-edit textarea { width: 100%; min-height: 44px; resize: vertical; font: inherit; font-size: 13px; color: var(--md-text); background: var(--md-canvas); border: 1px solid var(--md-control-line); border-radius: 8px; padding: 6px 8px; }
 .md-cc-edit textarea:focus-visible { outline: none; box-shadow: var(--md-focus); }
 .md-cc-reason { font-size: 12px; color: var(--md-error); }
+
+
+/* ---------- Bound, human review dialog (preview-only until operator UAT) ----------
+ * Real native modal top-layer focus trapping; no system confirm() or toast. */
+.md-decision-dialog {
+  width: min(640px, calc(100vw - 32px));
+  max-height: min(88dvh, 900px);
+  margin: auto;
+  padding: 0;
+  overflow: auto;
+  border: 1px solid var(--md-control-line);
+  border-radius: var(--md-radius-xl);
+  background: var(--md-panel);
+  color: var(--md-text);
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.85);
+}
+.md-decision-dialog::backdrop {
+  background: rgba(3, 7, 13, 0.78);
+}
+.md-decision-content {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: clamp(16px, 4vw, 28px);
+}
+.md-decision-content h2 { font-size: clamp(19px, 3vw, 24px); line-height: 1.25; }
+.md-decision-content p { overflow-wrap: anywhere; }
+.md-decision-binding {
+  display: grid;
+  gap: 0;
+  padding: 0;
+  margin: 4px 0;
+  border: 1px solid var(--md-line);
+  border-radius: var(--md-radius-md);
+  overflow: hidden;
+}
+.md-decision-binding > div {
+  display: grid;
+  grid-template-columns: minmax(115px, 1fr) minmax(0, 2fr);
+  gap: 10px;
+  padding: 9px 12px;
+  align-items: start;
+  background: var(--md-raised);
+  border-bottom: 1px solid var(--md-line);
+}
+.md-decision-binding > div:last-child { border-bottom: 0; }
+/* Ensure wrapped mobile review labels retain WCAG AA contrast on raised rows. */
+.md-decision-binding dt { color: var(--md-text-body); font-weight: 600; }
+.md-decision-binding dd {
+  margin: 0;
+  min-width: 0;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.md-decision-digest code {
+  font-family: var(--md-font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  word-break: break-all;
+}
+.md-decision-dialog form { display: grid; gap: 10px; }
+.md-decision-label { display: block; color: var(--md-text); font-weight: 700; }
+.md-decision-reason {
+  width: 100%;
+  min-height: var(--md-touch);
+  border: 1px solid var(--md-control-line);
+  border-radius: var(--md-radius-md);
+  background: var(--md-canvas);
+  color: var(--md-text);
+  font: inherit;
+  padding: 10px 12px;
+}
+.md-decision-reason:disabled { opacity: 0.55; }
+.md-decision-error { color: var(--md-error); font-weight: 700; }
+.md-decision-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  margin-top: 6px;
+}
+.md-decision-actions .md-btn { min-height: var(--md-touch); }
+@media (max-width: 420px) {
+  .md-decision-binding > div { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .md-decision-actions { flex-direction: column; }
+  .md-decision-actions .md-btn { width: 100%; }
+}
