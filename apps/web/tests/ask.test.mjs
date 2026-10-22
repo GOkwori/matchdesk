@@ -158,8 +158,10 @@ test('review: a windowed score never claims a lead it cannot show', () => {
   assert.equal(after40.derived, 'Northbridge led 1–0.');
   const second = answer("What's the score in the second half?");
   assert.match(second.derived, /^Goals in this window only: .*This is not the score\.$/);
-  assert.equal(answer('score at half time').derived, "It's level, 1–1.");
-  assert.equal(answer('what was the half-time score').derived, "It's level, 1–1.");
+  assert.equal(answer('score at half time').derived, 'It was level, 1–1.');
+  assert.equal(answer('what was the half-time score').derived, 'It was level, 1–1.');
+  assert.equal(answer('Who was winning at half time?').derived, 'It was level, 1–1.');
+  assert.equal(answer('score since kick-off').derived, 'Northbridge lead 2–1.');
   assert.equal(answer('how many goals since the 40th minute').derived, 'Level: the same number of goals each.');
 });
 
@@ -182,6 +184,7 @@ test('review: hyphenated halves, single minutes and explanation questions read c
   assert.equal(answer('what is xG?').kind, 'help');
   assert.equal(answer('how is possession calculated?').kind, 'help');
   assert.match(answer('shots in the last 100 minutes').note, /only 67:12 long/);
+  assert.equal(answer('shots in the last 100 minutes').scope, 'Whole match so far, to 67:12');
   const okafor = answer('When did Okafor score?');
   assert.deepEqual(okafor.lines.map((l) => l.claim.fact.player_id), ['nbr-09', 'nbr-09']);
   assert.match(answer('did Okafor score in the first half?').lines[0].claim.text, /^Okafor scored for Northbridge at 34:18\.$/);
@@ -209,4 +212,18 @@ test('review: the plan check cannot be bypassed with prototype keys, duplicates 
     Object.assign(Object.create({ intent: 'score' }), {}),
   ];
   for (const plan of bad) assert.equal(validatePlan(plan, ctx), null, JSON.stringify(plan));
+});
+
+test('review 2: title case, pronouns and help words are not mistaken for players or statistics', () => {
+  for (const q of ['How many shots did Okafor take in the Second Half?', 'Shots for Northbridge in the First Half', 'Possession After 60 Minutes', 'did anyone score in the second half', 'how many goals did we score']) {
+    assert.notEqual(answer(q).kind, 'decline', q);
+  }
+  assert.equal(answer('How many shots did Okafor take in the Second Half?').lines[0].claim.assertion.window.period, 2);
+  for (const q of ['What does Blocked mean?', 'How do I fix a blocked claim?', 'What do the status cards mean']) {
+    assert.equal(answer(q).kind, 'help', q);
+  }
+  assert.equal(answer('Show me the shot map').link.href, '/match/nbr-riv/tactical');
+  const more = answer('Did Northbridge score more than Riverside?');
+  assert.equal(more.derived, 'Northbridge had more goals than Riverside.');
+  assert.equal(answer('When was the second goal?').lines.length, 3);
 });

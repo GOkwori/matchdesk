@@ -169,7 +169,7 @@ export function parseWindow(q: string, mode: "range" | "score" = "range"): Windo
   if (found.length > 1) return { unclear: "I can read one time window at a time: a half, a minute range or the last few minutes, but not a mix of them." };
   if (found.length === 1) return { window: found[0] };
   const timeWords = /\b(minutes?|mins?|half|halves|period|interval|stoppage|added time|injury time|extra time|kick[- ]?off|full[- ]time|o'clock)\b|\b[0-9]{1,3}'/;
-  if (timeWords.test(q) && !/\b(so far|whole match|whole game|overall|in total|full[- ]time)\b/.test(q)) {
+  if (timeWords.test(q) && !/\b(so far|whole match|whole game|overall|in total|full[- ]time|(since|from) kick[- ]?off)\b/.test(q)) {
     return { unclear: "I couldn't read that time window exactly. Try “first half”, “second half”, “after 60 minutes”, “between 30 and 45 minutes” or “the last 15 minutes”." };
   }
   return { window: {} };
@@ -213,20 +213,24 @@ function parseSubjects(q: string, ctx: Pick<MatchContext, "names" | "teams">): s
   return found;
 }
 
-/** A name the question uses for a person who is not in this match, if any. */
+const NOT_NAMES = new Set([
+  ...KNOWN_WORDS, "anyone", "anybody", "someone", "somebody", "everyone", "nobody", "we", "us", "our", "he", "she", "him",
+  "they", "them", "it", "that", "this", "these", "those", "either", "neither", "each", "both", "one", "team", "side",
+  "first", "second", "third", "last", "final", "half", "minute", "minutes", "time", "goal", "goals", "shot", "shots",
+]);
+
+/** A name the question gives a player who is not in this match, if any. Only clear forms count. */
 function unknownPerson(original: string, q: string, ctx: Pick<MatchContext, "names" | "teams">): string | null {
   const known = new Set([...Object.values(ctx.names), ...Object.values(ctx.teams)].map((n) => n.toLowerCase()));
-  const did = /\b(?:did|does|has|had|was|is) ([a-z][a-z'-]+) (?:take|score|have|make|get|play|do|shoot|pass)\b/.exec(q);
-  if (did && !KNOWN_WORDS.has(did[1]) && !known.has(did[1]) && !known.has(did[1].replace(/'s$/, ""))) {
-    const asTyped = original.split(/[^A-Za-zÀ-ÿ'-]+/).find((w) => w.toLowerCase() === did[1]);
-    return asTyped ?? did[1];
-  }
-  const words = original.split(/[^A-Za-zÀ-ÿ'-]+/).filter(Boolean);
-  for (const [i, word] of words.entries()) {
-    const bare = word.replace(/'s$/i, "");
-    if (i === 0 || !/^[A-ZÀ-Þ][a-zà-ÿ'-]+$/.test(bare)) continue;
-    const lower = bare.toLowerCase();
-    if (!known.has(lower) && !KNOWN_WORDS.has(lower) && !["Northbridge", "Riverside", "FC", "United", "Eligible", "Verified", "Foundry", "Azure"].includes(bare)) return bare;
+  const candidates: string[] = [];
+  const did = /\b(?:did|does|has|had) ([a-z][a-z'-]+) (?:take|score|have|make|get|shoot|pass)\b/.exec(q);
+  if (did) candidates.push(did[1]);
+  const possessive = /\b([a-z][a-z-]+)'s (?:shots?|goals?|xg|pass(?:ing)?|possession|final[- ]third|stats|game|match|performance)\b/.exec(q);
+  if (possessive) candidates.push(possessive[1]);
+  for (const word of candidates) {
+    const bare = word.replace(/'s$/, "");
+    if (NOT_NAMES.has(bare) || known.has(bare)) continue;
+    return original.split(/[^A-Za-zÀ-ÿ'-]+/).find((w) => w.toLowerCase().replace(/'s$/, "") === bare) ?? bare;
   }
   return null;
 }
@@ -254,9 +258,13 @@ export function parseQuestion(question: string, ctx: Pick<MatchContext, "names" 
     return decline("other_match");
   }
   if (/\b(salary|wages?|girlfriend|wife|age of|how old|injur)/.test(q)) return decline("personal");
-  // Explanations come before figures: "what is xG?" asks what it is, not what it was.
+  // Explanations come before figures: "what is xG?" asks what it is, not what it was, and
+  // "what does Blocked mean?" asks about the app's own status chip, not blocked shots.
   for (const topic of HELP) {
     if (topic.id === "metrics" && topic.patterns.slice(0, 3).some((p) => p.test(q))) return { intent: "help", topic: "metrics" };
+  }
+  if (/\bmean(s|ing)?\b|\bhow (do|can|should) i\b|\bwhat do(es)? (the|a|an)\b|\bstatus(es)?\b|\bchips?\b|\bbadges?\b|\bshot map\b/.test(q)) {
+    for (const topic of HELP) if (topic.patterns.some((p) => p.test(q))) return { intent: "help", topic: topic.id };
   }
   for (const [pattern, label] of UNSUPPORTED_STATS) {
     if (pattern.test(q)) return decline("unsupported", `I can't check ${label}: it isn't one of the registered metrics, so I won't estimate it. I can check goals, shots, pass accuracy, synthetic xG, final-third entries and possession.`);
@@ -269,7 +277,13 @@ export function parseQuestion(question: string, ctx: Pick<MatchContext, "names" 
     return decline("unsupported", `I don't rank players, because only some players have names in this demo. Ask about a team or a named player: ${named}.`);
   }
   if (subjects.length > 2) return decline("unsupported", "Ask about one or two teams or players at a time.");
-  const isScorers = /\bwho scored\b|\bscorers?\b|\bgoal ?scorers?\b|\bwho got the goals?\b|\bwhen (was|were) the goals?\b|\bwhen did .* score\b|\bdid .* score\b/.test(q);
+  const comparesGoals = /\b(more|fewer|less) (goals )?than\b|\bscore more\b|\boutscore/.test(q);
+  const isScorers = !comparesGoals && !/\bhow many\b/.test(q) && /\bwho scored\b|\bscorers?\b|\bgoal ?scorers?\b|\bwho got the goals?\b|\bwhen (was|were|did|came) .*\bgoals?\b|\bwhen did .* score\b|\bdid .* score\b/.test(q);
+  if (comparesGoals) {
+    const reading = parseWindow(q, "range");
+    if ("unclear" in reading) return decline("unsupported", reading.unclear);
+    return { intent: "metric", metric: "goals.v1", subjects, window: reading.window };
+  }
   const isScore = !isScorers && /\bscore(line)?\b|\bwho('s| is| was) (winning|ahead|leading|in front)\b/.test(q) && !/\bshots?\b/.test(q);
   const reading = parseWindow(q, isScore ? "score" : "range");
   if ("unclear" in reading) return decline("unsupported", reading.unclear);
@@ -397,10 +411,12 @@ export function resolveWindow(plan: PlanWindow, replayEndMs: number): Resolved {
   if (plan.period === 2) return { window: { period: 2, from_ms: 0, to_ms: end }, phrase: "in the second half so far", scope: `Second half, to ${mark(end)}`, fromKickOff: false };
   if (plan.last_minutes != null) {
     if (plan.last_minutes < 1) return { error: "Ask about at least the last minute." };
-    const minutes = Math.min(plan.last_minutes, endMinute);
-    const from = end - minutes * MINUTE_MS;
-    const clamped = minutes < plan.last_minutes ? `The replay is only ${mark(end)} long, so this covers the last ${minutes} minutes.` : undefined;
-    return { window: { from_ms: from, to_ms: end }, phrase: `in the last ${minutes} minutes`, scope: `${mark(from)} to ${mark(end)}`, fromKickOff: false, clamped };
+    if (plan.last_minutes * MINUTE_MS >= end) {
+      return { window: { from_ms: 0, to_ms: end }, phrase: `up to ${mark(end)}`, scope: `Whole match so far, to ${mark(end)}`, fromKickOff: true,
+        clamped: `The replay is only ${mark(end)} long, so this covers the whole match so far.` };
+    }
+    const from = end - plan.last_minutes * MINUTE_MS;
+    return { window: { from_ms: from, to_ms: end }, phrase: `in the last ${plan.last_minutes} minutes`, scope: `${mark(from)} to ${mark(end)}`, fromKickOff: false };
   }
   const fromMinute = plan.from_minute ?? null;
   let toMinute = plan.to_minute ?? null;
@@ -531,11 +547,12 @@ export function answerPlan(plan: Plan, ctx: MatchContext | null): Answer {
     const lines = teams.map((t) => measuredLine("goals.v1", t, resolved, ctx, evidence));
     const verified = lines.every((l) => l.result.status === "verified");
     const [h, a] = lines.map((l) => l.claim.assertion?.value as number);
+    const past = resolved.window.to_ms < ctx.replayEndMs || resolved.window.period === 1;
     // A lead or a draw only makes sense for a window that starts at kick-off.
     const derived = !verified ? undefined
       : !resolved.fromKickOff ? `Goals in this window only: ${nameOf(teams[0], ctx)} ${h}, ${nameOf(teams[1], ctx)} ${a}. This is not the score.`
-      : h === a ? `It's level, ${h}–${a}.`
-      : `${nameOf(h > a ? teams[0] : teams[1], ctx)} ${resolved.window.to_ms < ctx.replayEndMs || resolved.window.period === 1 ? "led" : "lead"} ${Math.max(h, a)}–${Math.min(h, a)}.`;
+      : h === a ? `It ${past ? "was" : "is"} level, ${h}–${a}.`
+      : `${nameOf(h > a ? teams[0] : teams[1], ctx)} ${past ? "led" : "lead"} ${Math.max(h, a)}–${Math.min(h, a)}.`;
     return { kind: "match", scope: resolved.scope, lines, derived, note: notes() };
   }
   if (plan.intent === "scorers") {
