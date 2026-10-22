@@ -19,9 +19,10 @@ A question box in the studio that guides people around the app and answers quest
 | Score and scorers | "What's the score?" "Who scored?" "Who scored the second goal?" "Who won?" | `goals.v1` per team; one `goal_scorer.v1` fact per goal, or only the nth goal in order. A whole-match score notes that the replay stops before full time, so there is no result yet |
 | Team rankings | "Which team had the most shots?" | Both teams, verified, then the derived comparison. Player rankings stay declined |
 | Guidance | "What does Eligible mean?" "How do I approve a draft?" "Start the tour" | Help index with a link |
-| Out of scope | "Who will win?" "What about Arsenal?" "Shots on target?" "Which player had the most shots?" | A clear refusal with what it can do instead. Statistics outside the six registered metrics, unknown or unranked players, record ids of unnamed players ("nbr-06"), qualifiers no metric records (header, foot, inside or outside the box, counter-attack or set piece, season or other games, "when losing", "after the equaliser") and time phrases it cannot read exactly are declined, never answered as a nearby question |
+| Player leaders | "Who made the most tackles?" "Which player had the most shots for Riverside?" | The top three players, each line verified, then who led or who is joint top. Pass averages only rank players with at least 10 passes |
+| Out of scope | "Who will win?" "What about Arsenal?" "Shots on target?" "Who was man of the match?" | A clear refusal with what it can do instead. Statistics outside the fourteen registered metrics (shot speed, distance run, tracking data), judgements such as "best player", unknown players or record ids ("nbr-99"), qualifiers no metric records (header, foot, inside or outside the box, counter-attack or set piece, season or other games, "when losing", "after the equaliser") and time phrases it cannot read exactly are declined, never answered as a nearby question |
 
-Metrics: goals, shots, pass accuracy, synthetic xG, final-third entries, possession (teams only). Windows: whole match so far, first or second half, before/after/between minute marks, last N minutes.
+Metrics: goals, shots, synthetic xG, final-third entries, pass accuracy, average pass length, progressive passes, pass difficulty, passes under pressure, estimated ball speed, tackles, interceptions, ball recoveries, possession (teams only). Windows: whole match so far, first or second half, before/after/between minute marks, last N minutes.
 
 ## Optional: understanding free-form questions with Azure AI Foundry
 

@@ -230,7 +230,7 @@ class MetricAssertion(Contract):
     window: MatchWindow
     comparator: Literal["eq", "gte", "lte"] = "eq"
     value: Annotated[float, Field(ge=0, allow_inf_nan=False)]
-    unit: Literal["count", "ratio", "synthetic_xg", "metres", "per_minute"]
+    unit: Literal["count", "ratio", "synthetic_xg", "metres", "per_minute", "rating", "km_per_hour"]
     # The precision the claim is stated at. "58%" of a ratio is value 0.58 with decimals 2:
     # it is verified when the recomputed value rounds (half up) to 0.58. Without it, "eq"
     # stays exact.

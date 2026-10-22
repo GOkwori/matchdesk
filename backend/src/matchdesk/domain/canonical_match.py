@@ -28,15 +28,63 @@ HOME_SUBSTITUTES = tuple(f"nbr-{index:02d}" for index in range(12, 17))
 AWAY_STARTERS = tuple(f"riv-{index:02d}" for index in range(1, 12))
 AWAY_SUBSTITUTES = tuple(f"riv-{index:02d}" for index in range(12, 17))
 
-# Invented display names for the few players the story mentions.
+# Invented display names for both squads. No real players or clubs are represented.
 PLAYER_NAMES: dict[str, str] = {
-    "nbr-09": "Okafor",
+    "nbr-01": "Fairhurst",
+    "nbr-02": "Coulter",
+    "nbr-03": "Varga",
     "nbr-04": "Mensah",
+    "nbr-05": "Pettersen",
+    "nbr-06": "Ashdown",
+    "nbr-07": "Ferreira",
+    "nbr-08": "Quinlan",
+    "nbr-09": "Okafor",
+    "nbr-10": "Delgado",
+    "nbr-11": "Aldane",
+    "nbr-12": "Rourke",
+    "nbr-13": "Siddiqui",
+    "nbr-14": "Moreau",
+    "nbr-15": "Thackray",
+    "nbr-16": "Osei",
+    "riv-01": "Kavanagh",
+    "riv-02": "Ruiz",
+    "riv-03": "Sorensen",
+    "riv-04": "Halvorsen",
+    "riv-05": "Tembo",
     "riv-06": "Haddad",
-    "riv-11": "Lindqvist",
     "riv-07": "Barros",
+    "riv-08": "Castell",
+    "riv-09": "Novak",
+    "riv-10": "Ferrante",
+    "riv-11": "Lindqvist",
+    "riv-12": "Dawes",
+    "riv-13": "Ibarra",
     "riv-14": "Kovac",
+    "riv-15": "Penrose",
+    "riv-16": "Sato",
 }
+
+# Squad positions by shirt slot: 1 goalkeeper, 2-5 defenders, 6-8 midfielders, 9-11 forwards;
+# substitutes 12-16 cover goalkeeper, defence, midfield, midfield and attack.
+_POSITIONS: dict[int, str] = {
+    1: "GK", 2: "DF", 3: "DF", 4: "DF", 5: "DF", 6: "MF", 7: "MF", 8: "MF", 9: "FW", 10: "FW",
+    11: "FW", 12: "GK", 13: "DF", 14: "MF", 15: "MF", 16: "FW",
+}  # fmt: skip
+
+
+def squad(team_id: str) -> tuple[dict[str, object], ...]:
+    """The invented squad for one team: identity, name, shirt number, position, starter."""
+    return tuple(
+        {
+            "player_id": f"{team_id}-{number:02d}",
+            "name": PLAYER_NAMES[f"{team_id}-{number:02d}"],
+            "shirt": number,
+            "position": _POSITIONS[number],
+            "starter": number <= 11,
+        }
+        for number in range(1, 17)
+    )
+
 
 # Scripted Northbridge possession share per five-minute block (0-5', 5-10', ...).
 TARGET_HOME_SHARE: tuple[float, ...] = (
@@ -104,6 +152,7 @@ class _Draft:
     tags: tuple[str, ...] = ()
     anchor: bool = False
     run: int | None = None
+    pressure: bool = False
 
 
 @dataclass
@@ -548,10 +597,38 @@ def _to_event(draft: _Draft) -> MatchEvent:
                 "xg": draft.xg,
                 "linked_event_id": event_id(draft.linked) if draft.linked else None,
                 "related_player_id": draft.related_player,
+                "under_pressure": draft.pressure,
                 "tags": draft.tags,
             }
         )
     return MatchEvent.model_validate(payload)
+
+
+def _add_defending_detail(drafts: dict[int, _Draft], seed: int) -> None:
+    """Mark pressure on the ball and how possession was won, without moving any event.
+
+    A second, independent generator keeps every identity, clock, location and outcome of the
+    log exactly as before; only ``under_pressure`` and recovery tags are added. Pressure is
+    likelier in the final third and on passes that are lost. Scripted key events are left as
+    written.
+    """
+    generator = _rng(seed * 7919 + 17)
+    for number in sorted(drafts):
+        draft = drafts[number]
+        if draft.anchor or draft.location is None:
+            continue
+        if draft.type in ("pass", "carry") and "corner" not in draft.tags:
+            chance = 0.14
+            if draft.location[0] >= 200.0 / 3.0:
+                chance += 0.16
+            if draft.outcome == "incomplete":
+                chance += 0.22
+            draft.pressure = generator.random() < chance
+        elif draft.type == "shot":
+            draft.pressure = generator.random() < 0.45
+        elif draft.type == "recovery":
+            roll = generator.random()
+            draft.tags = ("tackle",) if roll < 0.34 else ("interception",) if roll < 0.66 else ()
 
 
 def generate_canonical_match(seed: int = CANONICAL_SEED) -> tuple[MatchEvent, ...]:
@@ -563,4 +640,5 @@ def generate_canonical_match(seed: int = CANONICAL_SEED) -> tuple[MatchEvent, ..
     by_number = {draft.number: draft for draft in ordered}
     _fill_actions(by_number, runs, generator)
     _place_statistics(by_number, runs, generator)
+    _add_defending_detail(by_number, seed)
     return tuple(_to_event(by_number[number]) for number in sorted(by_number))

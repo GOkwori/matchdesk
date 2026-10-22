@@ -181,7 +181,7 @@ def _whole_window() -> MatchWindow:
     return MatchWindow(period=1, from_ms=0, to_ms=60_000)
 
 
-def test_registry_contains_only_the_six_phase_1d_formula_ids() -> None:
+def test_registry_contains_only_the_registered_formula_ids() -> None:
     """The public registry is explicit so formulas cannot be selected by fuzzy names."""
     assert set(METRIC_DEFINITIONS) == {
         "shots.v1",
@@ -190,6 +190,14 @@ def test_registry_contains_only_the_six_phase_1d_formula_ids() -> None:
         "synthetic_xg.v1",
         "final_third_entries.v1",
         "possession_time.v1",
+        "pass_distance.v1",
+        "progressive_passes.v1",
+        "pass_difficulty.v1",
+        "ball_speed.v1",
+        "pressured_passes.v1",
+        "tackles.v1",
+        "interceptions.v1",
+        "recoveries.v1",
     }
 
 

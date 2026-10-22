@@ -242,16 +242,42 @@
   },
   "display_names": {
     "nbr": "Northbridge",
+    "nbr-01": "Fairhurst",
+    "nbr-02": "Coulter",
+    "nbr-03": "Varga",
     "nbr-04": "Mensah",
+    "nbr-05": "Pettersen",
+    "nbr-06": "Ashdown",
+    "nbr-07": "Ferreira",
+    "nbr-08": "Quinlan",
     "nbr-09": "Okafor",
+    "nbr-10": "Delgado",
+    "nbr-11": "Aldane",
+    "nbr-12": "Rourke",
+    "nbr-13": "Siddiqui",
+    "nbr-14": "Moreau",
+    "nbr-15": "Thackray",
+    "nbr-16": "Osei",
     "riv": "Riverside",
+    "riv-01": "Kavanagh",
+    "riv-02": "Ruiz",
+    "riv-03": "Sorensen",
+    "riv-04": "Halvorsen",
+    "riv-05": "Tembo",
     "riv-06": "Haddad",
     "riv-07": "Barros",
+    "riv-08": "Castell",
+    "riv-09": "Novak",
+    "riv-10": "Ferrante",
     "riv-11": "Lindqvist",
-    "riv-14": "Kovac"
+    "riv-12": "Dawes",
+    "riv-13": "Ibarra",
+    "riv-14": "Kovac",
+    "riv-15": "Penrose",
+    "riv-16": "Sato"
   },
   "event_count": 1421,
-  "evidence_digest": "3888f12dc8bae13471e425b54e919d762d9794cfbb9ef2320fe683bf702acac1",
+  "evidence_digest": "d16de0b92ad2fa948a628448a875920f278dc48decf4e609cf045983eafeb325",
   "feed": [
     {
       "clock_ms": 3848210,
@@ -367,7 +393,9 @@
       "outcome": "complete",
       "period": 2,
       "player": "riv-02",
-      "tags": [],
+      "tags": [
+        "tackle"
+      ],
       "team": "riv",
       "type": "recovery",
       "x": 29.8,
@@ -415,7 +443,9 @@
       "outcome": "complete",
       "period": 2,
       "player": "nbr-04",
-      "tags": [],
+      "tags": [
+        "interception"
+      ],
       "team": "nbr",
       "type": "recovery",
       "x": 51.4,
@@ -531,12 +561,38 @@
   },
   "match_id": "nbr-riv-canonical",
   "players": {
+    "nbr-01": "Fairhurst",
+    "nbr-02": "Coulter",
+    "nbr-03": "Varga",
     "nbr-04": "Mensah",
+    "nbr-05": "Pettersen",
+    "nbr-06": "Ashdown",
+    "nbr-07": "Ferreira",
+    "nbr-08": "Quinlan",
     "nbr-09": "Okafor",
+    "nbr-10": "Delgado",
+    "nbr-11": "Aldane",
+    "nbr-12": "Rourke",
+    "nbr-13": "Siddiqui",
+    "nbr-14": "Moreau",
+    "nbr-15": "Thackray",
+    "nbr-16": "Osei",
+    "riv-01": "Kavanagh",
+    "riv-02": "Ruiz",
+    "riv-03": "Sorensen",
+    "riv-04": "Halvorsen",
+    "riv-05": "Tembo",
     "riv-06": "Haddad",
     "riv-07": "Barros",
+    "riv-08": "Castell",
+    "riv-09": "Novak",
+    "riv-10": "Ferrante",
     "riv-11": "Lindqvist",
-    "riv-14": "Kovac"
+    "riv-12": "Dawes",
+    "riv-13": "Ibarra",
+    "riv-14": "Kovac",
+    "riv-15": "Penrose",
+    "riv-16": "Sato"
   },
   "possession": {
     "away_ms": 1693521,
@@ -922,25 +978,273 @@
       "y": 53.5
     }
   ],
+  "squads": {
+    "nbr": [
+      {
+        "name": "Fairhurst",
+        "player_id": "nbr-01",
+        "position": "GK",
+        "shirt": 1,
+        "starter": true
+      },
+      {
+        "name": "Coulter",
+        "player_id": "nbr-02",
+        "position": "DF",
+        "shirt": 2,
+        "starter": true
+      },
+      {
+        "name": "Varga",
+        "player_id": "nbr-03",
+        "position": "DF",
+        "shirt": 3,
+        "starter": true
+      },
+      {
+        "name": "Mensah",
+        "player_id": "nbr-04",
+        "position": "DF",
+        "shirt": 4,
+        "starter": true
+      },
+      {
+        "name": "Pettersen",
+        "player_id": "nbr-05",
+        "position": "DF",
+        "shirt": 5,
+        "starter": true
+      },
+      {
+        "name": "Ashdown",
+        "player_id": "nbr-06",
+        "position": "MF",
+        "shirt": 6,
+        "starter": true
+      },
+      {
+        "name": "Ferreira",
+        "player_id": "nbr-07",
+        "position": "MF",
+        "shirt": 7,
+        "starter": true
+      },
+      {
+        "name": "Quinlan",
+        "player_id": "nbr-08",
+        "position": "MF",
+        "shirt": 8,
+        "starter": true
+      },
+      {
+        "name": "Okafor",
+        "player_id": "nbr-09",
+        "position": "FW",
+        "shirt": 9,
+        "starter": true
+      },
+      {
+        "name": "Delgado",
+        "player_id": "nbr-10",
+        "position": "FW",
+        "shirt": 10,
+        "starter": true
+      },
+      {
+        "name": "Aldane",
+        "player_id": "nbr-11",
+        "position": "FW",
+        "shirt": 11,
+        "starter": true
+      },
+      {
+        "name": "Rourke",
+        "player_id": "nbr-12",
+        "position": "GK",
+        "shirt": 12,
+        "starter": false
+      },
+      {
+        "name": "Siddiqui",
+        "player_id": "nbr-13",
+        "position": "DF",
+        "shirt": 13,
+        "starter": false
+      },
+      {
+        "name": "Moreau",
+        "player_id": "nbr-14",
+        "position": "MF",
+        "shirt": 14,
+        "starter": false
+      },
+      {
+        "name": "Thackray",
+        "player_id": "nbr-15",
+        "position": "MF",
+        "shirt": 15,
+        "starter": false
+      },
+      {
+        "name": "Osei",
+        "player_id": "nbr-16",
+        "position": "FW",
+        "shirt": 16,
+        "starter": false
+      }
+    ],
+    "riv": [
+      {
+        "name": "Kavanagh",
+        "player_id": "riv-01",
+        "position": "GK",
+        "shirt": 1,
+        "starter": true
+      },
+      {
+        "name": "Ruiz",
+        "player_id": "riv-02",
+        "position": "DF",
+        "shirt": 2,
+        "starter": true
+      },
+      {
+        "name": "Sorensen",
+        "player_id": "riv-03",
+        "position": "DF",
+        "shirt": 3,
+        "starter": true
+      },
+      {
+        "name": "Halvorsen",
+        "player_id": "riv-04",
+        "position": "DF",
+        "shirt": 4,
+        "starter": true
+      },
+      {
+        "name": "Tembo",
+        "player_id": "riv-05",
+        "position": "DF",
+        "shirt": 5,
+        "starter": true
+      },
+      {
+        "name": "Haddad",
+        "player_id": "riv-06",
+        "position": "MF",
+        "shirt": 6,
+        "starter": true
+      },
+      {
+        "name": "Barros",
+        "player_id": "riv-07",
+        "position": "MF",
+        "shirt": 7,
+        "starter": true
+      },
+      {
+        "name": "Castell",
+        "player_id": "riv-08",
+        "position": "MF",
+        "shirt": 8,
+        "starter": true
+      },
+      {
+        "name": "Novak",
+        "player_id": "riv-09",
+        "position": "FW",
+        "shirt": 9,
+        "starter": true
+      },
+      {
+        "name": "Ferrante",
+        "player_id": "riv-10",
+        "position": "FW",
+        "shirt": 10,
+        "starter": true
+      },
+      {
+        "name": "Lindqvist",
+        "player_id": "riv-11",
+        "position": "FW",
+        "shirt": 11,
+        "starter": true
+      },
+      {
+        "name": "Dawes",
+        "player_id": "riv-12",
+        "position": "GK",
+        "shirt": 12,
+        "starter": false
+      },
+      {
+        "name": "Ibarra",
+        "player_id": "riv-13",
+        "position": "DF",
+        "shirt": 13,
+        "starter": false
+      },
+      {
+        "name": "Kovac",
+        "player_id": "riv-14",
+        "position": "MF",
+        "shirt": 14,
+        "starter": false
+      },
+      {
+        "name": "Penrose",
+        "player_id": "riv-15",
+        "position": "MF",
+        "shirt": 15,
+        "starter": false
+      },
+      {
+        "name": "Sato",
+        "player_id": "riv-16",
+        "position": "FW",
+        "shirt": 16,
+        "starter": false
+      }
+    ]
+  },
   "statistics": {
     "nbr": {
+      "ball_speed": 36.8,
       "corners": 6,
       "final_third_entries": 133,
       "fouls": 8,
       "goals": 2,
+      "interceptions": 22,
       "on_target": 6,
+      "pass_accuracy": 0.896,
+      "pass_difficulty": 38.3,
+      "pass_distance": 22.6,
+      "pressured_passes": 113,
+      "progressive_passes": 101,
+      "recoveries": 80,
       "red_cards": 0,
       "shots": 14,
+      "tackles": 33,
       "yellow_cards": 1
     },
     "riv": {
+      "ball_speed": 34.8,
       "corners": 3,
       "final_third_entries": 88,
       "fouls": 11,
       "goals": 1,
+      "interceptions": 21,
       "on_target": 3,
+      "pass_accuracy": 0.845,
+      "pass_difficulty": 37.9,
+      "pass_distance": 23.0,
+      "pressured_passes": 87,
+      "progressive_passes": 60,
+      "recoveries": 82,
       "red_cards": 0,
       "shots": 9,
+      "tackles": 33,
       "yellow_cards": 1
     }
   },

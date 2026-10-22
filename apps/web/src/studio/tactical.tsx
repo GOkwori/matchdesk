@@ -7,6 +7,7 @@ import { Icon } from "./icons";
 import { Comparison, ShotMap } from "./pitchviz";
 import { VerdictChip } from "./ui";
 import { matchExport, possessionSeries, shots } from "./data";
+import { openAssistant } from "./assistant-host";
 
 type TeamFilter = "both" | "nbr" | "riv";
 type HalfFilter = "all" | "1" | "2";
@@ -55,6 +56,26 @@ export function TacticalBody() {
             { label: "Corners", home: stats.nbr.corners, away: stats.riv.corners },
             { label: "Fouls", home: stats.nbr.fouls, away: stats.riv.fouls },
           ]} />
+        </section>
+        <section className="md-panel" aria-labelledby="md-tac-quality">
+          <h2 id="md-tac-quality">Passing quality and defending</h2>
+          <Comparison rows={[
+            { label: "Pass accuracy %", home: Math.round(stats.nbr.pass_accuracy * 100), away: Math.round(stats.riv.pass_accuracy * 100) },
+            { label: "Average pass length (m)", home: stats.nbr.pass_distance, away: stats.riv.pass_distance },
+            { label: "Progressive passes", home: stats.nbr.progressive_passes, away: stats.riv.progressive_passes },
+            { label: "Pass difficulty (0\u2013100)", home: stats.nbr.pass_difficulty, away: stats.riv.pass_difficulty },
+            { label: "Passes under pressure", home: stats.nbr.pressured_passes, away: stats.riv.pressured_passes },
+            { label: "Estimated ball speed (km/h)", home: stats.nbr.ball_speed, away: stats.riv.ball_speed },
+            { label: "Tackles", home: stats.nbr.tackles, away: stats.riv.tackles },
+            { label: "Interceptions", home: stats.nbr.interceptions, away: stats.riv.interceptions },
+            { label: "Ball recoveries", home: stats.nbr.recoveries, away: stats.riv.recoveries },
+          ]} />
+          <p className="md-muted md-small">
+            Each figure is a registered metric, recalculated from the event log and checkable in Ask MatchDesk. Lengths use a
+            105 \u00d7 68 m pitch. A progressive pass goes at least 10 m forward and ends 25% closer to goal. Difficulty rates each
+            attempt by length, ambition, target and pressure. Ball speed is estimated from the time to the next event: there is no tracking data.
+          </p>
+          <button type="button" className="md-btn md-btn-secondary" onClick={() => openAssistant("Who made the most tackles?")}>Ask who led the tackles</button>
         </section>
         <section className="md-panel md-insights" aria-labelledby="md-tac-ins">
           <h2 id="md-tac-ins">What the numbers suggest</h2>

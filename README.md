@@ -28,7 +28,7 @@ synthetic events):
 ## What is implemented
 
 The deterministic football engine now includes a seeded synthetic simulator,
-ordered/idempotent replay ingestion, roster/score/possession reduction, six registered
+ordered/idempotent replay ingestion, roster/score/possession reduction, fourteen registered
 metric formulas and five explicit moment detectors. The Python API still distinguishes
 structural validation from factual verification, and immutable contracts cover claims,
 evidence, verification results and approval bindings.

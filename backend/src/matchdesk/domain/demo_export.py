@@ -14,7 +14,7 @@ from matchdesk.domain import canonical_match as canonical
 from matchdesk.domain.demo_claims import DISPLAY_NAMES, claim_export
 from matchdesk.domain.hashing import content_digest
 from matchdesk.domain.metrics import compute_metric
-from matchdesk.domain.models import MatchEvent, MatchWindow, Subject
+from matchdesk.domain.models import MatchEvent, MatchWindow, Subject, round_half_up
 from matchdesk.domain.moments import detect_moments
 
 EXPORT_SCHEMA = "matchdesk-demo-export/1"
@@ -116,6 +116,28 @@ def _counts(events: tuple[MatchEvent, ...]) -> dict[str, dict[str, int]]:
     }
 
 
+def _quality(events: tuple[MatchEvent, ...], team: str) -> dict[str, float | int]:
+    """Whole-match passing and defending figures for one team, from the registered metrics."""
+    window = MatchWindow(from_ms=0, to_ms=REPLAY_END_MS)
+    subject = Subject(team_id=team)
+
+    def value(metric: str) -> float:
+        """One registered metric for the team over the replay."""
+        return compute_metric(metric, events, subject, window)
+
+    return {
+        "pass_accuracy": float(round_half_up(value("pass_accuracy.v1"), 3)),
+        "pass_distance": float(round_half_up(value("pass_distance.v1"), 1)),
+        "progressive_passes": int(value("progressive_passes.v1")),
+        "pass_difficulty": float(round_half_up(value("pass_difficulty.v1"), 1)),
+        "ball_speed": float(round_half_up(value("ball_speed.v1"), 1)),
+        "pressured_passes": int(value("pressured_passes.v1")),
+        "tackles": int(value("tackles.v1")),
+        "interceptions": int(value("interceptions.v1")),
+        "recoveries": int(value("recoveries.v1")),
+    }
+
+
 def _event_summary(event: MatchEvent) -> dict[str, object]:
     """Return the small, display-safe subset of one event."""
     summary: dict[str, object] = {
@@ -157,6 +179,7 @@ def build_demo_export(events: tuple[MatchEvent, ...] | None = None) -> dict[str,
                 _metric_sum("final_third_entries.v1", log, team, 0, REPLAY_END_MS)
             ),
             **counts[team],
+            **_quality(log, team),
         }
     series = []
     for start in range(0, REPLAY_END_MS, 300_000):
@@ -182,6 +205,7 @@ def build_demo_export(events: tuple[MatchEvent, ...] | None = None) -> dict[str,
         "evidence_digest": evidence_digest(log),
         "teams": TEAMS,
         "players": canonical.PLAYER_NAMES,
+        "squads": {team: list(canonical.squad(team)) for team in (canonical.HOME, canonical.AWAY)},
         "statistics": statistics,
         "possession": possession,
         "possession_series": series,

@@ -2438,6 +2438,552 @@
   },
   {
    "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "decimals": 1,
+     "metric": "pass_distance.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "nbr"
+     },
+     "unit": "metres",
+     "value": 22.6,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 4032000
+     }
+    },
+    "claim_id": "B-20",
+    "evidence_event_ids": [
+     "E-0001"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Northbridge's average pass length was 22.6 metres."
+   },
+   "events": "canonical",
+   "evidence": "EV-D031",
+   "expected": {
+    "expected": 22.6,
+    "observed": 22.636874068597148,
+    "query_id": "metric-pass_distance-v1",
+    "reason": "Registered metric recomputation satisfies the claim comparator",
+    "status": "verified"
+   },
+   "name": "binding: pass_distance.v1 stated at one decimal",
+   "with_names": true
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "decimals": 1,
+     "metric": "pass_distance.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "nbr"
+     },
+     "unit": "metres",
+     "value": 22.6,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 4032000
+     }
+    },
+    "claim_id": "B-21",
+    "evidence_event_ids": [
+     "E-0001"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Northbridge's average pass length was 22.9 metres."
+   },
+   "events": "canonical",
+   "evidence": "EV-D031",
+   "expected": {
+    "expected": 22.6,
+    "observed": 22.636874068597148,
+    "query_id": "claim-text-binding-v1",
+    "reason": "Claim text states a quantity that differs from its assertion",
+    "status": "needs_revision"
+   },
+   "name": "binding: pass_distance.v1 misstated",
+   "with_names": true
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "decimals": 1,
+     "metric": "pass_distance.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "player_id": "nbr-09",
+      "schema_version": "1.0"
+     },
+     "unit": "metres",
+     "value": 21.0,
+     "window": {
+      "from_ms": 2700000,
+      "period": 2,
+      "schema_version": "1.0",
+      "to_ms": 4032000
+     }
+    },
+    "claim_id": "B-22",
+    "evidence_event_ids": [
+     "E-0001"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Okafor's pass length averaged 21.0 metres in the second half."
+   },
+   "events": "canonical",
+   "evidence": "EV-D031",
+   "expected": {
+    "expected": 21.0,
+    "observed": 20.960878481750722,
+    "query_id": "metric-pass_distance-v1",
+    "reason": "Registered metric recomputation satisfies the claim comparator",
+    "status": "verified"
+   },
+   "name": "binding: pass_distance.v1 stated at one decimal",
+   "with_names": true
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "decimals": 1,
+     "metric": "pass_distance.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "player_id": "nbr-09",
+      "schema_version": "1.0"
+     },
+     "unit": "metres",
+     "value": 21.0,
+     "window": {
+      "from_ms": 2700000,
+      "period": 2,
+      "schema_version": "1.0",
+      "to_ms": 4032000
+     }
+    },
+    "claim_id": "B-23",
+    "evidence_event_ids": [
+     "E-0001"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Okafor's pass length averaged 21.3 metres in the second half."
+   },
+   "events": "canonical",
+   "evidence": "EV-D031",
+   "expected": {
+    "expected": 21.0,
+    "observed": 20.960878481750722,
+    "query_id": "claim-text-binding-v1",
+    "reason": "Claim text states a quantity that differs from its assertion",
+    "status": "needs_revision"
+   },
+   "name": "binding: pass_distance.v1 misstated",
+   "with_names": true
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "decimals": 1,
+     "metric": "pass_difficulty.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "riv"
+     },
+     "unit": "rating",
+     "value": 37.9,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 4032000
+     }
+    },
+    "claim_id": "B-24",
+    "evidence_event_ids": [
+     "E-0001"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Riverside's pass difficulty rating was 37.9."
+   },
+   "events": "canonical",
+   "evidence": "EV-D031",
+   "expected": {
+    "expected": 37.9,
+    "observed": 37.94267368971732,
+    "query_id": "metric-pass_difficulty-v1",
+    "reason": "Registered metric recomputation satisfies the claim comparator",
+    "status": "verified"
+   },
+   "name": "binding: pass_difficulty.v1 stated at one decimal",
+   "with_names": true
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "decimals": 1,
+     "metric": "pass_difficulty.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "riv"
+     },
+     "unit": "rating",
+     "value": 37.9,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 4032000
+     }
+    },
+    "claim_id": "B-25",
+    "evidence_event_ids": [
+     "E-0001"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Riverside's pass difficulty rating was 38.2."
+   },
+   "events": "canonical",
+   "evidence": "EV-D031",
+   "expected": {
+    "expected": 37.9,
+    "observed": 37.94267368971732,
+    "query_id": "claim-text-binding-v1",
+    "reason": "Claim text states a quantity that differs from its assertion",
+    "status": "needs_revision"
+   },
+   "name": "binding: pass_difficulty.v1 misstated",
+   "with_names": true
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "decimals": 1,
+     "metric": "ball_speed.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "nbr"
+     },
+     "unit": "km_per_hour",
+     "value": 26.8,
+     "window": {
+      "from_ms": 0,
+      "period": 1,
+      "schema_version": "1.0",
+      "to_ms": 2700000
+     }
+    },
+    "claim_id": "B-26",
+    "evidence_event_ids": [
+     "E-0001"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Northbridge's estimated ball speed was 26.8 km/h in the first half."
+   },
+   "events": "canonical",
+   "evidence": "EV-D031",
+   "expected": {
+    "expected": 26.8,
+    "observed": 26.819409986965514,
+    "query_id": "metric-ball_speed-v1",
+    "reason": "Registered metric recomputation satisfies the claim comparator",
+    "status": "verified"
+   },
+   "name": "binding: ball_speed.v1 stated at one decimal",
+   "with_names": true
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "decimals": 1,
+     "metric": "ball_speed.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "nbr"
+     },
+     "unit": "km_per_hour",
+     "value": 26.8,
+     "window": {
+      "from_ms": 0,
+      "period": 1,
+      "schema_version": "1.0",
+      "to_ms": 2700000
+     }
+    },
+    "claim_id": "B-27",
+    "evidence_event_ids": [
+     "E-0001"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Northbridge's estimated ball speed was 27.1 km/h in the first half."
+   },
+   "events": "canonical",
+   "evidence": "EV-D031",
+   "expected": {
+    "expected": 26.8,
+    "observed": 26.819409986965514,
+    "query_id": "claim-text-binding-v1",
+    "reason": "Claim text states a quantity that differs from its assertion",
+    "status": "needs_revision"
+   },
+   "name": "binding: ball_speed.v1 misstated",
+   "with_names": true
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "metric": "progressive_passes.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "nbr"
+     },
+     "unit": "count",
+     "value": 101.0,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 4032000
+     }
+    },
+    "claim_id": "B-28",
+    "evidence_event_ids": [
+     "E-0001"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Northbridge played 101 progressive passes."
+   },
+   "events": "canonical",
+   "evidence": "EV-D031",
+   "expected": {
+    "expected": 101.0,
+    "observed": 101.0,
+    "query_id": "metric-progressive_passes-v1",
+    "reason": "Registered metric recomputation satisfies the claim comparator",
+    "status": "verified"
+   },
+   "name": "binding: progressive_passes.v1 count",
+   "with_names": true
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "metric": "pressured_passes.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "riv"
+     },
+     "unit": "count",
+     "value": 33.0,
+     "window": {
+      "from_ms": 2700000,
+      "period": 2,
+      "schema_version": "1.0",
+      "to_ms": 4032000
+     }
+    },
+    "claim_id": "B-29",
+    "evidence_event_ids": [
+     "E-0001"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Riverside played 33 passes under pressure in the second half."
+   },
+   "events": "canonical",
+   "evidence": "EV-D031",
+   "expected": {
+    "expected": 33.0,
+    "observed": 33.0,
+    "query_id": "metric-pressured_passes-v1",
+    "reason": "Registered metric recomputation satisfies the claim comparator",
+    "status": "verified"
+   },
+   "name": "binding: pressured_passes.v1 count",
+   "with_names": true
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "metric": "tackles.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "nbr"
+     },
+     "unit": "count",
+     "value": 33.0,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 4032000
+     }
+    },
+    "claim_id": "B-30",
+    "evidence_event_ids": [
+     "E-0001"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Northbridge made 33 tackles."
+   },
+   "events": "canonical",
+   "evidence": "EV-D031",
+   "expected": {
+    "expected": 33.0,
+    "observed": 33.0,
+    "query_id": "metric-tackles-v1",
+    "reason": "Registered metric recomputation satisfies the claim comparator",
+    "status": "verified"
+   },
+   "name": "binding: tackles.v1 count",
+   "with_names": true
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "metric": "interceptions.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "riv"
+     },
+     "unit": "count",
+     "value": 11.0,
+     "window": {
+      "from_ms": 0,
+      "period": 1,
+      "schema_version": "1.0",
+      "to_ms": 2700000
+     }
+    },
+    "claim_id": "B-31",
+    "evidence_event_ids": [
+     "E-0001"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Riverside made 11 interceptions in the first half."
+   },
+   "events": "canonical",
+   "evidence": "EV-D031",
+   "expected": {
+    "expected": 11.0,
+    "observed": 11.0,
+    "query_id": "metric-interceptions-v1",
+    "reason": "Registered metric recomputation satisfies the claim comparator",
+    "status": "verified"
+   },
+   "name": "binding: interceptions.v1 count",
+   "with_names": true
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "metric": "recoveries.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "player_id": "nbr-09",
+      "schema_version": "1.0"
+     },
+     "unit": "count",
+     "value": 9.0,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 4032000
+     }
+    },
+    "claim_id": "B-32",
+    "evidence_event_ids": [
+     "E-0001"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Okafor made 9 ball recoveries."
+   },
+   "events": "canonical",
+   "evidence": "EV-D031",
+   "expected": {
+    "expected": 9.0,
+    "observed": 9.0,
+    "query_id": "metric-recoveries-v1",
+    "reason": "Registered metric recomputation satisfies the claim comparator",
+    "status": "verified"
+   },
+   "name": "binding: recoveries.v1 count",
+   "with_names": true
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "metric": "tackles.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "nbr"
+     },
+     "unit": "count",
+     "value": 33.0,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 4032000
+     }
+    },
+    "claim_id": "B-33",
+    "evidence_event_ids": [
+     "E-0001"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Northbridge made 33 interceptions."
+   },
+   "events": "canonical",
+   "evidence": "EV-D031",
+   "expected": {
+    "expected": 33.0,
+    "observed": 33.0,
+    "query_id": "claim-text-binding-v1",
+    "reason": "Claim text does not name the asserted statistic",
+    "status": "needs_revision"
+   },
+   "name": "binding: tackles stated as a different statistic",
+   "with_names": true
+  },
+  {
+   "claim": {
     "claim_id": "F-01",
     "evidence_event_ids": [
      "E-1366"
@@ -2722,13 +3268,39 @@
  ],
  "display_names": {
   "nbr": "Northbridge",
+  "nbr-01": "Fairhurst",
+  "nbr-02": "Coulter",
+  "nbr-03": "Varga",
   "nbr-04": "Mensah",
+  "nbr-05": "Pettersen",
+  "nbr-06": "Ashdown",
+  "nbr-07": "Ferreira",
+  "nbr-08": "Quinlan",
   "nbr-09": "Okafor",
+  "nbr-10": "Delgado",
+  "nbr-11": "Aldane",
+  "nbr-12": "Rourke",
+  "nbr-13": "Siddiqui",
+  "nbr-14": "Moreau",
+  "nbr-15": "Thackray",
+  "nbr-16": "Osei",
   "riv": "Riverside",
+  "riv-01": "Kavanagh",
+  "riv-02": "Ruiz",
+  "riv-03": "Sorensen",
+  "riv-04": "Halvorsen",
+  "riv-05": "Tembo",
   "riv-06": "Haddad",
   "riv-07": "Barros",
+  "riv-08": "Castell",
+  "riv-09": "Novak",
+  "riv-10": "Ferrante",
   "riv-11": "Lindqvist",
-  "riv-14": "Kovac"
+  "riv-12": "Dawes",
+  "riv-13": "Ibarra",
+  "riv-14": "Kovac",
+  "riv-15": "Penrose",
+  "riv-16": "Sato"
  },
  "evidence": {
   "EV-D031": {
@@ -4210,6 +4782,18 @@
    null,
    null
   ],
+  "end_y": [
+   null,
+   null,
+   null,
+   49.18788559110462,
+   50.759732949809234,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
   "id": [
    "ca-p1-start",
    "ca-kickoff-1",
@@ -4282,6 +4866,18 @@
    null,
    null
   ],
+  "pressure": [
+   0,
+   0,
+   0,
+   0,
+   1,
+   1,
+   0,
+   0,
+   0,
+   0
+  ],
   "schema": "matchdesk-event-log/1",
   "seq": [
    0,
@@ -4351,6 +4947,18 @@
    null,
    0.515,
    null,
+   null,
+   null,
+   null
+  ],
+  "y": [
+   null,
+   49.95021762215035,
+   48.190617973727754,
+   45.11713979068679,
+   50.34641682416746,
+   51.86346956165495,
+   49.27539791371813,
    null,
    null,
    null

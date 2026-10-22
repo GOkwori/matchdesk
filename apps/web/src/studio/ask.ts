@@ -16,6 +16,14 @@ export const METRICS = {
   "synthetic_xg.v1": { unit: "synthetic_xg", label: "synthetic xG" },
   "final_third_entries.v1": { unit: "count", label: "final-third entries" },
   "possession_time.v1": { unit: "ratio", label: "possession" },
+  "pass_distance.v1": { unit: "metres", label: "average pass length" },
+  "progressive_passes.v1": { unit: "count", label: "progressive passes" },
+  "pass_difficulty.v1": { unit: "rating", label: "pass difficulty" },
+  "ball_speed.v1": { unit: "km_per_hour", label: "estimated ball speed" },
+  "pressured_passes.v1": { unit: "count", label: "passes under pressure" },
+  "tackles.v1": { unit: "count", label: "tackles" },
+  "interceptions.v1": { unit: "count", label: "interceptions" },
+  "recoveries.v1": { unit: "count", label: "ball recoveries" },
 } as const;
 export type Metric = keyof typeof METRICS;
 
@@ -30,6 +38,7 @@ export type Plan =
   | { intent: "metric"; metric: Metric; subjects: string[]; window: PlanWindow }
   | { intent: "score"; window: PlanWindow }
   | { intent: "scorers"; subjects: string[]; window: PlanWindow; nth?: number }
+  | { intent: "leaders"; metric: Metric; subjects: string[]; window: PlanWindow }
   | { intent: "summary"; subject: string; window: PlanWindow }
   | { intent: "help"; topic: string }
   | { intent: "out_of_scope"; reason: DeclineReason; detail?: string }
@@ -112,7 +121,7 @@ export const HELP: readonly HelpTopic[] = [
     text: "Activity & Audit lists every verification and producer action in order.",
     link: { href: "/workspace/activity", label: "Open activity" } },
   { id: "metrics", patterns: [/what (is|are|does) (xg|synthetic xg|expected goals|possession|pass accuracy|final[- ]third entr(y|ies))\b/, /how (is|are|do you) .*(calculated|measured|computed|worked out)/, /what (metrics|statistics|stats) (can|do)/, /\bmetrics?\b/],
-    text: "I can check six registered metrics: goals, shots, pass accuracy (completed passes over all passes), synthetic xG (this demo's own chance-quality model), final-third entries (completed passes, carries or dribbles into the final third) and possession (time on the ball between events, for teams only). Each is recalculated from the event log every time.",
+    text: "I check fourteen metrics, recalculated from the event log every time. Attack: goals, shots, synthetic xG (this demo's own model), final-third entries. Passing: accuracy, average length in metres, progressive passes, a 0\u2013100 difficulty rating, passes under pressure, estimated ball speed. Defending: tackles, interceptions, recoveries. Possession, for teams.",
     link: { href: "/match/nbr-riv/evidence/CL-0214", label: "See a metric being recalculated" } },
   { id: "what", patterns: [/what (is|does) matchdesk/, /what can (you|i) do/, /what is this/, /\bhelp\b/, /what can i ask/],
     text: "MatchDesk turns match events into stories you can check: AI drafts, code verifies every claim against the event log, and a human approves. Ask me about the match, such as the score, shots, possession or xG for a team, player or part of the game, or about how the app works.",
@@ -184,8 +193,8 @@ const UNSUPPORTED_STATS: readonly [RegExp, string][] = [
   [/\bcorners?\b/, "corners"],
   [/\b(yellow|red) cards?\b|\bcards?\b|\bbookings?\b|\bbooked\b|\bsent off\b/, "cards"],
   [/\bfouls?\b|\bfouled\b|\boffsides?\b|\bfree[- ]kicks?\b|\bpenalt(y|ies)\b/, "fouls and set pieces"],
-  [/\btackles?\b|\binterceptions?\b|\bclearances?\b|\bduels?\b|\bdribbles?\b|\bcrosses\b/, "defensive or duel actions"],
-  [/\bhow many passes\b|\bnumber of passes\b|\bpasses (made|played|attempted)\b|\btouches\b|\bdistance\b|\bsprints?\b|\bheat ?map\b/, "pass counts, touches or tracking data"],
+  [/\bclearances?\b|\bduels?\b|\bdribbles?\b|\bcrosses\b|\bblocks\b/, "clearances, duels, dribbles or crosses"],
+  [/\bhow many passes\b|\bnumber of passes\b|\bpasses (made|attempted)\b|\btouches\b|\bdistance (covered|run|ran)\b|\b(ran|run|running) (the )?(furthest|most)\b|\bsprints?\b|\bheat ?map\b|\b(top|max(imum)?) speed\b|\bshot (speed|power)\b|\bhow fast (was|is) (the|his|her) shot\b|\bpace of\b/, "pass counts, touches, shot speed or player tracking data"],
 ];
 
 // Qualifiers no registered metric or event field records. Answering without them would
@@ -212,7 +221,8 @@ const ORDINAL_GOAL = /\b(first|1st|opening|second|2nd|third|3rd|fourth|4th) goal
 // A record id such as nbr-09: only a named player's id may stand in for their name.
 const RECORD_ID = /(?<![a-z0-9-])([a-z]{2,5}-[0-9]{1,3})(?![a-z0-9-])/g;
 
-const PLAYER_QUESTION = /\bwhich player\b|\bwho (had|took|made|has) the most\b|\bmost (shots|goals|passes)\b|\btop scorer\b|\bbest player\b|\bman of the match\b|\bplayer of the match\b/;
+const PLAYER_QUESTION = /\bwhich player\b|\bwho (had|took|made|has|played|won) the (most|highest|longest|fastest|hardest)\b|\bmost (shots|goals|passes|tackles|interceptions|recoveries|progressive passes)\b|\btop (scorer|tackler)\b|\bleaders?\b|\bwho leads\b/;
+const OPINION_RANKING = /\bbest player\b|\bman of the match\b|\bplayer of the match\b|\bstar man\b|\bmvp\b/;
 const KNOWN_WORDS = new Set([
   "who", "what", "which", "when", "how", "did", "does", "do", "is", "are", "was", "were", "the", "a", "an", "and", "or", "in", "on",
   "at", "of", "for", "to", "by", "after", "before", "since", "between", "from", "until", "up", "their", "they", "them", "it",
@@ -263,6 +273,14 @@ function unknownPerson(original: string, q: string, ctx: Pick<MatchContext, "nam
 
 function parseMetric(q: string): Metric | null {
   if (/\bxg\b|expected goals/.test(q)) return "synthetic_xg.v1";
+  if (/pass(ing)? difficulty|difficult(y of| )pass|hardest pass|difficulty rating/.test(q)) return "pass_difficulty.v1";
+  if (/pass(es|ing)? (length|distance)|how (long|far) (were|are|was) (the |their |his |her )?pass|longest pass|average pass|pass(es)? travel/.test(q)) return "pass_distance.v1";
+  if (/progressive pass|progressive/.test(q)) return "progressive_passes.v1";
+  if (/under pressure|pressured pass|pressing/.test(q)) return "pressured_passes.v1";
+  if (/ball speed|pass speed|speed of (the )?(ball|pass)|how fast (was|is|were) the (ball|pass)|km\/h|kph/.test(q)) return "ball_speed.v1";
+  if (/\btackles?\b|\btackled\b|\btackling\b/.test(q)) return "tackles.v1";
+  if (/\binterceptions?\b|\bintercepted\b/.test(q)) return "interceptions.v1";
+  if (/\brecover(ies|y|ed)\b|won the ball back|ball wins?\b|regain/.test(q)) return "recoveries.v1";
   if (/possession|had the ball|ball time|more of the ball/.test(q)) return "possession_time.v1";
   if (/pass(ing)? (accuracy|completion|success)|passes completed|completed passes|accurate pass|passing/.test(q)) return "pass_accuracy.v1";
   if (/final[- ]third|attacking third/.test(q)) return "final_third_entries.v1";
@@ -293,18 +311,25 @@ export function parseQuestion(question: string, ctx: Pick<MatchContext, "names" 
     for (const topic of HELP) if (topic.patterns.some((p) => p.test(q))) return { intent: "help", topic: topic.id };
   }
   for (const [pattern, label] of UNSUPPORTED_STATS) {
-    if (pattern.test(q)) return decline("unsupported", `I can't check ${label}: it isn't one of the registered metrics, so I won't estimate it. I can check goals, shots, pass accuracy, synthetic xG, final-third entries and possession.`);
+    if (pattern.test(q)) return decline("unsupported", `I can't check ${label}: it isn't one of the registered metrics, so I won't estimate it. I can check goals, shots, xG, final-third entries, pass accuracy, pass length, progressive passes, pass difficulty, passes under pressure, ball speed, tackles, interceptions, recoveries and possession.`);
   }
   for (const [pattern, text] of QUALIFIERS) if (pattern.test(q)) return decline("unsupported", text);
-  const named = Object.entries(ctx.names).filter(([id]) => !Object.hasOwn(ctx.teams, id)).map(([, n]) => n).join(", ");
+  const named = "Ask about any player in either squad by name, such as Okafor, Mensah or Lindqvist.";
   const unnamedId = [...q.matchAll(RECORD_ID)].map((m) => m[1]).find((id) => !Object.hasOwn(ctx.names, id) || Object.hasOwn(ctx.teams, id));
-  if (unnamedId) return decline("unsupported", `${unnamedId} is not a named player in this match, so I can't answer for them. The named players are ${named}.`);
+  if (unnamedId) return decline("unsupported", `${unnamedId} is not a player in either squad, so I can't answer for them. ${named}`);
   const subjects = parseSubjects(q, ctx);
   const stranger = unknownPerson(question, q, ctx);
-  if (stranger) return decline("unsupported", `There's no player called ${stranger} with a name in this match. The named players are ${named}.`);
+  if (stranger) return decline("unsupported", `There's no player called ${stranger} in either squad. ${named}`);
   const aboutTeams = /\b(which|what) (team|side|club)\b|\bteams?\b|\bsides?\b/.test(q);
+  if (OPINION_RANKING.test(q)) {
+    return decline("unsupported", "\u201cBest player\u201d is a judgement, not a figure I can check. Ask who led a statistic instead, such as \u201cWho made the most tackles?\u201d or \u201cWhich player had the most shots?\u201d");
+  }
   if (PLAYER_QUESTION.test(q) && !aboutTeams && !subjects.some((s) => !Object.hasOwn(ctx.teams, s))) {
-    return decline("unsupported", `I don't rank players, because only some players have names in this demo. Ask which team had more, or about a named player: ${named}.`);
+    const ranked = /\bscor(er|ed|ing)\b|\bgoals?\b/.test(q) && !/\bshots?\b/.test(q) ? "goals.v1" : parseMetric(q);
+    if (!ranked) return decline("unsupported", "Tell me which statistic to rank players by, such as shots, tackles, progressive passes or ball recoveries.");
+    const reading = parseWindow(q, "range");
+    if ("unclear" in reading) return decline("unsupported", reading.unclear);
+    return { intent: "leaders", metric: ranked, subjects, window: reading.window };
   }
   if (subjects.length > 2) return decline("unsupported", "Ask about one or two teams or players at a time.");
   const comparesGoals = /\b(more|fewer|less) (goals )?than\b|\bscore more\b|\boutscore/.test(q);
@@ -419,6 +444,7 @@ export function describePlan(plan: Plan, ctx: Pick<MatchContext, "names" | "team
     case "score": return `score · ${w(plan.window)}`;
     case "scorers": return `${plan.nth ? `${ordinalWord(plan.nth)} goal` : "scorers"} · ${plan.subjects.length ? plan.subjects.map(name).join(" and ") : "both teams"} · ${w(plan.window)}`;
     case "summary": return `summary · ${name(plan.subject)} · ${w(plan.window)}`;
+    case "leaders": return `${METRICS[plan.metric].label} leaders · ${plan.subjects.length ? plan.subjects.map(name).join(" and ") : "both teams"} · ${w(plan.window)}`;
     case "help": return `help · ${plan.topic}`;
     case "out_of_scope": return "outside what I can check";
     case "unknown": return "not understood";
@@ -493,8 +519,31 @@ function sentence(metric: Metric, subject: string, value: number, phrase: string
     case "pass_accuracy.v1": return `${name} completed ${roundHalfUp(value * 100, 0)}% of their passes ${phrase}.`;
     case "possession_time.v1": return `${name} had ${roundHalfUp(value * 100, 0)}% possession ${phrase}.`;
     case "synthetic_xg.v1": return `${name}'s synthetic xG was ${roundHalfUp(value, 2)} ${phrase}.`;
+    case "pass_distance.v1": return `${name}'s average pass length was ${roundHalfUp(value, 1)} metres ${phrase}.`;
+    case "progressive_passes.v1": return `${name} played ${value} progressive ${value === 1 ? "pass" : "passes"} ${phrase}.`;
+    case "pass_difficulty.v1": return `${name}'s pass difficulty rating was ${roundHalfUp(value, 1)} ${phrase}.`;
+    case "ball_speed.v1": return `${name}'s estimated ball speed was ${roundHalfUp(value, 1)} km/h ${phrase}.`;
+    case "pressured_passes.v1": return `${name} played ${value} ${value === 1 ? "pass" : "passes"} under pressure ${phrase}.`;
+    case "tackles.v1": return `${name} made ${value} ${value === 1 ? "tackle" : "tackles"} ${phrase}.`;
+    case "interceptions.v1": return `${name} made ${value} ${value === 1 ? "interception" : "interceptions"} ${phrase}.`;
+    case "recoveries.v1": return `${name} made ${value} ball ${value === 1 ? "recovery" : "recoveries"} ${phrase}.`;
   }
 }
+
+/** The precision a metric is stated at: whole counts, two places for shares and xG, one for measures. */
+export function decimalsFor(metric: Metric): number | null {
+  const unit = METRICS[metric].unit;
+  return unit === "count" ? null : unit === "ratio" || unit === "synthetic_xg" ? 2 : 1;
+}
+
+/** Notes that say how a measure was obtained, shown with every answer that uses it. */
+const METRIC_NOTES: Partial<Record<Metric, string>> = {
+  "synthetic_xg.v1": "Synthetic xG is this demo's own chance-quality model, not a licensed xG feed.",
+  "ball_speed.v1": "Ball speed is estimated: pass length over the time to the next logged event. There is no tracking data.",
+  "pass_difficulty.v1": "Pass difficulty is a 0\u2013100 rating of each attempt: 45% length, 30% forward ambition, 15% a target in the final sixth, 10% pressure.",
+  "pass_distance.v1": "Lengths are measured on a 105 m \u00d7 68 m pitch.",
+  "progressive_passes.v1": "A progressive pass is completed, goes at least 10 m forward and ends at least 25% closer to goal.",
+};
 
 let claimCounter = 0;
 function nextId(): string {
@@ -508,7 +557,7 @@ export function measuredLine(metric: Metric, subject: string, resolved: { window
   const isPlayer = !Object.hasOwn(ctx.teams, subject);
   const sub: Subject = isPlayer ? { player_id: subject } : { team_id: subject };
   const raw = computeMetric(metric, ctx.events, sub, resolved.window);
-  const decimals = spec.unit === "count" ? null : 2;
+  const decimals = decimalsFor(metric);
   const value = decimals == null ? raw : Number(roundHalfUp(raw, decimals));
   const counted = metric === "goals.v1" ? "goal" : metric === "shots.v1" || metric === "synthetic_xg.v1" ? "shot" : null;
   const cited = counted == null ? [] : ctx.events
@@ -525,11 +574,15 @@ export function measuredLine(metric: Metric, subject: string, resolved: { window
 }
 
 /** A ratio has no meaning without its denominator: say so instead of verifying "0%". */
+const PASS_AVERAGES: readonly Metric[] = ["pass_accuracy.v1", "pass_distance.v1", "pass_difficulty.v1", "ball_speed.v1"];
+
+/** An average has no meaning without anything to average: say so instead of verifying a 0. */
 function emptyRatio(metric: Metric, subject: string, window: Window, ctx: MatchContext): string | null {
-  if (metric !== "pass_accuracy.v1") return null;
+  if (!PASS_AVERAGES.includes(metric)) return null;
   const isPlayer = !Object.hasOwn(ctx.teams, subject);
-  const passes = ctx.events.some((e) => e.type === "pass" && inWindow(e, window) && (isPlayer ? e.player_id === subject : e.team_id === subject));
-  return passes ? null : `${nameOf(subject, ctx)}: no passes recorded in this window, so there is no pass accuracy to check.`;
+  const passes = ctx.events.some((e) => e.type === "pass" && inWindow(e, window) && (isPlayer ? e.player_id === subject : e.team_id === subject)
+    && (metric !== "ball_speed.v1" || e.outcome === "complete"));
+  return passes ? null : `${nameOf(subject, ctx)}: no passes recorded in this window, so there is no ${METRICS[metric].label} to check.`;
 }
 
 function comparison(metric: Metric, lines: CheckedLine[], ctx: MatchContext): string | undefined {
@@ -540,8 +593,47 @@ function comparison(metric: Metric, lines: CheckedLine[], ctx: MatchContext): st
   if (a.raw === b.raw) return METRICS[metric].unit === "count" ? `Level: the same number of ${label} each.` : `Level: the same ${label}.`;
   const [hi, lo] = a.raw > b.raw ? [a, b] : [b, a];
   if (hi.shown === lo.shown) return `Almost level: ${nameOf(hi.id, ctx)} are very slightly ahead on ${label} before rounding.`;
-  const more = metric === "pass_accuracy.v1" ? "a higher pass accuracy" : metric === "possession_time.v1" ? "more of the ball" : metric === "synthetic_xg.v1" ? "a higher synthetic xG" : `more ${label}`;
-  return `${nameOf(hi.id, ctx)} had ${more} than ${nameOf(lo.id, ctx)}.`;
+  const more: Partial<Record<Metric, string>> = {
+    "pass_accuracy.v1": "a higher pass accuracy",
+    "possession_time.v1": "more of the ball",
+    "synthetic_xg.v1": "a higher synthetic xG",
+    "pass_distance.v1": "a longer average pass",
+    "pass_difficulty.v1": "a higher pass difficulty rating",
+    "ball_speed.v1": "a higher estimated ball speed",
+  };
+  return `${nameOf(hi.id, ctx)} had ${more[metric] ?? `more ${label}`} than ${nameOf(lo.id, ctx)}.`;
+}
+
+/** Below this many passes in the window, a player's pass averages are not ranked. */
+const LEADER_MIN_PASSES = 10;
+
+function leaders(plan: Extract<Plan, { intent: "leaders" }>, resolved: { window: Window; phrase: string; scope: string }, ctx: MatchContext, evidence: Evidence, notes: (...extra: (string | undefined | null)[]) => string | undefined): Answer {
+  const teams = plan.subjects.filter((s) => Object.hasOwn(ctx.teams, s));
+  const averages = PASS_AVERAGES.includes(plan.metric);
+  const passCount = new Map<string, number>();
+  for (const e of ctx.events) {
+    if (e.player_id && inWindow(e, resolved.window) && (!teams.length || teams.includes(e.team_id as string))) {
+      passCount.set(e.player_id, (passCount.get(e.player_id) ?? 0) + (e.type === "pass" ? 1 : 0));
+    }
+  }
+  const players = [...passCount.keys()].filter((p) => Object.hasOwn(ctx.names, p) && (!averages || (passCount.get(p) ?? 0) >= LEADER_MIN_PASSES));
+  const scored = players
+    .map((p) => ({ p, raw: computeMetric(plan.metric, ctx.events, { player_id: p }, resolved.window) }))
+    .filter((r) => r.raw > 0)
+    .sort((a, b) => b.raw - a.raw || nameOf(a.p, ctx).localeCompare(nameOf(b.p, ctx)));
+  const label = METRICS[plan.metric].label;
+  if (!scored.length) return { kind: "decline", text: `No player recorded any ${label} in that part of the match.` };
+  const top = scored.slice(0, 3);
+  const lines = top.map((r) => measuredLine(plan.metric, r.p, resolved, ctx, evidence));
+  const verified = lines.every((l) => l.result.status === "verified");
+  const tied = scored.filter((r) => r.raw === scored[0].raw);
+  const tiedNames = tied.map((r) => nameOf(r.p, ctx));
+  const joint = tiedNames.length === 2 ? tiedNames.join(" and ") : `${tiedNames.slice(0, -1).join(", ")} and ${tiedNames.at(-1)}`;
+  const derived = !verified ? undefined
+    : tied.length > 1 ? `${joint} are joint top for ${label}.`
+    : `${nameOf(scored[0].p, ctx)} led ${scored.length} players on ${label}.`;
+  const pool = averages ? `Players with at least ${LEADER_MIN_PASSES} passes in this window.` : undefined;
+  return { kind: "match", scope: `${resolved.scope}${teams.length ? ` · ${teams.map((t) => nameOf(t, ctx)).join(" and ")}` : ""}`, lines, derived, note: notes(pool, METRIC_NOTES[plan.metric]) };
 }
 
 const DECLINES: Record<DeclineReason, string> = {
@@ -551,13 +643,13 @@ const DECLINES: Record<DeclineReason, string> = {
   unsupported: "I can't check that against the event log, so I won't guess.",
 };
 
-export const UNKNOWN_TEXT = "I couldn't read that question. Try asking about the score, scorers, shots, possession, pass accuracy, xG or final-third entries, for a team, a player or part of the game, or ask how the app works.";
+export const UNKNOWN_TEXT = "I couldn't read that question. Try the score, scorers, shots, possession, xG, passing (accuracy, length, progressive passes, difficulty, ball speed, pressure) or defending (tackles, interceptions, recoveries), for a team, a player or part of the game; who led a statistic; or how the app works.";
 
 const ordinalWord = (n: number) => ["first", "second", "third", "fourth"][n - 1] ?? `${n}th`;
 
 /** Whether answering a plan needs the event log. */
 export function needsEvents(plan: Plan): boolean {
-  return plan.intent === "metric" || plan.intent === "score" || plan.intent === "scorers" || plan.intent === "summary";
+  return plan.intent === "metric" || plan.intent === "score" || plan.intent === "scorers" || plan.intent === "summary" || plan.intent === "leaders";
 }
 
 /** Answer a plan. Match plans need the event log; help and declines do not. */
@@ -617,14 +709,15 @@ export function answerPlan(plan: Plan, ctx: MatchContext | null): Answer {
     });
     return { kind: "match", scope: resolved.scope, lines, note: notes(plan.nth != null ? `The ${ordinalWord(plan.nth)} goal in this part of the match, in the order they were scored.` : undefined) };
   }
+  if (plan.intent === "leaders") return leaders(plan, resolved, ctx, evidence, notes);
   if (plan.intent === "summary") {
     const isTeam = Object.hasOwn(ctx.teams, plan.subject);
     if (!isTeam && !ctx.events.some((e) => e.player_id === plan.subject && inWindow(e, resolved.window))) {
       return { kind: "decline", text: `${nameOf(plan.subject, ctx)} has no recorded events in that part of the match, so there is nothing to check.` };
     }
     const metrics: Metric[] = isTeam
-      ? ["goals.v1", "shots.v1", "possession_time.v1", "pass_accuracy.v1"]
-      : ["goals.v1", "shots.v1", "pass_accuracy.v1", "final_third_entries.v1"];
+      ? ["goals.v1", "shots.v1", "possession_time.v1", "pass_accuracy.v1", "progressive_passes.v1", "tackles.v1"]
+      : ["goals.v1", "shots.v1", "pass_accuracy.v1", "progressive_passes.v1", "tackles.v1", "recoveries.v1"];
     const empty: string[] = [];
     const lines = metrics.flatMap((m) => {
       const missing = emptyRatio(m, plan.subject, resolved.window, ctx);
@@ -650,8 +743,7 @@ export function answerPlan(plan: Plan, ctx: MatchContext | null): Answer {
     return [measuredLine(plan.metric, s, resolved, ctx, evidence)];
   });
   if (!lines.length) return { kind: "decline", text: empty.join(" ") };
-  const xg = plan.metric === "synthetic_xg.v1" ? "Synthetic xG is this demo's own chance-quality model, not a licensed xG feed." : undefined;
-  return { kind: "match", scope: resolved.scope, lines, derived: comparison(plan.metric, lines, ctx), note: notes(...empty, xg) };
+  return { kind: "match", scope: resolved.scope, lines, derived: comparison(plan.metric, lines, ctx), note: notes(...empty, METRIC_NOTES[plan.metric]) };
 }
 
 /** Read and answer a question with the built-in rules. */

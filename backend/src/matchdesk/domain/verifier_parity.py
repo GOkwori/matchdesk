@@ -52,7 +52,10 @@ def compact_events(events: tuple[MatchEvent, ...]) -> dict[str, Any]:
         "outcome": [event.outcome for event in events],
         "xg": [event.xg for event in events],
         "x": [event.location.x if event.location else None for event in events],
+        "y": [event.location.y if event.location else None for event in events],
         "end_x": [event.end_location.x if event.end_location else None for event in events],
+        "end_y": [event.end_location.y if event.end_location else None for event in events],
+        "pressure": [1 if event.under_pressure else 0 for event in events],
         "tags": [list(event.tags) for event in events],
     }
 
@@ -255,6 +258,88 @@ def parity_fixture() -> dict[str, Any]:
             "Northbridge had 58% of the ball.",
         ),
     ]
+
+    def measure(metric: str, subject: Subject, window: MatchWindow, decimals: int = 1) -> float:
+        """An exactly-true value at the stated precision, for the new measured metrics."""
+        return float(round_half_up(observed(metric, subject, window), decimals))
+
+    unit_of = {
+        "pass_distance.v1": "metres",
+        "pass_difficulty.v1": "rating",
+        "ball_speed.v1": "km_per_hour",
+    }
+    okafor_only = Subject(player_id="nbr-09")
+    for metric, subject, window, template in (
+        (
+            "pass_distance.v1",
+            home,
+            replay_window(),
+            "Northbridge's average pass length was {v} metres.",
+        ),
+        (
+            "pass_distance.v1",
+            okafor_only,
+            second_half,
+            "Okafor's pass length averaged {v} metres in the second half.",
+        ),
+        (
+            "pass_difficulty.v1",
+            away,
+            replay_window(),
+            "Riverside's pass difficulty rating was {v}.",
+        ),
+        (
+            "ball_speed.v1",
+            home,
+            first_half,
+            "Northbridge's estimated ball speed was {v} km/h in the first half.",
+        ),
+    ):
+        value = measure(metric, subject, window)
+        assertion = _assertion(metric, subject, value, unit_of[metric], window=window, decimals=1)  # type: ignore[arg-type]
+        binding.append(
+            (
+                f"{metric} stated at one decimal",
+                assertion,
+                ("E-0001",),
+                template.format(v=f"{value:.1f}"),
+            )
+        )
+        wrong = f"{value + 0.3:.1f}"
+        binding.append((f"{metric} misstated", assertion, ("E-0001",), template.format(v=wrong)))
+    for metric, subject, window, template in (
+        (
+            "progressive_passes.v1",
+            home,
+            replay_window(),
+            "Northbridge played {v} progressive passes.",
+        ),
+        (
+            "pressured_passes.v1",
+            away,
+            second_half,
+            "Riverside played {v} passes under pressure in the second half.",
+        ),
+        ("tackles.v1", home, replay_window(), "Northbridge made {v} tackles."),
+        (
+            "interceptions.v1",
+            away,
+            first_half,
+            "Riverside made {v} interceptions in the first half.",
+        ),
+        ("recoveries.v1", okafor_only, replay_window(), "Okafor made {v} ball recoveries."),
+    ):
+        value = observed(metric, subject, window)
+        assertion = _assertion(metric, subject, value, "count", window=window)
+        binding.append((f"{metric} count", assertion, ("E-0001",), template.format(v=int(value))))
+    binding.append(
+        (
+            "tackles stated as a different statistic",
+            _assertion("tackles.v1", home, observed("tackles.v1", home, replay_window()), "count"),
+            ("E-0001",),
+            f"Northbridge made {int(observed('tackles.v1', home, replay_window()))} interceptions.",
+        )
+    )
     scorer = EventFact(query="goal_scorer.v1", event_id="E-1366", player_id="nbr-09")
     first_goal = EventFact(query="goal_scorer.v1", event_id="E-0688", player_id="nbr-09")
     binding_facts: list[tuple[str, EventFact, tuple[str, ...], str]] = [

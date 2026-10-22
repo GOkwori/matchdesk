@@ -255,6 +255,18 @@ test('tactical filters recount shots from real event locations', async ({ page }
   await expect(page.getByRole('heading', { name: /Shot map · first half/ })).toBeVisible();
 });
 
+test('tactical analysis shows passing quality and defending from registered metrics, and asks who led', async ({ page }) => {
+  await open(page, '/match/nbr-riv/tactical');
+  const panel = page.getByRole('region', { name: 'Passing quality and defending' });
+  await expect(panel.getByText('Tackles: Northbridge 33, Riverside 33')).toBeAttached();
+  await expect(panel.getByText('Progressive passes: Northbridge 101, Riverside 60')).toBeAttached();
+  await expect(panel.getByText(/there is no tracking data/)).toBeVisible();
+  await panel.getByRole('button', { name: 'Ask who led the tackles' }).click();
+  const turn = page.getByRole('article', { name: 'Answer to: Who made the most tackles?' });
+  await expect(turn.locator('.md-chip-verified')).toHaveCount(3);
+  await expect(turn.getByText(/Sorensen made 8 tackles/)).toBeVisible();
+});
+
 test('the live run shows first, the rehearsal sends a draft back, and verified claims wait for a human', async ({ page }) => {
   await open(page, '/match/nbr-riv/insights');
   const runs = page.getByRole('group', { name: 'Which run' });

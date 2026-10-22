@@ -121,6 +121,10 @@ def _expected_quantity(claim: Claim) -> tuple[str, Decimal] | None:
             return "count", round_half_up(
                 assertion.value, 2 if assertion.decimals is None else assertion.decimals
             )
+        if assertion.unit in _MEASURE_UNITS:
+            return "count", round_half_up(
+                assertion.value, 1 if assertion.decimals is None else assertion.decimals
+            )
         return None
     if claim.fact is not None and claim.fact.gap_seconds is not None:
         return "count", Decimal(claim.fact.gap_seconds)
@@ -137,6 +141,9 @@ def _subject_id(claim: Claim) -> str | None:
     return None
 
 
+# Units stated as a plain number at one decimal place unless the assertion says otherwise.
+_MEASURE_UNITS = frozenset({"metres", "km_per_hour", "rating", "per_minute"})
+
 _NEGATION = re.compile(
     _B + r"(?:not|no|never|none|neither|nor|without|failed to|fails to|[a-z]+n't|cannot)" + _E
 )
@@ -146,6 +153,14 @@ _METRIC_WORDS: tuple[tuple[str, str], ...] = (
     ("synthetic_xg.v1", r"expected goals|xg"),
     ("final_third_entries.v1", r"final[- ]third"),
     ("possession_time.v1", r"possession|of the ball"),
+    ("pass_difficulty.v1", r"pass(?:ing)? difficulty|difficulty(?: rating)?"),
+    ("pass_distance.v1", r"pass(?:es|ing)? (?:length|distance)|metres|meters"),
+    ("progressive_passes.v1", r"progressive pass(?:es)?"),
+    ("pressured_passes.v1", r"pass(?:es)? under pressure|pressured pass(?:es)?"),
+    ("ball_speed.v1", r"ball speed|km/h|speed"),
+    ("tackles.v1", r"tackles?|tackled"),
+    ("interceptions.v1", r"interceptions?|intercepted"),
+    ("recoveries.v1", r"ball recover(?:y|ies)|recover(?:y|ies|ed)|won the ball back"),
     ("pass_accuracy.v1", r"pass(?:es|ing)?"),
     ("shots.v1", r"shots?|attempts?|efforts?"),
     ("goals.v1", r"goals?|scor(?:ed|es|ing)|brace|hat[- ]trick|netted|scoresheet"),
