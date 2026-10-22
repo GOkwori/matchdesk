@@ -1,0 +1,203 @@
+name: Azure demo (studio and API)
+
+# Deploys the competition demo described in infra/azure/demo.bicep: the studio and the API on
+# Azure Container Apps, with the Ask MatchDesk planner on Microsoft Foundry when switched on.
+# what-if is read-only and creates nothing. deploy needs the typed confirmation.
+# Rollback: delete the resource group; the Vercel copy of the studio is unaffected.
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "what-if (read-only) or deploy"
+        required: true
+        type: choice
+        options: [what-if, deploy]
+        default: what-if
+      assistant:
+        description: "Switch on the Ask MatchDesk planner on Microsoft Foundry"
+        required: true
+        type: boolean
+        default: true
+      confirm:
+        description: "For deploy only: type DEPLOY_MATCHDESK_DEMO_TO_AZURE"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: azure-demo
+  cancel-in-progress: false
+
+jobs:
+  demo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      AZURE_CORE_OUTPUT: none
+      RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+      TEMPLATE: infra/azure/demo.bicep
+    steps:
+      - name: Require explicit owner authorisation to deploy
+        if: ${{ inputs.mode == 'deploy' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${{ inputs.confirm }}" = "DEPLOY_MATCHDESK_DEMO_TO_AZURE"
+
+      - name: Require deployment configuration
+        shell: bash
+        env:
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          FOUNDRY_PROJECT_ENDPOINT: ${{ secrets.FOUNDRY_PROJECT_ENDPOINT }}
+          FOUNDRY_MODEL: ${{ secrets.FOUNDRY_MODEL }}
+        run: |
+          set -euo pipefail
+          missing=()
+          for name in AZURE_CLIENT_ID AZURE_TENANT_ID AZURE_SUBSCRIPTION_ID RESOURCE_GROUP; do
+            [ -n "${!name}" ] || missing+=("$name")
+          done
+          if [ "${{ inputs.assistant }}" = "true" ]; then
+            for name in FOUNDRY_PROJECT_ENDPOINT FOUNDRY_MODEL; do [ -n "${!name}" ] || missing+=("$name"); done
+          fi
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "::error title=Missing configuration::Set these repository secrets or variables: ${missing[*]}"
+            exit 1
+          fi
+
+      - name: Check out exact source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+
+      - name: Authenticate to Azure with GitHub OIDC
+        uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Register the resource providers the demo needs
+        shell: bash
+        run: |
+          set -euo pipefail
+          for ns in Microsoft.App Microsoft.ContainerRegistry Microsoft.OperationalInsights Microsoft.ManagedIdentity; do
+            state="$(az provider show --namespace "$ns" --query registrationState -o tsv 2>/dev/null || echo unknown)"
+            if [ "$state" != "Registered" ]; then
+              az provider register --namespace "$ns" --wait || echo "::warning::Could not register $ns ($state); an owner may need to register it"
+            fi
+          done
+
+      - name: Preview the base resources (what-if, read-only)
+        shell: bash
+        run: |
+          set -euo pipefail
+          az deployment group what-if --resource-group "$RESOURCE_GROUP" \
+            --template-file "$TEMPLATE" --parameters deployApps=false \
+            budgetContactEmails='${{ vars.AZURE_BUDGET_EMAILS || '[]' }}'
+
+      - name: Create or update the base resources
+        if: ${{ inputs.mode == 'deploy' }}
+        id: base
+        shell: bash
+        run: |
+          set -euo pipefail
+          out="$(az deployment group create --resource-group "$RESOURCE_GROUP" --name matchdesk-demo-base \
+            --template-file "$TEMPLATE" --parameters deployApps=false \
+            budgetContactEmails='${{ vars.AZURE_BUDGET_EMAILS || '[]' }}' \
+            --query properties.outputs -o json)"
+          for key in registryLoginServer registryName environmentDefaultDomain webUrl identityPrincipalId; do
+            echo "$key=$(jq -r ".$key.value" <<<"$out")" >> "$GITHUB_OUTPUT"
+          done
+
+      - name: Build and push both images to the registry
+        if: ${{ inputs.mode == 'deploy' }}
+        shell: bash
+        env:
+          REGISTRY: ${{ steps.base.outputs.registryLoginServer }}
+          REGISTRY_NAME: ${{ steps.base.outputs.registryName }}
+          WEB_URL: ${{ steps.base.outputs.webUrl }}
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_SHA}"
+          az acr login --name "$REGISTRY_NAME"
+          # The studio calls the API by its app name inside the environment; the browser only ever
+          # sees same-origin /api paths. The public URL goes into canonical links and social cards.
+          docker build --file apps/web/Dockerfile \
+            --build-arg MATCHDESK_API_ORIGIN=http://mdesk-api \
+            --build-arg MATCHDESK_SITE_URL="$WEB_URL" \
+            --tag "$REGISTRY/matchdesk-web:$tag" .
+          docker build --file backend/Dockerfile --tag "$REGISTRY/matchdesk-api:$tag" .
+          docker push "$REGISTRY/matchdesk-web:$tag"
+          docker push "$REGISTRY/matchdesk-api:$tag"
+
+      - name: Create or update the studio and API apps
+        if: ${{ inputs.mode == 'deploy' }}
+        shell: bash
+        env:
+          REGISTRY: ${{ steps.base.outputs.registryLoginServer }}
+          FOUNDRY_PROJECT_ENDPOINT: ${{ secrets.FOUNDRY_PROJECT_ENDPOINT }}
+          FOUNDRY_MODEL: ${{ secrets.FOUNDRY_MODEL }}
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_SHA}"
+          for attempt in 1 2 3; do
+            # A new pull identity can take a minute to be honoured by the registry; retry.
+            if az deployment group create --resource-group "$RESOURCE_GROUP" --name matchdesk-demo-apps \
+              --template-file "$TEMPLATE" --parameters deployApps=true \
+              webImage="$REGISTRY/matchdesk-web:$tag" apiImage="$REGISTRY/matchdesk-api:$tag" \
+              assistantEnabled=${{ inputs.assistant }} \
+              foundryProjectEndpoint="$FOUNDRY_PROJECT_ENDPOINT" foundryModel="$FOUNDRY_MODEL" \
+              budgetContactEmails='${{ vars.AZURE_BUDGET_EMAILS || '[]' }}'; then
+              exit 0
+            fi
+            echo "::warning::App deployment attempt $attempt failed; retrying in 60 s"
+            sleep 60
+          done
+          exit 1
+
+      - name: Smoke-test the public studio and the API behind it
+        if: ${{ inputs.mode == 'deploy' }}
+        shell: bash
+        env:
+          WEB_URL: ${{ steps.base.outputs.webUrl }}
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 30); do
+            code="$(curl -s -o /dev/null -w '%{http_code}' "$WEB_URL/")" && [ "$code" = "200" ] && break
+            sleep 10
+          done
+          for path in / /match/nbr-riv /match/nbr-riv/insights /producer/compose/D-031 /story/okafor-header-restores-northbridge-lead /sw.js; do
+            code="$(curl -s -o /dev/null -w '%{http_code}' "$WEB_URL$path")"
+            echo "$path -> $code"
+            [ "$code" = "200" ]
+          done
+          curl -sI "$WEB_URL/" | grep -i '^content-security-policy:'
+          health="$(curl -s "$WEB_URL/api/health")"
+          echo "api health: $health"
+          grep -q '"status"' <<<"$health"
+          if [ "${{ inputs.assistant }}" = "true" ]; then
+            plan="$(curl -s -X POST "$WEB_URL/api/assistant/plan" -H 'content-type: application/json' \
+              -d '{"question":"Did the side in stripes run out of steam after the break?"}')"
+            echo "planner: $plan"
+            grep -q '"plan"' <<<"$plan"
+            if grep -q '"intent":"unknown"' <<<"$plan"; then
+              echo "::warning title=Foundry access::The planner answered 'unknown'. If this persists, give the managed identity ${{ steps.base.outputs.identityPrincipalId }} the Azure AI User role on the Foundry project."
+            fi
+          fi
+
+      - name: Summarise the deployment
+        if: ${{ inputs.mode == 'deploy' && always() }}
+        shell: bash
+        run: |
+          {
+            echo "### MatchDesk demo on Azure"
+            echo "- Studio: ${{ steps.base.outputs.webUrl }}"
+            echo "- Source: \`${GITHUB_SHA}\`"
+            echo "- Planner identity (principal ID): \`${{ steps.base.outputs.identityPrincipalId }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "::notice title=MatchDesk demo on Azure::Studio ${{ steps.base.outputs.webUrl }} from ${GITHUB_SHA}; planner identity principal ${{ steps.base.outputs.identityPrincipalId }}"
