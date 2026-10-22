@@ -251,6 +251,7 @@ test('the live run shows first, the rehearsal sends a draft back, and verified c
   await expect(page.getByRole('note').filter({ hasText: 'Microsoft Foundry via Agent Framework' })).toBeVisible();
   await expect(page.getByText(/rejected by the claim contract, so the host retried/)).toBeVisible();
   await expect(page.getByText('9 versions of the 58′ story')).toBeVisible();
+  await expect(page.getByText(/Words around it, such as praise or emphasis, are tone and are not checked/)).toBeVisible();
   await runs.getByRole('button', { name: 'Rehearsal' }).click();
   await expect(page.getByRole('note').filter({ hasText: 'Rehearsal run' })).toBeVisible();
   await expect(page.getByText('Sent back')).toBeVisible();

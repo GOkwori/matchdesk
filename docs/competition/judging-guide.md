@@ -24,16 +24,42 @@ seven stops:
    sentence (change 58% to 60%) and it fails as you type.
 7. **Fan story.** The verified story in English, Spanish or French, with its checks.
 
+At any point, press **Ask** and question the match: "What's the score?", "Who scored the
+second goal?", "Possession after 60 minutes", "Which team had the most shots?". Every
+figure in an answer is computed by a registered metric and checked by the same verifier,
+with "How this was checked" under each line. Questions it cannot check (a header, the
+season, "after the equaliser") are declined rather than answered with a nearby figure.
+
 ## What is real and what is staged
 
 | Part | Status |
 | --- | --- |
 | Event log, metrics, moment detection | Deterministic code over synthetic data |
-| Claim verification (numbers, names, citations, event facts) | Real; the same verifier runs in Python and, ported exactly, in the browser |
+| Claim verification (numbers, names, statistic, time window, team, citations, event facts) | Real; the same verifier runs in Python and, ported exactly, in the browser. Limits below |
+| Ask MatchDesk | Real; answers are built from registered metrics and verified before they are shown. An optional Foundry planner may only turn a question into a query plan, and it is off on the hosted demo |
 | Four-specialist workflow | Real orchestration, role-scoped tools and verification loop. AI insights shows a live run recorded on Microsoft Foundry on 21 October 2026 (replayed, not called on page load) beside the deterministic rehearsal; every verdict in both is re-checked by the test suite |
-| Audience variants | Produced by the Audience Adapter; human language review not run |
+| Audience variants | Produced by the Audience Adapter. Each cites only verified claims, and its fact comes from them; the surrounding tone ("Incredible performance!") is labelled as not checked. Human language review not run |
 | Producer approval and publishing | Not enabled; Approve is shown locked |
 | Identity, hosting of the backend | Not part of the demo |
+
+## What the verifier does not check
+
+The verifier is deliberately narrow, and fails closed: a sentence it cannot read is sent
+back for revision rather than passed.
+
+- **It checks:** the stated number against a recomputation from all events, at the stated
+  precision; the named player or team; the statistic word (goals, shots, possession, pass
+  accuracy, xG, final-third entries) and no other; the team; the time window ("in the second
+  half", "since 60′"); for event facts, the clock time, minute and recorded details such as a
+  header; that cited events are ones the metric counts; and that nothing reads past the
+  replay point. Negative sentences ("did not score") are sent back, not checked.
+- **It does not check:** tone and judgement ("a critical goal", "dominant"), which are shown
+  as interpretation; Spanish and French sentences word by word (they carry the verified
+  claims they cite and need a human language review); anything outside its fixed vocabulary
+  of statistic and detail words; event facts beyond the two registered queries (who scored,
+  and the gap between two events).
+- **Data limits:** one synthetic match. Possession is time on the ball between consecutive
+  events, not tracking data, and synthetic xG is this demo's own model.
 
 ## Running it yourself
 
