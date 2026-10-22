@@ -365,7 +365,8 @@ class FileFeedDestination:
 
     Suits a static feed that a site or app reads. Writing the same publication again returns the
     original receipt; different content under the same ID is refused. Files are durable before the
-    receipt is returned and readable by the feed's readers.
+    receipt is returned. Files keep mkstemp's owner-only mode (0600), so no other account on the
+    host can read them; serve the feed from the account that writes it.
     """
 
     def __init__(self, name: DestinationName, directory: Path) -> None:
@@ -394,7 +395,6 @@ class FileFeedDestination:
                     handle.write(body)
                     handle.flush()
                     os.fsync(handle.fileno())
-                os.chmod(temp, 0o644)
                 try:
                     # link() refuses an existing target, so two writers cannot overwrite each other.
                     os.link(temp, target)
