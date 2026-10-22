@@ -34,7 +34,8 @@
 .md-small { font-size: 12px; }
 .md-mono { font-size: 0.92em; }
 .md-eyebrow { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 800; color: var(--md-accent-soft); }
-.md-link { display: inline-flex; align-items: center; gap: 4px; color: var(--md-accent-soft); text-decoration: none; font-size: 13px; font-weight: 600; }
+/* min-height keeps standalone text links at the 24 px target size (WCAG 2.2, 2.5.8). */
+.md-link { display: inline-flex; align-items: center; gap: 4px; min-height: 24px; color: var(--md-accent-soft); text-decoration: none; font-size: 13px; font-weight: 600; }
 .md-link:hover { text-decoration: underline; }
 .md-empty { color: var(--md-muted); padding: 10px 0; }
 .md-h3 { font-size: 14px; font-weight: 700; margin-top: 4px; }
@@ -129,7 +130,7 @@
 .md-strip-num { font-size: 20px; letter-spacing: 0.04em; padding: 0 4px; }
 .md-crumbs ol { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; color: var(--md-muted); font-size: 13px; }
 .md-crumbs li { display: inline-flex; gap: 6px; }
-.md-crumbs a { color: var(--md-muted); text-decoration: none; }
+.md-crumbs a { display: inline-flex; align-items: center; min-height: 24px; color: var(--md-muted); text-decoration: none; }
 .md-crumbs a:hover { color: var(--md-text); text-decoration: underline; }
 .md-crumbs [aria-current="page"] { color: var(--md-text); }
 
@@ -572,6 +573,8 @@ html[data-md-text="large"] body.md-root { zoom: 1.125; }
 
 /* ---------- Phone: < 768px ---------- */
 @media (max-width: 767px) {
+  /* The bottom tab bar is fixed; keep keyboard focus from scrolling under it (WCAG 2.2, 2.4.11). */
+  html { scroll-padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
   .md-side { display: none; }
   .md-mobile-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 14px 16px 6px; }
   .md-mobile-top .md-logo { font-size: 19px; }
@@ -631,7 +634,7 @@ html[data-md-motion="reduce"] .md-skel-block { animation: none; }
 /* Agent run replay (Insights). */
 .md-trace-claims { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .md-trace-claims li { display: flex; flex-wrap: wrap; gap: 6px; align-items: baseline; }
-.md-trace-tools summary { cursor: pointer; color: var(--md-accent-soft); font-size: 12px; font-weight: 700; }
+.md-trace-tools summary { cursor: pointer; min-height: 24px; padding-block: 3px; color: var(--md-accent-soft); font-size: 12px; font-weight: 700; }
 .md-trace-tools ol { margin: 6px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--md-muted); overflow-wrap: anywhere; }
 .md-trace-tools code { font-family: var(--md-font-mono); color: var(--md-text); }
 .md-trace-failed { border-color: rgba(255, 133, 142, 0.55); }
@@ -639,3 +642,90 @@ html[data-md-motion="reduce"] .md-skel-block { animation: none; }
 .md-cc-edit textarea { width: 100%; min-height: 44px; resize: vertical; font: inherit; font-size: 13px; color: var(--md-text); background: var(--md-canvas); border: 1px solid var(--md-control-line); border-radius: 8px; padding: 6px 8px; }
 .md-cc-edit textarea:focus-visible { outline: none; box-shadow: var(--md-focus); }
 .md-cc-reason { font-size: 12px; color: var(--md-error); }
+
+
+/* ---------- Bound, human review dialog (preview-only until operator UAT) ----------
+ * Real native modal top-layer focus trapping; no system confirm() or toast. */
+.md-decision-dialog {
+  width: min(640px, calc(100vw - 32px));
+  max-height: min(88dvh, 900px);
+  margin: auto;
+  padding: 0;
+  overflow: auto;
+  border: 1px solid var(--md-control-line);
+  border-radius: var(--md-radius-xl);
+  background: var(--md-panel);
+  color: var(--md-text);
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.85);
+}
+.md-decision-dialog::backdrop {
+  background: rgba(3, 7, 13, 0.78);
+}
+.md-decision-content {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: clamp(16px, 4vw, 28px);
+}
+.md-decision-content h2 { font-size: clamp(19px, 3vw, 24px); line-height: 1.25; }
+.md-decision-content p { overflow-wrap: anywhere; }
+.md-decision-binding {
+  display: grid;
+  gap: 0;
+  padding: 0;
+  margin: 4px 0;
+  border: 1px solid var(--md-line);
+  border-radius: var(--md-radius-md);
+  overflow: hidden;
+}
+.md-decision-binding > div {
+  display: grid;
+  grid-template-columns: minmax(115px, 1fr) minmax(0, 2fr);
+  gap: 10px;
+  padding: 9px 12px;
+  align-items: start;
+  background: var(--md-raised);
+  border-bottom: 1px solid var(--md-line);
+}
+.md-decision-binding > div:last-child { border-bottom: 0; }
+/* Ensure wrapped mobile review labels retain WCAG AA contrast on raised rows. */
+.md-decision-binding dt { color: var(--md-text-body); font-weight: 600; }
+.md-decision-binding dd {
+  margin: 0;
+  min-width: 0;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.md-decision-digest code {
+  font-family: var(--md-font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  word-break: break-all;
+}
+.md-decision-dialog form { display: grid; gap: 10px; }
+.md-decision-label { display: block; color: var(--md-text); font-weight: 700; }
+.md-decision-reason {
+  width: 100%;
+  min-height: var(--md-touch);
+  border: 1px solid var(--md-control-line);
+  border-radius: var(--md-radius-md);
+  background: var(--md-canvas);
+  color: var(--md-text);
+  font: inherit;
+  padding: 10px 12px;
+}
+.md-decision-reason:disabled { opacity: 0.55; }
+.md-decision-error { color: var(--md-error); font-weight: 700; }
+.md-decision-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  margin-top: 6px;
+}
+.md-decision-actions .md-btn { min-height: var(--md-touch); }
+@media (max-width: 420px) {
+  .md-decision-binding > div { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .md-decision-actions { flex-direction: column; }
+  .md-decision-actions .md-btn { width: 100%; }
+}

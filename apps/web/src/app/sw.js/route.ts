@@ -15,7 +15,8 @@ const source = `/* MatchDesk offline worker · build ${BUILD} */
 const BUILD = ${JSON.stringify(BUILD)};
 const PAGES = "md-pages-" + BUILD;
 const ASSETS = "md-assets";
-const ROUTES = ${JSON.stringify(siteRoutes.map((r) => r.path))};
+const ROUTES = ${JSON.stringify(siteRoutes.map((r) => r.path).filter((p) => !["/workforce/", "/operator/", "/producer/secure/"].some((prefix) => p.startsWith(prefix))))};
+const PRIVATE_PREFIXES = ["/api/", "/workforce/", "/operator/", "/producer/secure/"];
 const EXTRA = ["/manifest.webmanifest", "/icon.png", "/apple-icon.png", "/favicon.ico"];
 
 const assetUrls = (text) => {
@@ -93,7 +94,8 @@ self.addEventListener("fetch", (event) => {
   const { request } = event;
   if (request.method !== "GET") return;
   const url = new URL(request.url);
-  if (url.origin !== self.location.origin || url.pathname.startsWith("/api/")) return;
+  // Never precache, offline-fallback, or intercept any authenticated operator URL.
+  if (url.origin !== self.location.origin || PRIVATE_PREFIXES.some((p) => url.pathname.startsWith(p))) return;
   if (request.mode === "navigate") { event.respondWith(page(request)); return; }
   if (url.pathname.startsWith("/_next/static/") || EXTRA.includes(url.pathname)) { event.respondWith(asset(request)); return; }
 });

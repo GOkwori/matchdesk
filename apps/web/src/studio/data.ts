@@ -244,27 +244,39 @@ export const STORY_SLUG = "okafor-header-restores-northbridge-lead";
 export type Language = "en" | "es" | "fr";
 
 /** Scripted, unreviewed fan-story copy, bound to the same verified claim (CL-0213). */
-export const storyCopy: Record<Language, { label: string; headline: [string, string]; body: string; checks: [string, string, string]; matches: string; failed: string; notChecked: string; title: string; note: string; caption: string }> = {
+export const storyCopy: Record<Language, { label: string; headline: [string, string]; body: string; checks: [string, string, string]; matches: string; failed: string; notChecked: string; title: string; note: string; caption: string; translation: string; verified: [string, string]; score: string; diagram: string }> = {
   en: {
     label: "English", title: "How we checked this", headline: ["58′ Goal for ", "Northbridge FC"],
     body: "Okafor rises to head in a corner from the right, his second of the match, and Northbridge lead again.",
     checks: ["Goal scorer", "Corner, then goal 14 s later", "Defender positions"],
     matches: "Matches event log", failed: "Does not match the log", notChecked: "Not checked · no data",
     note: "Fans only see this after a producer approves it.", caption: "① Corner from the right · ② Okafor header, 14 seconds later",
+    translation: "",
+    verified: ["Verified moment", "checked against the match event log"],
+    score: "Northbridge 2, Riverside 1 at 58:17",
+    diagram: "Diagram: corner from the right at 58:03, headed goal inside the six-yard box at 58:17",
   },
   es: {
     label: "Español", title: "Cómo lo comprobamos", headline: ["Gol de ", "Northbridge FC en el 58′"],
-    body: "Okafor cabecea un córner desde la derecha, su segundo gol del partido, y Northbridge vuelve a ponerse por delante.",
-    checks: ["Autor del gol", "Córner y gol 14 s después", "Posición de los defensas"],
-    matches: "Coincide con el registro", failed: "No coincide con el registro", notChecked: "Sin comprobar · sin datos",
-    note: "Los aficionados solo lo ven cuando un productor lo aprueba.", caption: "① Córner desde la derecha · ② Cabezazo de Okafor, 14 segundos después",
+    body: "Okafor remata de cabeza un córner desde la derecha, su segundo gol del partido, y Northbridge vuelve a ponerse por delante.",
+    checks: ["Autor del gol", "Córner y gol 14\u00a0s después", "Posición de los defensas"],
+    matches: "Coincide con el registro de eventos", failed: "No coincide con el registro de eventos", notChecked: "Sin comprobar · sin datos",
+    note: "Los aficionados solo lo ven cuando un productor lo aprueba.", caption: "① Córner desde la derecha · ② Cabezazo de Okafor, 14\u00a0segundos después",
+    translation: "Traducción asistida por IA, pendiente de revisión por un hablante nativo.",
+    verified: ["Momento verificado", "comprobado con el registro de eventos del partido"],
+    score: "Northbridge 2, Riverside 1 en el 58:17",
+    diagram: "Diagrama: córner desde la derecha en el 58:03, gol de cabeza dentro del área pequeña en el 58:17",
   },
   fr: {
     label: "Français", title: "Comment nous l’avons vérifié", headline: ["But de ", "Northbridge FC à la 58e"],
     body: "Okafor reprend de la tête un corner venu de la droite, son deuxième but du match, et Northbridge repasse devant.",
-    checks: ["Buteur", "Corner, puis but 14 s plus tard", "Position des défenseurs"],
-    matches: "Conforme au journal", failed: "Non conforme au journal", notChecked: "Non vérifié · pas de données",
-    note: "Les supporters ne le voient qu’après validation par un producteur.", caption: "① Corner côté droit · ② Tête d’Okafor, 14 secondes plus tard",
+    checks: ["Buteur", "Corner, puis but 14\u00a0s plus tard", "Position des défenseurs"],
+    matches: "Conforme au journal d’événements", failed: "Non conforme au journal d’événements", notChecked: "Non vérifié · pas de données",
+    note: "Les supporters ne le voient qu’après validation par un producteur.", caption: "① Corner côté droit · ② Tête d’Okafor, 14\u00a0secondes plus tard",
+    translation: "Traduction assistée par IA, relecture par un locuteur natif en attente.",
+    verified: ["Moment vérifié", "contrôlé avec le journal d’événements du match"],
+    score: "Northbridge 2, Riverside 1 à 58:17",
+    diagram: "Schéma\u00a0: corner côté droit à 58:03, but de la tête dans les six mètres à 58:17",
   },
 };
 

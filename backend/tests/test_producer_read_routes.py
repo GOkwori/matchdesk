@@ -168,6 +168,33 @@ def test_read_route_requires_explicit_dependencies_and_validated_bearer(monkeypa
     assert reader.reads == 1
 
 
+@pytest.mark.parametrize(
+    "untrusted",
+    [
+        replace(actor(), roles=frozenset({"auditor"})),
+        replace(actor(), tenant_id="11111111-2222-3333-4444-555555555555"),
+        replace(actor(), issuer="https://foreign.invalid/v2.0"),
+        replace(actor(), permitted_sessions=frozenset({"different-session"})),
+        object(),
+    ],
+    ids=["non-producer", "foreign-tenant", "foreign-issuer", "foreign-session", "wrong-type"],
+)
+def test_read_route_rechecks_workforce_trust_before_storage(monkeypatch, untrusted):
+    """A defective verifier must not confer tenant data inspection rights."""
+    reader = Reader(case())
+    router = create_producer_read_router(
+        policy=POLICY, keys=object_with_resolve(), entitlements=object_with_resolve(), reader=reader
+    )
+    client = TestClient(create_app(producer_read_router=router))
+    import matchdesk.api.producer_read_routes as routes
+
+    monkeypatch.setattr(routes, "verify_producer_access_token", lambda *_a, **_k: untrusted)
+    response = client.get(URL, headers={"Authorization": "Bearer offline-test"})
+    assert response.status_code == 403
+    assert response.headers["Cache-Control"] == "no-store"
+    assert reader.reads == 0
+
+
 class Resolver:
     """Constructable dependency mock with no trustable keys or grants."""
 
