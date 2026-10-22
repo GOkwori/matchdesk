@@ -230,6 +230,13 @@ def approval_rules(r: Run) -> dict:
             lambda partial=partial: r.queue(pub, en, "match_centre", en_key, binding_json=partial),
             "complete approval binding",
         )
+    respelled = json.loads(en.model_dump_json())
+    respelled["item_version"] = 1.0
+    refused(
+        "the approved version respelled as 1.0",
+        lambda: r.queue(pub, en, "match_centre", en_key, binding_json=respelled),
+        "complete approval binding",
+    )
     revised = r.binding("en", "revised later")
     revised_key = r.approve(revised)
     r.revise(revised_key, revised)
@@ -358,7 +365,7 @@ def four_eyes_rules(r: Run, s: dict) -> None:
             "INSERT INTO matchdesk_publication_outbox SELECT tenant_id, %s, session_id, output_id,"
             " producer_generation, binding_json, language, content_digest, persona, 'social',"
             " producer_actor_id, publisher_actor_id, review_id, reviewer_actor_id, max_attempts,"
-            " 'queued', 0, NULL, NULL, NULL, NULL, queued_by, created_at, updated_at"
+            " 'queued', 0, NULL, NULL, NULL, NULL, NULL, queued_by, created_at, updated_at"
             " FROM matchdesk_publication_outbox WHERE tenant_id = %s AND publication_id = %s",
             ("f" * 64, TENANT, s["en_id"]),
         ),
@@ -383,6 +390,13 @@ def delivery_rules(r: Run, s: dict) -> None:
         "No attempt is in flight under this claim",
     )
     claimed = r.claim(en_id)
+    stored = r.owner.execute(
+        "SELECT claim_digest FROM matchdesk_publication_outbox WHERE tenant_id = %s"
+        " AND publication_id = %s",
+        (TENANT, en_id),
+    ).fetchone()[0]
+    token_digest = hashlib.sha256(claimed["claim_token"].encode()).hexdigest()
+    check("only a digest of the claim is stored", stored == token_digest)
     check(
         "a claim returns the approved binding",
         claimed["binding"]["content_digest"] == en.content_digest,
@@ -433,17 +447,31 @@ def delivery_rules(r: Run, s: dict) -> None:
     lease_id, _ = r.queue(pub, lease_b, "match_centre", lease_key, max_attempts=2)
     stale = r.claim(lease_id, lease=5)
     check("a short lease is granted", stale is not None)
-    refused("a lease below the floor", lambda: r.claim(lease_id, lease=1), "between 5 and 3600")
+    refused("a lease below the floor", lambda: r.claim(lease_id, lease=1), "between 5 and 900")
     time.sleep(6)
     fresh = r.claim(lease_id)
     check("an expired lease is reclaimed", fresh is not None)
     check("the lost attempt was counted", r.row(lease_id)[1] == 1)
     refused(
-        "the expired claim cannot record",
-        lambda: r.record(lease_id, stale["claim_token"], "delivered", "late"),
-        "No attempt is in flight under this claim",
+        "an expired claim reporting failure",
+        lambda: r.record(lease_id, stale["claim_token"], "failed", error="late"),
+        "its attempt was already counted",
     )
     r.record(lease_id, fresh["claim_token"], "delivered", "receipt-lease")
+
+    # The last attempt's lease expires unreported: the outcome is unknown, not abandoned, and the
+    # sender can still report its success.
+    last = r.binding("en", "last chance")
+    last_key = r.approve(last)
+    last_id, _ = r.queue(pub, last, "match_centre", last_key, max_attempts=1)
+    lost = r.claim(last_id, lease=5)
+    time.sleep(6)
+    check("nothing more is sent after the last lease", r.claim(last_id) is None)
+    check("the outcome is unconfirmed", r.row(last_id)[:2] == ("unconfirmed", 1))
+    check(
+        "a late success is recorded",
+        r.record(last_id, lost["claim_token"], "delivered", "receipt-late") == "delivered",
+    )
 
     check("withdrawn after a language objection", r.claim(s["es_id"]) is None)
     status, _, reason, _, _ = r.row(s["es_id"])

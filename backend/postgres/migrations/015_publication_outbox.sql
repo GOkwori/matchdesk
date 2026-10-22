@@ -16,10 +16,20 @@
 --   no caller can read past a review committed while it waited for that lock.
 -- * Each delivery attempt is claimed first. The claim re-checks the approval and the review and
 --   withdraws the row if either no longer holds; otherwise it moves the row to in_flight with a
---   random claim token and a lease. Only the holder of the token can record the outcome. A lease
---   that expires without an outcome counts as a failed attempt. Destinations must still be
---   idempotent on publication ID, because a sender that outlives its lease may race a retry.
--- * Withdrawn and abandoned rows are final. Publishing that content again needs a new version.
+--   random claim token and a lease of at most 15 minutes. Only the holder of the token can record
+--   the outcome. Content sent under a live claim is recorded as delivered even if the approval
+--   changes during the lease: it has already gone out. Destinations must still be idempotent on
+--   publication ID, because a sender that outlives its lease may race a retry.
+-- * Only a digest of each claim token is stored, so a login that can read the outbox cannot
+--   record another worker's outcome. A lease that expires unreported counts as one attempt; if it
+--   was the last, the row is 'unconfirmed' (never 'abandoned', since the send may have worked),
+--   and the expired claim can still report a late success.
+-- * Queueing stores and hashes the producer audit's own binding, never the caller's spelling of
+--   it, so 1 and 1.0 cannot become two publications of one version.
+-- * Withdrawn, abandoned and delivered rows are final; unconfirmed rows can only become
+--   delivered. Publishing that content again needs a new version.
+-- * Two-person rules: the publisher and the language reviewer each differ from the producer. The
+--   publisher may also be the language reviewer.
 -- * Human actor IDs are asserted by the authenticated host (as in 001). The database records the
 --   physical login that made each change next to them, so an asserted identity is attributable.
 --   Logins are not bound to tenants; one deployment serves one organisation.
@@ -66,6 +76,7 @@ RETURNS text LANGUAGE sql IMMUTABLE STRICT SET search_path = pg_catalog, pg_temp
             'content_digest', 'evidence_digest', 'item_id', 'item_version', 'language',
             'persona', 'replay_id', 'schema_version']::text[]
         AND jsonb_typeof(p_binding->'item_version') = 'number'
+        AND p_binding->>'item_version' ~ '^[1-9][0-9]*$'
         AND p_binding->>'schema_version' = '1.0'
     THEN encode(sha256(convert_to(concat_ws(chr(31),
         'matchdesk-publication-v1', p_binding->>'item_id', p_binding->>'item_version',
@@ -106,17 +117,23 @@ CREATE TABLE IF NOT EXISTS public.matchdesk_publication_outbox (
     reviewer_actor_id text,
     max_attempts integer NOT NULL CHECK (max_attempts BETWEEN 1 AND 10),
     status text NOT NULL CHECK (
-        status IN ('queued', 'in_flight', 'failed', 'delivered', 'abandoned', 'withdrawn')
+        status IN ('queued', 'in_flight', 'failed', 'delivered', 'abandoned', 'withdrawn',
+                   'unconfirmed')
     ),
     attempts integer NOT NULL CHECK (attempts BETWEEN 0 AND max_attempts),
-    claim_token uuid,
+    claim_digest text CHECK (claim_digest IS NULL OR claim_digest ~ '^[a-f0-9]{64}$'),
     claimed_until timestamptz,
+    expired_claim_digest text CHECK (
+        expired_claim_digest IS NULL OR expired_claim_digest ~ '^[a-f0-9]{64}$'
+    ),
     last_error text CHECK (last_error IS NULL OR length(last_error) <= 500),
     receipt text CHECK (receipt IS NULL OR length(receipt) BETWEEN 1 AND 200),
     queued_by text NOT NULL,
     created_at timestamptz NOT NULL,
     updated_at timestamptz NOT NULL,
     PRIMARY KEY (tenant_id, publication_id),
+    -- One row per approved version and destination, also under jsonb equality (1 = 1.0).
+    CONSTRAINT matchdesk_outbox_one_per_destination UNIQUE (tenant_id, destination, binding_json),
     -- The ID is the database's own hash of the binding and destination.
     CONSTRAINT matchdesk_outbox_computed_id CHECK (
         publication_id IS NOT DISTINCT FROM public.matchdesk_publication_id(binding_json, destination)
@@ -145,8 +162,8 @@ CREATE TABLE IF NOT EXISTS public.matchdesk_publication_outbox (
         OR (destination = 'broadcast_overlay' AND persona = 'broadcast_caption')
     ),
     CONSTRAINT matchdesk_outbox_claim_when_in_flight CHECK (
-        (status = 'in_flight') = (claim_token IS NOT NULL)
-        AND (claim_token IS NULL) = (claimed_until IS NULL)
+        (status = 'in_flight') = (claim_digest IS NOT NULL)
+        AND (claim_digest IS NULL) = (claimed_until IS NULL)
     ),
     CONSTRAINT matchdesk_outbox_receipt_when_delivered CHECK (
         (status = 'delivered') = (receipt IS NOT NULL)
@@ -166,8 +183,8 @@ BEGIN
         'output_id text, producer_generation bigint, binding_json jsonb, language text, '
         'content_digest text, persona text, destination text, producer_actor_id text, '
         'publisher_actor_id text, review_id bigint, reviewer_actor_id text, max_attempts integer, '
-        'status text, attempts integer, claim_token uuid, claimed_until timestamp with time zone, '
-        'last_error text, receipt text, queued_by text, created_at timestamp with time zone, '
+        'status text, attempts integer, claim_digest text, claimed_until timestamp with time zone, '
+        'expired_claim_digest text, last_error text, receipt text, queued_by text, created_at timestamp with time zone, '
         'updated_at timestamp with time zone' THEN
         RAISE EXCEPTION 'Publication outbox does not have the 015 shape (%); recreate it in the disposable database', actual;
     END IF;
@@ -192,7 +209,8 @@ CREATE OR REPLACE FUNCTION public.matchdesk_outbox_guard_insert()
 RETURNS trigger LANGUAGE plpgsql SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     IF NEW.status <> 'queued' OR NEW.attempts <> 0 OR NEW.receipt IS NOT NULL
-       OR NEW.last_error IS NOT NULL OR NEW.claim_token IS NOT NULL THEN
+       OR NEW.last_error IS NOT NULL OR NEW.claim_digest IS NOT NULL
+       OR NEW.expired_claim_digest IS NOT NULL THEN
         RAISE EXCEPTION 'A publication starts queued, unattempted and without a receipt';
     END IF;
     NEW.queued_by := session_user;
@@ -208,12 +226,18 @@ CREATE TRIGGER matchdesk_outbox_insert
 BEFORE INSERT ON public.matchdesk_publication_outbox
 FOR EACH ROW EXECUTE FUNCTION public.matchdesk_outbox_guard_insert();
 
--- Allowed moves: queued/failed -> in_flight (a claim) or withdrawn; in_flight -> failed,
--- delivered or abandoned (one attempt). Nothing leaves delivered, abandoned or withdrawn.
+-- Allowed moves:
+--   queued/failed -> in_flight (a claim) or withdrawn: no attempt is counted;
+--   in_flight -> failed, delivered or abandoned (a reported outcome), or failed or unconfirmed (a
+--   lease that expired unreported): exactly one attempt is counted;
+--   failed/in_flight/unconfirmed -> delivered when an expired claim reports success late: the
+--   attempt was already counted when its lease expired.
+-- Nothing leaves delivered, abandoned or withdrawn; unconfirmed only becomes delivered.
 CREATE OR REPLACE FUNCTION public.matchdesk_outbox_guard_transition()
 RETURNS trigger LANGUAGE plpgsql SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
-    IF OLD.status IN ('delivered', 'abandoned', 'withdrawn') THEN
+    IF OLD.status IN ('delivered', 'abandoned', 'withdrawn')
+       OR (OLD.status = 'unconfirmed' AND NEW.status <> 'delivered') THEN
         RAISE EXCEPTION 'A % publication is final', OLD.status;
     END IF;
     IF (NEW.tenant_id, NEW.publication_id, NEW.session_id, NEW.output_id, NEW.producer_generation,
@@ -234,7 +258,14 @@ BEGIN
         IF NEW.attempts <> OLD.attempts THEN
             RAISE EXCEPTION 'A claim or withdrawal is not a delivery attempt';
         END IF;
-    ELSIF NEW.status IN ('failed', 'delivered', 'abandoned') THEN
+    ELSIF NEW.status = 'delivered' AND OLD.status <> 'in_flight'
+          OR NEW.status = 'delivered' AND NEW.attempts = OLD.attempts THEN
+        -- A late success from an expired claim.
+        IF OLD.expired_claim_digest IS NULL OR NEW.attempts <> OLD.attempts
+           OR OLD.status NOT IN ('failed', 'in_flight', 'unconfirmed') THEN
+            RAISE EXCEPTION 'An attempt must be claimed before its outcome is recorded';
+        END IF;
+    ELSIF NEW.status IN ('failed', 'delivered', 'abandoned', 'unconfirmed') THEN
         IF OLD.status <> 'in_flight' THEN
             RAISE EXCEPTION 'An attempt must be claimed before its outcome is recorded';
         END IF;
@@ -294,6 +325,11 @@ FOR EACH STATEMENT EXECUTE FUNCTION public.matchdesk_block_publication_history_m
 -- dedicated SQLSTATE MDPUB so that delivery can tell them apart from faults: only a policy
 -- refusal withdraws a publication; a fault (a missing privilege, a timeout) is raised as is.
 -- ---------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.matchdesk_claim_digest(p_token uuid)
+RETURNS text LANGUAGE sql IMMUTABLE STRICT SET search_path = pg_catalog, pg_temp AS $$
+    SELECT encode(sha256(convert_to(p_token::text, 'UTF8')), 'hex');
+$$;
+
 CREATE OR REPLACE FUNCTION public.matchdesk_publication_preflight()
 RETURNS void LANGUAGE plpgsql SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
@@ -324,7 +360,7 @@ $$;
 -- then returns the audit entry at the case's current generation if it approves this binding.
 CREATE OR REPLACE FUNCTION public.matchdesk_current_approval(
     p_tenant text, p_session text, p_output text, p_binding jsonb,
-    OUT producer_actor_id text, OUT generation bigint
+    OUT producer_actor_id text, OUT generation bigint, OUT approved_binding jsonb
 ) LANGUAGE plpgsql SET search_path = pg_catalog, pg_temp AS $$
 DECLARE
     current_generation bigint;
@@ -345,6 +381,7 @@ BEGIN
     END IF;
     producer_actor_id := entry->>'actor_id';
     generation := current_generation;
+    approved_binding := entry->'binding';
 END;
 $$;
 
@@ -409,22 +446,30 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, pg_temp AS $$
 DECLARE
     approval record;
     review public.matchdesk_language_reviews%ROWTYPE;
-    v_id text := public.matchdesk_publication_id(p_binding, p_destination);
-    v_language text := p_binding->>'language';
+    v_binding jsonb;
+    v_id text;
+    v_language text;
 BEGIN
     PERFORM public.matchdesk_publication_preflight();
-    IF v_id IS NULL OR v_language IS NULL THEN
+    IF public.matchdesk_publication_id(p_binding, p_destination) IS NULL THEN
         RAISE EXCEPTION 'Publication needs a complete approval binding' USING ERRCODE = 'MDPUB';
     END IF;
     SELECT * INTO approval
     FROM public.matchdesk_current_approval(p_tenant, p_session, p_output, p_binding);
+    -- From here on the producer audit's own binding is used, never the caller's spelling of it.
+    v_binding := approval.approved_binding;
+    v_id := public.matchdesk_publication_id(v_binding, p_destination);
+    v_language := v_binding->>'language';
+    IF v_id IS NULL THEN
+        RAISE EXCEPTION 'The approved binding is not a complete 1.0 binding' USING ERRCODE = 'MDPUB';
+    END IF;
     IF lower(btrim(p_publisher_actor_id)) = lower(btrim(approval.producer_actor_id)) THEN
         RAISE EXCEPTION 'The publisher must not be the producer who approved'
             USING ERRCODE = 'MDPUB';
     END IF;
     IF v_language <> 'en' THEN
         review := public.matchdesk_current_language_approval(
-            p_tenant, p_binding->>'content_digest', v_language, approval.producer_actor_id);
+            p_tenant, v_binding->>'content_digest', v_language, approval.producer_actor_id);
     END IF;
     INSERT INTO public.matchdesk_publication_outbox AS o
         (tenant_id, publication_id, session_id, output_id, producer_generation, binding_json,
@@ -432,15 +477,16 @@ BEGIN
          review_id, reviewer_actor_id, max_attempts, status, attempts, queued_by,
          created_at, updated_at)
     VALUES
-        (p_tenant, v_id, p_session, p_output, approval.generation, p_binding,
-         v_language, p_binding->>'content_digest', p_binding->>'persona', p_destination,
+        (p_tenant, v_id, p_session, p_output, approval.generation, v_binding,
+         v_language, v_binding->>'content_digest', v_binding->>'persona', p_destination,
          approval.producer_actor_id, btrim(p_publisher_actor_id),
          review.review_id, review.reviewer_actor_id, p_max_attempts, 'queued', 0, session_user,
          clock_timestamp(), clock_timestamp())
-    ON CONFLICT ON CONSTRAINT matchdesk_publication_outbox_pkey DO NOTHING;
+    ON CONFLICT DO NOTHING;
     RETURN QUERY
         SELECT o.publication_id, o.status FROM public.matchdesk_publication_outbox o
-        WHERE o.tenant_id = p_tenant AND o.publication_id = v_id;
+        WHERE o.tenant_id = p_tenant AND o.destination = p_destination
+          AND o.binding_json = v_binding;
 END;
 $$;
 
@@ -458,8 +504,8 @@ DECLARE
     token uuid;
 BEGIN
     PERFORM public.matchdesk_publication_preflight();
-    IF p_lease_seconds IS NULL OR p_lease_seconds NOT BETWEEN 5 AND 3600 THEN
-        RAISE EXCEPTION 'A delivery lease lasts between 5 and 3600 seconds';
+    IF p_lease_seconds IS NULL OR p_lease_seconds NOT BETWEEN 5 AND 900 THEN
+        RAISE EXCEPTION 'A delivery lease lasts between 5 and 900 seconds';
     END IF;
     SELECT * INTO entry_row FROM public.matchdesk_publication_outbox o
     WHERE o.tenant_id = p_tenant AND o.publication_id = p_publication_id
@@ -471,14 +517,17 @@ BEGIN
         IF entry_row.claimed_until > clock_timestamp() THEN
             RETURN NULL;
         END IF;
+        -- The sender may yet have succeeded: keep its claim so a late success is still recorded,
+        -- and never call the row abandoned when the outcome is unknown.
         UPDATE public.matchdesk_publication_outbox o
-        SET status = CASE WHEN o.attempts + 1 >= o.max_attempts THEN 'abandoned' ELSE 'failed' END,
-            attempts = o.attempts + 1, claim_token = NULL, claimed_until = NULL,
+        SET status = CASE WHEN o.attempts + 1 >= o.max_attempts THEN 'unconfirmed' ELSE 'failed' END,
+            attempts = o.attempts + 1, expired_claim_digest = o.claim_digest,
+            claim_digest = NULL, claimed_until = NULL,
             last_error = 'The previous attempt did not report back before its lease expired'
         WHERE o.tenant_id = entry_row.tenant_id AND o.publication_id = entry_row.publication_id
         RETURNING o.* INTO entry_row;
     END IF;
-    IF entry_row.status IN ('delivered', 'abandoned', 'withdrawn') THEN
+    IF entry_row.status IN ('delivered', 'abandoned', 'withdrawn', 'unconfirmed') THEN
         RETURN NULL;
     END IF;
     BEGIN
@@ -498,9 +547,11 @@ BEGIN
         WHERE o.tenant_id = entry_row.tenant_id AND o.publication_id = entry_row.publication_id;
         RETURN NULL;
     END;
+    -- Only a digest of the token is stored, so other logins that can read the outbox cannot
+    -- record outcomes for this claim.
     token := pg_catalog.gen_random_uuid();
     UPDATE public.matchdesk_publication_outbox o
-    SET status = 'in_flight', claim_token = token,
+    SET status = 'in_flight', claim_digest = public.matchdesk_claim_digest(token),
         claimed_until = clock_timestamp() + make_interval(secs => p_lease_seconds)
     WHERE o.tenant_id = entry_row.tenant_id AND o.publication_id = entry_row.publication_id;
     RETURN jsonb_build_object('binding', entry_row.binding_json, 'claim_token', token);
@@ -508,7 +559,9 @@ END;
 $$;
 
 -- Record the outcome of a claimed attempt: 'delivered' (with a receipt), 'failed' or 'refused'.
--- Failures that use up the row's attempt budget become 'abandoned'. Returns the new status.
+-- Failures that use up the row's attempt budget become 'abandoned'. A claim whose lease expired
+-- may still report 'delivered' (its attempt was counted at expiry); nothing else. Returns the new
+-- status.
 CREATE OR REPLACE FUNCTION public.matchdesk_record_publication_attempt(
     p_tenant text, p_publication_id text, p_claim_token uuid, p_outcome text, p_receipt text,
     p_error text
@@ -516,6 +569,7 @@ CREATE OR REPLACE FUNCTION public.matchdesk_record_publication_attempt(
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, pg_temp AS $$
 DECLARE
     entry_row public.matchdesk_publication_outbox%ROWTYPE;
+    presented text := public.matchdesk_claim_digest(p_claim_token);
     next_status text;
 BEGIN
     PERFORM public.matchdesk_publication_preflight();
@@ -528,8 +582,19 @@ BEGIN
     IF entry_row.status IN ('delivered', 'abandoned', 'withdrawn') THEN
         RAISE EXCEPTION 'A % publication is final', entry_row.status;
     END IF;
-    IF entry_row.status <> 'in_flight' OR p_claim_token IS NULL
-       OR entry_row.claim_token IS DISTINCT FROM p_claim_token THEN
+    IF presented IS NOT NULL AND presented = entry_row.expired_claim_digest
+       AND entry_row.status IN ('failed', 'in_flight', 'unconfirmed') THEN
+        IF p_outcome <> 'delivered' THEN
+            RAISE EXCEPTION 'This claim expired; its attempt was already counted';
+        END IF;
+        UPDATE public.matchdesk_publication_outbox o
+        SET status = 'delivered', receipt = p_receipt, last_error = NULL,
+            claim_digest = NULL, claimed_until = NULL, expired_claim_digest = NULL
+        WHERE o.tenant_id = entry_row.tenant_id AND o.publication_id = entry_row.publication_id;
+        RETURN 'delivered';
+    END IF;
+    IF entry_row.status <> 'in_flight' OR presented IS NULL
+       OR entry_row.claim_digest IS DISTINCT FROM presented THEN
         RAISE EXCEPTION 'No attempt is in flight under this claim';
     END IF;
     next_status := CASE p_outcome
@@ -542,7 +607,9 @@ BEGIN
         RAISE EXCEPTION 'An attempt is delivered, failed or refused';
     END IF;
     UPDATE public.matchdesk_publication_outbox o
-    SET status = next_status, attempts = o.attempts + 1, claim_token = NULL, claimed_until = NULL,
+    SET status = next_status, attempts = o.attempts + 1, claim_digest = NULL, claimed_until = NULL,
+        expired_claim_digest = CASE WHEN next_status = 'delivered' THEN NULL
+                                    ELSE o.expired_claim_digest END,
         receipt = CASE WHEN next_status = 'delivered' THEN p_receipt END,
         last_error = CASE WHEN next_status = 'delivered' THEN NULL ELSE left(p_error, 500) END
     WHERE o.tenant_id = entry_row.tenant_id AND o.publication_id = entry_row.publication_id;
@@ -564,6 +631,8 @@ GRANT SELECT, INSERT, UPDATE ON public.matchdesk_publication_outbox
 
 ALTER FUNCTION public.matchdesk_publication_id(jsonb, text)
     OWNER TO matchdesk_publication_guard_owner;
+ALTER FUNCTION public.matchdesk_claim_digest(uuid)
+    OWNER TO matchdesk_publication_guard_owner;
 ALTER FUNCTION public.matchdesk_publication_preflight()
     OWNER TO matchdesk_publication_guard_owner;
 ALTER FUNCTION public.matchdesk_lock_language_review(text, text, text)
@@ -581,9 +650,9 @@ ALTER FUNCTION public.matchdesk_claim_publication_attempt(text, text, integer)
 ALTER FUNCTION public.matchdesk_record_publication_attempt(text, text, uuid, text, text, text)
     OWNER TO matchdesk_publication_guard_owner;
 
--- Nothing is executable by PUBLIC. The ID helper is also granted to the publisher, so hosts can
--- confirm they compute the same ID; the owner keeps it for the CHECK.
-REVOKE ALL ON FUNCTION public.matchdesk_publication_id(jsonb, text),
+-- Nothing but the pure ID hash is executable by PUBLIC. The hash stays public because a CHECK
+-- uses it (so a restore by a non-superuser still validates rows) and hosts compare IDs with it.
+REVOKE ALL ON FUNCTION public.matchdesk_claim_digest(uuid),
     public.matchdesk_publication_preflight(),
     public.matchdesk_lock_language_review(text, text, text),
     public.matchdesk_current_approval(text, text, text, jsonb),
@@ -598,8 +667,8 @@ GRANT USAGE ON SCHEMA public TO matchdesk_publisher, matchdesk_language_reviewer
 GRANT EXECUTE ON FUNCTION public.matchdesk_record_language_review(text, text, text, text, text, text)
     TO matchdesk_language_reviewer;
 GRANT SELECT ON public.matchdesk_language_reviews TO matchdesk_language_reviewer;
+GRANT EXECUTE ON FUNCTION public.matchdesk_publication_id(jsonb, text) TO PUBLIC;
 GRANT EXECUTE ON FUNCTION
-    public.matchdesk_publication_id(jsonb, text),
     public.matchdesk_queue_publication(text, text, text, jsonb, text, text, integer),
     public.matchdesk_claim_publication_attempt(text, text, integer),
     public.matchdesk_record_publication_attempt(text, text, uuid, text, text, text)
