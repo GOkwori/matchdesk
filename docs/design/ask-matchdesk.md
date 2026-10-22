@@ -16,9 +16,10 @@ A question box in the studio that guides people around the app and answers quest
 | Measured stats | "How many shots did Northbridge have in the second half?" "Possession after 60 minutes?" "Okafor's shots" | Metric × subject × window, computed and verified |
 | Comparisons | "Who had more shots?" | One verified line per team, then a comparison from the unrounded figures, labelled as derived |
 | Score in a window | "Score after 40 minutes?" "Score in the second half?" | A lead or a draw only for windows that start at kick-off; otherwise "goals in this window only, not the score" |
-| Score and scorers | "What's the score?" "Who scored?" | `goals.v1` per team; one `goal_scorer.v1` fact per goal |
+| Score and scorers | "What's the score?" "Who scored?" "Who scored the second goal?" "Who won?" | `goals.v1` per team; one `goal_scorer.v1` fact per goal, or only the nth goal in order. A whole-match score notes that the replay stops before full time, so there is no result yet |
+| Team rankings | "Which team had the most shots?" | Both teams, verified, then the derived comparison. Player rankings stay declined |
 | Guidance | "What does Eligible mean?" "How do I approve a draft?" "Start the tour" | Help index with a link |
-| Out of scope | "Who will win?" "What about Arsenal?" "Shots on target?" "Which player had the most shots?" | A clear refusal with what it can do instead. Statistics outside the six registered metrics, unknown or unranked players, and time phrases it cannot read exactly are declined, never answered as a nearby question |
+| Out of scope | "Who will win?" "What about Arsenal?" "Shots on target?" "Which player had the most shots?" | A clear refusal with what it can do instead. Statistics outside the six registered metrics, unknown or unranked players, record ids of unnamed players ("nbr-06"), qualifiers no metric records (header, foot, inside or outside the box, counter-attack or set piece, season or other games, "when losing", "after the equaliser") and time phrases it cannot read exactly are declined, never answered as a nearby question |
 
 Metrics: goals, shots, pass accuracy, synthetic xG, final-third entries, possession (teams only). Windows: whole match so far, first or second half, before/after/between minute marks, last N minutes.
 

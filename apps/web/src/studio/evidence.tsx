@@ -5,7 +5,8 @@ import { useEffect, useState } from "react";
 import { VerdictChip } from "./ui";
 import { TourStep } from "./shell";
 import { eventCountText, matchExport, possession, possessionSeries, possessionShare, serverClaim, toVerdict } from "./data";
-import { expandLog, roundHalfUp, verifyClaim, type CompactLog, type Result } from "./verifier";
+import { roundHalfUp } from "./precision";
+import type { CompactLog, Result } from "./verifier";
 
 type Recheck = { state: "loading" } | { state: "done"; real: Result; forged: Result; agrees: boolean } | { state: "error" };
 
@@ -14,8 +15,8 @@ function useBrowserRecheck(): Recheck {
   const [recheck, setRecheck] = useState<Recheck>({ state: "loading" });
   useEffect(() => {
     let live = true;
-    import("./generated/nbr-riv-events.json").then(
-      (module) => {
+    Promise.all([import("./generated/nbr-riv-events.json"), import("./verifier")]).then(
+      ([module, { expandLog, verifyClaim }]) => {
         const events = expandLog(module.default as unknown as CompactLog);
         const evidence = { match_id: matchExport.match_id, event_ids: events.map((e) => e.event_id), window: { from_ms: 0, to_ms: matchExport.replay_end_ms } };
         const names = matchExport.display_names;

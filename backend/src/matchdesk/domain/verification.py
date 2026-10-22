@@ -188,7 +188,7 @@ def verify_claim(
             claim, claim.fact, evidence, events
         )
         if status == "verified":
-            problem = text_binding_problem(claim, names)
+            problem = text_binding_problem(claim, names, events)
             if problem is not None:
                 status, query_id, reason = "needs_revision", TEXT_QUERY_ID, problem
         return VerificationResult(
@@ -267,7 +267,7 @@ def verify_claim(
         if counted_type is not None and not _cites_counted_events(claim, events, counted_type):
             passed, reason = False, "Claim cites events the registered metric does not count"
     if passed:
-        problem = text_binding_problem(claim, names)
+        problem = text_binding_problem(claim, names, events)
         if problem is not None:
             passed, query_id, reason = False, TEXT_QUERY_ID, problem
     return VerificationResult(

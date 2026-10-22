@@ -225,5 +225,44 @@ test('review 2: title case, pronouns and help words are not mistaken for players
   assert.equal(answer('Show me the shot map').link.href, '/match/nbr-riv/tactical');
   const more = answer('Did Northbridge score more than Riverside?');
   assert.equal(more.derived, 'Northbridge had more goals than Riverside.');
-  assert.equal(answer('When was the second goal?').lines.length, 3);
+  assert.deepEqual(answer('When was the second goal?').lines.map((l) => l.claim.text), ['Lindqvist scored for Riverside at 41:03.']);
+});
+
+test('review 3: qualifiers the metrics cannot see are declined, not answered as a broader question', () => {
+  for (const q of ['How many headers did Okafor score?', 'Did Okafor score with his left foot?', 'How many goals from outside the box?',
+    'How many penalties did Northbridge score?', 'How many goals has Okafor scored this season?', 'How many shots did Riverside have when losing?',
+    'How many shots did Northbridge have after the equaliser?', 'Shots before the first goal', 'When was the winner scored?',
+    'Shots on the counter', 'How many shots after going 1-0 up?', "Okafor's goals in the league"]) {
+    const a = answer(q);
+    assert.equal(a.kind, 'decline', q);
+    assert.ok(!('lines' in a), q);
+  }
+});
+
+test('review 3: record ids are never read as a team, and only a named player id resolves', () => {
+  for (const q of ['How many shots did nbr-06 take?', 'nbr-06 stats']) {
+    const a = answer(q);
+    assert.equal(a.kind, 'decline', q);
+    assert.match(a.text, /nbr-06 is not a named player/);
+  }
+  assert.deepEqual(answer('How many shots did nbr-09 take?').lines.map((l) => l.claim.assertion.subject), [{ player_id: 'nbr-09' }]);
+});
+
+test('review 3: team rankings, ordinal goals and results get the precise answer', () => {
+  const most = answer('Which team had the most shots?');
+  assert.equal(most.kind, 'match');
+  assert.equal(most.derived, 'Northbridge had more shots than Riverside.');
+  assert.equal(answer('Who had the most shots?').kind, 'decline');
+  const second = answer('Who scored the second goal?');
+  assert.deepEqual(second.lines.map((l) => [l.claim.text, l.result.status]), [['Lindqvist scored for Riverside at 41:03.', 'verified']]);
+  assert.deepEqual(answer("Okafor's second goal").lines.map((l) => l.claim.text), ['Okafor scored for Northbridge at 58:17.']);
+  assert.deepEqual(answer('Who scored first?').lines.map((l) => l.claim.text), ['Okafor scored for Northbridge at 34:18.']);
+  assert.deepEqual(answer('Who scored the first goal in the second half?').lines.map((l) => l.claim.text), ['Okafor scored for Northbridge at 58:17.']);
+  assert.match(answer('Who scored the fourth goal?').text, /Only 3 goals/);
+  for (const q of ['Who won?', 'What was the result?', 'Did Riverside win?']) {
+    const a = answer(q);
+    assert.equal(a.derived, 'Northbridge lead 2–1.', q);
+    assert.match(a.note, /before full time, so there is no final result yet/, q);
+  }
+  assert.equal(answer('Score at half-time').note, undefined);
 });
