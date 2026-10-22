@@ -369,3 +369,42 @@ def test_language_reviews_and_settings_must_be_well_formed() -> None:
         LanguageReview(**good, reviewer_actor_id="r", note="x" * 501)
     with pytest.raises(ValueError, match="max_attempts"):
         PublicationSettings(enabled=True, max_attempts=0)
+
+
+def test_the_language_reviewer_must_not_be_the_producer() -> None:
+    """A producer cannot sign off their own translation."""
+    binding = _binding("fr")
+    with pytest.raises(PermissionError, match="reviewer must not be the producer"):
+        _queue(binding, reviews=(_review(binding, reviewer=" PRODUCER-1"),))
+
+
+def test_publication_ids_follow_the_documented_v1_scheme() -> None:
+    """The database recomputes this exact value, so the scheme is pinned."""
+    import hashlib
+
+    binding = _binding()
+    fields = [
+        "matchdesk-publication-v1",
+        "D-031",
+        "4",
+        "replay-1",
+        binding.content_digest,
+        "e" * 64,
+        "en",
+        "casual_fan",
+        "social",
+    ]
+    expected = hashlib.sha256("\x1f".join(fields).encode()).hexdigest()
+    assert publication_id(binding, "social") == expected
+    assert publication_id(binding, "match_centre") != expected
+
+
+def test_entries_claimed_or_unconfirmed_in_the_database_are_never_sent_here() -> None:
+    """In flight elsewhere: refuse. Unconfirmed: the send may have worked, so never resend."""
+    destination = _Flaky(0)
+    with pytest.raises(ValueError, match="holds the claim"):
+        deliver(replace(_entry(), status="in_flight"), destination, _payload(), settings=ON)
+    unconfirmed = replace(_entry(), status="unconfirmed", attempts=1)
+    assert deliver(unconfirmed, destination, _payload(), settings=ON) is unconfirmed
+    assert revalidate(unconfirmed, _approved(_binding())) is unconfirmed
+    assert destination.sent == []
