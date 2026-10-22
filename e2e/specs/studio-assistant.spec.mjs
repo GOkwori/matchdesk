@@ -136,3 +136,15 @@ test('jumping elsewhere with the search palette closes the assistant', async ({ 
   await expect(page).toHaveURL(/\/producer\/queue$/);
   await expect(dialog).toBeHidden();
 });
+
+test('a qualifier the metrics cannot see is declined, and an ordinal goal gets one checked line', async ({ page }) => {
+  const { dialog } = await openAsk(page);
+  const header = await ask(dialog, 'How many headers did Okafor score?');
+  await expect(header.getByText(/I can't check how a goal or shot was struck/)).toBeVisible();
+  await expect(header.locator('.md-chip')).toHaveCount(0);
+  const second = await ask(dialog, 'Who scored the second goal?');
+  await expect(second.getByText('Lindqvist scored for Riverside at 41:03.')).toBeVisible();
+  await expect(second.locator('.md-chip-verified')).toHaveCount(1);
+  const team = await ask(dialog, 'Which team had the most shots?');
+  await expect(team.getByText('Northbridge had more shots than Riverside.')).toBeVisible();
+});

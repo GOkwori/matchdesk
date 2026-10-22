@@ -12,7 +12,9 @@ import { Icon } from "./icons";
 import { GoalPitch, ScoreStrip, VerdictChip } from "./ui";
 import { TourStep } from "./shell";
 import { d031Sentences, draftEligibility, eventCountText, findClaim, matchExport, serverClaim, statistics, toVerdict, verdict, type SentenceState, type Verdict } from "./data";
-import { expandLog, verifyClaim, type CompactLog, type Result, type VEvent } from "./verifier";
+import type { CompactLog, Result, VEvent } from "./verifier";
+
+type Verifier = typeof import("./verifier");
 
 const STORE_KEY = "md.d031";
 
@@ -28,20 +30,22 @@ const initial: Saved = { states: {}, texts: {}, failedEdits: [], headline: "Okaf
 
 /** Load the event log once and return a function that verifies a sentence for a claim. */
 function useLiveVerifier(): ((claimId: string, text: string) => Result) | null {
-  const [events, setEvents] = useState<VEvent[] | null>(null);
+  // The verifier and the event log load together, after the page, so neither weighs on first paint.
+  const [loaded, setLoaded] = useState<{ events: VEvent[]; verifier: Verifier } | null>(null);
   useEffect(() => {
     let live = true;
-    import("./generated/nbr-riv-events.json").then(
-      (module) => { if (live) setEvents(expandLog(module.default as unknown as CompactLog)); },
+    Promise.all([import("./generated/nbr-riv-events.json"), import("./verifier")]).then(
+      ([log, verifier]) => { if (live) setLoaded({ events: verifier.expandLog(log.default as unknown as CompactLog), verifier }); },
       () => undefined,
     );
     return () => { live = false; };
   }, []);
   return useMemo(() => {
-    if (!events) return null;
+    if (!loaded) return null;
+    const { events, verifier } = loaded;
     const evidence = { match_id: matchExport.match_id, event_ids: events.map((e) => e.event_id), window: { from_ms: 0, to_ms: matchExport.replay_end_ms } };
-    return (claimId: string, text: string) => verifyClaim({ ...serverClaim(claimId).claim, text }, evidence, events, matchExport.display_names);
-  }, [events]);
+    return (claimId: string, text: string) => verifier.verifyClaim({ ...serverClaim(claimId).claim, text }, evidence, events, matchExport.display_names);
+  }, [loaded]);
 }
 
 /** Shared with the review queue so a fixed draft shows as eligible there too. */

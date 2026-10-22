@@ -182,3 +182,75 @@ def test_record_identifiers_in_a_sentence_are_not_quantities() -> None:
 
     stated = stated_quantities("Okafor (nbr-09) scored E-1366, 14 seconds after CL-0214.")
     assert stated.counts == (Decimal(14),)
+
+
+@pytest.mark.parametrize(
+    ("text", "reason"),
+    [
+        ("Okafor took 2 shots.", "Claim text does not name the asserted statistic"),
+        ("Okafor scored 2 goals from 2 attempts.", "names a statistic other than the asserted"),
+        ("Okafor did not score 2 goals.", "negates its statement"),
+        ("Okafor hasn't scored 2 goals.", "negates its statement"),
+        ("Okafor scored 2 goals for Riverside.", "names a team the claim is not about"),
+        ("Okafor scored 2 goals in the first half.", "time window that differs"),
+        ("Okafor scored 2 goals in the 2nd half.", "time window that differs"),
+        ("Okafor scored 2 goals before 40'.", "time window that differs"),
+        ("Okafor scored 2 goals since 10'.", "time window that differs"),
+        ("Okafor scored 2 goals, both penalties.", "detail the registered metric does not measure"),
+        ("Okafor scored 2 headers.", "detail the registered metric does not measure"),
+    ],
+)
+def test_reader_facing_sentence_must_say_only_what_was_checked(text: str, reason: str) -> None:
+    """Metric word, negation, team, window and detail are all bound to the assertion."""
+    result = _verify(_goals(text))
+    assert result.status == "needs_revision"
+    assert reason in result.reason
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Okafor scored 2 goals.",
+        "Okafor scored 2 goals up to 67:12.",
+        "Okafor has a brace.",
+        "Okafor netted twice for Northbridge.",
+    ],
+)
+def test_reader_facing_sentence_that_matches_is_verified(text: str) -> None:
+    """Plain phrasings of the asserted statistic over its own window still verify."""
+    assert _verify(_goals(text)).status == "verified"
+
+
+def test_a_stated_window_must_be_the_asserted_one() -> None:
+    """A half must be stated when asserted, and a partial window must say where it ends."""
+    half = MatchWindow(period=2, from_ms=canonical.SECOND_HALF_MS, to_ms=4_032_000)
+    claim = _goals("Okafor scored 1 goal in the second half.", value=1, cites=("E-1366",))
+    claim = claim.model_copy(
+        update={"assertion": claim.assertion.model_copy(update={"window": half})}
+    )
+    assert _verify(claim).status == "verified"
+    unstated = claim.model_copy(update={"text": "Okafor scored 1 goal."})
+    assert "does not state its time window" in _verify(unstated).reason
+    early = _goals("Okafor scored 1 goal before 40'.", value=1, cites=("E-0688",), to_ms=2_400_000)
+    assert _verify(early).status == "verified"
+    assert _verify(early.model_copy(update={"text": "Okafor scored 1 goal."})).status == "verified"
+
+
+@pytest.mark.parametrize(
+    ("text", "event_id", "status"),
+    [
+        ("Okafor scored at 58:17.", "E-1366", "verified"),
+        ("Okafor scored in the 59th minute.", "E-1366", "verified"),
+        ("Okafor headed in at 58:17.", "E-1366", "verified"),
+        ("Okafor scored at 34:18.", "E-1366", "needs_revision"),
+        ("Okafor scored in the 70th minute.", "E-1366", "needs_revision"),
+        ("Okafor headed in at 34:18.", "E-0688", "needs_revision"),
+        ("Okafor scored a penalty at 58:17.", "E-1366", "needs_revision"),
+        ("Okafor was there at 58:17.", "E-1366", "needs_revision"),
+        ("Okafor scored for Riverside at 58:17.", "E-1366", "needs_revision"),
+    ],
+)
+def test_event_fact_sentence_is_bound_to_its_event(text: str, event_id: str, status: str) -> None:
+    """Clock, minute, recorded detail, goal wording and team must match the cited goal."""
+    fact = EventFact(query="goal_scorer.v1", event_id=event_id, player_id="nbr-09")
+    assert _verify(_fact(text, fact, (event_id,))).status == status

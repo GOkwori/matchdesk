@@ -29,7 +29,7 @@ export type PlanWindow = { period?: 1 | 2 | null; from_minute?: number | null; t
 export type Plan =
   | { intent: "metric"; metric: Metric; subjects: string[]; window: PlanWindow }
   | { intent: "score"; window: PlanWindow }
-  | { intent: "scorers"; subjects: string[]; window: PlanWindow }
+  | { intent: "scorers"; subjects: string[]; window: PlanWindow; nth?: number }
   | { intent: "summary"; subject: string; window: PlanWindow }
   | { intent: "help"; topic: string }
   | { intent: "out_of_scope"; reason: DeclineReason; detail?: string }
@@ -188,6 +188,30 @@ const UNSUPPORTED_STATS: readonly [RegExp, string][] = [
   [/\bhow many passes\b|\bnumber of passes\b|\bpasses (made|played|attempted)\b|\btouches\b|\bdistance\b|\bsprints?\b|\bheat ?map\b/, "pass counts, touches or tracking data"],
 ];
 
+// Qualifiers no registered metric or event field records. Answering without them would
+// answer a broader question, so each one is declined and named.
+const QUALIFIERS: readonly [RegExp, string][] = [
+  [/\bheaders?\b|\bheaded\b|\bwith (his|her|their) head\b|\b(left|right|weaker|stronger|preferred) foot(ed)?\b|\bwith (his|her|their) (left|right)\b|\bvolley(s|ed)?\b|\btap[- ]?ins?\b/,
+    "I can't check how a goal or shot was struck (header, foot or volley): the registered metrics count every goal and shot the same way."],
+  [/\b(inside|outside|in|from outside|from inside) the (box|area|penalty area|(six|18)[- ]yard box)\b|\bfrom (distance|range|long range|close range)\b|\b(long|close)[- ]range\b/,
+    "I can't split goals or shots by distance or by the box: the registered metrics count them all."],
+  [/\bcounter[- ]?attacks?\b|\bon the (counter|break)\b|\bset[- ]pieces?\b|\bthrow[- ]ins?\b|\bopen play\b/,
+    "I can't split statistics by phase of play (counter-attacks, set pieces or open play)."],
+  [/\bseasons?\b|\bcareer\b|\bthis year\b|\bleague\b|\ball[- ]time\b|\b(previous|last|other) (match|game)(es|s)?\b/,
+    "I only have this one match's events, so I can't check anything about a season or other games."],
+  [/\b(when|while) (losing|winning|behind|ahead|level|drawing|trailing|leading|up|down|in front)\b|\b(going|being|went|were|was) (behind|ahead|in front)\b|\bgoing ([0-9]|one|two)[- –]([0-9]|nil) (up|down)\b|\bat ([0-9])[-–]([0-9])\b/,
+    "I can't split statistics by the score at the time. Ask with minutes instead, such as “shots after 60 minutes”; “Who scored?” gives each goal's time."],
+  [/\b(before|after|since|until|following) (the |their |his |her |a |an )?(northbridge |riverside |okafor's |lindqvist's )?((first|second|third|opening|1st|2nd|3rd|last) )?(goal|equali[sz]er|opener|winner|red card|card|substitution|sub|corner|save)\b|\b(before|after|since) (conceding|scoring)\b/,
+    "I can't anchor a window to a match event. Ask with minutes instead, such as “shots after 60 minutes”; “Who scored?” gives each goal's time."],
+  [/\bequali[sz](er|ing goal)\b|\bwinn(er|ing goal)\b|\bconsolation\b/,
+    "I don't label goals as equalisers or winners. “Who scored?” lists every goal in order with its time, and every line is checked."],
+];
+
+const ORDINALS: Readonly<Record<string, number>> = { opened: 1, first: 1, "1st": 1, opening: 1, opener: 1, second: 2, "2nd": 2, third: 3, "3rd": 3, fourth: 4, "4th": 4 };
+const ORDINAL_GOAL = /\b(first|1st|opening|second|2nd|third|3rd|fourth|4th) goal\b|\bthe (opener)\b|\bscored (first)\b|\b(first) to score\b|\b(opened) the scoring\b/;
+// A record id such as nbr-09: only a named player's id may stand in for their name.
+const RECORD_ID = /(?<![a-z0-9-])([a-z]{2,5}-[0-9]{1,3})(?![a-z0-9-])/g;
+
 const PLAYER_QUESTION = /\bwhich player\b|\bwho (had|took|made|has) the most\b|\bmost (shots|goals|passes)\b|\btop scorer\b|\bbest player\b|\bman of the match\b|\bplayer of the match\b/;
 const KNOWN_WORDS = new Set([
   "who", "what", "which", "when", "how", "did", "does", "do", "is", "are", "was", "were", "the", "a", "an", "and", "or", "in", "on",
@@ -197,9 +221,11 @@ const KNOWN_WORDS = new Set([
   "tell", "about", "xg", "matchdesk", "ask", "eligible", "verified", "can", "you", "i", "please", "s",
 ]);
 
-function parseSubjects(q: string, ctx: Pick<MatchContext, "names" | "teams">): string[] {
+function parseSubjects(question: string, ctx: Pick<MatchContext, "names" | "teams">): string[] {
   const found: string[] = [];
   const add = (id: string) => { if (!found.includes(id)) found.push(id); };
+  for (const [, id] of question.matchAll(RECORD_ID)) if (Object.hasOwn(ctx.names, id) && !Object.hasOwn(ctx.teams, id)) add(id);
+  const q = question.replace(RECORD_ID, " ");
   for (const [id, name] of Object.entries(ctx.names)) {
     if (Object.hasOwn(ctx.teams, id)) continue;
     if (new RegExp(`(?<![a-z])${name.toLowerCase()}(?![a-z])`).test(q)) add(id);
@@ -269,26 +295,33 @@ export function parseQuestion(question: string, ctx: Pick<MatchContext, "names" 
   for (const [pattern, label] of UNSUPPORTED_STATS) {
     if (pattern.test(q)) return decline("unsupported", `I can't check ${label}: it isn't one of the registered metrics, so I won't estimate it. I can check goals, shots, pass accuracy, synthetic xG, final-third entries and possession.`);
   }
+  for (const [pattern, text] of QUALIFIERS) if (pattern.test(q)) return decline("unsupported", text);
+  const named = Object.entries(ctx.names).filter(([id]) => !Object.hasOwn(ctx.teams, id)).map(([, n]) => n).join(", ");
+  const unnamedId = [...q.matchAll(RECORD_ID)].map((m) => m[1]).find((id) => !Object.hasOwn(ctx.names, id) || Object.hasOwn(ctx.teams, id));
+  if (unnamedId) return decline("unsupported", `${unnamedId} is not a named player in this match, so I can't answer for them. The named players are ${named}.`);
   const subjects = parseSubjects(q, ctx);
   const stranger = unknownPerson(question, q, ctx);
-  const named = Object.entries(ctx.names).filter(([id]) => !Object.hasOwn(ctx.teams, id)).map(([, n]) => n).join(", ");
   if (stranger) return decline("unsupported", `There's no player called ${stranger} with a name in this match. The named players are ${named}.`);
-  if (PLAYER_QUESTION.test(q) && !subjects.some((s) => !Object.hasOwn(ctx.teams, s))) {
-    return decline("unsupported", `I don't rank players, because only some players have names in this demo. Ask about a team or a named player: ${named}.`);
+  const aboutTeams = /\b(which|what) (team|side|club)\b|\bteams?\b|\bsides?\b/.test(q);
+  if (PLAYER_QUESTION.test(q) && !aboutTeams && !subjects.some((s) => !Object.hasOwn(ctx.teams, s))) {
+    return decline("unsupported", `I don't rank players, because only some players have names in this demo. Ask which team had more, or about a named player: ${named}.`);
   }
   if (subjects.length > 2) return decline("unsupported", "Ask about one or two teams or players at a time.");
   const comparesGoals = /\b(more|fewer|less) (goals )?than\b|\bscore more\b|\boutscore/.test(q);
-  const isScorers = !comparesGoals && !/\bhow many\b/.test(q) && /\bwho scored\b|\bscorers?\b|\bgoal ?scorers?\b|\bwho got the goals?\b|\bwhen (was|were|did|came) .*\bgoals?\b|\bwhen did .* score\b|\bdid .* score\b/.test(q);
+  const ordinal = ORDINAL_GOAL.exec(q);
+  const isScorers = !comparesGoals && !/\bhow many\b/.test(q) && (ordinal != null || /\bwho scored\b|\bscorers?\b|\bgoal ?scorers?\b|\bwho got the goals?\b|\bwhen (was|were|did|came) .*\bgoals?\b|\bwhen did .* score\b|\bdid .* score\b/.test(q));
   if (comparesGoals) {
     const reading = parseWindow(q, "range");
     if ("unclear" in reading) return decline("unsupported", reading.unclear);
     return { intent: "metric", metric: "goals.v1", subjects, window: reading.window };
   }
-  const isScore = !isScorers && /\bscore(line)?\b|\bwho('s| is| was) (winning|ahead|leading|in front)\b/.test(q) && !/\bshots?\b/.test(q);
-  const reading = parseWindow(q, isScore ? "score" : "range");
+  const isResult = !isScorers && /\bdid [a-z' -]{2,30} (win|lose|draw)\b/.test(q);
+  const isScore = !isScorers && /\bscore(line)?\b|\bwho('s| is| was) (winning|ahead|leading|in front)\b|\bwho won\b|\bwho('s| is) (going to )?win(ning)?\b|\b(the |final |full[- ]time )result\b|\bwho (lost|is losing)\b/.test(q) && !/\bshots?\b/.test(q);
+  const reading = parseWindow(q, isScore || isResult ? "score" : "range");
   if ("unclear" in reading) return decline("unsupported", reading.unclear);
   const window = reading.window;
-  if (isScorers) return { intent: "scorers", subjects, window };
+  if (isScorers) return ordinal ? { intent: "scorers", subjects, window, nth: ORDINALS[ordinal.slice(1).find(Boolean) as string] } : { intent: "scorers", subjects, window };
+  if (isResult) return { intent: "score", window };
   if (isScore) {
     if (subjects.length) return { intent: "metric", metric: "goals.v1", subjects, window };
     return { intent: "score", window };
@@ -384,7 +417,7 @@ export function describePlan(plan: Plan, ctx: Pick<MatchContext, "names" | "team
   switch (plan.intent) {
     case "metric": return `${METRICS[plan.metric].label} · ${plan.subjects.length ? plan.subjects.map(name).join(" and ") : "both teams"} · ${w(plan.window)}`;
     case "score": return `score · ${w(plan.window)}`;
-    case "scorers": return `scorers · ${plan.subjects.length ? plan.subjects.map(name).join(" and ") : "both teams"} · ${w(plan.window)}`;
+    case "scorers": return `${plan.nth ? `${ordinalWord(plan.nth)} goal` : "scorers"} · ${plan.subjects.length ? plan.subjects.map(name).join(" and ") : "both teams"} · ${w(plan.window)}`;
     case "summary": return `summary · ${name(plan.subject)} · ${w(plan.window)}`;
     case "help": return `help · ${plan.topic}`;
     case "out_of_scope": return "outside what I can check";
@@ -520,6 +553,8 @@ const DECLINES: Record<DeclineReason, string> = {
 
 export const UNKNOWN_TEXT = "I couldn't read that question. Try asking about the score, scorers, shots, possession, pass accuracy, xG or final-third entries, for a team, a player or part of the game, or ask how the app works.";
 
+const ordinalWord = (n: number) => ["first", "second", "third", "fourth"][n - 1] ?? `${n}th`;
+
 /** Whether answering a plan needs the event log. */
 export function needsEvents(plan: Plan): boolean {
   return plan.intent === "metric" || plan.intent === "score" || plan.intent === "scorers" || plan.intent === "summary";
@@ -553,7 +588,9 @@ export function answerPlan(plan: Plan, ctx: MatchContext | null): Answer {
       : !resolved.fromKickOff ? `Goals in this window only: ${nameOf(teams[0], ctx)} ${h}, ${nameOf(teams[1], ctx)} ${a}. This is not the score.`
       : h === a ? `It ${past ? "was" : "is"} level, ${h}–${a}.`
       : `${nameOf(h > a ? teams[0] : teams[1], ctx)} ${past ? "led" : "lead"} ${Math.max(h, a)}–${Math.min(h, a)}.`;
-    return { kind: "match", scope: resolved.scope, lines, derived, note: notes() };
+    const unfinished = resolved.fromKickOff && resolved.window.period == null && resolved.window.to_ms === ctx.replayEndMs
+      ? `The replay stops at ${mark(ctx.replayEndMs)}, before full time, so there is no final result yet.` : undefined;
+    return { kind: "match", scope: resolved.scope, lines, derived, note: notes(unfinished) };
   }
   if (plan.intent === "scorers") {
     const goals = ctx.events.filter((e) => e.type === "goal" && inWindow(e, resolved.window)
@@ -563,7 +600,11 @@ export function answerPlan(plan: Plan, ctx: MatchContext | null): Answer {
       const lines = who.map((t) => measuredLine("goals.v1", t, resolved, ctx, evidence));
       return { kind: "match", scope: resolved.scope, lines, note: notes("No goals in that part of the match.") };
     }
-    const lines = goals.map((goal) => {
+    if (plan.nth != null && plan.nth > goals.length) {
+      return { kind: "decline", text: `Only ${goals.length} ${goals.length === 1 ? "goal has" : "goals have"} been scored in that part of the match, so there is no ${ordinalWord(plan.nth)} goal to check.` };
+    }
+    const chosen = plan.nth != null ? [goals.sort((x, y) => x.sequence - y.sequence)[plan.nth - 1]] : goals;
+    const lines = chosen.map((goal) => {
       const scorer = goal.player_id as string;
       const claim: Claim = {
         claim_id: nextId(),
@@ -574,7 +615,7 @@ export function answerPlan(plan: Plan, ctx: MatchContext | null): Answer {
       };
       return { claim, result: verifyClaim(claim, evidence, ctx.events, ctx.names) };
     });
-    return { kind: "match", scope: resolved.scope, lines, note: notes() };
+    return { kind: "match", scope: resolved.scope, lines, note: notes(plan.nth != null ? `The ${ordinalWord(plan.nth)} goal in this part of the match, in the order they were scored.` : undefined) };
   }
   if (plan.intent === "summary") {
     const isTeam = Object.hasOwn(ctx.teams, plan.subject);

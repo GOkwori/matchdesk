@@ -11,6 +11,10 @@
  * authoritative.
  */
 
+import { roundHalfUp } from "./precision.ts";
+
+export { roundHalfUp };
+
 export type Status = "verified" | "supported_inference" | "needs_revision" | "blocked";
 
 export type Window = { period?: 1 | 2 | null; from_ms: number; to_ms: number };
@@ -201,36 +205,6 @@ export function computeMetric(metric: string, events: readonly VEvent[], subject
   return formula(events, subject, window);
 }
 
-/* ---------- Precision (matchdesk.domain.models.round_half_up) ---------- */
-
-/** Plain decimal digits of a number's shortest round-trip form (JS and Python agree on it). */
-function plainDecimal(value: number): { negative: boolean; int: string; frac: string } {
-  const text = String(Math.abs(value));
-  const [mantissa, exp = "0"] = text.split(/e/i);
-  const [whole, fraction = ""] = mantissa.split(".");
-  let digits = whole + fraction;
-  let point = whole.length + Number(exp);
-  if (point <= 0) { digits = "0".repeat(1 - point) + digits; point = 1; }
-  if (point > digits.length) digits += "0".repeat(point - digits.length);
-  return { negative: value < 0, int: digits.slice(0, point).replace(/^0+(?=\d)/, ""), frac: digits.slice(point) };
-}
-
-/** Round half up (away from zero on ties) at `decimals` places; returns a canonical string. */
-export function roundHalfUp(value: number, decimals: number): string {
-  const { negative, int, frac } = plainDecimal(value);
-  const padded = (frac + "0".repeat(decimals + 1)).slice(0, decimals + 1);
-  let kept = (int + padded.slice(0, decimals)).split("").map(Number);
-  if (padded[decimals] >= "5") {
-    let i = kept.length - 1;
-    while (i >= 0 && kept[i] === 9) { kept[i] = 0; i -= 1; }
-    if (i < 0) kept = [1, ...kept]; else kept[i] += 1;
-  }
-  const digits = kept.join("");
-  const whole = digits.slice(0, digits.length - decimals).replace(/^0+(?=\d)/, "") || "0";
-  const rounded = decimals ? `${whole}.${digits.slice(digits.length - decimals)}` : whole;
-  return negative && /[1-9]/.test(rounded) ? `-${rounded}` : rounded;
-}
-
 function comparisonPasses(comparator: string, expected: number, observed: number, decimals: number | null | undefined): boolean {
   if (comparator === "eq" && decimals != null) return roundHalfUp(observed, decimals) === roundHalfUp(expected, decimals);
   if (comparator === "eq") return Math.abs(observed - expected) <= Math.max(1e-9 * Math.max(Math.abs(observed), Math.abs(expected)), 1e-9);
@@ -278,6 +252,7 @@ function expectedQuantity(claim: Claim): ["count" | "percent", number] | null {
       const places = assertion.decimals == null ? 6 : Math.max(assertion.decimals - 2, 0);
       return ["percent", Number(roundHalfUp(assertion.value * 100, places))];
     }
+    if (assertion.unit === "synthetic_xg") return ["count", Number(roundHalfUp(assertion.value, assertion.decimals ?? 2))];
     return null;
   }
   if (claim.fact && claim.fact.gap_seconds != null) return ["count", claim.fact.gap_seconds];
@@ -290,8 +265,133 @@ function subjectId(claim: Claim): string | null {
   return null;
 }
 
+const NEGATION = new RegExp(`${B}(?:not|no|never|none|neither|nor|without|failed to|fails to|[a-z]+n't|cannot)${E}`);
+// The words that name each registered statistic; longer phrases are matched first and masked.
+const METRIC_WORDS: readonly (readonly [string, string])[] = [
+  ["synthetic_xg.v1", "expected goals|xg"],
+  ["final_third_entries.v1", "final[- ]third"],
+  ["possession_time.v1", "possession|of the ball"],
+  ["pass_accuracy.v1", "pass(?:es|ing)?"],
+  ["shots.v1", "shots?|attempts?|efforts?"],
+  ["goals.v1", "goals?|scor(?:ed|es|ing)|brace|hat[- ]trick|netted|scoresheet"],
+];
+// Details of a goal or set piece the event log records only as tags, if at all.
+const DETAILS: readonly (readonly [string, string])[] = [
+  ["penalty", "penalt(?:y|ies)|spot[- ]kick"],
+  ["header", "headers?|headed|heads? (?:in|home)"],
+  ["free_kick", "free[- ]kicks?"],
+  ["corner", "corners?"],
+  ["throw_in", "throw[- ]ins?"],
+  ["own_goal", "own[- ]goals?"],
+  ["volley", "volley(?:ed|s)?"],
+  ["left_foot", "left[- ]foot(?:ed)?|left foot"],
+  ["right_foot", "right[- ]foot(?:ed)?|right foot"],
+  ["outside_box", "outside the (?:box|area)|from (?:distance|range)|long[- ]range"],
+  ["inside_box", "inside the (?:box|area)|tap[- ]ins?"],
+  ["counter", "counter[- ]attack"],
+];
+const MINUTE_MARK = "([0-9]{1,3})(?:'|\u2032|\u2019)";
+const WINDOW_FIRST = new RegExp(`${B}(?:first|1st|opening)[- ]half${E}|before (?:half[- ]?time|the break)`);
+const WINDOW_SECOND = new RegExp(`${B}(?:second|2nd)[- ]half${E}|after (?:half[- ]?time|the break)`);
+const WINDOW_BETWEEN = new RegExp(`${B}between ([0-9]{1,3})(?:'|\u2032|\u2019| minutes?)? and ([0-9]{1,3})(?:'|\u2032|\u2019| minutes?)?`);
+const WINDOW_FROM = new RegExp(`${B}(?:since|after|from) ${MINUTE_MARK}`);
+const WINDOW_TO = new RegExp(`${B}(?:before|by|until|up to) ${MINUTE_MARK}`);
+const WINDOW_TO_CLOCK = new RegExp(`${B}(?:before|by|until|up to) ([0-9]{1,3}):([0-9]{2})`);
+const WINDOW_LAST = new RegExp(`${B}(?:last|final) ([0-9]{1,3}) minutes?${E}`);
+const FACT_MINUTE = new RegExp(`${B}([0-9]{1,3})(?:'|\u2032|\u2019|(?:st|nd|rd|th) minute)`, "g");
+const GOAL_WORDS = new RegExp(`${B}(?:goals?|scor(?:ed|es|ing)|netted|(?:headed|nodded|fired|slotted|tapped|poked|swept|curled|volleyed|turned) (?:in|home))${E}`);
+const MINUTE_MS = 60_000;
+const word = (words: string) => new RegExp(`${B}(?:${words})${E}`);
+
+const lowerText = (text: string) => text.toLowerCase().replace(/’/g, "'").replace(IDENTIFIER, " ");
+const namesSubject = (text: string, name: string) => new RegExp(B + escapeRegExp(name.toLowerCase()) + E).test(text.toLowerCase());
+
+function metricsNamed(lowered: string): string[] {
+  const found: string[] = [];
+  for (const [metric, words] of METRIC_WORDS) {
+    const pattern = new RegExp(`${B}(?:${words})${E}`, "g");
+    if (pattern.test(lowered)) {
+      found.push(metric);
+      lowered = lowered.replace(pattern, " ");
+    }
+  }
+  return found;
+}
+
+function windowProblem(lowered: string, window: Window): string | null {
+  let stated = false;
+  const differs = "Claim text states a time window that differs from its assertion";
+  if (WINDOW_FIRST.test(lowered)) { stated = true; if (window.period !== 1) return differs; }
+  if (WINDOW_SECOND.test(lowered)) { stated = true; if (window.period !== 2) return differs; }
+  const between = WINDOW_BETWEEN.exec(lowered);
+  if (between) {
+    stated = true;
+    if (window.from_ms !== Number(between[1]) * MINUTE_MS || window.to_ms !== Number(between[2]) * MINUTE_MS) return differs;
+  } else {
+    const start = WINDOW_FROM.exec(lowered);
+    if (start) { stated = true; if (window.from_ms !== Number(start[1]) * MINUTE_MS) return differs; }
+    const end = WINDOW_TO.exec(lowered);
+    if (end) { stated = true; if (window.to_ms !== Number(end[1]) * MINUTE_MS) return differs; }
+    const clock = WINDOW_TO_CLOCK.exec(lowered);
+    if (clock) { stated = true; if (window.to_ms !== (Number(clock[1]) * 60 + Number(clock[2])) * 1000) return differs; }
+  }
+  const last = WINDOW_LAST.exec(lowered);
+  if (last) { stated = true; if (window.to_ms - window.from_ms !== Number(last[1]) * MINUTE_MS) return differs; }
+  if (!stated && (window.period != null || window.from_ms !== 0)) return "Claim text does not state its time window";
+  return null;
+}
+
+function clockText(ms: number): string {
+  const seconds = Math.floor(ms / 1000);
+  return `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
+}
+
+const teamOf = (playerId: string, events: readonly VEvent[]) => events.find((e) => e.player_id === playerId)?.team_id ?? null;
+
+function teamProblem(lowered: string, team: string | null, names: Names, teams: readonly string[]): string | null {
+  for (const teamId of teams) {
+    const name = Object.hasOwn(names, teamId) ? names[teamId] : undefined;
+    if (name && teamId !== team && namesSubject(lowered, name)) return "Claim text names a team the claim is not about";
+  }
+  return null;
+}
+
+/** The shot a goal was scored from: the scorer's goal-bound shot logged just before it. */
+function scoringShot(goal: VEvent, events: readonly VEvent[]): VEvent | null {
+  return events.find((e) => e.sequence === goal.sequence - 1 && e.type === "shot" && e.outcome === "goal" && e.player_id === goal.player_id) ?? null;
+}
+
+function factProblem(claim: Claim, lowered: string, events: readonly VEvent[]): string | null {
+  const fact = claim.fact;
+  if (!fact) return null;
+  const byId = new Map(events.map((e) => [e.event_id, e]));
+  const cited = [fact.from_event_id, fact.event_id].filter((id): id is string => id != null && byId.has(id)).map((id) => byId.get(id) as VEvent);
+  if (!cited.length) return null;
+  const clocks = new Set(cited.map((e) => clockText(e.match_clock_ms)));
+  for (const found of lowered.match(CLOCK) ?? []) {
+    if (!clocks.has(found.padStart(5, "0"))) return "Claim text states a time that differs from its cited events";
+  }
+  const minutes = new Set<number>();
+  for (const e of cited) { const m = Math.floor(e.match_clock_ms / MINUTE_MS); minutes.add(m); minutes.add(m + 1); }
+  for (const found of lowered.replace(CLOCK, " ").matchAll(FACT_MINUTE)) {
+    if (!minutes.has(Number(found[1]))) return "Claim text states a time that differs from its cited events";
+  }
+  const tags = new Set(cited.flatMap((e) => e.tags));
+  for (const e of cited) {
+    const shot = e.type === "goal" ? scoringShot(e, events) : null;
+    if (shot) for (const tag of shot.tags) tags.add(tag);
+  }
+  for (const [detail, words] of DETAILS) {
+    if (word(words).test(lowered) && !tags.has(detail) && !(detail === "corner" && fact.from_tag === "corner")) {
+      return "Claim text states a detail the event log does not record";
+    }
+  }
+  if (fact.query === "goal_scorer.v1" && !GOAL_WORDS.test(lowered)) return "Claim text does not say this was a goal";
+  return null;
+}
+
 /** Why the sentence does not match its structured claim, or null if it does. */
-export function textBindingProblem(claim: Claim, names?: Names | null): string | null {
+export function textBindingProblem(claim: Claim, names?: Names | null, events: readonly VEvent[] = []): string | null {
   const expected = expectedQuantity(claim);
   if (expected) {
     const [kind, value] = expected;
@@ -300,13 +400,31 @@ export function textBindingProblem(claim: Claim, names?: Names | null): string |
     if (found.some((q) => q !== value)) return "Claim text states a quantity that differs from its assertion";
     if (names && !found.includes(value)) return "Claim text does not state the asserted value";
   }
-  if (names) {
-    const subject = subjectId(claim);
-    if (subject != null) {
-      const name = names[subject];
-      if (name === undefined) return "Claim subject has no registered display name";
-      if (!new RegExp(B + escapeRegExp(name.toLowerCase()) + E).test(claim.text.toLowerCase())) return "Claim text does not name the asserted subject";
-    }
+  if (!names) return null;
+  const subject = subjectId(claim);
+  if (subject != null) {
+    const name = Object.hasOwn(names, subject) ? names[subject] : undefined;
+    if (name === undefined) return "Claim subject has no registered display name";
+    if (!namesSubject(claim.text, name)) return "Claim text does not name the asserted subject";
+  }
+  const lowered = lowerText(claim.text);
+  const teams = [...new Set(events.map((e) => e.team_id).filter((t): t is string => t != null))].sort();
+  if (NEGATION.test(lowered)) return "Claim text negates its statement; negative claims are not checked";
+  if (claim.assertion) {
+    const assertion = claim.assertion;
+    const named = metricsNamed(lowered);
+    if (!named.includes(assertion.metric)) return "Claim text does not name the asserted statistic";
+    if (named.length > 1) return "Claim text names a statistic other than the asserted one";
+    const asserted = assertion.subject;
+    const team = asserted.team_id || (asserted.player_id ? teamOf(asserted.player_id, events) : null);
+    const problem = teamProblem(lowered, team, names, teams) ?? windowProblem(lowered, assertion.window);
+    if (problem) return problem;
+    if (DETAILS.some(([, words]) => word(words).test(lowered))) return "Claim text states a detail the registered metric does not measure";
+    return null;
+  }
+  if (claim.fact) {
+    const target = events.find((e) => e.event_id === claim.fact?.event_id);
+    return teamProblem(lowered, target ? target.team_id : null, names, teams) ?? factProblem(claim, lowered, events);
   }
   return null;
 }
@@ -373,7 +491,7 @@ export function verifyClaim(claim: Claim, evidence: Evidence, events: readonly V
   if (claim.kind === "event_fact" && claim.fact) {
     let [status, query_id, reason, expected, observed] = factResult(claim, claim.fact, evidence, events);
     if (status === "verified") {
-      const problem = textBindingProblem(claim, names);
+      const problem = textBindingProblem(claim, names, events);
       if (problem) [status, query_id, reason] = ["needs_revision", TEXT_QUERY_ID, problem];
     }
     return { ...base, status, query_id, reason, expected, observed };
@@ -404,7 +522,7 @@ export function verifyClaim(claim: Claim, evidence: Evidence, events: readonly V
     reason = "Claim cites events the registered metric does not count";
   }
   if (passed) {
-    const problem = textBindingProblem(claim, names);
+    const problem = textBindingProblem(claim, names, events);
     if (problem) { passed = false; query_id = TEXT_QUERY_ID; reason = problem; }
   }
   return { claim_id: claim.claim_id, status: passed ? "verified" : "needs_revision", query_id, reason, expected: assertion.value, observed };

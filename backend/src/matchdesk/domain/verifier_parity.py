@@ -28,6 +28,7 @@ from matchdesk.domain.models import (
     MatchWindow,
     MetricAssertion,
     Subject,
+    round_half_up,
 )
 from matchdesk.domain.simulator import generate_scenario
 from matchdesk.domain.verification import verify_claim
@@ -144,6 +145,145 @@ def parity_fixture() -> dict[str, Any]:
     xg = observed("synthetic_xg.v1", away, replay_window())
     entries = observed("final_third_entries.v1", home, second_half)
     possession_h2 = observed("possession_time.v1", away, second_half)
+
+    goals_cites = ("E-0688", "E-1366")
+    away_h2_shots = observed("shots.v1", away, second_half)
+    away_h2_cite = first("shot", canonical.AWAY, second_half)
+    last_15 = MatchWindow(from_ms=4_032_000 - 15 * 60_000, to_ms=4_032_000)
+    home_last_15 = observed("shots.v1", home, last_15)
+    between = MatchWindow(from_ms=30 * 60_000, to_ms=45 * 60_000)
+    away_between = observed("shots.v1", away, between)
+    xg_value = float(round_half_up(xg, 2))
+    binding: list[tuple[str, MetricAssertion, tuple[str, ...], str]] = [
+        (
+            "a shots sentence over a goals assertion",
+            okafor_goals,
+            goals_cites,
+            "Okafor took 2 shots.",
+        ),
+        (
+            "two statistics in one sentence",
+            okafor_goals,
+            goals_cites,
+            "Okafor scored 2 goals from 2 attempts.",
+        ),
+        ("a negated sentence", okafor_goals, goals_cites, "Okafor did not score 2 goals."),
+        ("a contraction negates", okafor_goals, goals_cites, "Okafor hasn't scored 2 goals."),
+        (
+            "another team named",
+            okafor_goals,
+            goals_cites,
+            "Okafor scored 2 goals for Riverside.",
+        ),
+        (
+            "a stated half the assertion does not cover",
+            okafor_goals,
+            goals_cites,
+            "Okafor scored 2 goals in the first half.",
+        ),
+        (
+            "a stated end the assertion does not have",
+            okafor_goals,
+            goals_cites,
+            "Okafor scored 2 goals before 40'.",
+        ),
+        (
+            "a detail the metric does not measure",
+            okafor_goals,
+            goals_cites,
+            "Okafor scored 2 goals, both penalties.",
+        ),
+        ("an explicit end clock", okafor_goals, goals_cites, "Okafor scored 2 goals up to 67:12."),
+        (
+            "a half stated as the assertion's",
+            _assertion("shots.v1", away, away_h2_shots, "count", window=second_half),
+            away_h2_cite,
+            f"Riverside had {int(away_h2_shots)} shots in the second half.",
+        ),
+        (
+            "a half left unstated",
+            _assertion("shots.v1", away, away_h2_shots, "count", window=second_half),
+            away_h2_cite,
+            f"Riverside had {int(away_h2_shots)} shots.",
+        ),
+        (
+            "the wrong half stated",
+            _assertion("shots.v1", away, away_h2_shots, "count", window=second_half),
+            away_h2_cite,
+            f"Riverside had {int(away_h2_shots)} shots in the 1st half.",
+        ),
+        (
+            "the last minutes stated",
+            _assertion("shots.v1", home, home_last_15, "count", window=last_15),
+            first("shot", canonical.HOME, last_15),
+            f"Northbridge had {int(home_last_15)} shots in the last 15 minutes.",
+        ),
+        (
+            "the wrong number of last minutes",
+            _assertion("shots.v1", home, home_last_15, "count", window=last_15),
+            first("shot", canonical.HOME, last_15),
+            f"Northbridge had {int(home_last_15)} shots in the last 20 minutes.",
+        ),
+        (
+            "a between window stated",
+            _assertion("shots.v1", away, away_between, "count", window=between),
+            first("shot", canonical.AWAY, between),
+            f"Riverside had {int(away_between)} shots between 30' and 45'.",
+        ),
+        (
+            "a between window misstated",
+            _assertion("shots.v1", away, away_between, "count", window=between),
+            first("shot", canonical.AWAY, between),
+            f"Riverside had {int(away_between)} shots between 30' and 40'.",
+        ),
+        (
+            "synthetic xg stated at two decimals",
+            _assertion("synthetic_xg.v1", away, xg, "synthetic_xg"),
+            ("E-0001",),
+            f"Riverside's synthetic xG was {xg_value:.2f}.",
+        ),
+        (
+            "synthetic xg misstated",
+            _assertion("synthetic_xg.v1", away, xg, "synthetic_xg"),
+            ("E-0001",),
+            f"Riverside's synthetic xG was {xg_value + 0.1:.2f}.",
+        ),
+        (
+            "possession as share of the ball",
+            _assertion("possession_time.v1", home, 0.58, "ratio", decimals=2),
+            ("E-0001",),
+            "Northbridge had 58% of the ball.",
+        ),
+    ]
+    scorer = EventFact(query="goal_scorer.v1", event_id="E-1366", player_id="nbr-09")
+    first_goal = EventFact(query="goal_scorer.v1", event_id="E-0688", player_id="nbr-09")
+    binding_facts: list[tuple[str, EventFact, tuple[str, ...], str]] = [
+        ("the scorer at the goal's clock", scorer, ("E-1366",), "Okafor scored at 58:17."),
+        ("a clock the goal does not have", scorer, ("E-1366",), "Okafor scored at 34:18."),
+        ("the goal's minute", scorer, ("E-1366",), "Okafor scored in the 59th minute."),
+        (
+            "a minute the goal does not have",
+            scorer,
+            ("E-1366",),
+            "Okafor scored in the 70th minute.",
+        ),
+        ("a header the scoring shot records", scorer, ("E-1366",), "Okafor headed in at 58:17."),
+        ("a header the log does not record", first_goal, ("E-0688",), "Okafor headed in at 34:18."),
+        (
+            "a penalty the log does not record",
+            scorer,
+            ("E-1366",),
+            "Okafor scored a penalty at 58:17.",
+        ),
+        ("a sentence that is not about a goal", scorer, ("E-1366",), "Okafor was there at 58:17."),
+        ("the other team named", scorer, ("E-1366",), "Okafor scored for Riverside at 58:17."),
+        (
+            "the corner of a corner sequence",
+            gap(14),
+            ("E-1359", "E-1366"),
+            "Okafor's header came 14 seconds after a corner.",
+        ),
+    ]
 
     cases: list[tuple[str, Claim, str, EvidenceRecord]] = [
         *[(f"demo {c.claim_id}", c, "canonical", evidence) for c in claims()],
@@ -440,6 +580,14 @@ def parity_fixture() -> dict[str, Any]:
             "fact: a wrong gap stated with event identifiers",
             fact("E-1366 came 3 seconds after E-1359.", gap(3), ("E-1359", "E-1366")),
         ),
+        *[
+            (f"binding: {label}", _measured(f"B-{i:02d}", assertion, cites, text))
+            for i, (label, assertion, cites, text) in enumerate(binding, start=1)
+        ],
+        *[
+            (f"binding fact: {label}", fact(text, event_fact, cites))
+            for label, event_fact, cites, text in binding_facts
+        ],
     ]
     sources = {"canonical": log, "scenario": scenario, "empty": ()}
     exported = []

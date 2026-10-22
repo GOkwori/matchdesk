@@ -8,6 +8,19 @@ goals came back verified. Two rules close that gap:
 - With a display-name registry: the sentence must also name its subject and state the
   asserted value, so the words a reader sees are the words that were checked.
 
+With a display-name registry the sentence is reader-facing, and these rules also apply:
+
+- It may not negate itself ("Okafor did not score 2 goals"): negative claims are not checked.
+- A measured claim must name its own statistic and no other ("Okafor took 2 shots" is not a
+  goals claim).
+- It may name only the subject's own team.
+- Any time it states must be its assertion's window; a window that is not "from kick-off"
+  (a half, or a start after kick-off) must be stated.
+- An event fact's clock times and minutes must be those of the events it cites, and it may
+  not add details the event log does not record (a penalty, a header, a free kick) unless
+  the cited events carry that tag (a goal also carries the tags of the shot it was scored
+  from: the scorer's goal-bound shot logged immediately before it).
+
 Extraction is deliberately small and fails closed: ambiguous prose ("one of the two
 goals") is sent back for revision rather than guessed at. The TypeScript port in
 apps/web/src/studio/verifier.ts must reproduce it exactly; the parity fixture enforces it.
@@ -18,9 +31,9 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import Mapping
+from typing import Mapping, Sequence
 
-from matchdesk.domain.models import Claim, round_half_up
+from matchdesk.domain.models import Claim, MatchEvent, MatchWindow, round_half_up
 
 _NUMBER_WORDS: Mapping[str, int] = {
     "zero": 0,
@@ -104,6 +117,10 @@ def _expected_quantity(claim: Claim) -> tuple[str, Decimal] | None:
         if assertion.unit == "ratio":
             places = 6 if assertion.decimals is None else max(assertion.decimals - 2, 0)
             return "percent", round_half_up(assertion.value * 100, places)
+        if assertion.unit == "synthetic_xg":
+            return "count", round_half_up(
+                assertion.value, 2 if assertion.decimals is None else assertion.decimals
+            )
         return None
     if claim.fact is not None and claim.fact.gap_seconds is not None:
         return "count", Decimal(claim.fact.gap_seconds)
@@ -120,8 +137,202 @@ def _subject_id(claim: Claim) -> str | None:
     return None
 
 
-def text_binding_problem(claim: Claim, names: Mapping[str, str] | None = None) -> str | None:
-    """Return why the sentence does not match its structured claim, or None if it does."""
+_NEGATION = re.compile(
+    _B + r"(?:not|no|never|none|neither|nor|without|failed to|fails to|[a-z]+n't|cannot)" + _E
+)
+# The words that name each registered statistic. Longer phrases are matched first and
+# masked, so "expected goals" is an xG phrase and never a goals word.
+_METRIC_WORDS: tuple[tuple[str, str], ...] = (
+    ("synthetic_xg.v1", r"expected goals|xg"),
+    ("final_third_entries.v1", r"final[- ]third"),
+    ("possession_time.v1", r"possession|of the ball"),
+    ("pass_accuracy.v1", r"pass(?:es|ing)?"),
+    ("shots.v1", r"shots?|attempts?|efforts?"),
+    ("goals.v1", r"goals?|scor(?:ed|es|ing)|brace|hat[- ]trick|netted|scoresheet"),
+)
+# Details of a goal or set piece the event log records only as tags, if at all.
+_DETAILS: tuple[tuple[str, str], ...] = (
+    ("penalty", r"penalt(?:y|ies)|spot[- ]kick"),
+    ("header", r"headers?|headed|heads? (?:in|home)"),
+    ("free_kick", r"free[- ]kicks?"),
+    ("corner", r"corners?"),
+    ("throw_in", r"throw[- ]ins?"),
+    ("own_goal", r"own[- ]goals?"),
+    ("volley", r"volley(?:ed|s)?"),
+    ("left_foot", r"left[- ]foot(?:ed)?|left foot"),
+    ("right_foot", r"right[- ]foot(?:ed)?|right foot"),
+    ("outside_box", r"outside the (?:box|area)|from (?:distance|range)|long[- ]range"),
+    ("inside_box", r"inside the (?:box|area)|tap[- ]ins?"),
+    ("counter", r"counter[- ]attack"),
+)
+_MINUTE_MARK = r"([0-9]{1,3})(?:'|\u2032|\u2019)"
+_WINDOW_FIRST = re.compile(
+    _B + r"(?:first|1st|opening)[- ]half" + _E + r"|before (?:half[- ]?time|the break)"
+)
+_WINDOW_SECOND = re.compile(
+    _B + r"(?:second|2nd)[- ]half" + _E + r"|after (?:half[- ]?time|the break)"
+)
+_WINDOW_BETWEEN = re.compile(
+    _B
+    + r"between ([0-9]{1,3})(?:'|\u2032|\u2019| minutes?)? and ([0-9]{1,3})(?:'|\u2032|\u2019| minutes?)?"
+)
+_WINDOW_FROM = re.compile(_B + r"(?:since|after|from) " + _MINUTE_MARK)
+_WINDOW_TO = re.compile(_B + r"(?:before|by|until|up to) " + _MINUTE_MARK)
+_WINDOW_TO_CLOCK = re.compile(_B + r"(?:before|by|until|up to) ([0-9]{1,3}):([0-9]{2})")
+_WINDOW_LAST = re.compile(_B + r"(?:last|final) ([0-9]{1,3}) minutes?" + _E)
+_FACT_MINUTE = re.compile(_B + r"([0-9]{1,3})(?:'|\u2032|\u2019|(?:st|nd|rd|th) minute)")
+_MINUTE_MS = 60_000
+_GOAL_WORDS = re.compile(
+    _B
+    + r"(?:goals?|scor(?:ed|es|ing)|netted|(?:headed|nodded|fired|slotted|tapped|poked|"
+    + r"swept|curled|volleyed|turned) (?:in|home))"
+    + _E
+)
+
+
+def _lower(text: str) -> str:
+    """Lower-case, normalise apostrophes and drop record identifiers."""
+    return _IDENTIFIER.sub(" ", text.lower().replace("\u2019", "'"))
+
+
+def _metrics_named(lowered: str) -> list[str]:
+    """The registered statistics a sentence names, in registry order."""
+    found = []
+    for metric, words in _METRIC_WORDS:
+        pattern = re.compile(_B + r"(?:" + words + r")" + _E)
+        if pattern.search(lowered):
+            found.append(metric)
+            lowered = pattern.sub(" ", lowered)
+    return found
+
+
+def _window_problem(lowered: str, window: MatchWindow) -> str | None:
+    """Every time the sentence states must be the assertion's; an implicit window is from kick-off."""
+    stated = False
+    differs = "Claim text states a time window that differs from its assertion"
+    if _WINDOW_FIRST.search(lowered):
+        stated = True
+        if window.period != 1:
+            return differs
+    if _WINDOW_SECOND.search(lowered):
+        stated = True
+        if window.period != 2:
+            return differs
+    between = _WINDOW_BETWEEN.search(lowered)
+    if between:
+        stated = True
+        if (window.from_ms, window.to_ms) != (
+            int(between[1]) * _MINUTE_MS,
+            int(between[2]) * _MINUTE_MS,
+        ):
+            return differs
+    else:
+        start = _WINDOW_FROM.search(lowered)
+        if start:
+            stated = True
+            if window.from_ms != int(start[1]) * _MINUTE_MS:
+                return differs
+        end = _WINDOW_TO.search(lowered)
+        if end:
+            stated = True
+            if window.to_ms != int(end[1]) * _MINUTE_MS:
+                return differs
+        clock = _WINDOW_TO_CLOCK.search(lowered)
+        if clock:
+            stated = True
+            if window.to_ms != (int(clock[1]) * 60 + int(clock[2])) * 1000:
+                return differs
+    last = _WINDOW_LAST.search(lowered)
+    if last:
+        stated = True
+        if window.to_ms - window.from_ms != int(last[1]) * _MINUTE_MS:
+            return differs
+    if not stated and (window.period is not None or window.from_ms != 0):
+        return "Claim text does not state its time window"
+    return None
+
+
+def _clock_text(ms: int) -> str:
+    """The mm:ss a reader sees for a match clock."""
+    seconds = ms // 1000
+    return f"{seconds // 60:02d}:{seconds % 60:02d}"
+
+
+def _team_of(player_id: str, events: Sequence[MatchEvent]) -> str | None:
+    """A player's team, read from the events they appear in."""
+    for event in events:
+        if event.player_id == player_id:
+            return event.team_id
+    return None
+
+
+def _team_problem(
+    lowered: str, team: str | None, names: Mapping[str, str], teams: Sequence[str]
+) -> str | None:
+    """The sentence may name only its subject's own team."""
+    for team_id in teams:
+        name = names.get(team_id)
+        if name and team_id != team and _names_subject(lowered, name):
+            return "Claim text names a team the claim is not about"
+    return None
+
+
+def _scoring_shot(goal: MatchEvent, events: Sequence[MatchEvent]) -> MatchEvent | None:
+    """The shot a goal was scored from: the scorer's goal-bound shot logged just before it."""
+    for event in events:
+        if (
+            event.sequence == goal.sequence - 1
+            and event.type == "shot"
+            and event.outcome == "goal"
+            and event.player_id == goal.player_id
+        ):
+            return event
+    return None
+
+
+def _fact_problem(claim: Claim, lowered: str, events: Sequence[MatchEvent]) -> str | None:
+    """Clock times, minutes and details in an event fact must be those of its cited events."""
+    fact = claim.fact
+    if fact is None:
+        return None
+    by_id = {event.event_id: event for event in events}
+    cited = [by_id[i] for i in (fact.from_event_id, fact.event_id) if i is not None and i in by_id]
+    if not cited:
+        return None
+    clocks = {_clock_text(event.match_clock_ms) for event in cited}
+    for found in _CLOCK.findall(lowered):
+        if found.zfill(5) not in clocks:
+            return "Claim text states a time that differs from its cited events"
+    minutes = set()
+    for event in cited:
+        minutes.update({event.match_clock_ms // _MINUTE_MS, event.match_clock_ms // _MINUTE_MS + 1})
+    for found in _FACT_MINUTE.findall(_CLOCK.sub(" ", lowered)):
+        if int(found) not in minutes:
+            return "Claim text states a time that differs from its cited events"
+    tags = {tag for event in cited for tag in event.tags}
+    for event in cited:
+        shot = _scoring_shot(event, events) if event.type == "goal" else None
+        if shot is not None:
+            tags.update(shot.tags)
+    for detail, words in _DETAILS:
+        if re.search(_B + r"(?:" + words + r")" + _E, lowered) and detail not in tags:
+            if not (detail == "corner" and fact.from_tag == "corner"):
+                return "Claim text states a detail the event log does not record"
+    if fact.query == "goal_scorer.v1" and not _GOAL_WORDS.search(lowered):
+        return "Claim text does not say this was a goal"
+    return None
+
+
+def text_binding_problem(
+    claim: Claim,
+    names: Mapping[str, str] | None = None,
+    events: Sequence[MatchEvent] = (),
+) -> str | None:
+    """Return why the sentence does not match its structured claim, or None if it does.
+
+    With ``names`` the reader-facing rules in the module docstring also apply; ``events``
+    are the accepted events, used for teams, clock times and tags.
+    """
     expected = _expected_quantity(claim)
     if expected is not None:
         kind, value = expected
@@ -139,4 +350,35 @@ def text_binding_problem(claim: Claim, names: Mapping[str, str] | None = None) -
                 return "Claim subject has no registered display name"
             if not _names_subject(claim.text, name):
                 return "Claim text does not name the asserted subject"
+    if names is None:
+        return None
+    lowered = _lower(claim.text)
+    teams = sorted({event.team_id for event in events if event.team_id is not None})
+    if _NEGATION.search(lowered):
+        return "Claim text negates its statement; negative claims are not checked"
+    if claim.assertion is not None:
+        assertion = claim.assertion
+        named = _metrics_named(lowered)
+        if assertion.metric not in named:
+            return "Claim text does not name the asserted statistic"
+        if len(named) > 1:
+            return "Claim text names a statistic other than the asserted one"
+        asserted = assertion.subject
+        team = asserted.team_id or (
+            _team_of(asserted.player_id, events) if asserted.player_id else None
+        )
+        problem = _team_problem(lowered, team, names, teams) or _window_problem(
+            lowered, assertion.window
+        )
+        if problem is not None:
+            return problem
+        for _detail, words in _DETAILS:
+            if re.search(_B + r"(?:" + words + r")" + _E, lowered):
+                return "Claim text states a detail the registered metric does not measure"
+        return None
+    if claim.fact is not None:
+        by_id = {event.event_id: event for event in events}
+        target = by_id.get(claim.fact.event_id)
+        problem = _team_problem(lowered, target.team_id if target else None, names, teams)
+        return problem or _fact_problem(claim, lowered, events)
     return None
