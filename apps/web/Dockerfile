@@ -7,7 +7,7 @@ ENV MATCHDESK_API_ORIGIN=$MATCHDESK_API_ORIGIN
 # Public origin baked into canonical URLs, the sitemap and social cards at build time.
 ARG MATCHDESK_SITE_URL=http://localhost:3000
 ENV MATCHDESK_SITE_URL=$MATCHDESK_SITE_URL
-RUN apk add --no-cache --upgrade 'zlib>=1.3.2-r1'
+RUN apk add --no-cache --upgrade 'zlib>=1.3.2-r1' 'musl>=1.2.6-r3' 'musl-utils>=1.2.6-r3'
 COPY apps/web/package.json apps/web/package-lock.json ./
 RUN npm ci --ignore-scripts --no-audit --no-fund
 COPY apps/web/ ./
@@ -16,7 +16,7 @@ RUN npm run typecheck && npm run build
 FROM node:22.23.3-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2bc2e402 AS runtime
 WORKDIR /app
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 HOSTNAME=0.0.0.0 PORT=3000
-RUN apk add --no-cache --upgrade 'zlib>=1.3.2-r1'
+RUN apk add --no-cache --upgrade 'zlib>=1.3.2-r1' 'musl>=1.2.6-r3' 'musl-utils>=1.2.6-r3'
 COPY --from=build --chown=node:node /app/.next/standalone ./
 COPY --from=build --chown=node:node /app/.next/static ./.next/static
 # node server.js does not need npm, Yarn or Corepack. Their removal eliminates
