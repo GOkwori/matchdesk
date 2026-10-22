@@ -13,10 +13,10 @@ export function ReadyMarker() {
       navigator.serviceWorker.register("/sw.js").then(
         () => {
           document.documentElement.dataset.mdOffline = "ready";
-          // Warm the lazily loaded event log in idle time, so the worker caches it and the
-          // in-browser re-verification also works with no connection.
+          // Warm the lazily loaded verifier, then the event log, in idle time, so the worker
+          // caches both and the in-browser re-verification also works with no connection.
           const idle = window.requestIdleCallback ?? ((fn: () => void) => window.setTimeout(fn, 2000));
-          idle(() => { void import("./generated/nbr-riv-events.json"); });
+          idle(() => { void import("./verifier").then(() => import("./generated/nbr-riv-events.json"), () => undefined); });
         },
         () => { /* the demo still works online without the worker */ },
       );
