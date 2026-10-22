@@ -235,6 +235,7 @@ resource api 'Microsoft.App/containerApps@2024-03-01' = {
             { name: 'MATCHDESK_KEY_VAULT_URI', value: vault.properties.vaultUri }
             // Live agents stay off until the owner approves on-demand model spend.
             { name: 'MATCHDESK_FOUNDRY_ENABLED', value: 'false' }
+            { name: 'MATCHDESK_ASSISTANT_FOUNDRY_ENABLED', value: 'false' }
           ]
           probes: [
             { type: 'Liveness', httpGet: { path: '/api/health', port: 8000 }, periodSeconds: 30 }

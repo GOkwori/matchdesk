@@ -45,6 +45,13 @@ parity fixture and 108 studio browser tests (three viewports, axe on every page)
 Ruff, formatting, strict mypy, frontend build, dependency audit and source security
 run in hosted CI on every pull request.
 
+Ask MatchDesk is a question box in the studio. It guides people round the app and
+answers questions about the match, and it shows the proof for every figure. The engine
+writes every number: each factual sentence is built as a claim and checked by the
+parity-tested verifier before it is shown. An optional Foundry planner, off by default,
+may only translate a free-form question into a query plan. See
+[the design](docs/design/ask-matchdesk.md).
+
 PostgreSQL now has a reviewed producer-case migration, a pinned Psycopg driver,
 real adapter qualification with a restricted disposable database role, atomic
 audit/CAS/restart evidence, and independent validation of append-only audit rows

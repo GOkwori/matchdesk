@@ -13,6 +13,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
+from matchdesk.api.assistant_routes import assistant_router_from_env
 from matchdesk.api.limits import BodyLimitMiddleware
 from matchdesk.domain.hashing import content_digest
 from matchdesk.domain.models import MatchEvent
@@ -45,6 +46,7 @@ def create_app(
     producer_reverification_router: APIRouter | None = None,
     producer_command_router: APIRouter | None = None,
     producer_atomic_router: APIRouter | None = None,
+    assistant_router: APIRouter | None = None,
 ) -> FastAPI:
     """Construct an isolated app; atomic producer routes never coexist with legacy writes."""
     if producer_atomic_router is not None and (
@@ -80,6 +82,10 @@ def create_app(
     # default-unmounted candidate. Refuse any concurrent legacy write router.
     if producer_atomic_router is not None:
         app.include_router(producer_atomic_router)
+    # The Ask MatchDesk planner only reads questions into plans; it is mounted when the
+    # host switches it on (MATCHDESK_ASSISTANT_FOUNDRY_ENABLED=true).
+    if assistant_router is not None:
+        app.include_router(assistant_router)
 
     @app.exception_handler(RequestValidationError)
     async def invalid_request(request: Request, exc: RequestValidationError) -> JSONResponse:
@@ -135,3 +141,8 @@ def create_app(
 
 
 app = create_app()
+# Customer and producer routers stay unmounted. The Ask MatchDesk planner, which only reads
+# questions into plans, is added when the host switches it on.
+_assistant_router = assistant_router_from_env()
+if _assistant_router is not None:
+    app.include_router(_assistant_router)

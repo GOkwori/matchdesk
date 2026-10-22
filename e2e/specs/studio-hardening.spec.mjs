@@ -33,6 +33,7 @@ async function open(page, route) {
 
 test.describe('accessibility', () => {
   test('every studio page has zero WCAG 2.2 AA violations, including the tour and the forged-value state', async ({ page }) => {
+    test.setTimeout(120_000); // a full axe pass over 22 pages; slower runners exceed the 30 s default
     const pages = [...ALL, '/match/nbr-riv?tour=1', '/match/nbr-riv/insights?tour=3', '/producer/compose/D-031?tour=6', '/nope-not-a-page'];
     for (const route of pages) {
       await page.goto(route);
