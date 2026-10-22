@@ -311,6 +311,8 @@ def language_rules(r: Run) -> dict:
     )
     fr = r.binding("fr", "but")
     fr_key = r.approve(fr)
+    # Earlier CI steps revoke TEMP from PUBLIC; grant it to this login so the attack is real.
+    r.owner.execute("GRANT TEMP ON DATABASE matchdesk TO matchdesk_publisher_ci")
     pub.execute(
         "CREATE TEMP TABLE matchdesk_language_reviews (review_id bigint, tenant_id text,"
         " content_digest text, language text, verdict text, reviewer_actor_id text)"
@@ -324,6 +326,8 @@ def language_rules(r: Run) -> dict:
         lambda: r.queue(pub, fr, "social", fr_key),
         "needs a recorded language review",
     )
+    pub.execute("DROP TABLE pg_temp.matchdesk_language_reviews")
+    r.owner.execute("REVOKE TEMP ON DATABASE matchdesk FROM matchdesk_publisher_ci")
     r.review(r.reviewer, fr, "approved", tenant=OTHER_TENANT)
     refused(
         "another tenant's review",
