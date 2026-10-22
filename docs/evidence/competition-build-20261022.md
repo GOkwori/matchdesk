@@ -5,6 +5,12 @@
 **Hosted:** https://matchdesk-seven.vercel.app (Vercel production deployment `dpl_9Y4CU7N1tp26A8u1Ygfb5RTcjtN8`,
 built from `release/submission-2026-10` @ `76de6c4`), publicly reachable without a Vercel sign-in (checked
 22 October 2026).
+**Update, 22 October evening:** `release/submission-2026-10` moved to `adcba328a9405398e64f1b9883d1c9b78620fc3e`
+(#162: Next.js 16.4.0 → 16.4.2 for GHSA-2464-fhr4-w9xw and GHSA-p3m5-59mp-jv5r, and D-031's first sentence fixed after the
+[hosted walkthrough](hosted-walkthrough-20261022.md)). It is served by Vercel production deployment
+`dpl_6VHDENnTYyFRhEAewYidPkDmPG3v` (Next.js 16.4.2 confirmed in the page). All nine hosted checks on `adcba32` passed. A live
+re-check found the CL-0213 sentence stays Verified when touched, the forged 59% claim is rejected, the browser re-check agrees
+at 57.96%, and the site is public. Sections below describe `76de6c4` unless they say otherwise.
 **Previous build:** [21 October record](competition-build-20261021.md).
 
 ## What changed since 21 October
