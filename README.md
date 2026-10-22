@@ -40,8 +40,8 @@ hand-off. It does not call a model and it does not give an agent publishing auth
 Later Phase 2 slices add evidence verification, scoped specialists, one bounded
 live Foundry invocation and tested retry/recovery and model-evaluation controls.
 
-The submission build has 1,288 Python tests, a 47-case Python/TypeScript verifier
-parity fixture and 108 studio browser tests (three viewports, axe on every page).
+The submission build has 1,596 Python tests, a 92-case Python/TypeScript verifier
+parity fixture and 186 studio browser tests (three viewports, axe on every page).
 Ruff, formatting, strict mypy, frontend build, dependency audit and source security
 run in hosted CI on every pull request.
 
