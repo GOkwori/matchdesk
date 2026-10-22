@@ -59,3 +59,19 @@ test('round half up matches Python decimal rounding of the shortest form', () =>
     [0.5795628103277061, 2, '0.58'], [0.995, 2, '1.00'], [1e-7, 6, '0.000000'], [5e-7, 6, '0.000001'], [12, 0, '12']];
   for (const [value, decimals, expected] of cases) assert.equal(roundHalfUp(value, decimals), expected, `${value} @ ${decimals}`);
 });
+
+test('every overlay cue re-verifies in the browser with the same verdict', () => {
+  const feed = read('../public/overlays/nbr-riv.json');
+  const events = sources.canonical;
+  const evidence = { match_id: feed.match_id, event_ids: events.map((e) => e.event_id), window: { from_ms: 0, to_ms: feed.replay_end_ms } };
+  const byId = new Map(feed.claims.map((c) => [c.claim_id, c]));
+  assert.equal(byId.size, feed.claims.length);
+  for (const record of feed.claims) {
+    const result = verifyClaim(record.claim, evidence, events, exportData.display_names);
+    assert.equal(result.status, record.status, record.claim_id);
+    assert.equal(result.reason, record.reason, record.claim_id);
+    assert.equal(result.observed ?? null, record.observed ?? null, record.claim_id);
+    assert.equal(record.claim.text, record.text, record.claim_id);
+  }
+  for (const cue of feed.cues) for (const id of cue.claim_ids) assert.ok(byId.has(id), `${cue.cue_id} cites ${id}`);
+});

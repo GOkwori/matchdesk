@@ -52,6 +52,17 @@ parity-tested verifier before it is shown. An optional Foundry planner, off by d
 may only translate a free-form question into a query plan. See
 [the design](docs/design/ask-matchdesk.md).
 
+Live Intelligence replays the log at 1× to 60× with statistics recomputed as the clock
+moves and timed broadcast overlays whose claims are re-verified in the browser before they
+appear. The same cues are published as a machine-readable feed,
+[`apps/web/public/overlays/nbr-riv.json`](apps/web/public/overlays/nbr-riv.json)
+(schema `matchdesk-overlay-feed/1`, built by `matchdesk.domain.overlay_feed`), with every
+persona (fan, analyst, caption), language (EN, ES, FR) and the full claim behind each
+number. Viewers can pick a favourite club and player, a persona, a language and one focus
+statistic; player-focus pages state each player's figures as verified sentences, and
+Tactical Analysis labels each five-minute spell as control, chaos or contested by a
+published rule, with the verified sentences that justify it.
+
 PostgreSQL now has a reviewed producer-case migration, a pinned Psycopg driver,
 real adapter qualification with a restricted disposable database role, atomic
 audit/CAS/restart evidence, and independent validation of append-only audit rows

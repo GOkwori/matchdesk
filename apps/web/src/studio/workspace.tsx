@@ -6,6 +6,8 @@ import { useEffect, useState } from "react";
 import { Icon } from "./icons";
 import { loadD031 } from "./composer";
 import { draftEligibility } from "./data";
+import { MyMatchSettings } from "./my-match";
+import { DEFAULT_VIEWER, saveViewer } from "./viewer";
 
 type Row = { time: string; actor: string; initials: string; action: string; detail: string; kind: "verification" | "editorial" | "system" };
 
@@ -94,11 +96,13 @@ export function SettingsBody() {
     try { window.localStorage.setItem(PREF_KEY, JSON.stringify(next)); } catch { /* preference applies for this visit only */ }
   };
   const resetDemo = () => {
-    try { for (const key of ["md.d031", "md.lastPath", "md.tourDone"]) window.localStorage.removeItem(key); } catch { /* nothing stored */ }
+    try { for (const key of ["md.d031", "md.lastPath", "md.tourDone", "md.viewer"]) window.localStorage.removeItem(key); } catch { /* nothing stored */ }
+    saveViewer(DEFAULT_VIEWER);
     setReset(true);
   };
   return (
     <div className="md-ds">
+      <MyMatchSettings />
       <section className="md-panel" aria-labelledby="md-set-display">
         <h2 id="md-set-display">Display</h2>
         <label className="md-switch">
@@ -117,7 +121,7 @@ export function SettingsBody() {
           <Link href="/match/nbr-riv?tour=1" className="md-btn md-btn-primary">Restart guided tour <Icon name="arrow" size={16} /></Link>
           <button type="button" className="md-btn md-btn-secondary" onClick={resetDemo}>Reset demo data</button>
         </div>
-        <p className="md-muted md-small" role="status">{reset ? "Done. D-031 is back to v3 and the resume card is cleared." : "Clears composer changes and your resume point on this device."}</p>
+        <p className="md-muted md-small" role="status">{reset ? "Done. D-031 is back to v3, the resume card is cleared and My match is back to its defaults." : "Clears composer changes, your resume point and My match on this device."}</p>
       </section>
       <section className="md-panel md-ds-wide" aria-labelledby="md-set-more">
         <h2 id="md-set-more">More screens</h2>

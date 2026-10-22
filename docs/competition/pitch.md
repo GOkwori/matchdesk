@@ -29,6 +29,14 @@ United, 1,421 events):
   57.96% from the log and sends the draft back.
 - Claim 59% yourself and watch it rejected, in the browser, from the raw events.
 - Edit a sentence in the composer and see it re-verified as you type.
+- Play the match back at up to 60× with timed broadcast overlays (goals, stats cards, a
+  spell of control, a tackles leader) in fan, analyst or caption style, in English,
+  Spanish or French. Every number on screen is re-verified in your browser first, and the
+  same cues are a downloadable, machine-readable feed for a graphics engine.
+- Make it your match: a favourite club and player, a focus statistic and a language, and a
+  player-focus page for each of the 32 players where every figure is a verified sentence.
+- See who controlled each spell, and where it turned to chaos, labelled by a published
+  rule over recomputed figures rather than by a model.
 - Read the fan story with its "How we checked this" panel, every row a computed check.
 - Ask MatchDesk a question ("Who scored the second goal?", "Possession after 60 minutes")
   and get an answer whose every figure was computed and verified, or an honest "I can't

@@ -332,6 +332,24 @@ def parity_fixture() -> dict[str, Any]:
         value = observed(metric, subject, window)
         assertion = _assertion(metric, subject, value, "count", window=window)
         binding.append((f"{metric} count", assertion, ("E-0001",), template.format(v=int(value))))
+    early = MatchWindow(from_ms=0, to_ms=2_059_000)
+    nil = _assertion("goals.v1", away, 0, "count", window=early)
+    binding.append(
+        (
+            "a zero cites an event in the window it read",
+            nil,
+            ("E-0002",),
+            "Riverside scored 0 goals up to 34:19.",
+        )
+    )
+    binding.append(
+        (
+            "a zero cannot cite an event outside its window",
+            nil,
+            ("E-0790",),
+            "Riverside scored 0 goals up to 34:19.",
+        )
+    )
     binding.append(
         (
             "tackles stated as a different statistic",

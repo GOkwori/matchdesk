@@ -14,6 +14,7 @@ const paths: Record<string, ReactNode> = {
   search: <><circle cx="11" cy="11" r="6" /><path d="m20 20-4-4" /></>,
   sparkle: <path d="M12 3l1.8 4.6L18 9.4l-4.2 1.8L12 16l-1.8-4.8L6 9.4l4.2-1.8z" />,
   inbox: <path d="M4 4h16v12h-5l-1 3h-4l-1-3H4z" />,
+  user: <><circle cx="12" cy="8" r="4" /><path d="M4 21c1-4 4-6 8-6s7 2 8 6" /></>,
   ball: <><circle cx="12" cy="12" r="9" /><path d="m12 7 4 3-1.5 4.5h-5L8 10z" /></>,
   flag: <path d="M5 21V4h11l-2 4 2 4H5" />,
   swap: <path d="M7 7h12l-3-3M17 17H5l3 3" />,

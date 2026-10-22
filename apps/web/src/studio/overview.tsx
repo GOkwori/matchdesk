@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { Icon } from "./icons";
 import { Crest, KpiTile, NextStep, StatBars, VerdictChip } from "./ui";
 import { TourStep } from "./shell";
+import { YourMatch } from "./your-match";
 import { clock, eventCountText, fixture, momentsUntil, moments, REPLAY_END_SECONDS, scoreAt, serverClaim, type Moment } from "./data";
 
 const goalIcon = (m: Moment) => (m.kind === "Goal" ? "ball" : m.kind === "Corner" ? "flag" : m.kind === "Substitution" ? "swap" : "card");
@@ -116,6 +117,7 @@ export function OverviewBody() {
         </section>
         <div className="md-split-side">
           <NextStep title="D-031 can’t be approved yet" body="One claim needs a decision and one has no supporting evidence. Fix both and the draft re-verifies instantly." href="/producer/compose/D-031" action="Fix in composer" />
+          <YourMatch />
           <ForgedCheck />
           <StatBars />
         </div>

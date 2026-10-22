@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Icon } from "./icons";
+import { useViewer } from "./viewer";
 import { answerPlan, describePlan, needsEvents, parseQuestion, SUGGESTIONS, validatePlan, type Answer, type CheckedLine, type MatchContext, type Plan } from "./ask";
 import { expandLog, type CompactLog, type Status } from "./verifier";
 import exportData from "./generated/nbr-riv.json";
@@ -113,6 +114,8 @@ export function Assistant({ request }: { request: { id: number; question: string
   const busyRef = useRef(false);
   const [pending, setPending] = useState<string | null>(null);
   const pathname = usePathname();
+  const { viewer } = useViewer();
+  const suggestions = viewer.player ? [`How did ${NAMES[viewer.player] ?? viewer.player} play?`, ...SUGGESTIONS.slice(0, -1)] : SUGGESTIONS;
 
   useEffect(() => {
     let live = true;
@@ -201,7 +204,7 @@ export function Assistant({ request }: { request: { id: number; question: string
           <div className="md-ask-empty">
             <p>Try one of these:</p>
             <ul className="md-ask-suggest">
-              {SUGGESTIONS.map((s) => <li key={s}><button type="button" onClick={() => void submit(s)}>{s}</button></li>)}
+              {suggestions.map((s) => <li key={s}><button type="button" onClick={() => void submit(s)}>{s}</button></li>)}
             </ul>
           </div>
         )}
