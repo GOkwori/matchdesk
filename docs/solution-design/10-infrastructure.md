@@ -1,6 +1,7 @@
 # Infrastructure and deployment
 
-Status: local Compose files authored, unexecuted; Azure resources not provisioned.
+Status: local Compose files authored, unexecuted; Azure resources not provisioned. A proposed
+Azure deployment, with infrastructure as code and costs, is in the [Azure deployment plan](../operations/azure-deployment-plan.md).
 
 Compose proposes PostgreSQL 16, a Python 3.12 API and Node 22 web application. Only
 loopback API/web ports are published. The database has no host port. Local credentials
