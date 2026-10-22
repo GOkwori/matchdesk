@@ -34,7 +34,8 @@
 .md-small { font-size: 12px; }
 .md-mono { font-size: 0.92em; }
 .md-eyebrow { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 800; color: var(--md-accent-soft); }
-.md-link { display: inline-flex; align-items: center; gap: 4px; color: var(--md-accent-soft); text-decoration: none; font-size: 13px; font-weight: 600; }
+/* min-height keeps standalone text links at the 24 px target size (WCAG 2.2, 2.5.8). */
+.md-link { display: inline-flex; align-items: center; gap: 4px; min-height: 24px; color: var(--md-accent-soft); text-decoration: none; font-size: 13px; font-weight: 600; }
 .md-link:hover { text-decoration: underline; }
 .md-empty { color: var(--md-muted); padding: 10px 0; }
 .md-h3 { font-size: 14px; font-weight: 700; margin-top: 4px; }
@@ -129,7 +130,7 @@
 .md-strip-num { font-size: 20px; letter-spacing: 0.04em; padding: 0 4px; }
 .md-crumbs ol { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; color: var(--md-muted); font-size: 13px; }
 .md-crumbs li { display: inline-flex; gap: 6px; }
-.md-crumbs a { color: var(--md-muted); text-decoration: none; }
+.md-crumbs a { display: inline-flex; align-items: center; min-height: 24px; color: var(--md-muted); text-decoration: none; }
 .md-crumbs a:hover { color: var(--md-text); text-decoration: underline; }
 .md-crumbs [aria-current="page"] { color: var(--md-text); }
 
@@ -572,6 +573,8 @@ html[data-md-text="large"] body.md-root { zoom: 1.125; }
 
 /* ---------- Phone: < 768px ---------- */
 @media (max-width: 767px) {
+  /* The bottom tab bar is fixed; keep keyboard focus from scrolling under it (WCAG 2.2, 2.4.11). */
+  html { scroll-padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
   .md-side { display: none; }
   .md-mobile-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 14px 16px 6px; }
   .md-mobile-top .md-logo { font-size: 19px; }
@@ -631,7 +634,7 @@ html[data-md-motion="reduce"] .md-skel-block { animation: none; }
 /* Agent run replay (Insights). */
 .md-trace-claims { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .md-trace-claims li { display: flex; flex-wrap: wrap; gap: 6px; align-items: baseline; }
-.md-trace-tools summary { cursor: pointer; color: var(--md-accent-soft); font-size: 12px; font-weight: 700; }
+.md-trace-tools summary { cursor: pointer; min-height: 24px; padding-block: 3px; color: var(--md-accent-soft); font-size: 12px; font-weight: 700; }
 .md-trace-tools ol { margin: 6px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--md-muted); overflow-wrap: anywhere; }
 .md-trace-tools code { font-family: var(--md-font-mono); color: var(--md-text); }
 .md-trace-failed { border-color: rgba(255, 133, 142, 0.55); }

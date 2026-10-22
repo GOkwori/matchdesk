@@ -57,6 +57,91 @@ test.describe('accessibility', () => {
     }
   });
 
+  test('heading levels never skip and every page has one h1, one main and labelled navigation', async ({ page }) => {
+    for (const route of ALL) {
+      await open(page, route);
+      const s = await page.evaluate(() => {
+        const hs = [...document.querySelectorAll('h1,h2,h3,h4,h5,h6')].filter((h) => h.getClientRects().length);
+        const levels = hs.map((h) => Number(h.tagName[1]));
+        const skips = levels.filter((l, i) => i > 0 && l > levels[i - 1] + 1).length;
+        const unlabelled = [...document.querySelectorAll('nav')].filter((n) => !n.getAttribute('aria-label') && !n.getAttribute('aria-labelledby')).length;
+        return { h1: levels.filter((l) => l === 1).length, skips, mains: document.querySelectorAll('main').length, unlabelled };
+      });
+      expect(s, route).toEqual({ h1: 1, skips: 0, mains: 1, unlabelled: 0 });
+    }
+  });
+
+  test('interactive targets are at least 24 by 24 px, apart from links inside sentences (WCAG 2.5.8)', async ({ page }) => {
+    for (const route of ALL) {
+      await open(page, route);
+      await settle(page); // measure settled boxes, not a panel mid-way through its entrance scale
+      const small = await page.evaluate(() => [...document.querySelectorAll('a[href],button,input,select,textarea,summary,[tabindex]:not([tabindex="-1"])')]
+        .filter((el) => { const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== 'hidden'; })
+        .filter((el) => { const r = el.getBoundingClientRect();
+          if (r.width >= 24 && r.height >= 24) return false;
+          if (el.tagName === 'A' && getComputedStyle(el).display === 'inline') return false; // inline in a sentence
+          return el.type !== 'range'; // the slider's thumb, not its track, is the target
+        })
+        .map((el) => `${el.tagName} "${(el.getAttribute('aria-label') || el.textContent || '').trim().slice(0, 30)}"`));
+      expect(small, route).toEqual([]);
+    }
+  });
+
+  test('keyboard focus is always visible and never hidden under a fixed bar (WCAG 2.4.7, 2.4.11)', async ({ page }) => {
+    for (const route of ['/match/nbr-riv', '/match/nbr-riv/moments?moment=M-05', '/match/nbr-riv/insights',
+      '/match/nbr-riv/evidence/CL-0214', '/producer/compose/D-031', '/workspace/settings']) {
+      await open(page, route);
+      const seen = new Set();
+      const problems = [];
+      for (let i = 0; i < 120; i++) {
+        await page.keyboard.press('Tab');
+        const info = await page.evaluate(() => {
+          const el = document.activeElement;
+          if (!el || el === document.body) return null;
+          const cs = getComputedStyle(el);
+          // The range input draws its ring on the thumb, which computed style cannot see.
+          const visible = el.type === 'range' || (cs.outlineStyle !== 'none' && parseFloat(cs.outlineWidth) > 0) || cs.boxShadow !== 'none';
+          const r = el.getBoundingClientRect();
+          const x = Math.min(Math.max(r.left + r.width / 2, 0), innerWidth - 1);
+          const y = Math.min(Math.max(r.top + r.height / 2, 0), innerHeight - 1);
+          const top = document.elementFromPoint(x, y);
+          const covered = !!top && !el.contains(top) && !top.contains(el);
+          const id = `${el.tagName}:${(el.getAttribute('aria-label') || el.textContent || '').trim().slice(0, 40)}:${Math.round(r.left)},${Math.round(r.top + scrollY)}`;
+          return { id, visible, covered };
+        });
+        if (!info) continue;
+        if (seen.has(info.id)) break;
+        seen.add(info.id);
+        if (!info.visible) problems.push(`no focus indicator: ${info.id}`);
+        if (info.covered) problems.push(`hidden under another element: ${info.id}`);
+      }
+      expect(problems, route).toEqual([]);
+    }
+  });
+
+  test('with reduced motion requested, nothing keeps animating (WCAG 2.3.3)', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    for (const route of ['/', '/match/nbr-riv', '/match/nbr-riv/insights', STORY]) {
+      await open(page, route);
+      const moving = await page.evaluate(() => document.getAnimations().filter((a) => {
+        const t = a.effect?.getTiming?.();
+        return a.playState === 'running' && ((typeof t?.duration === 'number' && t.duration > 200) || t?.iterations === Infinity);
+      }).length);
+      expect(moving, route).toBe(0);
+    }
+  });
+
+  test('a guided-tour stop takes focus, and Escape closes it', async ({ page }) => {
+    await open(page, '/match/nbr-riv?tour=1');
+    const tour = page.getByRole('dialog').filter({ hasText: 'Guided tour · 1 of 7' });
+    await expect(tour.getByRole('heading')).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(tour.getByRole('button', { name: 'Skip tour' })).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(tour).toBeHidden();
+    await expect(page).not.toHaveURL(/tour=/);
+  });
+
   test('the first Tab lands on a working skip link on every page', async ({ page }) => {
     for (const route of ['/', '/about', '/match/nbr-riv', '/producer/compose/D-031', STORY, '/no-such-page']) {
       await page.goto(route);
