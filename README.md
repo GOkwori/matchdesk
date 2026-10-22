@@ -8,7 +8,7 @@ My priority is the path from a synthetic match event to a publishable explanatio
 The design keeps statistics in deterministic code, uses specialist AI agents to
 interpret and present evidence, and gives the producer control over publication.
 
-**Owner: George Okwori. Current stage: competition build. Phases 0–3 of the delivery plan are merged; Phase 4 (submission) is in progress.**
+**Owner: George Okwori. Current stage: competition build, hosted at https://matchdesk-seven.vercel.app. The submission build is `release/submission-2026-10`; see the [competition build record](docs/evidence/competition-build-20261021.md).**
 
 What runs today, on one invented match (Northbridge FC 2–1 Riverside United, 1,421
 synthetic events):
@@ -40,7 +40,7 @@ hand-off. It does not call a model and it does not give an agent publishing auth
 Later Phase 2 slices add evidence verification, scoped specialists, one bounded
 live Foundry invocation and tested retry/recovery and model-evaluation controls.
 
-The development branch has 1,294 Python tests, a 45-case Python/TypeScript verifier
+The submission build has 1,288 Python tests, a 47-case Python/TypeScript verifier
 parity fixture and 108 studio browser tests (three viewports, axe on every page).
 Ruff, formatting, strict mypy, frontend build, dependency audit and source security
 run in hosted CI on every pull request.

@@ -4,6 +4,10 @@
 
 - [Studio WCAG 2.2 automated audit, 22 Oct 2026](studio-wcag22-audit-20261022.md): focus hidden under the phone tab bar, 20 px text-link targets and unreachable tour cards found and fixed; five regression tests added. Manual assistive-technology testing remains open in the [studio runbook](../testing/studio-accessibility-manual-runbook.md).
 
+## Competition build — 21 October 2026
+
+- [Competition build record](competition-build-20261021.md): submission build `ed9ff4d` (hosted on Vercel, preserved as `release/submission-2026-10`), Phases 0–4 by pull request, the eight live Foundry runs and the defect each one exposed, and the checks at submission.
+
 ## Sunset Studio v3 — 14-screen development closure — 13 October 2026
 
 - [Exact-source development qualification](sunset-v3-14-screen-development-qualification-20261013.md): all 14 synthetic-only frontend screens merged to `development` at `4039ccb214ff999290a826df4e4a185718e65be4`. Four post-merge workflows passed, with 213 functional and 3 visual Playwright tests and independent native-image checks. The Screen 13 screenshot-capture failure and repair are preserved. Batch 1 originals, independent WCAG 2.2 AA assessment, live permissions and production release remain outstanding.

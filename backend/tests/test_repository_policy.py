@@ -25,7 +25,7 @@ EXPECTED_CHECKS = {
 
 def load_policy(branch: str) -> dict[str, Any]:
     """Load only an explicitly supported branch's checked-in import configuration."""
-    assert branch in {"main", "development"}
+    assert branch in {"main", "development", "development-delivery"}
     path = ROOT / "docs" / "operations" / "rulesets" / f"{branch}.json"
     return json.loads(path.read_text(encoding="utf-8"))
 
@@ -89,3 +89,26 @@ def test_development_preserves_the_two_branch_workflow() -> None:
         {"type": "deletion"},
         {"type": "non_fast_forward"},
     ]
+
+
+def test_proposed_development_delivery_policy_requires_a_pr_and_six_actions_checks() -> None:
+    """ADR-0012's proposal: history safeguards, a PR with no extra approvals, six Actions checks."""
+    rules = load_policy("development-delivery")["rules"]
+    assert [rule["type"] for rule in rules] == [
+        "deletion",
+        "non_fast_forward",
+        "pull_request",
+        "required_status_checks",
+    ]
+    assert rules[2]["parameters"]["required_approving_review_count"] == 0
+    checks = rules[3]["parameters"]["required_status_checks"]
+    assert [check["context"] for check in checks] == [
+        "foundation",
+        "web",
+        "runtime-browser",
+        "native-images",
+        "dependencies",
+        "history-secrets",
+    ]
+    assert {check["integration_id"] for check in checks} == {15368}
+    assert load_policy("development-delivery")["bypass_actors"] == []
