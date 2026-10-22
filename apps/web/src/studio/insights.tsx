@@ -177,6 +177,7 @@ function RunView({ trace }: { trace: Trace }) {
   const rounds = trace.steps.filter((s): s is Verification => s.type === "verification");
   const [shown, setShown] = useState(trace.steps.length);
   const [decisions, setDecisions] = useState<Record<string, Decision>>({});
+  const cited = [...new Set(trace.variants.flatMap((v) => v.claim_ids))];
   const open = trace.verified_claims.filter((c) => (decisions[c.claim_id] ?? "open") === "open").length;
   const decide = (id: string, d: Decision) => setDecisions((s) => ({ ...s, [id]: d }));
   const stepping = shown < trace.steps.length;
@@ -256,7 +257,11 @@ function RunView({ trace }: { trace: Trace }) {
             <ul className="md-trace-claims">
               {trace.variants.filter((v) => v.persona === "casual_fan").map((v) => <li key={v.language} lang={v.language}><strong>{LANGUAGE[v.language]} · {PERSONA[v.persona]}</strong> {v.text}</li>)}
             </ul>
-            <p className="md-muted md-small">Language review has not been run. Nothing is published without a producer.</p>
+            <p className="md-muted md-small">
+              The fact in each version comes from the verified {cited.length === 1 ? "claim" : "claims"} it cites ({cited.join(", ")}).
+              Words around it, such as praise or emphasis, are tone and are not checked. Language review has not been run.
+              Nothing is published without a producer.
+            </p>
             <Link href={`/story/${STORY_SLUG}`} className="md-btn md-btn-secondary">Preview the fan story</Link>
           </section>
         </aside>
