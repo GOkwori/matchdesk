@@ -29,6 +29,7 @@ OWNER = os.environ.get("MATCHDESK_PG_OWNER", "matchdesk")
 LOGINS = {
     "matchdesk_publisher_ci": "matchdesk_publisher",
     "matchdesk_language_reviewer_ci": "matchdesk_language_reviewer",
+    "matchdesk_operator_ci": "matchdesk_publication_operator",
     "matchdesk_outsider_ci": None,
 }
 TENANT = "ci-publication-tenant"
@@ -95,6 +96,7 @@ class Run:
             "matchdesk_language_reviewer_ci", passwords["matchdesk_language_reviewer_ci"]
         )
         self.outsider = connect("matchdesk_outsider_ci", passwords["matchdesk_outsider_ci"])
+        self.operator = connect("matchdesk_operator_ci", passwords["matchdesk_operator_ci"])
         self.cases = 0
 
     def binding(self, language: str, words: str, persona: str = "casual_fan") -> ApprovalBinding:
@@ -533,22 +535,60 @@ def delivery_rules(r: Run, s: dict) -> None:
         r.claim(op_id) is None and r.row(op_id)[0] == "unconfirmed",
     )
     resolve = "SELECT public.matchdesk_resolve_unconfirmed_publication(%s, %s, %s, %s, %s)"
+    op = r.operator
     refused(
-        "resolving without evidence",
-        lambda: pub.execute(resolve, (TENANT, op_id, "abandoned", " ", "ci-operator")),
-        "settlements_evidence_check",
+        "the publisher resolving",
+        lambda: pub.execute(resolve, (TENANT, op_id, "abandoned", "log", "ci-operator")),
+        "permission denied",
     )
     refused(
+        "resolving without evidence",
+        lambda: op.execute(resolve, (TENANT, op_id, "abandoned", " ", "ci-operator")),
+        "settlements_evidence_check",
+    )
+    for actor in (" CI-Producer", "ci-publisher"):
+        refused(
+            f"resolving as {actor.strip()}",
+            lambda actor=actor: op.execute(resolve, (TENANT, op_id, "abandoned", "log", actor)),
+            "must not be the producer or the publisher",
+        )
+    refused(
         "resolving a row that is not unconfirmed",
-        lambda: pub.execute(resolve, (TENANT, lease_id, "delivered", "log", "ci-operator")),
+        lambda: op.execute(resolve, (TENANT, lease_id, "delivered", "log", "ci-operator")),
         "Only an unconfirmed publication",
     )
     check(
         "an operator settles with evidence",
-        pub.execute(
+        op.execute(
             resolve, (TENANT, op_id, "abandoned", "Destination log shows no post", "ci-operator")
         ).fetchone()[0]
         == "abandoned",
+    )
+    refused(
+        "resolving twice",
+        lambda: op.execute(resolve, (TENANT, op_id, "delivered", "log", "ci-operator")),
+        "Only an unconfirmed publication",
+    )
+    outcomes = dict(
+        op.execute(
+            "SELECT publication_id, outcome FROM matchdesk_publication_outcomes"
+            " WHERE tenant_id = %s AND publication_id = ANY(%s)",
+            (TENANT, [late_id, objected_id, op_id]),
+        ).fetchall()
+    )
+    check(
+        "the outcomes view reports what really happened",
+        outcomes == {late_id: "delivered", objected_id: "delivered", op_id: "abandoned"},
+    )
+    refused(
+        "owner settling with another publication's claim",
+        lambda: r.owner.execute(
+            "INSERT INTO matchdesk_publication_settlements (tenant_id, publication_id, kind,"
+            " claim_digest, receipt, recorded_by, recorded_at) VALUES (%s, %s, 'late_delivery',"
+            " %s, 'x', 'owner', now())",
+            (TENANT, op_id, hashlib.sha256(stale["claim_token"].encode()).hexdigest()),
+        ),
+        "violates foreign key constraint",
     )
     refused(
         "owner settling without a record",
@@ -707,7 +747,7 @@ def main() -> None:
     four_eyes_rules(r, state)
     delivery_rules(r, state)
     history_rules(r, state)
-    for conn in (r.publisher, r.reviewer, r.outsider, r.owner):
+    for conn in (r.publisher, r.reviewer, r.outsider, r.operator, r.owner):
         conn.close()
 
 

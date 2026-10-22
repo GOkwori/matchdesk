@@ -24,8 +24,9 @@
 --   record another worker's outcome. A lease that expires unreported counts as one attempt; if it
 --   was the last, the row is 'unconfirmed' (never 'abandoned', since the send may have worked).
 --   Every claim is kept, so any expired claim can still report a late success, which is recorded
---   as a settlement even if the row has since ended. An operator can settle an unconfirmed row
---   with outside evidence.
+--   as a settlement even if the row has since ended; matchdesk_publication_outcomes combines the
+--   two. An operator (a separate role, not the producer or the publisher) can settle an
+--   unconfirmed row once, with outside evidence.
 -- * Queueing stores and hashes the producer audit's own binding, never the caller's spelling of
 --   it, so 1 and 1.0 cannot become two publications of one version.
 -- * Withdrawn, abandoned and delivered rows are final; unconfirmed rows end only through a
@@ -45,7 +46,8 @@ DECLARE
     role_name text;
 BEGIN
     FOREACH role_name IN ARRAY ARRAY[
-        'matchdesk_publication_guard_owner', 'matchdesk_publisher', 'matchdesk_language_reviewer'
+        'matchdesk_publication_guard_owner', 'matchdesk_publisher', 'matchdesk_language_reviewer',
+        'matchdesk_publication_operator'
     ] LOOP
         IF NOT EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = role_name) THEN
             EXECUTE pg_catalog.format(
@@ -177,7 +179,8 @@ CREATE TABLE IF NOT EXISTS public.matchdesk_publication_claims (
     claimed_at timestamptz NOT NULL,
     recorded_by text NOT NULL,
     FOREIGN KEY (tenant_id, publication_id)
-        REFERENCES public.matchdesk_publication_outbox (tenant_id, publication_id)
+        REFERENCES public.matchdesk_publication_outbox (tenant_id, publication_id),
+    UNIQUE (claim_digest, tenant_id, publication_id)
 );
 
 -- The one report each claim may make. A claim with no report whose lease has expired is the only
@@ -195,7 +198,7 @@ CREATE TABLE IF NOT EXISTS public.matchdesk_publication_settlements (
     tenant_id text NOT NULL,
     publication_id text NOT NULL,
     kind text NOT NULL CHECK (kind IN ('late_delivery', 'operator_delivered', 'operator_abandoned')),
-    claim_digest text UNIQUE REFERENCES public.matchdesk_publication_claims (claim_digest),
+    claim_digest text UNIQUE,
     receipt text CHECK (receipt IS NULL OR length(receipt) BETWEEN 1 AND 200),
     evidence text CHECK (evidence IS NULL OR length(btrim(evidence)) BETWEEN 1 AND 500),
     operator_actor_id text CHECK (
@@ -205,6 +208,9 @@ CREATE TABLE IF NOT EXISTS public.matchdesk_publication_settlements (
     recorded_at timestamptz NOT NULL,
     FOREIGN KEY (tenant_id, publication_id)
         REFERENCES public.matchdesk_publication_outbox (tenant_id, publication_id),
+    -- A late delivery names a claim of this very publication.
+    FOREIGN KEY (claim_digest, tenant_id, publication_id)
+        REFERENCES public.matchdesk_publication_claims (claim_digest, tenant_id, publication_id),
     CONSTRAINT matchdesk_settlement_late_receipt CHECK (
         kind <> 'late_delivery' OR (claim_digest IS NOT NULL AND receipt IS NOT NULL)
     ),
@@ -746,7 +752,9 @@ END;
 $$;
 
 -- An operator settles an unconfirmed send with outside evidence (the destination's own record):
--- 'delivered' or 'abandoned'. Once per publication. Returns the new status.
+-- 'delivered' or 'abandoned'. Once per publication, through the operator role only, by someone
+-- other than the producer and the publisher, from a login other than the one that queued it.
+-- Returns the new status.
 CREATE OR REPLACE FUNCTION public.matchdesk_resolve_unconfirmed_publication(
     p_tenant text, p_publication_id text, p_resolution text, p_evidence text,
     p_operator_actor_id text
@@ -768,6 +776,16 @@ BEGIN
     IF entry_row.status <> 'unconfirmed' THEN
         RAISE EXCEPTION 'Only an unconfirmed publication is resolved by an operator';
     END IF;
+    IF lower(btrim(p_operator_actor_id)) IN (
+        lower(btrim(entry_row.producer_actor_id)), lower(btrim(entry_row.publisher_actor_id))
+    ) THEN
+        RAISE EXCEPTION 'The operator must not be the producer or the publisher'
+            USING ERRCODE = 'MDPUB';
+    END IF;
+    IF session_user = entry_row.queued_by THEN
+        RAISE EXCEPTION 'The login that queued a publication cannot resolve it'
+            USING ERRCODE = 'MDPUB';
+    END IF;
     INSERT INTO public.matchdesk_publication_settlements
         (tenant_id, publication_id, kind, evidence, operator_actor_id, recorded_by, recorded_at)
     VALUES (entry_row.tenant_id, entry_row.publication_id, 'operator_' || p_resolution,
@@ -781,6 +799,24 @@ BEGIN
     RETURN p_resolution;
 END;
 $$;
+
+-- What actually happened to each publication: the row's status, corrected by any settlement. A
+-- late success leaves an ended row's status as it was (abandoned, withdrawn) but the content went
+-- out; reports must read this view, not the status alone.
+CREATE OR REPLACE VIEW public.matchdesk_publication_outcomes AS
+SELECT o.tenant_id, o.publication_id, o.destination, o.language, o.content_digest,
+       o.status AS recorded_status, o.attempts,
+       CASE
+           WHEN o.status = 'delivered' OR EXISTS (
+               SELECT 1 FROM public.matchdesk_publication_settlements st
+               WHERE st.tenant_id = o.tenant_id AND st.publication_id = o.publication_id
+                 AND st.kind IN ('late_delivery', 'operator_delivered')
+           ) THEN 'delivered'
+           ELSE o.status
+       END AS outcome,
+       o.updated_at
+FROM public.matchdesk_publication_outbox o;
+REVOKE ALL ON public.matchdesk_publication_outcomes FROM PUBLIC;
 
 -- ---------------------------------------------------------------------------------------------
 -- Ownership and privileges.
@@ -842,10 +878,15 @@ GRANT EXECUTE ON FUNCTION public.matchdesk_publication_id(jsonb, text) TO PUBLIC
 GRANT EXECUTE ON FUNCTION
     public.matchdesk_queue_publication(text, text, text, jsonb, text, text, integer),
     public.matchdesk_claim_publication_attempt(text, text, integer),
-    public.matchdesk_record_publication_attempt(text, text, uuid, text, text, text),
+    public.matchdesk_record_publication_attempt(text, text, uuid, text, text, text)
+    TO matchdesk_publisher;
+GRANT SELECT ON public.matchdesk_publication_outbox, public.matchdesk_publication_settlements,
+    public.matchdesk_publication_outcomes TO matchdesk_publisher;
+GRANT USAGE ON SCHEMA public TO matchdesk_publication_operator;
+GRANT EXECUTE ON FUNCTION
     public.matchdesk_resolve_unconfirmed_publication(text, text, text, text, text)
-    TO matchdesk_publisher;
-GRANT SELECT ON public.matchdesk_publication_outbox, public.matchdesk_publication_settlements
-    TO matchdesk_publisher;
+    TO matchdesk_publication_operator;
+GRANT SELECT ON public.matchdesk_publication_outbox, public.matchdesk_publication_settlements,
+    public.matchdesk_publication_outcomes TO matchdesk_publication_operator;
 
 COMMIT;
