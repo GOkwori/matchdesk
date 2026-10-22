@@ -48,8 +48,8 @@ The verifier is deliberately narrow, and fails closed: a sentence it cannot read
 back for revision rather than passed.
 
 - **It checks:** the stated number against a recomputation from all events, at the stated
-  precision; the named player or team; the statistic word (goals, shots, possession, pass
-  accuracy, xG, final-third entries) and no other; the team; the time window ("in the second
+  precision; the named player or team; the statistic word (any of the fourteen registered
+  metrics) and no other; the team; the time window ("in the second
   half", "since 60′"); for event facts, the clock time, minute and recorded details such as a
   header; that cited events are ones the metric counts; and that nothing reads past the
   replay point. Negative sentences ("did not score") are sent back, not checked.
@@ -59,7 +59,8 @@ back for revision rather than passed.
   of statistic and detail words; event facts beyond the two registered queries (who scored,
   and the gap between two events).
 - **Data limits:** one synthetic match. Possession is time on the ball between consecutive
-  events, not tracking data, and synthetic xG is this demo's own model.
+  events, not tracking data; synthetic xG is this demo's own model; ball speed is estimated from
+  the time to the next event; there is no shot speed, distance run or auto-eventing from video.
 
 ## Running it yourself
 

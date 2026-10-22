@@ -69,7 +69,10 @@ export type VEvent = {
   outcome: string | null;
   xg: number | null;
   x: number | null;
+  y: number | null;
   end_x: number | null;
+  end_y: number | null;
+  under_pressure: boolean;
   tags: readonly string[];
 };
 
@@ -86,7 +89,10 @@ export type CompactLog = {
   outcome: readonly (string | null)[];
   xg: readonly (number | null)[];
   x: readonly (number | null)[];
+  y?: readonly (number | null)[];
   end_x: readonly (number | null)[];
+  end_y?: readonly (number | null)[];
+  pressure?: readonly number[];
   tags?: readonly (readonly string[])[];
 };
 
@@ -103,7 +109,10 @@ export function expandLog(log: CompactLog): VEvent[] {
     outcome: log.outcome[i],
     xg: log.xg[i],
     x: log.x[i],
+    y: log.y ? log.y[i] : null,
     end_x: log.end_x[i],
+    end_y: log.end_y ? log.end_y[i] : null,
+    under_pressure: log.pressure ? log.pressure[i] === 1 : false,
     tags: log.tags ? log.tags[i] : [],
   }));
 }
@@ -121,6 +130,14 @@ export const METRIC_UNITS: Readonly<Record<string, string>> = {
   "synthetic_xg.v1": "synthetic_xg",
   "final_third_entries.v1": "count",
   "possession_time.v1": "ratio",
+  "pass_distance.v1": "metres",
+  "progressive_passes.v1": "count",
+  "pass_difficulty.v1": "rating",
+  "ball_speed.v1": "km_per_hour",
+  "pressured_passes.v1": "count",
+  "tackles.v1": "count",
+  "interceptions.v1": "count",
+  "recoveries.v1": "count",
 };
 
 function eventsInWindow(events: readonly VEvent[], window: Window): VEvent[] {
@@ -190,7 +207,77 @@ function possessionTime(events: readonly VEvent[], subject: Subject, window: Win
   return (owned.get(subject.team_id) ?? 0) / total;
 }
 
+/* Pass quality, speed and defending (matchdesk.domain.metrics). Same operations in the same order. */
+const PITCH_LENGTH_M = 105.0;
+const PITCH_WIDTH_M = 68.0;
+const PROGRESSIVE_GAIN_M = 10.0;
+const PROGRESSIVE_CLOSER = 0.25;
+
+function metres(e: VEvent): number {
+  const dx = ((e.end_x as number) - (e.x as number)) * PITCH_LENGTH_M / 100.0;
+  const dy = ((e.end_y as number) - (e.y as number)) * PITCH_WIDTH_M / 100.0;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+const forwardMetres = (e: VEvent) => ((e.end_x as number) - (e.x as number)) * PITCH_LENGTH_M / 100.0;
+
+function toGoalMetres(x: number, y: number): number {
+  const dx = (100.0 - x) * PITCH_LENGTH_M / 100.0;
+  const dy = (50.0 - y) * PITCH_WIDTH_M / 100.0;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+function passesOf(events: readonly VEvent[], subject: Subject, window: Window): VEvent[] {
+  return eventsInWindow(events, window).filter((e) => e.type === "pass" && e.x != null && e.end_x != null && matchesSubject(e, subject));
+}
+
+function mean(values: number[]): number {
+  let total = 0;
+  for (const v of values) total += v;
+  return values.length ? total / values.length : 0;
+}
+
+/** A 0-100 rating of one pass: 45% length, 30% forward ambition, 15% final-sixth target, 10% pressure. */
+export function passDifficulty(e: VEvent): number {
+  const length = Math.min(metres(e) / 40.0, 1.0);
+  const ambition = Math.min(Math.max(forwardMetres(e) / 30.0, 0.0), 1.0);
+  const target = (e.end_x as number) >= 500.0 / 6.0 ? 1.0 : 0.0;
+  const pressure = e.under_pressure ? 1.0 : 0.0;
+  return 100.0 * (0.45 * length + 0.30 * ambition + 0.15 * target + 0.10 * pressure);
+}
+
+function isProgressive(e: VEvent): boolean {
+  const before = toGoalMetres(e.x as number, e.y as number);
+  const after = toGoalMetres(e.end_x as number, e.end_y as number);
+  return e.outcome === "complete" && forwardMetres(e) >= PROGRESSIVE_GAIN_M && after <= (1.0 - PROGRESSIVE_CLOSER) * before;
+}
+
+function ballSpeed(events: readonly VEvent[], subject: Subject, window: Window): number {
+  eventsInWindow(events, window);
+  const following = new Map<string, VEvent>();
+  for (let i = 0; i + 1 < events.length; i += 1) if (events[i].period === events[i + 1].period) following.set(events[i].event_id, events[i + 1]);
+  const speeds: number[] = [];
+  for (const e of passesOf(events, subject, window)) {
+    const after = following.get(e.event_id);
+    if (e.outcome !== "complete" || after === undefined) continue;
+    const seconds = (after.match_clock_ms - e.match_clock_ms) / 1000.0;
+    if (seconds > 0) speeds.push(metres(e) / seconds * 3.6);
+  }
+  return mean(speeds);
+}
+
+const taggedRecoveries = (tag: string) => (events: readonly VEvent[], subject: Subject, window: Window) =>
+  eventsInWindow(events, window).filter((e) => e.type === "recovery" && e.tags.includes(tag) && matchesSubject(e, subject)).length;
+
 const FORMULAS: Readonly<Record<string, (events: readonly VEvent[], subject: Subject, window: Window) => number>> = {
+  "pass_distance.v1": (events, subject, window) => mean(passesOf(events, subject, window).map(metres)),
+  "progressive_passes.v1": (events, subject, window) => passesOf(events, subject, window).filter(isProgressive).length,
+  "pass_difficulty.v1": (events, subject, window) => mean(passesOf(events, subject, window).map(passDifficulty)),
+  "ball_speed.v1": ballSpeed,
+  "pressured_passes.v1": (events, subject, window) => passesOf(events, subject, window).filter((e) => e.under_pressure).length,
+  "tackles.v1": taggedRecoveries("tackle"),
+  "interceptions.v1": taggedRecoveries("interception"),
+  "recoveries.v1": countOf("recovery"),
   "shots.v1": countOf("shot"),
   "goals.v1": countOf("goal"),
   "pass_accuracy.v1": passAccuracy,
@@ -200,7 +287,7 @@ const FORMULAS: Readonly<Record<string, (events: readonly VEvent[], subject: Sub
 };
 
 export function computeMetric(metric: string, events: readonly VEvent[], subject: Subject, window: Window): number {
-  const formula = FORMULAS[metric];
+  const formula = Object.hasOwn(FORMULAS, metric) ? FORMULAS[metric] : undefined;
   if (!formula) throw new MetricError(`unregistered metric: ${metric}`);
   return formula(events, subject, window);
 }
@@ -244,6 +331,9 @@ export function statedQuantities(text: string): { counts: number[]; percents: nu
   return { counts, percents };
 }
 
+// Units stated as a plain number at one decimal place unless the assertion says otherwise.
+const MEASURE_UNITS: ReadonlySet<string> = new Set(["metres", "km_per_hour", "rating", "per_minute"]);
+
 function expectedQuantity(claim: Claim): ["count" | "percent", number] | null {
   const assertion = claim.assertion;
   if (assertion) {
@@ -253,6 +343,7 @@ function expectedQuantity(claim: Claim): ["count" | "percent", number] | null {
       return ["percent", Number(roundHalfUp(assertion.value * 100, places))];
     }
     if (assertion.unit === "synthetic_xg") return ["count", Number(roundHalfUp(assertion.value, assertion.decimals ?? 2))];
+    if (MEASURE_UNITS.has(assertion.unit)) return ["count", Number(roundHalfUp(assertion.value, assertion.decimals ?? 1))];
     return null;
   }
   if (claim.fact && claim.fact.gap_seconds != null) return ["count", claim.fact.gap_seconds];
@@ -271,6 +362,14 @@ const METRIC_WORDS: readonly (readonly [string, string])[] = [
   ["synthetic_xg.v1", "expected goals|xg"],
   ["final_third_entries.v1", "final[- ]third"],
   ["possession_time.v1", "possession|of the ball"],
+  ["pass_difficulty.v1", "pass(?:ing)? difficulty|difficulty(?: rating)?"],
+  ["pass_distance.v1", "pass(?:es|ing)? (?:length|distance)|metres|meters"],
+  ["progressive_passes.v1", "progressive pass(?:es)?"],
+  ["pressured_passes.v1", "pass(?:es)? under pressure|pressured pass(?:es)?"],
+  ["ball_speed.v1", "ball speed|km/h|speed"],
+  ["tackles.v1", "tackles?|tackled"],
+  ["interceptions.v1", "interceptions?|intercepted"],
+  ["recoveries.v1", "ball recover(?:y|ies)|recover(?:y|ies|ed)|won the ball back"],
   ["pass_accuracy.v1", "pass(?:es|ing)?"],
   ["shots.v1", "shots?|attempts?|efforts?"],
   ["goals.v1", "goals?|scor(?:ed|es|ing)|brace|hat[- ]trick|netted|scoresheet"],
@@ -501,7 +600,7 @@ export function verifyClaim(claim: Claim, evidence: Evidence, events: readonly V
   }
   const assertion = claim.assertion;
   if (!assertion) throw new Error("Measured claim is missing its required metric assertion");
-  const unit = METRIC_UNITS[assertion.metric];
+  const unit = Object.hasOwn(METRIC_UNITS, assertion.metric) ? METRIC_UNITS[assertion.metric] : undefined;
   if (unit === undefined) return { ...base, status: "blocked", query_id: "metric-registry-v1", reason: `Metric is not registered: ${assertion.metric}` };
   if (assertion.unit !== unit) {
     return { ...base, status: "blocked", query_id: queryId(assertion.metric), reason: `Claim unit ${assertion.unit} does not match registered metric unit ${unit}` };
@@ -516,7 +615,7 @@ export function verifyClaim(claim: Claim, evidence: Evidence, events: readonly V
   let passed = comparisonPasses(assertion.comparator ?? "eq", assertion.value, observed, assertion.decimals);
   let query_id = queryId(assertion.metric);
   let reason = passed ? "Registered metric recomputation satisfies the claim comparator" : "Registered metric recomputation does not satisfy the claim comparator";
-  const countedType = COUNTED_TYPES[assertion.metric];
+  const countedType = Object.hasOwn(COUNTED_TYPES, assertion.metric) ? COUNTED_TYPES[assertion.metric] : undefined;
   if (passed && countedType !== undefined && !citesCountedEvents(claim, assertion, events, countedType)) {
     passed = false;
     reason = "Claim cites events the registered metric does not count";

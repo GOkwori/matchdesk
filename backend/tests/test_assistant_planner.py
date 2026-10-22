@@ -172,7 +172,7 @@ def test_the_schema_is_closed() -> None:
     """The model cannot add prose, figures or out-of-range windows."""
     for bad in (
         {"intent": "metric", "metric": "shots.v1", "text": "Riverside had 99 shots"},
-        {"intent": "metric", "metric": "tackles.v1"},
+        {"intent": "metric", "metric": "dribbles.v1"},
         {"intent": "metric", "metric": "shots.v1", "subjects": ["nbr", "riv", "nbr-09"]},
         {"intent": "metric", "metric": "shots.v1", "from_minute": -1},
         {"intent": "metric", "metric": "shots.v1", "period": 3},

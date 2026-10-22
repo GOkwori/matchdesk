@@ -62,8 +62,16 @@ METRIC_IDS = (
     "synthetic_xg.v1",
     "final_third_entries.v1",
     "possession_time.v1",
+    "pass_distance.v1",
+    "progressive_passes.v1",
+    "pass_difficulty.v1",
+    "ball_speed.v1",
+    "pressured_passes.v1",
+    "tackles.v1",
+    "interceptions.v1",
+    "recoveries.v1",
 )
-# The identities the studio can name: both teams and the players with display names.
+# The identities the studio can name: both teams and every player in either squad.
 SUBJECTS: Mapping[str, str] = {
     canonical.HOME: "Northbridge FC (home)",
     canonical.AWAY: "Riverside United (away)",
@@ -77,6 +85,14 @@ MetricId = Literal[
     "synthetic_xg.v1",
     "final_third_entries.v1",
     "possession_time.v1",
+    "pass_distance.v1",
+    "progressive_passes.v1",
+    "pass_difficulty.v1",
+    "ball_speed.v1",
+    "pressured_passes.v1",
+    "tackles.v1",
+    "interceptions.v1",
+    "recoveries.v1",
 ]
 Intent = Literal["metric", "score", "scorers", "summary", "help", "out_of_scope", "unknown"]
 Reason = Literal["prediction", "other_match", "personal", "unsupported"]
@@ -156,7 +172,10 @@ def planner_instructions() -> str:
         "(how the app works), out_of_scope (predictions, other matches or clubs, personal "
         "matters, anything else not in the event log), unknown.\n"
         "metric: goals.v1, shots.v1, pass_accuracy.v1, synthetic_xg.v1 (expected goals), "
-        "final_third_entries.v1, possession_time.v1 (teams only).\n"
+        "final_third_entries.v1, possession_time.v1 (teams only), pass_distance.v1 (average "
+        "pass length), progressive_passes.v1, pass_difficulty.v1, ball_speed.v1 (estimated), "
+        "pressured_passes.v1 (passes under pressure), tackles.v1, interceptions.v1, "
+        "recoveries.v1 (balls won back).\n"
         f"subjects (at most two; empty means both teams): {subjects}.\n"
         "window: period 1 or 2 for a half; from_minute/to_minute for minute bounds; "
         "last_minutes for 'the last N minutes'; leave all empty for the whole match so far.\n"

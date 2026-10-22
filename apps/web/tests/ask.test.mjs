@@ -93,7 +93,7 @@ test('a sentence that misstates its figure is caught by the same verifier', () =
 });
 
 test('naming a team or player alone gives a short verified summary', () => {
-  for (const [q, n] of [['Tell me about Okafor', 4], ['How did Riverside do in the first half?', 4], ['Mensah', 4]]) {
+  for (const [q, n] of [['Tell me about Okafor', 6], ['How did Riverside do in the first half?', 6], ['Mensah', 6]]) {
     const a = answer(q);
     assert.equal(a.kind, 'match', q);
     assert.equal(a.lines.length, n, q);
@@ -138,7 +138,7 @@ test('plans from a model are accepted only in the exact schema', () => {
   const good = { intent: 'metric', metric: 'shots.v1', subjects: ['nbr-09'], window: { period: 2 } };
   assert.deepEqual(validatePlan(good, ctx), good);
   const bad = [
-    null, 'shots', [], { intent: 'metric' }, { ...good, metric: 'tackles.v1' }, { ...good, subjects: ['ars-14'] },
+    null, 'shots', [], { intent: 'metric' }, { ...good, metric: 'dribbles.v1' }, { ...good, subjects: ['ars-14'] },
     { ...good, subjects: ['nbr', 'riv', 'nbr-09'] }, { ...good, window: { period: 3 } }, { ...good, window: { from_minute: -5 } },
     { ...good, window: { from_minute: 1.5 } }, { ...good, text: 'Northbridge had 99 shots' }, { ...good, window: { sql: 'drop' } },
     { intent: 'help', topic: 'not-a-topic' }, { intent: 'out_of_scope', reason: 'whatever' }, { intent: 'execute', command: 'approve' },
@@ -167,7 +167,7 @@ test('review: a windowed score never claims a lead it cannot show', () => {
 
 test('review: questions it cannot answer exactly are declined, never answered as a different question', () => {
   const declined = [
-    'How many shots did Fernandes take?', 'Which player had the most shots?', 'Who is the top scorer?',
+    'How many shots did Fernandes take?', 'Who was the best player?', 'Who ran the furthest?',
     'shots on target', 'how many own goals', 'How many goals did Riverside concede?', 'shots conceded by Northbridge',
     'Okafor assists', 'corners', 'yellow cards', 'how many fouls', 'how many passes did Mensah make',
     'shots in the last 5 minutes of the first half', 'Northbridge, Riverside and Okafor shots', 'shots in stoppage time',
@@ -240,11 +240,12 @@ test('review 3: qualifiers the metrics cannot see are declined, not answered as 
 });
 
 test('review 3: record ids are never read as a team, and only a named player id resolves', () => {
-  for (const q of ['How many shots did nbr-06 take?', 'nbr-06 stats']) {
+  for (const q of ['How many shots did nbr-99 take?', 'nbr-99 stats']) {
     const a = answer(q);
     assert.equal(a.kind, 'decline', q);
-    assert.match(a.text, /nbr-06 is not a named player/);
+    assert.match(a.text, /nbr-99 is not a player in either squad/);
   }
+  assert.deepEqual(answer('How many shots did nbr-06 take?').lines.map((l) => l.claim.text), ['Ashdown took 3 shots up to 67:12.']);
   assert.deepEqual(answer('How many shots did nbr-09 take?').lines.map((l) => l.claim.assertion.subject), [{ player_id: 'nbr-09' }]);
 });
 
@@ -252,7 +253,10 @@ test('review 3: team rankings, ordinal goals and results get the precise answer'
   const most = answer('Which team had the most shots?');
   assert.equal(most.kind, 'match');
   assert.equal(most.derived, 'Northbridge had more shots than Riverside.');
-  assert.equal(answer('Who had the most shots?').kind, 'decline');
+  const players = answer('Who had the most shots?');
+  assert.equal(players.kind, 'match');
+  assert.deepEqual(new Set(statuses(players)), new Set(['verified']));
+  assert.match(players.derived, /joint top for shots/);
   const second = answer('Who scored the second goal?');
   assert.deepEqual(second.lines.map((l) => [l.claim.text, l.result.status]), [['Lindqvist scored for Riverside at 41:03.', 'verified']]);
   assert.deepEqual(answer("Okafor's second goal").lines.map((l) => l.claim.text), ['Okafor scored for Northbridge at 58:17.']);
@@ -265,4 +269,36 @@ test('review 3: team rankings, ordinal goals and results get the precise answer'
     assert.match(a.note, /before full time, so there is no final result yet/, q);
   }
   assert.equal(answer('Score at half-time').note, undefined);
+});
+
+test('every player has a name, and players can be ranked on any count by a verified top three', () => {
+  for (const id of Object.keys(ctx.names).filter((k) => k.includes('-'))) assert.ok(ctx.names[id].length > 1, id);
+  const tackles = answer('Who made the most tackles?');
+  assert.equal(tackles.kind, 'match');
+  assert.equal(tackles.lines.length, 3);
+  assert.deepEqual(new Set(statuses(tackles)), new Set(['verified']));
+  const values = tackles.lines.map((l) => l.claim.assertion.value);
+  assert.deepEqual(values, [...values].sort((a, b) => b - a));
+  assert.equal(answer('Who made the most tackles for Riverside?').lines.every((l) => l.claim.assertion.subject.player_id.startsWith('riv-')), true);
+  assert.equal(answer('Who was man of the match?').kind, 'decline');
+});
+
+test('pass quality, ball speed and defending answers verify and say how they were measured', () => {
+  const cases = [
+    ['Northbridge average pass length', 'pass_distance.v1', /105 m/],
+    ["Okafor's pass difficulty", 'pass_difficulty.v1', /0–100 rating/],
+    ['ball speed in the second half', 'ball_speed.v1', /estimated/],
+    ['How many progressive passes did Riverside play?', 'progressive_passes.v1', /10 m or more forward|at least 10 m forward/],
+    ['Passes under pressure since 60 minutes', 'pressured_passes.v1', null],
+    ['Interceptions in the first half', 'interceptions.v1', null],
+    ['Ball recoveries by Mensah', 'recoveries.v1', null],
+  ];
+  for (const [q, metric, note] of cases) {
+    const a = answer(q);
+    assert.equal(a.kind, 'match', q);
+    assert.ok(a.lines.every((l) => l.claim.assertion.metric === metric), q);
+    assert.deepEqual(new Set(statuses(a)), new Set(['verified']), `${q}: ${a.lines.map((l) => `${l.claim.text} -> ${l.result.reason}`).join(' | ')}`);
+    if (note) assert.match(a.note, note, q);
+  }
+  for (const q of ['What was the shot speed of the goal?', 'Who ran the furthest?', 'top speed of Okafor']) assert.equal(answer(q).kind, 'decline', q);
 });

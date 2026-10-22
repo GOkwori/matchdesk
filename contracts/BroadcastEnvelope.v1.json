@@ -329,7 +329,9 @@
             "ratio",
             "synthetic_xg",
             "metres",
-            "per_minute"
+            "per_minute",
+            "rating",
+            "km_per_hour"
           ],
           "title": "Unit",
           "type": "string"

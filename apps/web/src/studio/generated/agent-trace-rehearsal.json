@@ -1,6 +1,6 @@
 {
  "approval": "human producer only",
- "digest_chars": 2103,
+ "digest_chars": 2430,
  "digest_event_count": 1421,
  "focus": {
   "event_id": "E-1366",
@@ -227,6 +227,9 @@
        "event_id": "E-0003",
        "outcome": "complete",
        "player_id": "nbr-05",
+       "tags": [
+        "tackle"
+       ],
        "team_id": "nbr",
        "type": "recovery"
       },
@@ -458,6 +461,9 @@
        "event_id": "E-1355",
        "outcome": "complete",
        "player_id": "riv-02",
+       "tags": [
+        "tackle"
+       ],
        "team_id": "riv",
        "type": "recovery"
       },
