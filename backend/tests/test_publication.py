@@ -299,7 +299,7 @@ def test_the_file_feed_writes_each_publication_once(tmp_path: Path) -> None:
     receipt = feed.deliver(pid, {"headline": "58′ Goal for Northbridge FC"})
     written = tmp_path / "feed" / f"{pid}.json"
     assert json.loads(written.read_text())["headline"].startswith("58")
-    assert written.stat().st_mode & 0o777 == 0o644
+    assert written.stat().st_mode & 0o777 == 0o640
     assert feed.deliver(pid, {"headline": "58′ Goal for Northbridge FC"}) == receipt
     with pytest.raises(PermanentDeliveryError, match="different payload"):
         feed.deliver(pid, {"headline": "Something else"})

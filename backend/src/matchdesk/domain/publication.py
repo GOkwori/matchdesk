@@ -62,6 +62,9 @@ DESTINATION_PERSONAS: Mapping[str, frozenset[str]] = {
 }
 
 MAX_REASON_CHARS = 500
+# Feed files are readable by the feed directory's group (the site or app that serves them), never
+# by every account on the host.
+FEED_FILE_MODE = 0o640
 _DIGEST = re.compile(r"[0-9a-f]{64}")
 
 
@@ -365,7 +368,7 @@ class FileFeedDestination:
 
     Suits a static feed that a site or app reads. Writing the same publication again returns the
     original receipt; different content under the same ID is refused. Files are durable before the
-    receipt is returned and readable by the feed's readers.
+    receipt is returned and readable by the feed directory's group, not by everyone.
     """
 
     def __init__(self, name: DestinationName, directory: Path) -> None:
@@ -394,7 +397,7 @@ class FileFeedDestination:
                     handle.write(body)
                     handle.flush()
                     os.fsync(handle.fileno())
-                os.chmod(temp, 0o644)
+                os.chmod(temp, FEED_FILE_MODE)
                 try:
                     # link() refuses an existing target, so two writers cannot overwrite each other.
                     os.link(temp, target)
