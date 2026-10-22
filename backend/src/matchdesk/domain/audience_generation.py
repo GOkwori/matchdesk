@@ -7,6 +7,7 @@ content or publish. The output is an unapproved, immutable broadcast draft.
 
 from __future__ import annotations
 
+import asyncio
 import json
 from dataclasses import dataclass
 from typing import Literal, Protocol
@@ -15,11 +16,16 @@ from pydantic import TypeAdapter
 
 from matchdesk.domain.audience_variants import build_audience_variant
 from matchdesk.domain.broadcast_outputs import BroadcastEnvelope, OutputPayload
+from matchdesk.domain.models import Identifier
 
 AudienceLanguage = Literal["en", "es", "fr"]
 AudiencePersona = Literal["analyst", "casual_fan", "broadcast_caption"]
 
 _MAX_SOURCE_BYTES = 16_000
+# Typed model proposals are still untrusted: bound their serialized output size.
+_MAX_PROPOSAL_BYTES = 262_144
+# Bounded offline proposal step; a real provider must separately enforce network budgets.
+_PROVIDER_TIMEOUT_SECONDS = 15
 _LOCALE_NAMES = {"en": "English", "es": "Spanish", "fr": "French"}
 _PERSONA_POLICIES = {
     "analyst": "Use measured, precise football terminology; distinguish inference from fact.",
@@ -27,6 +33,7 @@ _PERSONA_POLICIES = {
     "broadcast_caption": "Keep concise, readable caption wording without losing factual qualifications.",
 }
 _OUTPUT_ADAPTER: TypeAdapter[OutputPayload] = TypeAdapter(OutputPayload)
+_OUTPUT_ID_ADAPTER: TypeAdapter[str] = TypeAdapter(Identifier)
 
 
 @dataclass(frozen=True)
@@ -57,7 +64,15 @@ def build_audience_prompt(request: AudienceDraftRequest) -> str:
     if request.persona not in _PERSONA_POLICIES:
         raise ValueError("Unsupported audience persona")
 
-    source = request.source
+    # Fail before any potentially metered provider operation. Structural ID
+    # rejection after proposal generation would waste model spend and telemetry.
+    candidate_id = _OUTPUT_ID_ADAPTER.validate_python(request.output_id)
+    if candidate_id == request.source.output_id:
+        raise ValueError("Audience variant requires a distinct output ID")
+
+    # Frozen models can still be constructed unsafely with model_copy(update=...).
+    # Reparse all nested invariants before sending any source text to a provider.
+    source = BroadcastEnvelope.model_validate_json(request.source.model_dump_json())
     source_context = json.dumps(
         {
             "output_kind": source.payload.kind,
@@ -98,8 +113,25 @@ async def propose_audience_variant(
     language-quality acceptance; structural validity never proves equivalence.
     """
     prompt = build_audience_prompt(request)
-    response = await provider.propose(prompt)
-    payload = _OUTPUT_ADAPTER.validate_python(response)
+    try:
+        # The deadline rejects cooperative stalls. A provider can suppress
+        # cancellation, so also inspect expiry after it returns a late result.
+        # This does not replace adapter-level transport or spending controls.
+        async with asyncio.timeout(_PROVIDER_TIMEOUT_SECONDS) as deadline:
+            response = await provider.propose(prompt)
+    except TimeoutError as exc:
+        raise ValueError("Audience proposal deadline exceeded") from exc
+    if deadline.expired():
+        raise ValueError("Audience proposal deadline exceeded")
+
+    # Never trust an already-instantiated Pydantic model from a provider:
+    # model_copy(update=...) bypasses validators. JSON round-tripping restores
+    # nested constraints, and the byte bound prevents oversized accepted drafts.
+    candidate = _OUTPUT_ADAPTER.validate_python(response)
+    serialized = _OUTPUT_ADAPTER.dump_json(candidate)
+    if len(serialized) > _MAX_PROPOSAL_BYTES:
+        raise ValueError("Audience proposal exceeds the bounded response size")
+    payload = _OUTPUT_ADAPTER.validate_json(serialized)
     if payload.kind != request.source.payload.kind:
         raise ValueError("Audience generation must preserve the broadcast output kind")
     return build_audience_variant(

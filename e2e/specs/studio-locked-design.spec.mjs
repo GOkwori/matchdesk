@@ -181,8 +181,15 @@ test('the fan story switches language without changing the verified facts', asyn
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Gol de');
   await expect(page.locator('main')).toHaveAttribute('lang', 'es');
   await expect(page.getByText('58:17').first()).toBeVisible();
+  await expect(page.getByText('Momento verificado')).toBeVisible();
+  await expect(page.getByRole('img', { name: /^Diagrama: córner/ })).toBeVisible();
+  await expect(page.getByText(/Traducción asistida por IA/)).toBeVisible();
   await page.getByRole('button', { name: 'Français' }).click();
   await expect(page.getByRole('heading', { level: 1 })).toContainText('But de');
+  await expect(page.getByText('Moment vérifié')).toBeVisible();
+  await expect(page.getByText(/Traduction assistée par IA/)).toBeVisible();
+  await page.getByRole('button', { name: 'English' }).click();
+  await expect(page.getByText(/assisted|Traduc/)).toHaveCount(0);
 });
 
 test('Ctrl+K search jumps to a claim by keyboard', async ({ page }) => {

@@ -26,16 +26,16 @@ export function StoryBody() {
         </div>
       </header>
       <main id="main" tabIndex={-1} lang={lang} className="md-story-main">
-        <div className="md-banner md-banner-success"><span className="md-banner-icon" aria-hidden="true">✓</span><span><strong>Verified moment</strong> · checked against the match event log</span></div>
+        <div className="md-banner md-banner-success"><span className="md-banner-icon" aria-hidden="true">✓</span><span><strong>{copy.verified[0]}</strong> · {copy.verified[1]}</span></div>
         <h1 className="md-story-h1">{copy.headline[0]}<span className="md-accent-text">{copy.headline[1]}</span></h1>
         <p className="md-story-body">{copy.body}</p>
-        <div className="md-story-score" aria-label="Northbridge 2, Riverside 1 at 58:17">
+        <div className="md-story-score" aria-label={copy.score}>
           <span><Crest team="NBR" size={26} />NBR</span>
           <span className="md-story-num"><span>2 – 1</span><span className="md-mono md-accent-soft-text">58:17</span></span>
           <span>RIV<Crest team="RIV" size={26} /></span>
         </div>
         <figure className="md-story-fig">
-          <svg viewBox="0 0 358 170" role="img" aria-label="Diagram: corner from the right at 58:03, headed goal inside the six-yard box at 58:17">
+          <svg viewBox="0 0 358 170" role="img" aria-label={copy.diagram}>
             <rect width="358" height="170" fill="var(--md-pitch)" />
             <g fill="none" stroke="var(--md-pitch-line)" strokeWidth="1.2"><path d="M120 0v170" /><circle cx="120" cy="85" r="34" /><rect x="268" y="32" width="90" height="106" /><rect x="326" y="62" width="32" height="46" /></g>
             <path d="M354 4C318 22 312 52 330 78" stroke="var(--md-accent-soft)" strokeWidth="2.2" strokeDasharray="6 5" fill="none" />
@@ -53,6 +53,7 @@ export function StoryBody() {
             <li><span>{copy.checks[2]}</span><span className="md-muted">○ {copy.notChecked}</span></li>
           </ul>
           <p className="md-muted md-small">{copy.note}</p>
+          {copy.translation && <p className="md-muted md-small">{copy.translation}</p>}
         </details>
         <TourStep step={7} />
       </main>
