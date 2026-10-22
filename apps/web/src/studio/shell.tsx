@@ -187,17 +187,21 @@ export function TourStep({ step }: { step: number }) {
   const pathname = usePathname();
   const current = Number(params.get("tour"));
   const card = useRef<HTMLDivElement>(null);
+  const heading = useRef<HTMLHeadingElement>(null);
   const active = current === step;
   // A tour card that loads below the fold (or under the phone tab bar) is invisible guidance:
-  // bring it into view once, without moving the page when it is already on screen.
+  // bring it into view once, without moving the page when it is already on screen. The
+  // visitor asked for the tour, so keyboard and screen-reader focus starts on the card.
   useEffect(() => {
     const el = card.current;
     if (!active || !el) return;
     const margin = parseFloat(getComputedStyle(el).scrollMarginBottom) || 0;
     const rect = el.getBoundingClientRect();
-    if (rect.top >= 0 && rect.bottom <= window.innerHeight - margin) return;
-    const reduce = document.documentElement.dataset.mdMotion === "reduce" || window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    el.scrollIntoView({ block: "nearest", behavior: reduce ? "auto" : "smooth" });
+    if (rect.top < 0 || rect.bottom > window.innerHeight - margin) {
+      const reduce = document.documentElement.dataset.mdMotion === "reduce" || window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      el.scrollIntoView({ block: "nearest", behavior: reduce ? "auto" : "smooth" });
+    }
+    heading.current?.focus({ preventScroll: true });
   }, [active]);
   if (!active) return null;
   const data = tourSteps[step - 1];
@@ -209,13 +213,14 @@ export function TourStep({ step }: { step: number }) {
     router.replace(next.size ? `${pathname}?${next}` : pathname);
   };
   return (
-    <div ref={card} className="md-tour" role="dialog" aria-modal="false" aria-labelledby={`md-tour-${step}`}>
+    <div ref={card} className="md-tour" role="dialog" aria-modal="false" aria-labelledby={`md-tour-${step}`}
+      onKeyDown={(event) => { if (event.key === "Escape") { event.preventDefault(); finish(); } }}>
       <span className="md-tour-arrow" aria-hidden="true" />
       <div className="md-tour-head">
         <span className="md-tour-eyebrow">Guided tour · {step} of {tourSteps.length}</span>
         <span className="md-tour-dots" aria-hidden="true">{tourSteps.map((_, i) => <i key={i} className={i < step ? "on" : ""} />)}</span>
       </div>
-      <h2 id={`md-tour-${step}`} className="md-tour-title">{data.title}</h2>
+      <h2 id={`md-tour-${step}`} ref={heading} tabIndex={-1} className="md-tour-title">{data.title}</h2>
       <p className="md-tour-body">{data.body}</p>
       <div className="md-tour-actions">
         <button type="button" className="md-tour-skip" onClick={finish}>{data.next ? "Skip tour" : "Close"}</button>

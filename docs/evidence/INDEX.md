@@ -1,5 +1,9 @@
 # Evidence index
 
+## Studio accessibility — 22 October 2026
+
+- [Studio WCAG 2.2 automated audit, 22 Oct 2026](studio-wcag22-audit-20261022.md): focus hidden under the phone tab bar, 20 px text-link targets and unreachable tour cards found and fixed; five regression tests added. Manual assistive-technology testing remains open in the [studio runbook](../testing/studio-accessibility-manual-runbook.md).
+
 ## Competition build — 21 October 2026
 
 - [Competition build record](competition-build-20261021.md): submission build `ed9ff4d` (hosted on Vercel, preserved as `release/submission-2026-10`), Phases 0–4 by pull request, the eight live Foundry runs and the defect each one exposed, and the checks at submission.

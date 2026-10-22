@@ -5,6 +5,7 @@
     "types": ["node", "react", "react-dom"],
     "strict": true,
     "noEmit": true,
+    "allowImportingTsExtensions": true,
     "allowJs": false,
     "esModuleInterop": true,
     "module": "esnext",
