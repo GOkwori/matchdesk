@@ -950,9 +950,34 @@ jobs:
             2>&1 | tee artifacts/integration/producer-host-provenance-psycopg.log
           grep -Fx "MATCHDESK_P4_REAL_HOST_PROVENANCE_READER_PASS: SELECT-only SCRAM, tenant scope, terminal revocation, DML drift and immutability" \
             artifacts/integration/producer-host-provenance-psycopg.log
+      - name: Qualify the publication outbox and language-review gate
+        id: publication_storage
+        if: ${{ !cancelled() && steps.provenance_storage.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          [[ "$COMPOSE_PROJECT_NAME" =~ ^matchdesk-it-[0-9]+-[0-9]+$ ]]
+          # Applying twice proves the migration is idempotent.
+          for n in 1 2; do
+            docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+              psql --no-psqlrc --set ON_ERROR_STOP=1 --username matchdesk \
+              --dbname matchdesk \
+              < backend/postgres/migrations/015_publication_outbox.sql \
+              > "artifacts/integration/publication-outbox-migration-$n.log"
+          done
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$POSTGRES_PASSWORD" api \
+            /app/.venv/bin/python - < e2e/publication-outbox-psycopg.py \
+            2>&1 | tee artifacts/integration/publication-outbox-psycopg.log
+          for marker in \
+            "MATCHDESK_PUBLICATION_LANGUAGE_GATE_PASS: es/fr need the latest approving review of the exact content" \
+            "MATCHDESK_PUBLICATION_FOUR_EYES_PASS: publisher differs from producer; one row per version and destination" \
+            "MATCHDESK_PUBLICATION_TRANSITIONS_PASS: one attempt per update, receipts on delivery, final rows frozen" \
+            "MATCHDESK_PUBLICATION_HISTORY_PASS: append-only history, separate publisher and reviewer privileges"; do
+            grep -Fx "$marker" artifacts/integration/publication-outbox-psycopg.log
+          done
       - name: Install the verified native-image scanner and current database
         id: scanner
-        if: ${{ !cancelled() && steps.runtime.outcome == 'success' && steps.producer_storage.outcome == 'success' && steps.psycopg_storage.outcome == 'success' && steps.customer_sessions_storage.outcome == 'success' && steps.oidc_storage.outcome == 'success' && steps.account_directory.outcome == 'success' && steps.directory_gate.outcome == 'success' && steps.id3g_role_probe.outcome == 'success' && steps.id3g_revocation_qa.outcome == 'success' && steps.id3g_revocation_gate.outcome == 'success' && steps.provenance_storage.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.runtime.outcome == 'success' && steps.producer_storage.outcome == 'success' && steps.psycopg_storage.outcome == 'success' && steps.customer_sessions_storage.outcome == 'success' && steps.oidc_storage.outcome == 'success' && steps.account_directory.outcome == 'success' && steps.directory_gate.outcome == 'success' && steps.id3g_role_probe.outcome == 'success' && steps.id3g_revocation_qa.outcome == 'success' && steps.id3g_revocation_gate.outcome == 'success' && steps.provenance_storage.outcome == 'success' && steps.publication_storage.outcome == 'success' }}
         # This is the official 0.75.0 Linux-64bit asset, independently inspected before pinning.
         # No curl-to-shell execution, repository token or downloaded installer is used.
         run: |
