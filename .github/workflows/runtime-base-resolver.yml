@@ -120,7 +120,7 @@ jobs:
           (root / "summary.json").write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n")
           print(json.dumps(summary, indent=2, sort_keys=True))
           PY
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: runtime-base-candidates-${{ github.run_id }}-${{ github.run_attempt }}
           path: artifacts/runtime-base-candidates/
