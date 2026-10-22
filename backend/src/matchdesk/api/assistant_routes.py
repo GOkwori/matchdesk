@@ -41,8 +41,11 @@ def create_assistant_router(planner: AssistantPlanner) -> APIRouter:
         """Read one question into a plan."""
         try:
             result: dict[str, Any] = await planner.plan(request.question)
-        except PlannerBusy as error:
-            return JSONResponse(status_code=429, content={"detail": str(error)})
+        except PlannerBusy:
+            return JSONResponse(
+                status_code=429,
+                content={"detail": "The assistant is busy; try one of the suggested questions"},
+            )
         except FoundryRuntimeUnavailable:
             return JSONResponse(
                 status_code=503, content={"detail": "The assistant planner is unavailable"}
