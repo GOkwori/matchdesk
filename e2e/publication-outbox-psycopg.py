@@ -365,7 +365,7 @@ def four_eyes_rules(r: Run, s: dict) -> None:
             "INSERT INTO matchdesk_publication_outbox SELECT tenant_id, %s, session_id, output_id,"
             " producer_generation, binding_json, language, content_digest, persona, 'social',"
             " producer_actor_id, publisher_actor_id, review_id, reviewer_actor_id, max_attempts,"
-            " 'queued', 0, NULL, NULL, NULL, NULL, NULL, queued_by, created_at, updated_at"
+            " 'queued', 0, NULL, NULL, NULL, NULL, queued_by, created_at, updated_at"
             " FROM matchdesk_publication_outbox WHERE tenant_id = %s AND publication_id = %s",
             ("f" * 64, TENANT, s["en_id"]),
         ),
@@ -414,7 +414,7 @@ def delivery_rules(r: Run, s: dict) -> None:
     refused(
         "recording twice under one claim",
         lambda: r.record(en_id, claimed["claim_token"], "delivered", "x"),
-        "No attempt is in flight under this claim",
+        "already reported its outcome",
     )
     claimed = r.claim(en_id)
     refused(
@@ -428,8 +428,13 @@ def delivery_rules(r: Run, s: dict) -> None:
     )
     refused(
         "changing a delivered row",
-        lambda: r.record(en_id, claimed["claim_token"], "failed"),
+        lambda: r.record(en_id, "11111111-1111-1111-1111-111111111111", "failed"),
         "is final",
+    )
+    refused(
+        "the delivering claim reporting again",
+        lambda: r.record(en_id, claimed["claim_token"], "failed"),
+        "already reported its outcome",
     )
     check("no claim after delivery", r.claim(en_id) is None)
 
@@ -442,13 +447,30 @@ def delivery_rules(r: Run, s: dict) -> None:
         r.queue(pub, en, "social", en_key) == (social_id, "abandoned"),
     )
 
-    lease_b = r.binding("en", "lease")
-    lease_key = r.approve(lease_b)
-    lease_id, _ = r.queue(pub, lease_b, "match_centre", lease_key, max_attempts=2)
-    stale = r.claim(lease_id, lease=5)
-    check("a short lease is granted", stale is not None)
+    # Leases. Four claims expire together, so the proof sleeps once.
+    def short_claim(words: str, attempts: int) -> tuple[str, dict]:
+        """Queue a fresh version and claim it with a five-second lease."""
+        version = r.binding("en", words)
+        pid, _ = r.queue(pub, version, "match_centre", r.approve(version), max_attempts=attempts)
+        claimed = r.claim(pid, lease=5)
+        check(f"a short lease is granted for {words}", claimed is not None)
+        return pid, claimed
+
+    lease_id, stale = short_claim("lease", 2)  # expires, then the retry succeeds
+    late_id, late_claim = short_claim(
+        "late after abandon", 2
+    )  # expires, retry refused, late success
+    last_id, lost = short_claim("last chance", 1)  # expires on the last attempt
+    op_id, _ = short_claim("operator", 1)  # expires on the last attempt; an operator settles it
+    objected = r.binding("es", "objetado")
+    objected_key = r.approve(objected)
+    r.review(r.reviewer, objected, "approved")
+    objected_id, _ = r.queue(pub, objected, "match_centre", objected_key, max_attempts=3)
+    objected_claim = r.claim(objected_id, lease=5)  # expires, then the review objects
     refused("a lease below the floor", lambda: r.claim(lease_id, lease=1), "between 5 and 900")
+    refused("a lease above the cap", lambda: r.claim(lease_id, lease=901), "between 5 and 900")
     time.sleep(6)
+
     fresh = r.claim(lease_id)
     check("an expired lease is reclaimed", fresh is not None)
     check("the lost attempt was counted", r.row(lease_id)[1] == 1)
@@ -457,20 +479,85 @@ def delivery_rules(r: Run, s: dict) -> None:
         lambda: r.record(lease_id, stale["claim_token"], "failed", error="late"),
         "its attempt was already counted",
     )
-    r.record(lease_id, fresh["claim_token"], "delivered", "receipt-lease")
+    check(
+        "the retry delivers",
+        r.record(lease_id, fresh["claim_token"], "delivered", "receipt-lease") == "delivered",
+    )
 
-    # The last attempt's lease expires unreported: the outcome is unknown, not abandoned, and the
-    # sender can still report its success.
-    last = r.binding("en", "last chance")
-    last_key = r.approve(last)
-    last_id, _ = r.queue(pub, last, "match_centre", last_key, max_attempts=1)
-    lost = r.claim(last_id, lease=5)
-    time.sleep(6)
+    retry = r.claim(late_id)
+    check(
+        "refused retry abandons", r.record(late_id, retry["claim_token"], "refused") == "abandoned"
+    )
+    check(
+        "an earlier claim's success is still recorded after the row ended",
+        r.record(late_id, late_claim["claim_token"], "delivered", "receipt-late")
+        == "late_delivery_recorded",
+    )
+    check("the ended row keeps its status", r.row(late_id)[0] == "abandoned")
+    refused(
+        "the same late success twice",
+        lambda: r.record(late_id, late_claim["claim_token"], "delivered", "again"),
+        "already reported its outcome",
+    )
+    settled = r.publisher.execute(
+        "SELECT kind, receipt FROM matchdesk_publication_settlements WHERE publication_id = %s",
+        (late_id,),
+    ).fetchall()
+    check(
+        "the settlement is visible to the publisher", settled == [("late_delivery", "receipt-late")]
+    )
+
+    r.review(r.reviewer, objected, "changes_requested")
+    check("an objection after expiry withdraws", r.claim(objected_id) is None)
+    check("the objected row is withdrawn", r.row(objected_id)[0] == "withdrawn")
+    check(
+        "a send that went out before the withdrawal is still recorded",
+        r.record(objected_id, objected_claim["claim_token"], "delivered", "receipt-before")
+        == "late_delivery_recorded",
+    )
+
     check("nothing more is sent after the last lease", r.claim(last_id) is None)
     check("the outcome is unconfirmed", r.row(last_id)[:2] == ("unconfirmed", 1))
+    refused(
+        "a late success without a receipt",
+        lambda: r.record(last_id, lost["claim_token"], "delivered"),
+        "matchdesk_settlement_late_receipt",
+    )
     check(
-        "a late success is recorded",
+        "a late success settles an unconfirmed row",
         r.record(last_id, lost["claim_token"], "delivered", "receipt-late") == "delivered",
+    )
+
+    check(
+        "the operator row is unconfirmed",
+        r.claim(op_id) is None and r.row(op_id)[0] == "unconfirmed",
+    )
+    resolve = "SELECT public.matchdesk_resolve_unconfirmed_publication(%s, %s, %s, %s, %s)"
+    refused(
+        "resolving without evidence",
+        lambda: pub.execute(resolve, (TENANT, op_id, "abandoned", " ", "ci-operator")),
+        "settlements_evidence_check",
+    )
+    refused(
+        "resolving a row that is not unconfirmed",
+        lambda: pub.execute(resolve, (TENANT, lease_id, "delivered", "log", "ci-operator")),
+        "Only an unconfirmed publication",
+    )
+    check(
+        "an operator settles with evidence",
+        pub.execute(
+            resolve, (TENANT, op_id, "abandoned", "Destination log shows no post", "ci-operator")
+        ).fetchone()[0]
+        == "abandoned",
+    )
+    refused(
+        "owner settling without a record",
+        lambda: r.owner.execute(
+            "UPDATE matchdesk_publication_outbox SET status = 'delivered', receipt = 'x'"
+            " WHERE tenant_id = %s AND publication_id = %s",
+            (TENANT, s["fr_id"]),
+        ),
+        "must be claimed",
     )
 
     check("withdrawn after a language objection", r.claim(s["es_id"]) is None)
@@ -574,7 +661,7 @@ def history_rules(r: Run, s: dict) -> None:
     )
     refused(
         "owner truncating",
-        lambda: r.owner.execute("TRUNCATE matchdesk_publication_outbox"),
+        lambda: r.owner.execute("TRUNCATE matchdesk_publication_outbox CASCADE"),
         "append-only",
     )
     refused(

@@ -41,8 +41,15 @@ from matchdesk.domain.publication_gate import authorize_publication
 
 Language = Literal["en", "es", "fr"]
 DestinationName = Literal["match_centre", "social", "broadcast_overlay"]
-OutboxStatus = Literal["queued", "delivered", "failed", "abandoned", "withdrawn"]
-TERMINAL_STATUSES: frozenset[str] = frozenset({"delivered", "abandoned", "withdrawn"})
+# ``in_flight`` and ``unconfirmed`` are set only by PostgreSQL (claims with leases, migration 015);
+# the in-process outbox never produces them but must read them correctly. An unconfirmed entry is
+# never sent again: only a late success or an operator's resolution ends it.
+OutboxStatus = Literal[
+    "queued", "in_flight", "delivered", "failed", "abandoned", "withdrawn", "unconfirmed"
+]
+TERMINAL_STATUSES: frozenset[str] = frozenset(
+    {"delivered", "abandoned", "withdrawn", "unconfirmed"}
+)
 
 # English is written and checked in the studio; other languages need a person who reads them.
 LANGUAGES_REQUIRING_REVIEW: frozenset[str] = frozenset({"es", "fr"})
@@ -270,6 +277,8 @@ def deliver(
     """
     if entry.status in TERMINAL_STATUSES:
         return entry
+    if entry.status == "in_flight":
+        raise ValueError("Another worker holds the claim on this entry")
     if not settings.enabled:
         raise PublicationDisabled("Publication is switched off for this host")
     if destination.name != entry.destination:

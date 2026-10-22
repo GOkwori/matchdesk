@@ -22,12 +22,14 @@
 --   publication ID, because a sender that outlives its lease may race a retry.
 -- * Only a digest of each claim token is stored, so a login that can read the outbox cannot
 --   record another worker's outcome. A lease that expires unreported counts as one attempt; if it
---   was the last, the row is 'unconfirmed' (never 'abandoned', since the send may have worked),
---   and the expired claim can still report a late success.
+--   was the last, the row is 'unconfirmed' (never 'abandoned', since the send may have worked).
+--   Every claim is kept, so any expired claim can still report a late success, which is recorded
+--   as a settlement even if the row has since ended. An operator can settle an unconfirmed row
+--   with outside evidence.
 -- * Queueing stores and hashes the producer audit's own binding, never the caller's spelling of
 --   it, so 1 and 1.0 cannot become two publications of one version.
--- * Withdrawn, abandoned and delivered rows are final; unconfirmed rows can only become
---   delivered. Publishing that content again needs a new version.
+-- * Withdrawn, abandoned and delivered rows are final; unconfirmed rows end only through a
+--   settlement. Publishing that content again needs a new version.
 -- * Two-person rules: the publisher and the language reviewer each differ from the producer. The
 --   publisher may also be the language reviewer.
 -- * Human actor IDs are asserted by the authenticated host (as in 001). The database records the
@@ -123,9 +125,6 @@ CREATE TABLE IF NOT EXISTS public.matchdesk_publication_outbox (
     attempts integer NOT NULL CHECK (attempts BETWEEN 0 AND max_attempts),
     claim_digest text CHECK (claim_digest IS NULL OR claim_digest ~ '^[a-f0-9]{64}$'),
     claimed_until timestamptz,
-    expired_claim_digest text CHECK (
-        expired_claim_digest IS NULL OR expired_claim_digest ~ '^[a-f0-9]{64}$'
-    ),
     last_error text CHECK (last_error IS NULL OR length(last_error) <= 500),
     receipt text CHECK (receipt IS NULL OR length(receipt) BETWEEN 1 AND 200),
     queued_by text NOT NULL,
@@ -170,6 +169,56 @@ CREATE TABLE IF NOT EXISTS public.matchdesk_publication_outbox (
     )
 );
 
+-- Every claim ever issued, so any expired claim can still report what really happened.
+CREATE TABLE IF NOT EXISTS public.matchdesk_publication_claims (
+    claim_digest text PRIMARY KEY CHECK (claim_digest ~ '^[a-f0-9]{64}$'),
+    tenant_id text NOT NULL,
+    publication_id text NOT NULL,
+    claimed_at timestamptz NOT NULL,
+    recorded_by text NOT NULL,
+    FOREIGN KEY (tenant_id, publication_id)
+        REFERENCES public.matchdesk_publication_outbox (tenant_id, publication_id)
+);
+
+-- The one report each claim may make. A claim with no report whose lease has expired is the only
+-- kind that may still report a late success.
+CREATE TABLE IF NOT EXISTS public.matchdesk_publication_claim_reports (
+    claim_digest text PRIMARY KEY REFERENCES public.matchdesk_publication_claims (claim_digest),
+    outcome text NOT NULL CHECK (outcome IN ('delivered', 'failed', 'refused', 'late_delivery')),
+    reported_at timestamptz NOT NULL
+);
+
+-- How a publication really ended when that is not an ordinary reported attempt: a success
+-- reported late by an expired claim, or an operator's resolution of an unconfirmed send.
+CREATE TABLE IF NOT EXISTS public.matchdesk_publication_settlements (
+    settlement_id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    tenant_id text NOT NULL,
+    publication_id text NOT NULL,
+    kind text NOT NULL CHECK (kind IN ('late_delivery', 'operator_delivered', 'operator_abandoned')),
+    claim_digest text UNIQUE REFERENCES public.matchdesk_publication_claims (claim_digest),
+    receipt text CHECK (receipt IS NULL OR length(receipt) BETWEEN 1 AND 200),
+    evidence text CHECK (evidence IS NULL OR length(btrim(evidence)) BETWEEN 1 AND 500),
+    operator_actor_id text CHECK (
+        operator_actor_id IS NULL OR length(btrim(operator_actor_id)) BETWEEN 1 AND 128
+    ),
+    recorded_by text NOT NULL,
+    recorded_at timestamptz NOT NULL,
+    FOREIGN KEY (tenant_id, publication_id)
+        REFERENCES public.matchdesk_publication_outbox (tenant_id, publication_id),
+    CONSTRAINT matchdesk_settlement_late_receipt CHECK (
+        kind <> 'late_delivery' OR (claim_digest IS NOT NULL AND receipt IS NOT NULL)
+    ),
+    CONSTRAINT matchdesk_settlement_operator_evidence CHECK (
+        kind = 'late_delivery'
+        OR (claim_digest IS NULL AND evidence IS NOT NULL AND operator_actor_id IS NOT NULL)
+    )
+);
+
+-- An unconfirmed send is resolved by an operator at most once.
+CREATE UNIQUE INDEX IF NOT EXISTS matchdesk_settlement_one_resolution
+    ON public.matchdesk_publication_settlements (tenant_id, publication_id)
+    WHERE kind <> 'late_delivery';
+
 -- CREATE TABLE IF NOT EXISTS would silently keep an older shape. Refuse to continue on drift.
 DO $shape$
 DECLARE
@@ -184,7 +233,7 @@ BEGIN
         'content_digest text, persona text, destination text, producer_actor_id text, '
         'publisher_actor_id text, review_id bigint, reviewer_actor_id text, max_attempts integer, '
         'status text, attempts integer, claim_digest text, claimed_until timestamp with time zone, '
-        'expired_claim_digest text, last_error text, receipt text, queued_by text, created_at timestamp with time zone, '
+        'last_error text, receipt text, queued_by text, created_at timestamp with time zone, '
         'updated_at timestamp with time zone' THEN
         RAISE EXCEPTION 'Publication outbox does not have the 015 shape (%); recreate it in the disposable database', actual;
     END IF;
@@ -197,10 +246,37 @@ BEGIN
         'reviewed_at timestamp with time zone' THEN
         RAISE EXCEPTION 'Language reviews do not have the 015 shape (%); recreate them in the disposable database', actual;
     END IF;
+    SELECT string_agg(attname || ' ' || format_type(atttypid, atttypmod), ', ' ORDER BY attnum)
+    INTO actual FROM pg_catalog.pg_attribute
+    WHERE attrelid = 'public.matchdesk_publication_claims'::regclass AND attnum > 0
+      AND NOT attisdropped;
+    IF actual IS DISTINCT FROM 'claim_digest text, tenant_id text, publication_id text, '
+        'claimed_at timestamp with time zone, recorded_by text' THEN
+        RAISE EXCEPTION 'Publication claims do not have the 015 shape (%)', actual;
+    END IF;
+    SELECT string_agg(attname || ' ' || format_type(atttypid, atttypmod), ', ' ORDER BY attnum)
+    INTO actual FROM pg_catalog.pg_attribute
+    WHERE attrelid = 'public.matchdesk_publication_claim_reports'::regclass AND attnum > 0
+      AND NOT attisdropped;
+    IF actual IS DISTINCT FROM 'claim_digest text, outcome text, '
+        'reported_at timestamp with time zone' THEN
+        RAISE EXCEPTION 'Publication claim reports do not have the 015 shape (%)', actual;
+    END IF;
+    SELECT string_agg(attname || ' ' || format_type(atttypid, atttypmod), ', ' ORDER BY attnum)
+    INTO actual FROM pg_catalog.pg_attribute
+    WHERE attrelid = 'public.matchdesk_publication_settlements'::regclass AND attnum > 0
+      AND NOT attisdropped;
+    IF actual IS DISTINCT FROM 'settlement_id bigint, tenant_id text, publication_id text, '
+        'kind text, claim_digest text, receipt text, evidence text, operator_actor_id text, '
+        'recorded_by text, recorded_at timestamp with time zone' THEN
+        RAISE EXCEPTION 'Publication settlements do not have the 015 shape (%)', actual;
+    END IF;
 END;
 $shape$;
 
-REVOKE ALL ON public.matchdesk_language_reviews, public.matchdesk_publication_outbox FROM PUBLIC;
+REVOKE ALL ON public.matchdesk_language_reviews, public.matchdesk_publication_outbox,
+    public.matchdesk_publication_claims, public.matchdesk_publication_claim_reports,
+    public.matchdesk_publication_settlements FROM PUBLIC;
 
 -- ---------------------------------------------------------------------------------------------
 -- Backstop triggers. Only the guard owner can write, but the rules hold even for its functions.
@@ -209,8 +285,7 @@ CREATE OR REPLACE FUNCTION public.matchdesk_outbox_guard_insert()
 RETURNS trigger LANGUAGE plpgsql SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     IF NEW.status <> 'queued' OR NEW.attempts <> 0 OR NEW.receipt IS NOT NULL
-       OR NEW.last_error IS NOT NULL OR NEW.claim_digest IS NOT NULL
-       OR NEW.expired_claim_digest IS NOT NULL THEN
+       OR NEW.last_error IS NOT NULL OR NEW.claim_digest IS NOT NULL THEN
         RAISE EXCEPTION 'A publication starts queued, unattempted and without a receipt';
     END IF;
     NEW.queued_by := session_user;
@@ -230,14 +305,14 @@ FOR EACH ROW EXECUTE FUNCTION public.matchdesk_outbox_guard_insert();
 --   queued/failed -> in_flight (a claim) or withdrawn: no attempt is counted;
 --   in_flight -> failed, delivered or abandoned (a reported outcome), or failed or unconfirmed (a
 --   lease that expired unreported): exactly one attempt is counted;
---   failed/in_flight/unconfirmed -> delivered when an expired claim reports success late: the
---   attempt was already counted when its lease expired.
--- Nothing leaves delivered, abandoned or withdrawn; unconfirmed only becomes delivered.
+--   failed/in_flight/unconfirmed -> delivered, and unconfirmed -> abandoned, only on a recorded
+--   settlement (a late success from an expired claim, or an operator's resolution): no attempt.
+-- Nothing leaves delivered, abandoned or withdrawn.
 CREATE OR REPLACE FUNCTION public.matchdesk_outbox_guard_transition()
 RETURNS trigger LANGUAGE plpgsql SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     IF OLD.status IN ('delivered', 'abandoned', 'withdrawn')
-       OR (OLD.status = 'unconfirmed' AND NEW.status <> 'delivered') THEN
+       OR (OLD.status = 'unconfirmed' AND NEW.status NOT IN ('delivered', 'abandoned')) THEN
         RAISE EXCEPTION 'A % publication is final', OLD.status;
     END IF;
     IF (NEW.tenant_id, NEW.publication_id, NEW.session_id, NEW.output_id, NEW.producer_generation,
@@ -258,11 +333,21 @@ BEGIN
         IF NEW.attempts <> OLD.attempts THEN
             RAISE EXCEPTION 'A claim or withdrawal is not a delivery attempt';
         END IF;
-    ELSIF NEW.status = 'delivered' AND OLD.status <> 'in_flight'
-          OR NEW.status = 'delivered' AND NEW.attempts = OLD.attempts THEN
-        -- A late success from an expired claim.
-        IF OLD.expired_claim_digest IS NULL OR NEW.attempts <> OLD.attempts
-           OR OLD.status NOT IN ('failed', 'in_flight', 'unconfirmed') THEN
+    ELSIF NEW.status IN ('delivered', 'abandoned') AND NEW.attempts = OLD.attempts THEN
+        -- A settlement, not an attempt: it must already be on record.
+        IF NEW.status = 'delivered' THEN
+            IF OLD.status NOT IN ('failed', 'in_flight', 'unconfirmed') OR NOT EXISTS (
+                SELECT 1 FROM public.matchdesk_publication_settlements st
+                WHERE st.tenant_id = OLD.tenant_id AND st.publication_id = OLD.publication_id
+                  AND st.kind IN ('late_delivery', 'operator_delivered')
+            ) THEN
+                RAISE EXCEPTION 'An attempt must be claimed before its outcome is recorded';
+            END IF;
+        ELSIF OLD.status <> 'unconfirmed' OR NOT EXISTS (
+            SELECT 1 FROM public.matchdesk_publication_settlements st
+            WHERE st.tenant_id = OLD.tenant_id AND st.publication_id = OLD.publication_id
+              AND st.kind = 'operator_abandoned'
+        ) THEN
             RAISE EXCEPTION 'An attempt must be claimed before its outcome is recorded';
         END IF;
     ELSIF NEW.status IN ('failed', 'delivered', 'abandoned', 'unconfirmed') THEN
@@ -313,6 +398,22 @@ REVOKE ALL ON FUNCTION public.matchdesk_block_publication_history_mutation() FRO
 DROP TRIGGER IF EXISTS matchdesk_outbox_no_delete ON public.matchdesk_publication_outbox;
 CREATE TRIGGER matchdesk_outbox_no_delete
 BEFORE DELETE OR TRUNCATE ON public.matchdesk_publication_outbox
+FOR EACH STATEMENT EXECUTE FUNCTION public.matchdesk_block_publication_history_mutation();
+
+DROP TRIGGER IF EXISTS matchdesk_claims_immutable ON public.matchdesk_publication_claims;
+CREATE TRIGGER matchdesk_claims_immutable
+BEFORE UPDATE OR DELETE OR TRUNCATE ON public.matchdesk_publication_claims
+FOR EACH STATEMENT EXECUTE FUNCTION public.matchdesk_block_publication_history_mutation();
+
+DROP TRIGGER IF EXISTS matchdesk_claim_reports_immutable
+    ON public.matchdesk_publication_claim_reports;
+CREATE TRIGGER matchdesk_claim_reports_immutable
+BEFORE UPDATE OR DELETE OR TRUNCATE ON public.matchdesk_publication_claim_reports
+FOR EACH STATEMENT EXECUTE FUNCTION public.matchdesk_block_publication_history_mutation();
+
+DROP TRIGGER IF EXISTS matchdesk_settlements_immutable ON public.matchdesk_publication_settlements;
+CREATE TRIGGER matchdesk_settlements_immutable
+BEFORE UPDATE OR DELETE OR TRUNCATE ON public.matchdesk_publication_settlements
 FOR EACH STATEMENT EXECUTE FUNCTION public.matchdesk_block_publication_history_mutation();
 
 DROP TRIGGER IF EXISTS matchdesk_reviews_immutable ON public.matchdesk_language_reviews;
@@ -517,12 +618,11 @@ BEGIN
         IF entry_row.claimed_until > clock_timestamp() THEN
             RETURN NULL;
         END IF;
-        -- The sender may yet have succeeded: keep its claim so a late success is still recorded,
-        -- and never call the row abandoned when the outcome is unknown.
+        -- The sender may yet have succeeded: its claim stays on record so a late success can still
+        -- be reported, and the row is never called abandoned when the outcome is unknown.
         UPDATE public.matchdesk_publication_outbox o
         SET status = CASE WHEN o.attempts + 1 >= o.max_attempts THEN 'unconfirmed' ELSE 'failed' END,
-            attempts = o.attempts + 1, expired_claim_digest = o.claim_digest,
-            claim_digest = NULL, claimed_until = NULL,
+            attempts = o.attempts + 1, claim_digest = NULL, claimed_until = NULL,
             last_error = 'The previous attempt did not report back before its lease expired'
         WHERE o.tenant_id = entry_row.tenant_id AND o.publication_id = entry_row.publication_id
         RETURNING o.* INTO entry_row;
@@ -550,6 +650,10 @@ BEGIN
     -- Only a digest of the token is stored, so other logins that can read the outbox cannot
     -- record outcomes for this claim.
     token := pg_catalog.gen_random_uuid();
+    INSERT INTO public.matchdesk_publication_claims
+        (claim_digest, tenant_id, publication_id, claimed_at, recorded_by)
+    VALUES (public.matchdesk_claim_digest(token), entry_row.tenant_id, entry_row.publication_id,
+            clock_timestamp(), session_user);
     UPDATE public.matchdesk_publication_outbox o
     SET status = 'in_flight', claim_digest = public.matchdesk_claim_digest(token),
         claimed_until = clock_timestamp() + make_interval(secs => p_lease_seconds)
@@ -559,9 +663,10 @@ END;
 $$;
 
 -- Record the outcome of a claimed attempt: 'delivered' (with a receipt), 'failed' or 'refused'.
--- Failures that use up the row's attempt budget become 'abandoned'. A claim whose lease expired
--- may still report 'delivered' (its attempt was counted at expiry); nothing else. Returns the new
--- status.
+-- Failures that use up the row's attempt budget become 'abandoned'. Any earlier, expired claim
+-- may still report 'delivered' (its attempt was counted at expiry) and nothing else; that is kept
+-- as a settlement, and moves the row to delivered unless it already ended. Returns the new status,
+-- or 'late_delivery_recorded' when the row had already ended.
 CREATE OR REPLACE FUNCTION public.matchdesk_record_publication_attempt(
     p_tenant text, p_publication_id text, p_claim_token uuid, p_outcome text, p_receipt text,
     p_error text
@@ -579,19 +684,42 @@ BEGIN
     IF NOT FOUND THEN
         RAISE EXCEPTION 'Unknown publication';
     END IF;
-    IF entry_row.status IN ('delivered', 'abandoned', 'withdrawn') THEN
-        RAISE EXCEPTION 'A % publication is final', entry_row.status;
+    -- An expired claim (an earlier claim of this publication that never reported) can still
+    -- report a success, whatever has happened to the row since: the content went out, so that is
+    -- recorded. A claim reports once.
+    IF presented IS NOT NULL AND EXISTS (
+        SELECT 1 FROM public.matchdesk_publication_claim_reports cr
+        WHERE cr.claim_digest = presented
+    ) THEN
+        RAISE EXCEPTION 'This claim has already reported its outcome';
     END IF;
-    IF presented IS NOT NULL AND presented = entry_row.expired_claim_digest
-       AND entry_row.status IN ('failed', 'in_flight', 'unconfirmed') THEN
-        IF p_outcome <> 'delivered' THEN
+    IF presented IS NOT NULL AND presented IS DISTINCT FROM entry_row.claim_digest
+       AND EXISTS (
+           SELECT 1 FROM public.matchdesk_publication_claims c
+           WHERE c.claim_digest = presented AND c.tenant_id = entry_row.tenant_id
+             AND c.publication_id = entry_row.publication_id
+       ) THEN
+        IF p_outcome IS DISTINCT FROM 'delivered' THEN
             RAISE EXCEPTION 'This claim expired; its attempt was already counted';
         END IF;
-        UPDATE public.matchdesk_publication_outbox o
-        SET status = 'delivered', receipt = p_receipt, last_error = NULL,
-            claim_digest = NULL, claimed_until = NULL, expired_claim_digest = NULL
-        WHERE o.tenant_id = entry_row.tenant_id AND o.publication_id = entry_row.publication_id;
-        RETURN 'delivered';
+        INSERT INTO public.matchdesk_publication_claim_reports (claim_digest, outcome, reported_at)
+        VALUES (presented, 'late_delivery', clock_timestamp());
+        INSERT INTO public.matchdesk_publication_settlements
+            (tenant_id, publication_id, kind, claim_digest, receipt, recorded_by, recorded_at)
+        VALUES (entry_row.tenant_id, entry_row.publication_id, 'late_delivery', presented,
+                p_receipt, session_user, clock_timestamp());
+        IF entry_row.status IN ('failed', 'in_flight', 'unconfirmed') THEN
+            UPDATE public.matchdesk_publication_outbox o
+            SET status = 'delivered', receipt = p_receipt, last_error = NULL,
+                claim_digest = NULL, claimed_until = NULL
+            WHERE o.tenant_id = entry_row.tenant_id
+              AND o.publication_id = entry_row.publication_id;
+            RETURN 'delivered';
+        END IF;
+        RETURN 'late_delivery_recorded';
+    END IF;
+    IF entry_row.status IN ('delivered', 'abandoned', 'withdrawn', 'unconfirmed') THEN
+        RAISE EXCEPTION 'A % publication is final', entry_row.status;
     END IF;
     IF entry_row.status <> 'in_flight' OR presented IS NULL
        OR entry_row.claim_digest IS DISTINCT FROM presented THEN
@@ -606,14 +734,51 @@ BEGIN
     IF next_status IS NULL THEN
         RAISE EXCEPTION 'An attempt is delivered, failed or refused';
     END IF;
+    INSERT INTO public.matchdesk_publication_claim_reports (claim_digest, outcome, reported_at)
+    VALUES (presented, p_outcome, clock_timestamp());
     UPDATE public.matchdesk_publication_outbox o
     SET status = next_status, attempts = o.attempts + 1, claim_digest = NULL, claimed_until = NULL,
-        expired_claim_digest = CASE WHEN next_status = 'delivered' THEN NULL
-                                    ELSE o.expired_claim_digest END,
         receipt = CASE WHEN next_status = 'delivered' THEN p_receipt END,
         last_error = CASE WHEN next_status = 'delivered' THEN NULL ELSE left(p_error, 500) END
     WHERE o.tenant_id = entry_row.tenant_id AND o.publication_id = entry_row.publication_id;
     RETURN next_status;
+END;
+$$;
+
+-- An operator settles an unconfirmed send with outside evidence (the destination's own record):
+-- 'delivered' or 'abandoned'. Once per publication. Returns the new status.
+CREATE OR REPLACE FUNCTION public.matchdesk_resolve_unconfirmed_publication(
+    p_tenant text, p_publication_id text, p_resolution text, p_evidence text,
+    p_operator_actor_id text
+) RETURNS text
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, pg_temp AS $$
+DECLARE
+    entry_row public.matchdesk_publication_outbox%ROWTYPE;
+BEGIN
+    PERFORM public.matchdesk_publication_preflight();
+    IF p_resolution IS NULL OR p_resolution NOT IN ('delivered', 'abandoned') THEN
+        RAISE EXCEPTION 'An unconfirmed publication is resolved as delivered or abandoned';
+    END IF;
+    SELECT * INTO entry_row FROM public.matchdesk_publication_outbox o
+    WHERE o.tenant_id = p_tenant AND o.publication_id = p_publication_id
+    FOR UPDATE;
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Unknown publication';
+    END IF;
+    IF entry_row.status <> 'unconfirmed' THEN
+        RAISE EXCEPTION 'Only an unconfirmed publication is resolved by an operator';
+    END IF;
+    INSERT INTO public.matchdesk_publication_settlements
+        (tenant_id, publication_id, kind, evidence, operator_actor_id, recorded_by, recorded_at)
+    VALUES (entry_row.tenant_id, entry_row.publication_id, 'operator_' || p_resolution,
+            btrim(p_evidence), btrim(p_operator_actor_id), session_user, clock_timestamp());
+    UPDATE public.matchdesk_publication_outbox o
+    SET status = p_resolution,
+        receipt = CASE WHEN p_resolution = 'delivered' THEN 'operator-confirmed' END,
+        last_error = CASE WHEN p_resolution = 'abandoned' THEN left(btrim(p_evidence), 500)
+                          ELSE NULL END
+    WHERE o.tenant_id = entry_row.tenant_id AND o.publication_id = entry_row.publication_id;
+    RETURN p_resolution;
 END;
 $$;
 
@@ -627,6 +792,9 @@ GRANT SELECT ON public.matchdesk_producer_cases, public.matchdesk_producer_audit
 GRANT UPDATE (updated_at) ON public.matchdesk_producer_cases TO matchdesk_publication_guard_owner;
 GRANT SELECT, INSERT ON public.matchdesk_language_reviews TO matchdesk_publication_guard_owner;
 GRANT SELECT, INSERT, UPDATE ON public.matchdesk_publication_outbox
+    TO matchdesk_publication_guard_owner;
+GRANT SELECT, INSERT ON public.matchdesk_publication_claims,
+    public.matchdesk_publication_claim_reports, public.matchdesk_publication_settlements
     TO matchdesk_publication_guard_owner;
 
 ALTER FUNCTION public.matchdesk_publication_id(jsonb, text)
@@ -649,6 +817,8 @@ ALTER FUNCTION public.matchdesk_claim_publication_attempt(text, text, integer)
     OWNER TO matchdesk_publication_guard_owner;
 ALTER FUNCTION public.matchdesk_record_publication_attempt(text, text, uuid, text, text, text)
     OWNER TO matchdesk_publication_guard_owner;
+ALTER FUNCTION public.matchdesk_resolve_unconfirmed_publication(text, text, text, text, text)
+    OWNER TO matchdesk_publication_guard_owner;
 
 -- Nothing but the pure ID hash is executable by PUBLIC. The hash stays public because a CHECK
 -- uses it (so a restore by a non-superuser still validates rows) and hosts compare IDs with it.
@@ -660,7 +830,8 @@ REVOKE ALL ON FUNCTION public.matchdesk_claim_digest(uuid),
     public.matchdesk_record_language_review(text, text, text, text, text, text),
     public.matchdesk_queue_publication(text, text, text, jsonb, text, text, integer),
     public.matchdesk_claim_publication_attempt(text, text, integer),
-    public.matchdesk_record_publication_attempt(text, text, uuid, text, text, text)
+    public.matchdesk_record_publication_attempt(text, text, uuid, text, text, text),
+    public.matchdesk_resolve_unconfirmed_publication(text, text, text, text, text)
     FROM PUBLIC;
 
 GRANT USAGE ON SCHEMA public TO matchdesk_publisher, matchdesk_language_reviewer;
@@ -671,8 +842,10 @@ GRANT EXECUTE ON FUNCTION public.matchdesk_publication_id(jsonb, text) TO PUBLIC
 GRANT EXECUTE ON FUNCTION
     public.matchdesk_queue_publication(text, text, text, jsonb, text, text, integer),
     public.matchdesk_claim_publication_attempt(text, text, integer),
-    public.matchdesk_record_publication_attempt(text, text, uuid, text, text, text)
+    public.matchdesk_record_publication_attempt(text, text, uuid, text, text, text),
+    public.matchdesk_resolve_unconfirmed_publication(text, text, text, text, text)
     TO matchdesk_publisher;
-GRANT SELECT ON public.matchdesk_publication_outbox TO matchdesk_publisher;
+GRANT SELECT ON public.matchdesk_publication_outbox, public.matchdesk_publication_settlements
+    TO matchdesk_publisher;
 
 COMMIT;
