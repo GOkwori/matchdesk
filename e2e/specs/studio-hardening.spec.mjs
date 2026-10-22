@@ -60,6 +60,8 @@ test.describe('accessibility', () => {
   test('heading levels never skip and every page has one h1, one main and labelled navigation', async ({ page }) => {
     for (const route of ALL) {
       await open(page, route);
+      // Some pages stream their heading in after hydration; a page with no h1 still fails here.
+      await page.locator('h1').first().waitFor();
       const s = await page.evaluate(() => {
         const hs = [...document.querySelectorAll('h1,h2,h3,h4,h5,h6')].filter((h) => h.getClientRects().length);
         const levels = hs.map((h) => Number(h.tagName[1]));
