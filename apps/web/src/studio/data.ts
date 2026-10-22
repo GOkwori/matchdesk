@@ -209,7 +209,7 @@ export const verdictLabel: Record<Verdict, string> = {
 export type Sentence = { readonly claimId: string; readonly text: string; readonly opinion?: string };
 
 export const d031Sentences: readonly Sentence[] = [
-  { claimId: "CL-0213", text: "Okafor has scored both Northbridge goals, heading in from a corner at 58:17 to restore the lead." },
+  { claimId: "CL-0213", text: "Okafor has scored both Northbridge goals." },
   { claimId: "CL-0214", text: "Northbridge have had 58% of possession at the replay point." },
   { claimId: "CL-0215", text: "Riverside’s best spell came between 30 and 45 minutes.", opinion: "In our view, Riverside’s best spell came between 30 and 45 minutes." },
   { claimId: "CL-0216", text: "It is Okafor’s first brace of the season." },

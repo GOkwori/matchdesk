@@ -126,6 +126,17 @@ test('composer re-verifies live: D-031 becomes eligible only after both blocking
   await expect(page.getByRole('link', { name: 'Review' })).toBeVisible();
 });
 
+test('every factual sentence in the draft verifies as written, not only its claim', async ({ page }) => {
+  await open(page, '/producer/compose/D-031');
+  const cards = page.getByRole('list', { name: 'Claims in this draft' });
+  for (const id of ['CL-0213', 'CL-0214']) {
+    // Re-entering the same words makes the browser re-verify the sentence itself.
+    const box = page.getByRole('textbox', { name: `Sentence for ${id}` });
+    await box.fill(await box.inputValue());
+    await expect(cards.getByRole('listitem').filter({ hasText: id }).getByText('Verified')).toBeVisible();
+  }
+});
+
 test('editing a sentence re-verifies its words in the browser', async ({ page }) => {
   await open(page, '/producer/compose/D-031');
   const eligibility = page.getByRole('region', { name: 'Eligibility' });
