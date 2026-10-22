@@ -12,7 +12,11 @@ import re
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 
-from matchdesk.domain.producer_commands import ProducerCaseReader, inspect_producer_case
+from matchdesk.domain.producer_commands import (
+    HostVerifiedActor,
+    ProducerCaseReader,
+    inspect_producer_case,
+)
 from matchdesk.domain.producer_identity import (
     EntitlementResolver,
     ProducerIdentityPolicy,
@@ -83,6 +87,16 @@ def create_producer_read_router(
             actor = verify_producer_access_token(
                 token, policy=policy, keys=keys, entitlements=entitlements
             )
+            # Independently enforce the configured workforce boundary before
+            # accessing tenant data, even if a host token verifier is defective.
+            if (
+                type(actor) is not HostVerifiedActor
+                or actor.tenant_id != policy.tenant_id
+                or actor.issuer != policy.issuer
+                or "producer" not in actor.roles
+                or session_id not in actor.permitted_sessions
+            ):
+                raise PermissionError("Untrusted producer inspection identity")
             case = inspect_producer_case(
                 reader, actor=actor, session_id=session_id, output_id=output_id
             )
