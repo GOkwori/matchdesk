@@ -236,3 +236,37 @@ def test_overdue_upstream_schedule_is_visible_but_does_not_override_findings(
     assert result["database_status"] == "UPSTREAM_REFRESH_OVERDUE"
     assert len(result["images"]) == 3
     assert result["images"][0]["finding_count"] == int(with_finding)
+
+
+def test_a_failed_gate_names_each_finding_in_one_annotation() -> None:
+    """The checks API shows which image, package and vulnerability failed the gate."""
+    from scripts.image_security import failure_annotation
+
+    verdict = {
+        "status": "FAIL",
+        "images": [
+            {
+                "service": "web",
+                "finding_count": 1,
+                "findings": [
+                    {
+                        "id": "CVE-2026-0001",
+                        "severity": "HIGH",
+                        "package": "libexample",
+                        "installed": "1.0",
+                        "fixed": "1.1",
+                        "target": "node:22-alpine (alpine 3.22)",
+                    }
+                ],
+            },
+            {"service": "api", "finding_count": 0, "findings": []},
+        ],
+    }
+    line = failure_annotation(verdict)
+    assert line.startswith(
+        "::error title=Image security gate::web: CVE-2026-0001 HIGH in libexample 1.0"
+    )
+    assert "fixed in 1.1" in line and "\n" not in line
+    assert failure_annotation({"status": "FAIL", "reason": "stale database"}).endswith(
+        "gate error: stale database"
+    )
