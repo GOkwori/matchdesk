@@ -6,7 +6,8 @@ published. This module turns that proof into delivery work:
 - Queueing re-runs the approval gate against the producer review state itself, so a caller cannot
   hand in a home-made authorization for content nobody approved.
 - Spanish and French content needs a recorded human language review of the exact content digest
-  before it can be queued. An AI-assisted translation is not a review. The review with the highest
+  before it can be queued, by someone other than the producer. An AI-assisted translation is not
+  a review. The review with the highest
   sequence number is the one that counts; a later "changes requested" blocks the content again.
 - Each (binding, destination) pair becomes one outbox entry with a deterministic publication ID, so
   queueing the same approval twice is a no-op, never a second post.
@@ -18,7 +19,8 @@ published. This module turns that proof into delivery work:
   once, and a delivered entry is never sent again.
 - Publication is off unless the host turns it on. Nothing here authenticates anyone; the host
   establishes the producer, publisher and reviewer identities. PostgreSQL (migration 015) enforces
-  the same rules again, against the stored producer audit.
+  the same rules again, against the stored producer audit, and adds what a shared database needs:
+  READ COMMITTED only, and a claim with a lease on each attempt so two workers never send at once.
 """
 
 from __future__ import annotations
@@ -130,13 +132,25 @@ class OutboxEntry:
 
 
 def publication_id(binding: ApprovalBinding, destination: str) -> str:
-    """Deterministic ID: the same approved version to the same destination is one publication."""
-    canonical = json.dumps(
-        {"binding": binding.model_dump(mode="json"), "destination": destination},
-        sort_keys=True,
-        separators=(",", ":"),
+    """Deterministic ID: the same approved version to the same destination is one publication.
+
+    Migration 015 computes the identical value (``matchdesk_publication_id``), so the database
+    decides the ID rather than trusting the caller's.
+    """
+    if binding.schema_version != "1.0":  # pragma: no cover - the model only admits 1.0 today
+        raise ValueError("Publication IDs are defined for ApprovalBinding 1.0")
+    fields = (
+        "matchdesk-publication-v1",
+        binding.item_id,
+        str(binding.item_version),
+        binding.replay_id,
+        binding.content_digest,
+        binding.evidence_digest,
+        binding.language,
+        binding.persona,
+        destination,
     )
-    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+    return hashlib.sha256("\x1f".join(fields).encode("utf-8")).hexdigest()
 
 
 def _review_for(
@@ -191,6 +205,8 @@ def queue_publication(
         if binding.persona not in allowed:
             raise PermissionError(f"{destination} does not show {binding.persona} content")
     review = _review_for(binding, reviews)
+    if review is not None and same_actor(review.reviewer_actor_id, authorization.producer_actor_id):
+        raise PermissionError("The language reviewer must not be the producer who approved")
     return tuple(
         OutboxEntry(
             publication_id=publication_id(binding, destination),

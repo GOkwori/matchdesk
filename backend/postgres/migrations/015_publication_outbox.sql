@@ -1,19 +1,30 @@
 -- Publication outbox and language reviews. Requires 001_producer_review.sql.
 -- Targets disposable/local databases until the owner approves a hosted deployment.
+-- Applied (and re-applied) by the database owner, which must be able to act as every role here.
 --
 -- The database is the authority, not a mirror of the application:
--- * Nobody writes these tables directly. Logins act only through four SECURITY DEFINER
---   functions owned by a NOLOGIN role with no members and the minimum table privileges.
--- * Queueing reads the producer audit itself: the latest audit entry for the case must approve
---   exactly the binding being queued, and the producer is taken from that entry, not the caller.
--- * Spanish and French need the latest language review of the exact content to approve. Reviews
---   are numbered by the database under a lock shared with queueing, so "latest" cannot be rigged.
--- * Before each delivery attempt the approval and review are checked again; a row whose approval
---   or review changed is withdrawn instead of delivered.
+-- * Nobody writes these tables directly. Logins act only through SECURITY DEFINER functions owned
+--   by a NOLOGIN role that may have no members (checked on every call) and holds the minimum
+--   table privileges. Every function pins its search path and qualifies every name.
+-- * Queueing reads the producer audit itself: the audit entry at the case's current generation
+--   must approve exactly the binding being queued, and the producer is taken from that entry.
+-- * The database computes each publication ID from the binding and destination, so a caller can
+--   neither squat on another publication's ID nor create a second row for the same version.
+-- * Spanish and French need the latest language review of the exact content, in the same tenant,
+--   by someone other than the producer, to approve. Reviews are numbered by the database under an
+--   advisory lock that queueing and delivery also take; READ COMMITTED is required everywhere so
+--   no caller can read past a review committed while it waited for that lock.
+-- * Each delivery attempt is claimed first. The claim re-checks the approval and the review and
+--   withdraws the row if either no longer holds; otherwise it moves the row to in_flight with a
+--   random claim token and a lease. Only the holder of the token can record the outcome. A lease
+--   that expires without an outcome counts as a failed attempt. Destinations must still be
+--   idempotent on publication ID, because a sender that outlives its lease may race a retry.
+-- * Withdrawn and abandoned rows are final. Publishing that content again needs a new version.
 -- * Human actor IDs are asserted by the authenticated host (as in 001). The database records the
 --   physical login that made each change next to them, so an asserted identity is attributable.
+--   Logins are not bound to tenants; one deployment serves one organisation.
 -- * The table owner can still disable triggers. Hosts must run as the capability roles below,
---   never as the owner.
+--   never as the owner. A worker should claim one row per transaction.
 BEGIN;
 SET LOCAL lock_timeout = '5s';
 
@@ -37,16 +48,31 @@ BEGIN
             RAISE EXCEPTION 'Publication role % is privileged', role_name USING ERRCODE = '42501';
         END IF;
     END LOOP;
-    -- Logins are granted the capability roles; nobody may act as the function owner.
     IF EXISTS (
         SELECT 1 FROM pg_catalog.pg_auth_members m
-        JOIN pg_catalog.pg_roles r ON r.oid = m.roleid
-        WHERE r.rolname = 'matchdesk_publication_guard_owner'
+        WHERE m.roleid = 'matchdesk_publication_guard_owner'::regrole
     ) THEN
         RAISE EXCEPTION 'Publication guard owner has role members' USING ERRCODE = '42501';
     END IF;
 END;
 $roles$;
+
+-- The publication ID scheme, shared with matchdesk.domain.publication.publication_id. NULL unless
+-- the binding has exactly the ApprovalBinding 1.0 fields.
+CREATE OR REPLACE FUNCTION public.matchdesk_publication_id(p_binding jsonb, p_destination text)
+RETURNS text LANGUAGE sql IMMUTABLE STRICT SET search_path = pg_catalog, pg_temp AS $$
+    SELECT CASE WHEN jsonb_typeof(p_binding) = 'object'
+        AND ARRAY(SELECT k FROM jsonb_object_keys(p_binding) AS k ORDER BY k) = ARRAY[
+            'content_digest', 'evidence_digest', 'item_id', 'item_version', 'language',
+            'persona', 'replay_id', 'schema_version']::text[]
+        AND jsonb_typeof(p_binding->'item_version') = 'number'
+        AND p_binding->>'schema_version' = '1.0'
+    THEN encode(sha256(convert_to(concat_ws(chr(31),
+        'matchdesk-publication-v1', p_binding->>'item_id', p_binding->>'item_version',
+        p_binding->>'replay_id', p_binding->>'content_digest', p_binding->>'evidence_digest',
+        p_binding->>'language', p_binding->>'persona', p_destination), 'UTF8')), 'hex')
+    END;
+$$;
 
 CREATE TABLE IF NOT EXISTS public.matchdesk_language_reviews (
     review_id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -65,11 +91,11 @@ CREATE INDEX IF NOT EXISTS matchdesk_language_reviews_lookup
 
 CREATE TABLE IF NOT EXISTS public.matchdesk_publication_outbox (
     tenant_id text NOT NULL CHECK (length(btrim(tenant_id)) BETWEEN 1 AND 96),
-    publication_id text NOT NULL CHECK (publication_id ~ '^[a-f0-9]{64}$'),
+    publication_id text NOT NULL,
     session_id text NOT NULL,
     output_id text NOT NULL,
     producer_generation bigint NOT NULL CHECK (producer_generation >= 1),
-    binding_json jsonb NOT NULL CHECK (jsonb_typeof(binding_json) = 'object'),
+    binding_json jsonb NOT NULL,
     language text NOT NULL CHECK (language IN ('en', 'es', 'fr')),
     content_digest text NOT NULL CHECK (content_digest ~ '^[a-f0-9]{64}$'),
     persona text NOT NULL CHECK (persona IN ('analyst', 'casual_fan', 'broadcast_caption')),
@@ -79,25 +105,34 @@ CREATE TABLE IF NOT EXISTS public.matchdesk_publication_outbox (
     review_id bigint REFERENCES public.matchdesk_language_reviews (review_id),
     reviewer_actor_id text,
     max_attempts integer NOT NULL CHECK (max_attempts BETWEEN 1 AND 10),
-    status text NOT NULL CHECK (status IN ('queued', 'failed', 'delivered', 'abandoned', 'withdrawn')),
+    status text NOT NULL CHECK (
+        status IN ('queued', 'in_flight', 'failed', 'delivered', 'abandoned', 'withdrawn')
+    ),
     attempts integer NOT NULL CHECK (attempts BETWEEN 0 AND max_attempts),
+    claim_token uuid,
+    claimed_until timestamptz,
     last_error text CHECK (last_error IS NULL OR length(last_error) <= 500),
     receipt text CHECK (receipt IS NULL OR length(receipt) BETWEEN 1 AND 200),
     queued_by text NOT NULL,
     created_at timestamptz NOT NULL,
     updated_at timestamptz NOT NULL,
     PRIMARY KEY (tenant_id, publication_id),
-    -- One row per approved version and destination, whatever ID a caller proposes.
-    CONSTRAINT matchdesk_outbox_one_per_destination UNIQUE (tenant_id, destination, binding_json),
+    -- The ID is the database's own hash of the binding and destination.
+    CONSTRAINT matchdesk_outbox_computed_id CHECK (
+        publication_id IS NOT DISTINCT FROM public.matchdesk_publication_id(binding_json, destination)
+    ),
     -- The typed columns are the binding's own fields, never a second opinion.
     CONSTRAINT matchdesk_outbox_typed_binding CHECK (
-        binding_json->>'language' = language
-        AND binding_json->>'content_digest' = content_digest
-        AND binding_json->>'persona' = persona
+        binding_json->>'language' IS NOT DISTINCT FROM language
+        AND binding_json->>'content_digest' IS NOT DISTINCT FROM content_digest
+        AND binding_json->>'persona' IS NOT DISTINCT FROM persona
     ),
-    -- Four eyes: whoever releases content is not the producer who approved it.
+    -- Four eyes: whoever releases content is not the producer who approved it, and nobody reviews
+    -- the language of their own approval.
     CONSTRAINT matchdesk_outbox_second_person CHECK (
         lower(btrim(publisher_actor_id)) <> lower(btrim(producer_actor_id))
+        AND (reviewer_actor_id IS NULL
+             OR lower(btrim(reviewer_actor_id)) <> lower(btrim(producer_actor_id)))
     ),
     -- Non-English content points at the review that approved it.
     CONSTRAINT matchdesk_outbox_reviewed_language CHECK (
@@ -109,6 +144,10 @@ CREATE TABLE IF NOT EXISTS public.matchdesk_publication_outbox (
         OR (destination = 'social' AND persona = 'casual_fan')
         OR (destination = 'broadcast_overlay' AND persona = 'broadcast_caption')
     ),
+    CONSTRAINT matchdesk_outbox_claim_when_in_flight CHECK (
+        (status = 'in_flight') = (claim_token IS NOT NULL)
+        AND (claim_token IS NULL) = (claimed_until IS NULL)
+    ),
     CONSTRAINT matchdesk_outbox_receipt_when_delivered CHECK (
         (status = 'delivered') = (receipt IS NOT NULL)
     )
@@ -116,15 +155,30 @@ CREATE TABLE IF NOT EXISTS public.matchdesk_publication_outbox (
 
 -- CREATE TABLE IF NOT EXISTS would silently keep an older shape. Refuse to continue on drift.
 DO $shape$
+DECLARE
+    actual text;
 BEGIN
-    IF (SELECT count(*) FROM pg_catalog.pg_attribute
-        WHERE attrelid = 'public.matchdesk_publication_outbox'::regclass AND attnum > 0
-          AND NOT attisdropped
-          AND attname IN ('producer_generation', 'review_id', 'max_attempts', 'queued_by')) <> 4
-       OR (SELECT count(*) FROM pg_catalog.pg_attribute
-           WHERE attrelid = 'public.matchdesk_language_reviews'::regclass AND attnum > 0
-             AND NOT attisdropped AND attname = 'recorded_by') <> 1 THEN
-        RAISE EXCEPTION 'Publication tables do not have the 015 shape; recreate them in the disposable database';
+    SELECT string_agg(attname || ' ' || format_type(atttypid, atttypmod), ', ' ORDER BY attnum)
+    INTO actual FROM pg_catalog.pg_attribute
+    WHERE attrelid = 'public.matchdesk_publication_outbox'::regclass AND attnum > 0
+      AND NOT attisdropped;
+    IF actual IS DISTINCT FROM 'tenant_id text, publication_id text, session_id text, '
+        'output_id text, producer_generation bigint, binding_json jsonb, language text, '
+        'content_digest text, persona text, destination text, producer_actor_id text, '
+        'publisher_actor_id text, review_id bigint, reviewer_actor_id text, max_attempts integer, '
+        'status text, attempts integer, claim_token uuid, claimed_until timestamp with time zone, '
+        'last_error text, receipt text, queued_by text, created_at timestamp with time zone, '
+        'updated_at timestamp with time zone' THEN
+        RAISE EXCEPTION 'Publication outbox does not have the 015 shape (%); recreate it in the disposable database', actual;
+    END IF;
+    SELECT string_agg(attname || ' ' || format_type(atttypid, atttypmod), ', ' ORDER BY attnum)
+    INTO actual FROM pg_catalog.pg_attribute
+    WHERE attrelid = 'public.matchdesk_language_reviews'::regclass AND attnum > 0
+      AND NOT attisdropped;
+    IF actual IS DISTINCT FROM 'review_id bigint, tenant_id text, content_digest text, '
+        'language text, verdict text, reviewer_actor_id text, note text, recorded_by text, '
+        'reviewed_at timestamp with time zone' THEN
+        RAISE EXCEPTION 'Language reviews do not have the 015 shape (%); recreate them in the disposable database', actual;
     END IF;
 END;
 $shape$;
@@ -138,7 +192,7 @@ CREATE OR REPLACE FUNCTION public.matchdesk_outbox_guard_insert()
 RETURNS trigger LANGUAGE plpgsql SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     IF NEW.status <> 'queued' OR NEW.attempts <> 0 OR NEW.receipt IS NOT NULL
-       OR NEW.last_error IS NOT NULL THEN
+       OR NEW.last_error IS NOT NULL OR NEW.claim_token IS NOT NULL THEN
         RAISE EXCEPTION 'A publication starts queued, unattempted and without a receipt';
     END IF;
     NEW.queued_by := session_user;
@@ -154,6 +208,8 @@ CREATE TRIGGER matchdesk_outbox_insert
 BEFORE INSERT ON public.matchdesk_publication_outbox
 FOR EACH ROW EXECUTE FUNCTION public.matchdesk_outbox_guard_insert();
 
+-- Allowed moves: queued/failed -> in_flight (a claim) or withdrawn; in_flight -> failed,
+-- delivered or abandoned (one attempt). Nothing leaves delivered, abandoned or withdrawn.
 CREATE OR REPLACE FUNCTION public.matchdesk_outbox_guard_transition()
 RETURNS trigger LANGUAGE plpgsql SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
@@ -171,14 +227,22 @@ BEGIN
        OR NEW.reviewer_actor_id IS DISTINCT FROM OLD.reviewer_actor_id THEN
         RAISE EXCEPTION 'Only delivery status may change';
     END IF;
-    IF NEW.status = 'withdrawn' THEN
-        IF NEW.attempts <> OLD.attempts THEN
-            RAISE EXCEPTION 'A withdrawal is not a delivery attempt';
+    IF NEW.status IN ('in_flight', 'withdrawn') THEN
+        IF OLD.status NOT IN ('queued', 'failed') THEN
+            RAISE EXCEPTION 'Only a queued or failed publication can be claimed or withdrawn';
         END IF;
-    ELSIF NEW.status NOT IN ('failed', 'delivered', 'abandoned') THEN
-        RAISE EXCEPTION 'An attempt ends failed, delivered or abandoned';
-    ELSIF NEW.attempts <> OLD.attempts + 1 THEN
-        RAISE EXCEPTION 'Each update records exactly one delivery attempt';
+        IF NEW.attempts <> OLD.attempts THEN
+            RAISE EXCEPTION 'A claim or withdrawal is not a delivery attempt';
+        END IF;
+    ELSIF NEW.status IN ('failed', 'delivered', 'abandoned') THEN
+        IF OLD.status <> 'in_flight' THEN
+            RAISE EXCEPTION 'An attempt must be claimed before its outcome is recorded';
+        END IF;
+        IF NEW.attempts <> OLD.attempts + 1 THEN
+            RAISE EXCEPTION 'Each outcome records exactly one delivery attempt';
+        END IF;
+    ELSE
+        RAISE EXCEPTION 'A publication never returns to queued';
     END IF;
     NEW.updated_at := clock_timestamp();
     RETURN NEW;
@@ -226,10 +290,28 @@ BEFORE UPDATE OR DELETE OR TRUNCATE ON public.matchdesk_language_reviews
 FOR EACH STATEMENT EXECUTE FUNCTION public.matchdesk_block_publication_history_mutation();
 
 -- ---------------------------------------------------------------------------------------------
--- Shared checks, run by the guard owner inside the functions below.
+-- Shared checks, run by the guard owner inside the entry points below. Policy refusals use the
+-- dedicated SQLSTATE MDPUB so that delivery can tell them apart from faults: only a policy
+-- refusal withdraws a publication; a fault (a missing privilege, a timeout) is raised as is.
 -- ---------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.matchdesk_publication_preflight()
+RETURNS void LANGUAGE plpgsql SET search_path = pg_catalog, pg_temp AS $$
+BEGIN
+    -- Under REPEATABLE READ or SERIALIZABLE a caller would keep reading the snapshot taken before
+    -- it waited for the review lock, and miss a review committed in the meantime.
+    IF pg_catalog.current_setting('transaction_isolation') <> 'read committed' THEN
+        RAISE EXCEPTION 'Publication requires READ COMMITTED' USING ERRCODE = '0A000';
+    END IF;
+    IF EXISTS (
+        SELECT 1 FROM pg_catalog.pg_auth_members m
+        WHERE m.roleid = 'matchdesk_publication_guard_owner'::regrole
+    ) THEN
+        RAISE EXCEPTION 'Publication guard owner has role members' USING ERRCODE = '42501';
+    END IF;
+END;
+$$;
 
--- Serialises review recording with queueing and delivery for one piece of content.
+-- Serialises review recording with queueing and claiming for one piece of content.
 CREATE OR REPLACE FUNCTION public.matchdesk_lock_language_review(
     p_tenant text, p_content_digest text, p_language text
 ) RETURNS void LANGUAGE sql SET search_path = pg_catalog, pg_temp AS $$
@@ -237,7 +319,6 @@ CREATE OR REPLACE FUNCTION public.matchdesk_lock_language_review(
         'matchdesk-language-review' || chr(31) || p_tenant || chr(31) || p_content_digest
         || chr(31) || p_language, 0));
 $$;
-REVOKE ALL ON FUNCTION public.matchdesk_lock_language_review(text, text, text) FROM PUBLIC;
 
 -- The producer approval in force for a case: locks the case row so a concurrent revision waits,
 -- then returns the audit entry at the case's current generation if it approves this binding.
@@ -253,24 +334,23 @@ BEGIN
     WHERE c.tenant_id = p_tenant AND c.session_id = p_session AND c.output_id = p_output
     FOR SHARE;
     IF NOT FOUND THEN
-        RAISE EXCEPTION 'No producer case for this output' USING ERRCODE = '42501';
+        RAISE EXCEPTION 'No producer case for this output' USING ERRCODE = 'MDPUB';
     END IF;
     SELECT a.entry_json INTO entry FROM public.matchdesk_producer_audit a
     WHERE a.tenant_id = p_tenant AND a.session_id = p_session AND a.output_id = p_output
       AND a.generation = current_generation;
     IF entry IS NULL OR entry->>'action' IS DISTINCT FROM 'approved'
        OR entry->'binding' IS DISTINCT FROM p_binding THEN
-        RAISE EXCEPTION 'The producer has not approved this exact version' USING ERRCODE = '42501';
+        RAISE EXCEPTION 'The producer has not approved this exact version' USING ERRCODE = 'MDPUB';
     END IF;
     producer_actor_id := entry->>'actor_id';
     generation := current_generation;
 END;
 $$;
-REVOKE ALL ON FUNCTION public.matchdesk_current_approval(text, text, text, jsonb) FROM PUBLIC;
 
--- The latest review of the content, which must approve it.
+-- The latest review of the content, which must approve it and not be the producer's own.
 CREATE OR REPLACE FUNCTION public.matchdesk_current_language_approval(
-    p_tenant text, p_content_digest text, p_language text
+    p_tenant text, p_content_digest text, p_language text, p_producer_actor_id text
 ) RETURNS public.matchdesk_language_reviews
 LANGUAGE plpgsql SET search_path = pg_catalog, pg_temp AS $$
 DECLARE
@@ -282,19 +362,22 @@ BEGIN
       AND r.language = p_language
     ORDER BY r.review_id DESC LIMIT 1;
     IF NOT FOUND THEN
-        RAISE EXCEPTION 'Content needs a recorded language review' USING ERRCODE = '42501';
+        RAISE EXCEPTION 'Content needs a recorded language review' USING ERRCODE = 'MDPUB';
     END IF;
     IF latest.verdict <> 'approved' THEN
         RAISE EXCEPTION 'The latest language review does not approve this content'
-            USING ERRCODE = '42501';
+            USING ERRCODE = 'MDPUB';
+    END IF;
+    IF lower(btrim(latest.reviewer_actor_id)) = lower(btrim(p_producer_actor_id)) THEN
+        RAISE EXCEPTION 'The language reviewer must not be the producer who approved'
+            USING ERRCODE = 'MDPUB';
     END IF;
     RETURN latest;
 END;
 $$;
-REVOKE ALL ON FUNCTION public.matchdesk_current_language_approval(text, text, text) FROM PUBLIC;
 
 -- ---------------------------------------------------------------------------------------------
--- The four entry points. SECURITY DEFINER, owned by the guard owner, schema-qualified.
+-- The entry points. SECURITY DEFINER, owned by the guard owner, schema-qualified.
 -- ---------------------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.matchdesk_record_language_review(
     p_tenant text, p_content_digest text, p_language text, p_verdict text,
@@ -304,6 +387,7 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, pg_temp AS $$
 DECLARE
     new_id bigint;
 BEGIN
+    PERFORM public.matchdesk_publication_preflight();
     PERFORM public.matchdesk_lock_language_review(p_tenant, p_content_digest, p_language);
     INSERT INTO public.matchdesk_language_reviews
         (tenant_id, content_digest, language, verdict, reviewer_actor_id, note,
@@ -315,69 +399,84 @@ BEGIN
 END;
 $$;
 
+-- Queue one approved version for one destination. Returns the database-computed publication ID
+-- and its status; queueing again returns the existing row, whatever its status.
 CREATE OR REPLACE FUNCTION public.matchdesk_queue_publication(
-    p_tenant text, p_publication_id text, p_session text, p_output text, p_binding jsonb,
+    p_tenant text, p_session text, p_output text, p_binding jsonb,
     p_destination text, p_publisher_actor_id text, p_max_attempts integer
-) RETURNS text
+) RETURNS TABLE (publication_id text, status text)
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, pg_temp AS $$
 DECLARE
     approval record;
     review public.matchdesk_language_reviews%ROWTYPE;
+    v_id text := public.matchdesk_publication_id(p_binding, p_destination);
     v_language text := p_binding->>'language';
-    existing text;
 BEGIN
-    IF p_binding IS NULL OR jsonb_typeof(p_binding) <> 'object' OR v_language IS NULL THEN
-        RAISE EXCEPTION 'Publication needs a complete approval binding';
+    PERFORM public.matchdesk_publication_preflight();
+    IF v_id IS NULL OR v_language IS NULL THEN
+        RAISE EXCEPTION 'Publication needs a complete approval binding' USING ERRCODE = 'MDPUB';
     END IF;
     SELECT * INTO approval
     FROM public.matchdesk_current_approval(p_tenant, p_session, p_output, p_binding);
     IF lower(btrim(p_publisher_actor_id)) = lower(btrim(approval.producer_actor_id)) THEN
         RAISE EXCEPTION 'The publisher must not be the producer who approved'
-            USING ERRCODE = '42501';
+            USING ERRCODE = 'MDPUB';
     END IF;
     IF v_language <> 'en' THEN
         review := public.matchdesk_current_language_approval(
-            p_tenant, p_binding->>'content_digest', v_language);
+            p_tenant, p_binding->>'content_digest', v_language, approval.producer_actor_id);
     END IF;
-    INSERT INTO public.matchdesk_publication_outbox
+    INSERT INTO public.matchdesk_publication_outbox AS o
         (tenant_id, publication_id, session_id, output_id, producer_generation, binding_json,
          language, content_digest, persona, destination, producer_actor_id, publisher_actor_id,
          review_id, reviewer_actor_id, max_attempts, status, attempts, queued_by,
          created_at, updated_at)
     VALUES
-        (p_tenant, p_publication_id, p_session, p_output, approval.generation, p_binding,
+        (p_tenant, v_id, p_session, p_output, approval.generation, p_binding,
          v_language, p_binding->>'content_digest', p_binding->>'persona', p_destination,
          approval.producer_actor_id, btrim(p_publisher_actor_id),
          review.review_id, review.reviewer_actor_id, p_max_attempts, 'queued', 0, session_user,
          clock_timestamp(), clock_timestamp())
-    ON CONFLICT ON CONSTRAINT matchdesk_outbox_one_per_destination DO NOTHING
-    RETURNING publication_id INTO existing;
-    IF existing IS NULL THEN
-        -- Already queued: return the original publication rather than a second one.
-        SELECT o.publication_id INTO existing FROM public.matchdesk_publication_outbox o
-        WHERE o.tenant_id = p_tenant AND o.destination = p_destination
-          AND o.binding_json = p_binding;
-    END IF;
-    RETURN existing;
+    ON CONFLICT ON CONSTRAINT matchdesk_publication_outbox_pkey DO NOTHING;
+    RETURN QUERY
+        SELECT o.publication_id, o.status FROM public.matchdesk_publication_outbox o
+        WHERE o.tenant_id = p_tenant AND o.publication_id = v_id;
 END;
 $$;
 
--- Claim one attempt. Returns the binding to deliver, or NULL when the row is final or has just
--- been withdrawn because its approval or language review no longer holds.
-CREATE OR REPLACE FUNCTION public.matchdesk_begin_publication_attempt(
-    p_tenant text, p_publication_id text
+-- Claim one attempt. Returns {"binding": ..., "claim_token": ...} to deliver, or NULL when the row
+-- is final, is already being sent under a live lease, or has just been withdrawn because its
+-- approval or language review no longer holds. An expired lease counts as a failed attempt first.
+CREATE OR REPLACE FUNCTION public.matchdesk_claim_publication_attempt(
+    p_tenant text, p_publication_id text, p_lease_seconds integer DEFAULT 300
 ) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, pg_temp AS $$
 DECLARE
     entry_row public.matchdesk_publication_outbox%ROWTYPE;
     approval record;
     review public.matchdesk_language_reviews%ROWTYPE;
+    token uuid;
 BEGIN
+    PERFORM public.matchdesk_publication_preflight();
+    IF p_lease_seconds IS NULL OR p_lease_seconds NOT BETWEEN 5 AND 3600 THEN
+        RAISE EXCEPTION 'A delivery lease lasts between 5 and 3600 seconds';
+    END IF;
     SELECT * INTO entry_row FROM public.matchdesk_publication_outbox o
     WHERE o.tenant_id = p_tenant AND o.publication_id = p_publication_id
     FOR UPDATE;
     IF NOT FOUND THEN
         RAISE EXCEPTION 'Unknown publication';
+    END IF;
+    IF entry_row.status = 'in_flight' THEN
+        IF entry_row.claimed_until > clock_timestamp() THEN
+            RETURN NULL;
+        END IF;
+        UPDATE public.matchdesk_publication_outbox o
+        SET status = CASE WHEN o.attempts + 1 >= o.max_attempts THEN 'abandoned' ELSE 'failed' END,
+            attempts = o.attempts + 1, claim_token = NULL, claimed_until = NULL,
+            last_error = 'The previous attempt did not report back before its lease expired'
+        WHERE o.tenant_id = entry_row.tenant_id AND o.publication_id = entry_row.publication_id
+        RETURNING o.* INTO entry_row;
     END IF;
     IF entry_row.status IN ('delivered', 'abandoned', 'withdrawn') THEN
         RETURN NULL;
@@ -387,36 +486,51 @@ BEGIN
             entry_row.tenant_id, entry_row.session_id, entry_row.output_id, entry_row.binding_json);
         IF entry_row.language <> 'en' THEN
             review := public.matchdesk_current_language_approval(
-                entry_row.tenant_id, entry_row.content_digest, entry_row.language);
+                entry_row.tenant_id, entry_row.content_digest, entry_row.language,
+                approval.producer_actor_id);
             IF lower(btrim(review.reviewer_actor_id)) <> lower(btrim(entry_row.reviewer_actor_id)) THEN
-                RAISE EXCEPTION 'The approving language review changed' USING ERRCODE = '42501';
+                RAISE EXCEPTION 'The approving language review changed' USING ERRCODE = 'MDPUB';
             END IF;
         END IF;
-    EXCEPTION WHEN insufficient_privilege THEN
-        UPDATE public.matchdesk_publication_outbox
+    EXCEPTION WHEN SQLSTATE 'MDPUB' THEN
+        UPDATE public.matchdesk_publication_outbox o
         SET status = 'withdrawn', last_error = left(SQLERRM, 500)
-        WHERE tenant_id = entry_row.tenant_id AND publication_id = entry_row.publication_id;
+        WHERE o.tenant_id = entry_row.tenant_id AND o.publication_id = entry_row.publication_id;
         RETURN NULL;
     END;
-    RETURN entry_row.binding_json;
+    token := pg_catalog.gen_random_uuid();
+    UPDATE public.matchdesk_publication_outbox o
+    SET status = 'in_flight', claim_token = token,
+        claimed_until = clock_timestamp() + make_interval(secs => p_lease_seconds)
+    WHERE o.tenant_id = entry_row.tenant_id AND o.publication_id = entry_row.publication_id;
+    RETURN jsonb_build_object('binding', entry_row.binding_json, 'claim_token', token);
 END;
 $$;
 
--- Record the outcome of one attempt: 'delivered' (with a receipt), 'failed' or 'refused'.
--- Failures past the row's attempt budget become 'abandoned'. Returns the new status.
+-- Record the outcome of a claimed attempt: 'delivered' (with a receipt), 'failed' or 'refused'.
+-- Failures that use up the row's attempt budget become 'abandoned'. Returns the new status.
 CREATE OR REPLACE FUNCTION public.matchdesk_record_publication_attempt(
-    p_tenant text, p_publication_id text, p_outcome text, p_receipt text, p_error text
+    p_tenant text, p_publication_id text, p_claim_token uuid, p_outcome text, p_receipt text,
+    p_error text
 ) RETURNS text
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, pg_temp AS $$
 DECLARE
     entry_row public.matchdesk_publication_outbox%ROWTYPE;
     next_status text;
 BEGIN
+    PERFORM public.matchdesk_publication_preflight();
     SELECT * INTO entry_row FROM public.matchdesk_publication_outbox o
     WHERE o.tenant_id = p_tenant AND o.publication_id = p_publication_id
     FOR UPDATE;
     IF NOT FOUND THEN
         RAISE EXCEPTION 'Unknown publication';
+    END IF;
+    IF entry_row.status IN ('delivered', 'abandoned', 'withdrawn') THEN
+        RAISE EXCEPTION 'A % publication is final', entry_row.status;
+    END IF;
+    IF entry_row.status <> 'in_flight' OR p_claim_token IS NULL
+       OR entry_row.claim_token IS DISTINCT FROM p_claim_token THEN
+        RAISE EXCEPTION 'No attempt is in flight under this claim';
     END IF;
     next_status := CASE p_outcome
         WHEN 'delivered' THEN 'delivered'
@@ -427,11 +541,11 @@ BEGIN
     IF next_status IS NULL THEN
         RAISE EXCEPTION 'An attempt is delivered, failed or refused';
     END IF;
-    UPDATE public.matchdesk_publication_outbox
-    SET status = next_status, attempts = entry_row.attempts + 1,
+    UPDATE public.matchdesk_publication_outbox o
+    SET status = next_status, attempts = o.attempts + 1, claim_token = NULL, claimed_until = NULL,
         receipt = CASE WHEN next_status = 'delivered' THEN p_receipt END,
         last_error = CASE WHEN next_status = 'delivered' THEN NULL ELSE left(p_error, 500) END
-    WHERE tenant_id = entry_row.tenant_id AND publication_id = entry_row.publication_id;
+    WHERE o.tenant_id = entry_row.tenant_id AND o.publication_id = entry_row.publication_id;
     RETURN next_status;
 END;
 $$;
@@ -448,25 +562,36 @@ GRANT SELECT, INSERT ON public.matchdesk_language_reviews TO matchdesk_publicati
 GRANT SELECT, INSERT, UPDATE ON public.matchdesk_publication_outbox
     TO matchdesk_publication_guard_owner;
 
+ALTER FUNCTION public.matchdesk_publication_id(jsonb, text)
+    OWNER TO matchdesk_publication_guard_owner;
+ALTER FUNCTION public.matchdesk_publication_preflight()
+    OWNER TO matchdesk_publication_guard_owner;
 ALTER FUNCTION public.matchdesk_lock_language_review(text, text, text)
     OWNER TO matchdesk_publication_guard_owner;
 ALTER FUNCTION public.matchdesk_current_approval(text, text, text, jsonb)
     OWNER TO matchdesk_publication_guard_owner;
-ALTER FUNCTION public.matchdesk_current_language_approval(text, text, text)
+ALTER FUNCTION public.matchdesk_current_language_approval(text, text, text, text)
     OWNER TO matchdesk_publication_guard_owner;
 ALTER FUNCTION public.matchdesk_record_language_review(text, text, text, text, text, text)
     OWNER TO matchdesk_publication_guard_owner;
-ALTER FUNCTION public.matchdesk_queue_publication(text, text, text, text, jsonb, text, text, integer)
+ALTER FUNCTION public.matchdesk_queue_publication(text, text, text, jsonb, text, text, integer)
     OWNER TO matchdesk_publication_guard_owner;
-ALTER FUNCTION public.matchdesk_begin_publication_attempt(text, text)
+ALTER FUNCTION public.matchdesk_claim_publication_attempt(text, text, integer)
     OWNER TO matchdesk_publication_guard_owner;
-ALTER FUNCTION public.matchdesk_record_publication_attempt(text, text, text, text, text)
+ALTER FUNCTION public.matchdesk_record_publication_attempt(text, text, uuid, text, text, text)
     OWNER TO matchdesk_publication_guard_owner;
 
-REVOKE ALL ON FUNCTION public.matchdesk_record_language_review(text, text, text, text, text, text),
-    public.matchdesk_queue_publication(text, text, text, text, jsonb, text, text, integer),
-    public.matchdesk_begin_publication_attempt(text, text),
-    public.matchdesk_record_publication_attempt(text, text, text, text, text)
+-- Nothing is executable by PUBLIC. The ID helper is also granted to the publisher, so hosts can
+-- confirm they compute the same ID; the owner keeps it for the CHECK.
+REVOKE ALL ON FUNCTION public.matchdesk_publication_id(jsonb, text),
+    public.matchdesk_publication_preflight(),
+    public.matchdesk_lock_language_review(text, text, text),
+    public.matchdesk_current_approval(text, text, text, jsonb),
+    public.matchdesk_current_language_approval(text, text, text, text),
+    public.matchdesk_record_language_review(text, text, text, text, text, text),
+    public.matchdesk_queue_publication(text, text, text, jsonb, text, text, integer),
+    public.matchdesk_claim_publication_attempt(text, text, integer),
+    public.matchdesk_record_publication_attempt(text, text, uuid, text, text, text)
     FROM PUBLIC;
 
 GRANT USAGE ON SCHEMA public TO matchdesk_publisher, matchdesk_language_reviewer;
@@ -474,9 +599,10 @@ GRANT EXECUTE ON FUNCTION public.matchdesk_record_language_review(text, text, te
     TO matchdesk_language_reviewer;
 GRANT SELECT ON public.matchdesk_language_reviews TO matchdesk_language_reviewer;
 GRANT EXECUTE ON FUNCTION
-    public.matchdesk_queue_publication(text, text, text, text, jsonb, text, text, integer),
-    public.matchdesk_begin_publication_attempt(text, text),
-    public.matchdesk_record_publication_attempt(text, text, text, text, text)
+    public.matchdesk_publication_id(jsonb, text),
+    public.matchdesk_queue_publication(text, text, text, jsonb, text, text, integer),
+    public.matchdesk_claim_publication_attempt(text, text, integer),
+    public.matchdesk_record_publication_attempt(text, text, uuid, text, text, text)
     TO matchdesk_publisher;
 GRANT SELECT ON public.matchdesk_publication_outbox TO matchdesk_publisher;
 
