@@ -1,5 +1,19 @@
 # Current progress
 
+## Competition build (21–22 October 2026)
+
+The studio at https://matchdesk-seven.vercel.app runs `development` @ `ed9ff4d`, preserved as
+`release/submission-2026-10`. Since the frontend hardening below, the delivery plan's Phases 0–4 have
+landed: sentence-level verification with registered event facts, the four-specialist workflow on
+Microsoft Foundry with a recorded live run, the interactive composer and "Try to fool the verifier", the
+seven-stop tour, the submission docs, and the retirement of `/judge`. Details, PRs and run IDs are in the
+[competition build record](evidence/competition-build-20261021.md).
+
+Open after submission: producer approval and publishing (PRs #89–#114), identity and a hosted backend on
+Azure, native-speaker review of Spanish and French, manual assistive-technology testing, and a
+penetration test. [ADR-0012](decisions/ADR-0012-development-as-delivery-branch.md) proposes making
+`development` the default, protected delivery branch.
+
 ## Studio frontend hardening (17 October 2026)
 
 The routed Sunset Studio frontend replaces the `/sunset-v3` preview, which has been removed along with the unlinked legacy `/producer` page. Offline mode, SEO, security headers, error/404/loading states and new CI gates (bundle budget, axe, visual baselines) are described in [frontend hardening](engineering/frontend-hardening.md). The `/sunset-v3` entries below are kept as history.
