@@ -68,6 +68,7 @@ The infrastructure is half of it. These are code tasks, tracked in the delivery 
 3. **Real workforce host:** today `/api/workforce/producer/*` ships a null adapter by design. A reviewed host adapter must wire it to Entra (certificate client assertion, signing keys) and to the PostgreSQL session, step-up and grant stores.
 4. **Publishing:** outbox and destinations with a language-review gate.
 5. **Live agents on demand:** a daily run cap and a per-run token cap, with `MATCHDESK_FOUNDRY_ENABLED` off by default.
+6. **Ask MatchDesk planner (optional):** `MATCHDESK_ASSISTANT_FOUNDRY_ENABLED` (off by default) lets the API read free-form questions into query plans with the same Foundry project. Each call is capped at 200 output tokens and 10 seconds, with at most 20 calls a minute and 400 a day per replica. The studio computes and verifies every answer itself, so the assistant works without it.
 
 ## Sequence once you approve
 

@@ -6,6 +6,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Icon, type IconName } from "./icons";
 import { Logo } from "./ui";
+import { openAssistant } from "./assistant-host";
 import { claims, drafts, eventCountText, moments, STORY_SLUG, tourSteps } from "./data";
 
 type NavItem = { href: string; label: string; icon: IconName; match: (path: string) => boolean; badge?: string };
@@ -107,6 +108,9 @@ export function TopActions({ compact = false }: { compact?: boolean }) {
         <strong>Synthetic replay</strong>
         <p>Northbridge FC v Riverside United is invented test data replayed from a recorded event log of {eventCountText} events. It is not a live match, and nothing in this demo is published.</p>
       </div>
+      <button type="button" className="md-search-btn md-ask-btn" onClick={() => openAssistant()} aria-label="Ask MatchDesk a question" aria-haspopup="dialog">
+        <Icon name="sparkle" size={16} />{!compact && <span>Ask</span>}
+      </button>
       <button type="button" className="md-search-btn" onClick={() => window.dispatchEvent(new Event("md:palette"))} aria-label="Search moments, claims and drafts" aria-keyshortcuts="Control+K Meta+K">
         <Icon name="search" size={16} />{!compact && <><span>Search</span><kbd>Ctrl K</kbd></>}
       </button>

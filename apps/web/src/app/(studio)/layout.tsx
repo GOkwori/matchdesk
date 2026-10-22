@@ -2,6 +2,7 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import type { ReactNode } from "react";
+import { AssistantHost } from "../../studio/assistant-host";
 import { OfflineNotice, ReadyMarker } from "../../studio/ready";
 import { SITE_URL } from "../../studio/site";
 import "../../studio/tokens.css";
@@ -56,7 +57,7 @@ export const viewport: Viewport = {
 export default function StudioRootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en-GB" className={`${jakarta.variable} ${plexMono.variable}`}>
-      <body className="md-root">{children}<OfflineNotice /><ReadyMarker /></body>
+      <body className="md-root">{children}<OfflineNotice /><ReadyMarker /><AssistantHost /></body>
     </html>
   );
 }

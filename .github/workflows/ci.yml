@@ -200,6 +200,9 @@ jobs:
       - name: Prove the browser verifier matches the backend verifier
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: node --experimental-strip-types --test apps/web/tests/verifier.parity.test.mjs 2>&1 | tee artifacts/web/verifier-parity.log
+      - name: Prove every Ask MatchDesk answer is computed and verified
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: node --experimental-strip-types --test apps/web/tests/ask.test.mjs 2>&1 | tee artifacts/web/ask.log
       - name: Qualify default-disabled workforce BFF contract
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: |
