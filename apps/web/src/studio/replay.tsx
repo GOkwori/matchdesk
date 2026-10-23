@@ -43,8 +43,8 @@ const PROOF: Record<ViewerLanguage, { verified: string; logged: string; failed: 
 };
 const SERVER_NOTE: Record<ViewerLanguage, (at: string, n: number) => string> = {
   en: (at, n) => `Checked on the server at ${at}, on the ${n.toLocaleString("en-GB")} events received`,
-  es: (at, n) => `Comprobado en el servidor en el ${at}, con los ${n.toLocaleString("es-ES")} eventos recibidos`,
-  fr: (at, n) => `Vérifié sur le serveur à ${at}, sur les ${n.toLocaleString("fr-FR")} événements reçus`,
+  es: (at, n) => `Comprobado en el servidor en el minuto ${at}, con los ${n.toLocaleString("es-ES")} eventos recibidos`,
+  fr: (at, n) => `Vérifié sur le serveur au temps de jeu ${at}, à partir des ${n.toLocaleString("fr-FR")} événements reçus`,
 };
 /** Recaps the replay offers once their part of the match has been played. */
 const RECAPS = [
@@ -53,8 +53,8 @@ const RECAPS = [
 ] as const;
 const RECAP_READY: Record<ViewerLanguage, { ready: string; open: string; server: (at: string, n: number) => string }> = {
   en: { ready: "ready", open: "Open the recap", server: (at, n) => `verified on the server at ${at}, on the ${n.toLocaleString("en-GB")} events received` },
-  es: { ready: "listo", open: "Abrir el resumen", server: (at, n) => `verificado en el servidor en el ${at}, con los ${n.toLocaleString("es-ES")} eventos recibidos` },
-  fr: { ready: "prêt", open: "Ouvrir le résumé", server: (at, n) => `vérifié sur le serveur à ${at}, sur les ${n.toLocaleString("fr-FR")} événements reçus` },
+  es: { ready: "listo", open: "Abrir el resumen", server: (at, n) => `verificado en el servidor en el minuto ${at}, con los ${n.toLocaleString("es-ES")} eventos recibidos` },
+  fr: { ready: "prêt", open: "Ouvrir le résumé", server: (at, n) => `vérifié sur le serveur au temps de jeu ${at}, à partir des ${n.toLocaleString("fr-FR")} événements reçus` },
 };
 const TYPE_LABEL: Record<string, string> = {
   pass: "Pass", carry: "Carry", recovery: "Recovery", clearance: "Clearance", shot: "Shot", goal: "Goal", foul: "Foul",

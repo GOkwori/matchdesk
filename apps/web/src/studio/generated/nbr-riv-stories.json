@@ -677,7 +677,7 @@
      "label": {
       "en": "Okafor's goals so far: 1",
       "es": "Goles de Okafor hasta ahora: 1",
-      "fr": "Buts d'Okafor à ce stade : 1"
+      "fr": "Buts d’Okafor à ce stade : 1"
      }
     },
     {
@@ -728,11 +728,11 @@
       "headline": "GOAL 34:18 · Okafor (Northbridge) · 1–0"
      },
      "es": {
-      "body": "GOL E-0688 · 34:18 · Okafor · Intercepción y gol 28 s después (E-0678) · Okafor goles: 1 · Northbridge 1–0 Riverside",
+      "body": "GOL E-0688 · 34:18 · Okafor · Intercepción y gol 28 s después (E-0678) · Goles de Okafor: 1 · Northbridge 1–0 Riverside",
       "headline": "GOL 34:18 · Okafor (Northbridge) · 1–0"
      },
      "fr": {
-      "body": "BUT E-0688 · 34:18 · Okafor · Interception, puis but 28 s plus tard (E-0678) · Okafor buts: 1 · Northbridge 1–0 Riverside",
+      "body": "BUT E-0688 · 34:18 · Okafor · Interception, puis but 28 s plus tard (E-0678) · Buts d’Okafor : 1 · Northbridge 1–0 Riverside",
       "headline": "BUT 34:18 · Okafor (Northbridge) · 1–0"
      }
     },
@@ -742,11 +742,11 @@
       "headline": "35′ GOAL · Okafor · NBR 1–0 RIV"
      },
      "es": {
-      "body": "Intercepción y gol 28 s después · Okafor goles: 1",
+      "body": "Intercepción y gol 28 s después · Goles de Okafor: 1",
       "headline": "35′ GOL · Okafor · NBR 1–0 RIV"
      },
      "fr": {
-      "body": "Interception, puis but 28 s plus tard · Okafor buts: 1",
+      "body": "Interception, puis but 28 s plus tard · Buts d’Okafor : 1",
       "headline": "35′ BUT · Okafor · NBR 1–0 RIV"
      }
     },
@@ -756,7 +756,7 @@
       "headline": "35′ · Okafor puts Northbridge ahead"
      },
      "es": {
-      "body": "Okafor marca en el 34:18, 28 segundos después de una intercepción. Ahora 1–0.",
+      "body": "Okafor marca en el 34:18, 28 segundos después de una intercepción. El marcador es 1–0.",
       "headline": "35′ · Okafor adelanta al Northbridge"
      },
      "fr": {
@@ -904,7 +904,7 @@
      "label": {
       "en": "Move began, goal 18 s later",
       "es": "Inicio de la jugada y gol 18 s después",
-      "fr": "Début de l'action, puis but 18 s plus tard"
+      "fr": "Début de l’action, puis but 18 s plus tard"
      }
     }
    ],
@@ -945,11 +945,11 @@
       "headline": "GOAL 41:03 · Lindqvist (Riverside) · 1–1"
      },
      "es": {
-      "body": "GOL E-0790 · 41:03 · Lindqvist · Inicio de la jugada y gol 18 s después (E-0784) · Lindqvist goles: 1 · Northbridge 1–1 Riverside",
+      "body": "GOL E-0790 · 41:03 · Lindqvist · Inicio de la jugada y gol 18 s después (E-0784) · Goles de Lindqvist: 1 · Northbridge 1–1 Riverside",
       "headline": "GOL 41:03 · Lindqvist (Riverside) · 1–1"
      },
      "fr": {
-      "body": "BUT E-0790 · 41:03 · Lindqvist · Début de l'action, puis but 18 s plus tard (E-0784) · Lindqvist buts: 1 · Northbridge 1–1 Riverside",
+      "body": "BUT E-0790 · 41:03 · Lindqvist · Début de l’action, puis but 18 s plus tard (E-0784) · Buts de Lindqvist : 1 · Northbridge 1–1 Riverside",
       "headline": "BUT 41:03 · Lindqvist (Riverside) · 1–1"
      }
     },
@@ -959,11 +959,11 @@
       "headline": "42′ GOAL · Lindqvist · NBR 1–1 RIV"
      },
      "es": {
-      "body": "Inicio de la jugada y gol 18 s después · Lindqvist goles: 1",
+      "body": "Inicio de la jugada y gol 18 s después · Goles de Lindqvist: 1",
       "headline": "42′ GOL · Lindqvist · NBR 1–1 RIV"
      },
      "fr": {
-      "body": "Début de l'action, puis but 18 s plus tard · Lindqvist buts: 1",
+      "body": "Début de l’action, puis but 18 s plus tard · Buts de Lindqvist : 1",
       "headline": "42′ BUT · Lindqvist · NBR 1–1 RIV"
      }
     },
@@ -973,7 +973,7 @@
       "headline": "42′ · Lindqvist equalises for Riverside"
      },
      "es": {
-      "body": "Lindqvist marca en el 41:03, 18 segundos después de iniciarse la jugada. Ahora 1–1.",
+      "body": "Lindqvist marca en el 41:03, 18 segundos después del inicio de la jugada. El marcador es 1–1.",
       "headline": "42′ · Lindqvist empata para el Riverside"
      },
      "fr": {
@@ -1115,7 +1115,7 @@
      "label": {
       "en": "Okafor's goals so far: 2",
       "es": "Goles de Okafor hasta ahora: 2",
-      "fr": "Buts d'Okafor à ce stade : 2"
+      "fr": "Buts d’Okafor à ce stade : 2"
      }
     },
     {
@@ -1166,11 +1166,11 @@
       "headline": "GOAL 58:17 · Okafor (Northbridge) · 2–1"
      },
      "es": {
-      "body": "GOL E-1366 · 58:17 · Okafor · cabezazo · Córner y gol 14 s después (E-1359) · Okafor goles: 2 · Northbridge 2–1 Riverside",
+      "body": "GOL E-1366 · 58:17 · Okafor · cabezazo · Córner y gol 14 s después (E-1359) · Goles de Okafor: 2 · Northbridge 2–1 Riverside",
       "headline": "GOL 58:17 · Okafor (Northbridge) · 2–1"
      },
      "fr": {
-      "body": "BUT E-1366 · 58:17 · Okafor · tête · Corner, puis but 14 s plus tard (E-1359) · Okafor buts: 2 · Northbridge 2–1 Riverside",
+      "body": "BUT E-1366 · 58:17 · Okafor · tête · Corner, puis but 14 s plus tard (E-1359) · Buts d’Okafor : 2 · Northbridge 2–1 Riverside",
       "headline": "BUT 58:17 · Okafor (Northbridge) · 2–1"
      }
     },
@@ -1180,11 +1180,11 @@
       "headline": "59′ GOAL · Okafor · NBR 2–1 RIV"
      },
      "es": {
-      "body": "Córner y gol 14 s después · Okafor goles: 2",
+      "body": "Córner y gol 14 s después · Goles de Okafor: 2",
       "headline": "59′ GOL · Okafor · NBR 2–1 RIV"
      },
      "fr": {
-      "body": "Corner, puis but 14 s plus tard · Okafor buts: 2",
+      "body": "Corner, puis but 14 s plus tard · Buts d’Okafor : 2",
       "headline": "59′ BUT · Okafor · NBR 2–1 RIV"
      }
     },
@@ -1194,11 +1194,11 @@
       "headline": "59′ · Okafor restores the Northbridge lead"
      },
      "es": {
-      "body": "Okafor marca de cabeza en el 58:17, 14 segundos después de un córner. Es el segundo gol de Okafor en el partido. Ahora 2–1.",
+      "body": "Okafor marca de cabeza en el 58:17, 14 segundos después de un córner. Es su segundo gol del partido. El marcador es 2–1.",
       "headline": "59′ · Okafor devuelve la ventaja al Northbridge"
      },
      "fr": {
-      "body": "Okafor marque de la tête à 58:17, 14 secondes après un corner. C'est le deuxième but d'Okafor dans le match. Score : 2–1.",
+      "body": "Okafor marque de la tête à 58:17, 14 secondes après un corner. C'est le deuxième but d’Okafor dans le match. Score : 2–1.",
       "headline": "59′ · Okafor redonne l'avantage à Northbridge"
      }
     }

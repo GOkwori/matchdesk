@@ -88,7 +88,7 @@ export function RecapBody({ recaps, claims, names, matchId, replayEndMs }: {
         )}
         <div className="md-story-score" aria-label={copy.score(home, away, recap.title[lang])}>
           <span><Crest team="NBR" size={26} />NBR</span>
-          <span className="md-story-num"><span>{home} – {away}</span><span className="md-mono md-accent-soft-text">{recap.half ? "HT" : recap.clock}</span></span>
+          <span className="md-story-num"><span>{home} – {away}</span><span className="md-mono md-accent-soft-text">{recap.half ? { en: "HT", es: "DESC", fr: "MT" }[lang] : recap.clock}</span></span>
           <span>RIV<Crest team="RIV" size={26} /></span>
         </div>
         <section aria-labelledby="md-recap-figs" className="md-panel md-recap-figs">

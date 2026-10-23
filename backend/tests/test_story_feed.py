@@ -54,7 +54,7 @@ def test_the_58th_minute_story_keeps_its_verified_details() -> None:
         "Okafor heads in at 58:17, 14 seconds after a corner. "
         "It is Okafor's second goal of the match. It's 2–1."
     )
-    assert "d'Okafor" in story["text"]["fan"]["fr"]["body"]
+    assert "d’Okafor" in story["text"]["fan"]["fr"]["body"]
 
 
 def test_numbers_in_the_text_match_the_verified_claims() -> None:

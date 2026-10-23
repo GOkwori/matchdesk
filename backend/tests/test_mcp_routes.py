@@ -118,8 +118,8 @@ def test_compute_events_overlays_stories_and_recaps() -> None:
     assert limited["returned"] == 5 and limited["count"] == 1421
     cues = _call("get_overlays", {"from_minute": 58, "to_minute": 59, "language": "fr"})
     assert [c["text"] for c in cues["structuredContent"]["cues"]] == [
-        "BUT ! Okafor marque pour Northbridge. 2–1.",
-        "La tête d'Okafor est partie à 49,4 km/h",
+        "BUT ! Okafor marque pour Northbridge. Le score est de 2–1.",
+        "La tête d’Okafor a été mesurée à 49,4 km/h",
     ]
     stories = _call("get_story", {})["structuredContent"]["stories"]
     assert len(stories) == 3

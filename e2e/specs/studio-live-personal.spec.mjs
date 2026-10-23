@@ -119,7 +119,7 @@ test('every goal has a verified fan story that follows My match', async ({ page 
   await expect(page.getByText('Tu jugador, Lindqvist, marcó.')).toBeVisible();
   await expect(page.getByText('Comprobado de nuevo en tu navegador')).toBeVisible();
   await expect(page.locator('.md-checks .md-bad')).toHaveCount(0);
-  await page.getByRole('button', { name: 'Rótulo' }).click();
+  await page.getByRole('button', { name: 'Texto para pantalla' }).click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('42′ GOL · Lindqvist · NBR 1–1 RIV');
   await page.getByRole('link', { name: /Okafor devuelve la ventaja/ }).click();
   await expect(page).toHaveURL(/okafor-header-restores-northbridge-lead$/);
