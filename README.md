@@ -75,14 +75,19 @@ before treating any capability as tested or available.
 
 ## Architecture
 
+![MatchDesk on Azure: studio, API, live replay, live agent runs, planner and verifier on Container Apps; Microsoft Foundry; Application Insights; managed identity](docs/diagrams/architecture-azure.png)
+
+<details>
+<summary>Diagram source (Mermaid)</summary>
+
 ```mermaid
 flowchart LR
     subgraph Browser["Browser"]
         UI["MatchDesk studio<br/>Next.js · replay, overlays, stories, Ask"]
         BV["Verifier, TypeScript port<br/>re-checks every claim on screen"]
     end
-    subgraph ACA["Azure Container Apps, UK South"]
-        WEB["mdesk-web<br/>public HTTPS"]
+    subgraph ACA["Azure Container Apps"]
+        WEB["mdesk-web<br/>public HTTPS, UK South"]
         subgraph APIBOX["mdesk-api · internal only"]
             LIVE["Live replay<br/>ingestor → reducer → cues"]
             RUNS["Live agent runs<br/>one at a time, capped"]
@@ -110,6 +115,8 @@ flowchart LR
     ID -. pulls images .-> ACR
     ID -. calls models .-> FOUNDRY
 ```
+
+</details>
 
 Agents may only propose. Every figure that reaches a screen, an overlay or a story is a
 structured claim the verifier recomputes from the event log, first on the server and again
