@@ -63,7 +63,7 @@ season, "after the equaliser") are declined rather than answered with a nearby f
 | --- | --- |
 | Event log, metrics, moment detection | Deterministic code over synthetic data |
 | Claim verification (numbers, names, statistic, time window, team, citations, event facts) | Real; the same verifier runs in Python and, ported exactly, in the browser. Limits below |
-| Ask MatchDesk | Real; answers are built from registered metrics and verified before they are shown. An optional Foundry planner may only turn a question into a query plan, and it is off on the hosted demo |
+| Ask MatchDesk | Real; answers are built from registered metrics and verified before they are shown. When the built-in reader cannot read a question, a planner on Microsoft Foundry may turn it into a query plan, never an answer: it is on for the Azure deployment (bounded to 200 output tokens, 10 seconds, 20 calls a minute) and off on the Vercel copy |
 | Four-specialist workflow | Real orchestration, role-scoped tools and verification loop. AI insights shows a live run recorded on Microsoft Foundry on 21 October 2026 (replayed, not called on page load) beside the deterministic rehearsal; every verdict in both is re-checked by the test suite |
 | Live replay and overlay feed | Real: the replay is the recorded log played back (not a live feed); overlay numbers come from verified claims, re-verified in the browser before display. Cards and substitutions are marked as logged, not verified |
 | Personalisation | Real, on the device only: no account, nothing sent |
