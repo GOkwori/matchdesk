@@ -22,14 +22,21 @@ synthetic events):
   the composer. The same verifier runs, ported exactly, in the browser.
 - The studio has a seven-stop guided tour, a "try to fool the verifier" panel, and a
   composer that re-verifies a sentence as you edit it.
+- The match streams from the API on Azure, through the ingestor, reducer and verifier,
+  with timed broadcast overlays, automated half-time and replay-point recaps, and fan
+  stories for every goal, personalised by club, player, focus statistic, style and
+  language (EN/ES/FR).
+- Other agents can use the same evidence and verifier through a read-only MCP endpoint
+  (`/api/mcp`, [design](docs/design/mcp.md)).
 - Producer approval and publishing are not enabled; there is no deployed or
   authenticated publishing service. Start with the [judging guide](docs/competition/judging-guide.md).
 
 ## What is implemented
 
 The deterministic football engine now includes a seeded synthetic simulator,
-ordered/idempotent replay ingestion, roster/score/possession reduction, fourteen registered
-metric formulas and five explicit moment detectors. The Python API still distinguishes
+ordered/idempotent replay ingestion, roster/score/possession reduction, eighteen registered
+metric formulas (four of them over synthetic tracking: shot speed, top speed, distance
+covered, sprints) and five explicit moment detectors. The Python API still distinguishes
 structural validation from factual verification, and immutable contracts cover claims,
 evidence, verification results and approval bindings.
 
@@ -40,8 +47,8 @@ hand-off. It does not call a model and it does not give an agent publishing auth
 Later Phase 2 slices add evidence verification, scoped specialists, one bounded
 live Foundry invocation and tested retry/recovery and model-evaluation controls.
 
-The submission build has 1,623 Python tests, a 92-case Python/TypeScript verifier
-parity fixture and 189 studio browser tests (three viewports, axe on every page).
+The submission build has 1,654 Python tests, a 101-case Python/TypeScript verifier
+parity fixture and 201 studio browser tests (three viewports, axe on every page).
 Ruff, formatting, strict mypy, frontend build, dependency audit and source security
 run in hosted CI on every pull request.
 
@@ -58,10 +65,16 @@ appear. The same cues are published as a machine-readable feed,
 [`/overlays/nbr-riv.json`](apps/web/src/app/overlays/nbr-riv.json/route.ts)
 (schema `matchdesk-overlay-feed/1`, built by `matchdesk.domain.overlay_feed`), with every
 persona (fan, analyst, caption), language (EN, ES, FR) and the full claim behind each
-number. Viewers can pick a favourite club and player, a persona, a language and one focus
+number, including the speed of each scoring shot and player tags when synthetic tracking
+crosses a threshold (a sprint at 33 km/h, the first player on each side past 5 km).
+Automated recaps at half-time and at the replay point
+([`/recaps/nbr-riv.json`](apps/web/src/app/recaps/nbr-riv.json/route.ts), built by
+`matchdesk.domain.recap_feed`) state the score, scorers, key figures and milestones, every
+one a verified claim; the live stream sends each recap once its part of the match has
+arrived. Viewers can pick a favourite club and player, a persona, a language and one focus
 statistic; player-focus pages state each player's figures as verified sentences, and
-Tactical Analysis labels each five-minute spell as control, chaos or contested by a
-published rule, with the verified sentences that justify it.
+Tactical Analysis labels each five-minute spell as control, chaos or contested, and lists
+pressure changes, by published rules with the verified sentences that justify them.
 
 PostgreSQL now has a reviewed producer-case migration, a pinned Psycopg driver,
 real adapter qualification with a restricted disposable database role, atomic
@@ -75,7 +88,7 @@ before treating any capability as tested or available.
 
 ## Architecture
 
-![MatchDesk on Azure: studio, API, live replay, live agent runs, planner and verifier on Container Apps; Microsoft Foundry; Application Insights; managed identity](docs/diagrams/architecture-azure.png)
+![MatchDesk on Azure: studio, API, live replay, live agent runs, planner, MCP tools and verifier on Container Apps; Microsoft Foundry; Application Insights; managed identity](docs/diagrams/architecture-azure.png)
 
 <details>
 <summary>Diagram source (Mermaid)</summary>
@@ -92,6 +105,7 @@ flowchart LR
             LIVE["Live replay<br/>ingestor → reducer → cues"]
             RUNS["Live agent runs<br/>one at a time, capped"]
             PLAN["Ask planner<br/>question → plan only"]
+            MCP["MCP tools<br/>read-only, /api/mcp"]
             VER["Verifier<br/>registered metrics, sentence binding"]
         end
     end
@@ -102,6 +116,7 @@ flowchart LR
     AI["Application Insights<br/>+ Log Analytics"]
     ACR["Container Registry"]
     ID["Managed identity<br/>no keys"]
+    EXT["Other agents<br/>broadcaster tools, IDEs"]
 
     UI -- "same-origin /api" --> WEB --> APIBOX
     LOG --> LIVE --> VER
@@ -111,6 +126,8 @@ flowchart LR
     VER -- "verified, or sent back" --> RUNS
     LIVE -- "server-sent events" --> UI
     UI --> BV
+    EXT -- "MCP over HTTPS" --> WEB
+    MCP --> VER
     APIBOX -. traces .-> AI
     ID -. pulls images .-> ACR
     ID -. calls models .-> FOUNDRY
@@ -184,7 +201,8 @@ build stages. Image inventories and actual runtime/browser tests check the resul
 The qualified native-image gate currently passes on the tested source. The
 [integration method](docs/testing/integration-foundation.md) and
 [image-security method](docs/testing/runtime-image-security.md) explain the scope.
-No public demo is hosted yet.
+The public demo runs on Azure Container Apps from the images CI builds; see the
+[Azure demo](docs/operations/azure-demo.md).
 
 ## Tests, comments and documentation
 
@@ -213,7 +231,7 @@ used by Next.js. See the [coding standard](docs/engineering/coding-standard.md).
 All supplied example data is invented. No real match footage, team branding or
 player likeness is included. Synthetic xG is an illustrative estimate, not a
 calibrated professional model. Runtime agents and their limits remain explicit in the
-[responsible-AI design](docs/solution-design/12-responsible-ai.md). Bounded live Foundry calls have been tested via manually gated workflows; this is
-not an always-on model service or a deployed public demo.
+[responsible-AI design](docs/solution-design/12-responsible-ai.md). Live Foundry runs are started on demand in the Azure demo, five minutes apart and at
+most twelve a day; this is not an always-on model service.
 
 Original project source is provided under the [MIT licence](LICENSE).
