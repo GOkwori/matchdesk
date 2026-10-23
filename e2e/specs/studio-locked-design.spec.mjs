@@ -262,7 +262,7 @@ test('tactical analysis shows passing quality and defending from registered metr
   const panel = page.getByRole('region', { name: 'Passing quality and defending' });
   await expect(panel.getByText('Tackles: Northbridge 33, Riverside 33')).toBeAttached();
   await expect(panel.getByText('Progressive passes: Northbridge 101, Riverside 60')).toBeAttached();
-  await expect(panel.getByText(/there is no tracking data/)).toBeVisible();
+  await expect(panel.getByText(/not from tracking/)).toBeVisible();
   await panel.getByRole('button', { name: 'Ask who led the tackles' }).click();
   const turn = page.getByRole('article', { name: 'Answer to: Who made the most tackles?' });
   await expect(turn.locator('.md-chip-verified')).toHaveCount(3);
