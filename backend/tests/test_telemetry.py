@@ -116,8 +116,8 @@ def test_the_stream_span_counts_events_and_verdicts(monkeypatch: pytest.MonkeyPa
     span = next(s for s in EXPORTER.get_finished_spans() if s.name == "matchdesk.live.stream")
     assert span.attributes is not None
     assert span.attributes["matchdesk.stream.events"] > 0
-    assert span.attributes["matchdesk.stream.verifieds"] == 1
-    assert span.attributes["matchdesk.stream.loggeds"] == 1
+    assert span.attributes["matchdesk.stream.verifieds"] == 2
+    assert span.attributes["matchdesk.stream.loggeds"] == 0
     assert span.attributes["matchdesk.stream.faileds"] == 0
 
 

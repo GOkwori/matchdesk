@@ -1,17 +1,19 @@
-/** Custom producer confirmation: accessibility and browser-only no-authority QA.
+/** Demo producer approval: accessible confirmation, exact-version binding and no network command.
  *
- * Exercises a deliberately synthetic Sunset Studio sample. Neither this test
- * nor the sample carries an Entra session, CSRF token, producer grant or API
- * mutation. The backend must still revalidate exact CAS and actor authority.
+ * The demo approval runs only in the browser: no Entra session, CSRF token, producer grant or
+ * API mutation. A production host must still revalidate exact CAS and actor authority.
  */
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
 const PAGE = "/producer/publish/D-031";
-const BUTTON = "Preview producer confirmation (demo)";
-const MODAL = "Review sample producer decision";
+const BUTTON = "Approve this version";
+const MODAL = "Approve D-031, this exact version";
+const ELIGIBLE = JSON.stringify({ states: { "CL-0215": "opinion", "CL-0216": "removed" }, texts: {}, failedEdits: [], headline: "Okafor double restores Northbridge lead", submitted: true });
 
 async function openPreview(page) {
+  await page.goto(PAGE);
+  await page.evaluate((doc) => { window.localStorage.setItem("md.d031", doc); window.localStorage.removeItem("md.d031.approval"); }, ELIGIBLE);
   await page.goto(PAGE);
   const trigger = page.getByRole("button", { name: BUTTON });
   await expect(trigger).toBeVisible();
@@ -20,7 +22,6 @@ async function openPreview(page) {
   await expect(dialog).toBeVisible();
   return { dialog, trigger };
 }
-
 test("Escape, initial safe focus and focus restoration never use native confirm()", async ({ page }) => {
   const { dialog, trigger } = await openPreview(page);
   await expect(dialog.getByRole("button", { name: "Cancel" })).toBeFocused();
@@ -36,26 +37,40 @@ test("Escape, initial safe focus and focus restoration never use native confirm(
   await expect(trigger).toBeFocused();
 });
 
-test("reviewed version and reason are visible; preview never issues a producer command", async ({ page }) => {
-  const mutationRequests = [];
+test("the approval binds this exact version, sends nothing, and an edit withdraws it", async ({ page }) => {
+  const apiRequests = [];
   page.on("request", (request) => {
-    if (new URL(request.url()).pathname.startsWith("/api/workforce/producer/")) {
-      mutationRequests.push(request.url());
-    }
+    if (new URL(request.url()).pathname.startsWith("/api/")) apiRequests.push(request.url());
   });
   const { dialog } = await openPreview(page);
   await expect(dialog.getByText("D-031", { exact: true }).first()).toBeVisible();
-  await expect(dialog.getByText("DEMO_REPLAY")).toBeVisible();
-  await expect(dialog.getByText("1".repeat(64))).toBeVisible();
-  await expect(dialog.getByText("2".repeat(64))).toBeVisible();
+  await expect(dialog.getByText("replay-nbr-riv-canonical")).toBeVisible();
+  await expect(dialog.getByText(/^[a-f0-9]{64}$/)).toHaveCount(2);
   await expect(dialog.getByRole("button", { name: "Confirm reviewed version" })).toBeDisabled();
-  await dialog.getByRole("textbox", { name: /Reason for decision/ }).fill("  Reviewed sample only  ");
-  await expect(dialog.getByRole("button", { name: "Confirm reviewed version" })).toBeEnabled();
+  await dialog.getByRole("textbox", { name: /Reason for decision/ }).fill("Both figures verified; interpretation marked as opinion");
   await dialog.getByRole("button", { name: "Confirm reviewed version" }).click();
   await expect(dialog).not.toBeVisible();
-  await expect(page.getByRole("status").filter({ hasText: "Preview acknowledged" })).toBeVisible();
-  await expect(page.getByText("No producer command was sent and nothing was approved.")).toBeVisible();
-  expect(mutationRequests).toEqual([]);
+  await expect(page.getByText("✓ Approved")).toBeVisible();
+  await expect(page.getByRole("list").filter({ hasText: "Approved D-031 v4" })).toBeVisible();
+
+  await page.getByRole("button", { name: "Publish to the chosen destinations" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "One destination timed out" })).toBeVisible();
+  await expect(page.locator(".md-dest .md-chip-verified")).toHaveCount(3);
+  await page.getByRole("button", { name: "Retry" }).click();
+  await expect(page.locator(".md-dest .md-chip-verified")).toHaveCount(4);
+  await expect(page.getByRole("heading", { name: "In the demo channel" })).toBeVisible();
+  await expect(page.getByText(/Social channel: sent PUB-[0-9a-f]{10} \(attempt 2\)/)).toBeVisible();
+
+  // Edit the approved draft: the digests change and the approval no longer applies.
+  await page.evaluate(() => {
+    const doc = JSON.parse(window.localStorage.getItem("md.d031"));
+    doc.headline = "A different headline";
+    window.localStorage.setItem("md.d031", JSON.stringify(doc));
+  });
+  await page.reload();
+  await expect(page.getByRole("alert").filter({ hasText: "Approval withdrawn" })).toBeVisible();
+  await expect(page.getByRole("button", { name: BUTTON })).toBeVisible();
+  expect(apiRequests).toEqual([]);
 });
 
 test("modal is accessible and keyboard navigation stays inside it", async ({ page }) => {

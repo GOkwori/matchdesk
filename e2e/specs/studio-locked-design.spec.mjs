@@ -1,7 +1,7 @@
 /** Locked Sunset Studio frontend: journeys, deep links, re-verification and responsive shell.
  *
  * These tests exercise the synthetic, client-only studio routes. They never call
- * an approval or publication API; "Approve" must remain a locked, planned control.
+ * an approval or publication API; approval is a demo producer action that stays in the browser.
  */
 import { test, expect } from '@playwright/test';
 
@@ -120,7 +120,7 @@ test('composer re-verifies live: D-031 becomes eligible only after both blocking
   await expect(submit).toBeEnabled();
   await submit.click();
   await expect(page.getByText('D-031 v4 is with the producer for review.')).toBeVisible();
-  await expect(page.getByText('Approve · Planned')).toBeVisible();
+  await expect(page.getByRole('link', { name: /Approve and publish \(demo producer\)/ })).toBeVisible();
 
   await open(page, '/producer/queue');
   await expect(page.getByRole('link', { name: 'Review' })).toBeVisible();
@@ -293,7 +293,7 @@ test('the live run shows first, the rehearsal sends a draft back, and verified c
   await expect(page.getByText(/^Step 2 of \d+$/)).toBeVisible();
 });
 
-test('publication journey reflects the composer fix and keeps approval locked', async ({ page }) => {
+test('publication journey reflects the composer fix and offers the demo approval', async ({ page }) => {
   await open(page, '/producer/publish/D-031');
   await expect(page.getByRole('link', { name: /Make D-031 eligible/ })).toBeVisible();
   await open(page, '/producer/compose/D-031');
@@ -301,7 +301,8 @@ test('publication journey reflects the composer fix and keeps approval locked', 
   await cards.getByRole('listitem').filter({ hasText: 'CL-0216' }).getByRole('button', { name: 'Remove sentence' }).click();
   await cards.getByRole('listitem').filter({ hasText: 'CL-0215' }).getByRole('button', { name: 'Mark as opinion' }).click();
   await open(page, '/producer/publish/D-031');
-  await expect(page.getByText(/Approve · Planned: a signed-in producer approves/)).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Approve this version' })).toBeVisible();
+  await expect(page.getByText(/Demo producer\./)).toBeVisible();
   await open(page, '/workspace/activity');
   await expect(page.getByText('Re-verified D-031 v4')).toBeVisible();
 });

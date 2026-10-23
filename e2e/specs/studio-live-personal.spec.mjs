@@ -26,7 +26,7 @@ test('the replay re-verifies every overlay claim and shows the goal cue at its m
   const errors = watchErrors(page);
   await open(page, '/match/nbr-riv/live');
   const replay = page.locator('.md-lr');
-  await expect(replay.getByText(/21 timed overlays · 34 of 34 claims re-verified here/)).toBeVisible();
+  await expect(replay.getByText(/21 timed overlays · 37 of 37 claims re-verified here/)).toBeVisible();
   await replay.getByRole('button', { name: 'Goal 58:17' }).click();
   await replay.getByRole('button', { name: '1×' }).click();
   await replay.getByRole('button', { name: 'Play replay' }).click();
@@ -42,14 +42,15 @@ test('the replay re-verifies every overlay claim and shows the goal cue at its m
   expect(errors).toEqual([]);
 });
 
-test('logged cards are marked as logged, not verified', async ({ page }) => {
+test('cards are verified by their registered event fact', async ({ page }) => {
   await open(page, '/match/nbr-riv/live');
   const replay = page.locator('.md-lr');
-  await expect(replay.getByText(/34 of 34 claims/)).toBeVisible();
+  await expect(replay.getByText(/37 of 37 claims/)).toBeVisible();
   const slider = replay.getByRole('slider', { name: 'Match clock' });
   await slider.fill(String((27 * 60 + 41) * 1000));
   await expect(replay.locator('.md-lt')).toContainText('Yellow card');
-  await expect(replay.locator('.md-lt')).toContainText('Logged event');
+  await expect(replay.locator('.md-lt')).toContainText('Verified in this browser');
+  await expect(replay.locator('.md-lt')).not.toContainText('Logged event');
 });
 
 test('the overlay feed downloads as machine-readable JSON', async ({ page, request }) => {
@@ -175,11 +176,25 @@ test('pressure changes come with the verified counts on both sides', async ({ pa
 test('tracking thresholds tag the player on the replay, verified', async ({ page }) => {
   await open(page, '/match/nbr-riv/live');
   const replay = page.locator('.md-lr');
-  await expect(replay.getByText(/21 timed overlays · 34 of 34 claims re-verified here/)).toBeVisible();
+  await expect(replay.getByText(/21 timed overlays · 37 of 37 claims re-verified here/)).toBeVisible();
   await replay.getByRole('slider', { name: 'Match clock' }).fill(String(48 * 60_000 + 44_000));
   await expect(replay.locator('.md-lt')).toContainText('Mensah flies at 35.4 km/h');
   await expect(replay.locator('.md-lt .md-chip-verified')).toBeVisible();
   await replay.getByRole('button', { name: 'Goal 58:17' }).click();
   await replay.getByRole('slider', { name: 'Match clock' }).fill(String(58 * 60_000 + 26_000));
   await expect(replay.locator('.md-lt')).toContainText("Okafor's header left at 49.4 km/h");
+});
+
+test('the auto-eventing lab shows events read from video, scored against the log', async ({ page }) => {
+  await open(page, '/match/nbr-riv/live');
+  await page.getByRole('link', { name: /Open the auto-eventing lab/ }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Auto-eventing lab' })).toBeVisible();
+  const sources = page.locator('video source');
+  await expect(sources).toHaveCount(2);
+  expect(await sources.first().getAttribute('src')).toMatch(/auto-eventing.*\.webm$/);
+  const webm = await page.request.get(await sources.first().getAttribute('src'));
+  expect(webm.ok()).toBe(true);
+  await expect(page.getByRole('heading', { name: 'Scored against the log' })).toBeVisible();
+  await expect(page.locator('.md-ae-cards li')).toHaveCount(7);
+  await expect(page.getByRole('list').filter({ hasText: 'E-1365' }).first()).toBeVisible();
 });

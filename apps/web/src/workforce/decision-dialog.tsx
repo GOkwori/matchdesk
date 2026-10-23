@@ -19,10 +19,15 @@ export type ProducerDecisionDialogProps = {
   onDismiss: () => void;
   /** This callback is intent only: it does not confer execution authority. */
   onConfirmed: (candidate: DecisionCommandCandidate) => void | Promise<void>;
+  /** Heading and explanation; the defaults describe the sample (preview) decision. */
+  title?: string;
+  note?: string;
 };
 
 export function ProducerDecisionDialog({
   intent, current, onDismiss, onConfirmed,
+  title = "Review sample producer decision",
+  note = "Confirm only after reviewing the exact content and evidence. This dialog does not grant access or enable publishing.",
 }: ProducerDecisionDialogProps) {
   const dialog = useRef<HTMLDialogElement>(null);
   const cancelButton = useRef<HTMLButtonElement>(null);
@@ -99,11 +104,9 @@ export function ProducerDecisionDialog({
       {intent && (
         <div className="md-decision-content">
           <span className="md-eyebrow">Human confirmation · exact version</span>
-          <h2 id={titleId}>Review sample producer decision</h2>
+          <h2 id={titleId}>{title}</h2>
           <p id={descriptionId} className="md-muted">
-            {intent.action === "approve" ? "Approve" : "Reject"} is the selected decision.
-            Confirm only after reviewing the exact content and evidence. This
-            dialog does not grant access or enable publishing.
+            {intent.action === "approve" ? "Approve" : "Reject"} is the selected decision. {note}
           </p>
           {!currentVersion && (
             <div className="md-banner md-banner-error" role="alert">

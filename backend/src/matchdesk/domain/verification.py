@@ -94,6 +94,23 @@ def _fact_result(
     target = by_id[fact.event_id]
     if target.match_clock_ms >= evidence.window.to_ms:
         return "blocked", query_id, "Event fact reads events after the evidence window", None, None
+    if fact.query in ("card.v1", "substitution.v1"):
+        kind = "card" if fact.query == "card.v1" else "substitution"
+        if target.type == kind and target.player_id == fact.player_id:
+            return (
+                "verified",
+                query_id,
+                f"The cited {kind} event records the stated player",
+                None,
+                None,
+            )
+        return (
+            "needs_revision",
+            query_id,
+            f"The cited event is not a {kind} for the stated player",
+            None,
+            None,
+        )
     if fact.query == "goal_scorer.v1":
         if target.type == "goal" and target.player_id == fact.player_id:
             return (

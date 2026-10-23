@@ -342,7 +342,7 @@ def get_overlays(args: Mapping[str, Any]) -> dict[str, Any]:
             for cue in feed["cues"]
             if window.from_ms <= cue["t_ms"] < window.to_ms
         ],
-        "note": "Cards and substitutions are logged events with no registered check yet.",
+        "note": "Every cue's claims are checked; cards and substitutions by registered event facts.",
     }
 
 

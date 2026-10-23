@@ -96,7 +96,7 @@ export function SettingsBody() {
     try { window.localStorage.setItem(PREF_KEY, JSON.stringify(next)); } catch { /* preference applies for this visit only */ }
   };
   const resetDemo = () => {
-    try { for (const key of ["md.d031", "md.lastPath", "md.tourDone", "md.viewer"]) window.localStorage.removeItem(key); } catch { /* nothing stored */ }
+    try { for (const key of ["md.d031", "md.d031.approval", "md.lastPath", "md.tourDone", "md.viewer"]) window.localStorage.removeItem(key); } catch { /* nothing stored */ }
     saveViewer(DEFAULT_VIEWER);
     setReset(true);
   };

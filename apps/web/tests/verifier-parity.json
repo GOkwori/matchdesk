@@ -1453,6 +1453,146 @@
    "claim": {
     "claim_id": "F-01",
     "evidence_event_ids": [
+     "E-0561"
+    ],
+    "fact": {
+     "event_id": "E-0561",
+     "player_id": "riv-06",
+     "query": "card.v1",
+     "schema_version": "1.0"
+    },
+    "kind": "event_fact",
+    "schema_version": "1.0",
+    "text": "Haddad was shown a yellow card for Riverside at 27:40."
+   },
+   "events": "canonical",
+   "evidence": "EV-D031",
+   "expected": {
+    "expected": null,
+    "observed": null,
+    "query_id": "event-card-v1",
+    "reason": "The cited card event records the stated player",
+    "status": "verified"
+   },
+   "name": "fact: a yellow card verifies",
+   "with_names": true
+  },
+  {
+   "claim": {
+    "claim_id": "F-01",
+    "evidence_event_ids": [
+     "E-0561"
+    ],
+    "fact": {
+     "event_id": "E-0561",
+     "player_id": "riv-06",
+     "query": "card.v1",
+     "schema_version": "1.0"
+    },
+    "kind": "event_fact",
+    "schema_version": "1.0",
+    "text": "Haddad was sent off for Riverside at 27:40."
+   },
+   "events": "canonical",
+   "evidence": "EV-D031",
+   "expected": {
+    "expected": null,
+    "observed": null,
+    "query_id": "claim-text-binding-v1",
+    "reason": "Claim text states a card colour the event log does not record",
+    "status": "needs_revision"
+   },
+   "name": "fact: a yellow card told as a sending-off is sent back",
+   "with_names": true
+  },
+  {
+   "claim": {
+    "claim_id": "F-01",
+    "evidence_event_ids": [
+     "E-0561"
+    ],
+    "fact": {
+     "event_id": "E-0561",
+     "player_id": "nbr-04",
+     "query": "card.v1",
+     "schema_version": "1.0"
+    },
+    "kind": "event_fact",
+    "schema_version": "1.0",
+    "text": "Mensah was shown a yellow card at 27:40."
+   },
+   "events": "canonical",
+   "evidence": "EV-D031",
+   "expected": {
+    "expected": null,
+    "observed": null,
+    "query_id": "event-card-v1",
+    "reason": "The cited event is not a card for the stated player",
+    "status": "needs_revision"
+   },
+   "name": "fact: a card for the wrong player is sent back",
+   "with_names": true
+  },
+  {
+   "claim": {
+    "claim_id": "F-01",
+    "evidence_event_ids": [
+     "E-1421"
+    ],
+    "fact": {
+     "event_id": "E-1421",
+     "player_id": "riv-07",
+     "query": "substitution.v1",
+     "schema_version": "1.0"
+    },
+    "kind": "event_fact",
+    "schema_version": "1.0",
+    "text": "Kovac replaced Barros for Riverside at 67:08."
+   },
+   "events": "canonical",
+   "evidence": "EV-D031",
+   "expected": {
+    "expected": null,
+    "observed": null,
+    "query_id": "event-substitution-v1",
+    "reason": "The cited substitution event records the stated player",
+    "status": "verified"
+   },
+   "name": "fact: a substitution names both players",
+   "with_names": true
+  },
+  {
+   "claim": {
+    "claim_id": "F-01",
+    "evidence_event_ids": [
+     "E-1421"
+    ],
+    "fact": {
+     "event_id": "E-1421",
+     "player_id": "riv-07",
+     "query": "substitution.v1",
+     "schema_version": "1.0"
+    },
+    "kind": "event_fact",
+    "schema_version": "1.0",
+    "text": "Barros was substituted for Riverside at 67:08."
+   },
+   "events": "canonical",
+   "evidence": "EV-D031",
+   "expected": {
+    "expected": null,
+    "observed": null,
+    "query_id": "claim-text-binding-v1",
+    "reason": "Claim text does not name the incoming player",
+    "status": "needs_revision"
+   },
+   "name": "fact: a substitution without the incoming player is sent back",
+   "with_names": true
+  },
+  {
+   "claim": {
+    "claim_id": "F-01",
+    "evidence_event_ids": [
      "E-0002"
     ],
     "fact": {
@@ -5330,6 +5470,18 @@
    0,
    0,
    0
+  ],
+  "related": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
   ],
   "schema": "matchdesk-event-log/1",
   "seq": [

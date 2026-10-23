@@ -875,3 +875,21 @@ html[data-md-motion="reduce"] .md-lt { animation: none; }
 .md-recap-mine a, .md-recap-mine .md-recap-row { border-color: var(--md-accent-soft); }
 .md-lr-recap { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 10px 0 0; }
 .md-about code { overflow-wrap: anywhere; word-break: break-word; }
+
+/* Demo producer approval */
+.md-audit { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+.md-audit li { overflow-wrap: anywhere; }
+.md-dest-pick { display: inline-flex; align-items: center; gap: 6px; min-height: var(--md-touch); font-weight: 700; font-size: 13px; }
+.md-dest-pick input { width: 24px; height: 24px; }
+.md-pub-binds summary { cursor: pointer; min-height: var(--md-touch); display: flex; align-items: center; font-weight: 700; }
+.md-dest li > span:nth-child(2) { display: flex; flex-direction: column; flex: 1; min-width: 0; overflow-wrap: anywhere; }
+
+/* Auto-eventing lab */
+.md-ae-video { width: 100%; height: auto; border-radius: 10px; background: #000; display: block; }
+.md-ae-now { min-height: 44px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 8px 0 0; }
+.md-ae-events { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; max-height: 420px; overflow-y: auto; }
+.md-ae-events button { width: 100%; display: grid; grid-template-columns: 3.4em 1fr auto; gap: 8px; align-items: center; min-height: var(--md-touch); padding: 6px 10px; border-radius: 8px; border: 1px solid var(--md-line); background: var(--md-panel); color: var(--md-text-body); text-align: left; font: inherit; font-size: 13px; cursor: pointer; }
+.md-ae-seen button { border-color: var(--md-accent-soft); color: var(--md-text); }
+.md-ae-cards { list-style: none; margin: 0 0 12px; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+.md-ae-cards li { display: flex; flex-direction: column; gap: 4px; padding: 12px; border-radius: 12px; border: 1px solid var(--md-line); background: var(--md-raised); }
+.md-ae-cards strong { font-size: 20px; }

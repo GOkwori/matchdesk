@@ -31,7 +31,7 @@ export function QueueBody() {
             <span className="md-mono md-accent-soft-text">D-029 v2</span>
             <span className="md-queue-title"><strong>{drafts[1].title}</strong><span>Priya Shah · 4 of 4 claims verified</span></span>
             <VerdictChip pill verdict="verified" label="Eligible · not approved" />
-            <span className="md-locked"><Icon name="lock" size={14} /> Approve · Planned</span>
+            <span className="md-locked"><Icon name="lock" size={14} /> Demo approval: D-031 only</span>
           </li>
         </ul>
       </section>

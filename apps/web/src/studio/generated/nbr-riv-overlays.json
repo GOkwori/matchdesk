@@ -39,6 +39,32 @@
   },
   {
    "claim": {
+    "claim_id": "OV-E-0561-CARD",
+    "evidence_event_ids": [
+     "E-0561"
+    ],
+    "fact": {
+     "event_id": "E-0561",
+     "player_id": "riv-06",
+     "query": "card.v1",
+     "schema_version": "1.0"
+    },
+    "kind": "event_fact",
+    "schema_version": "1.0",
+    "text": "Haddad was shown a yellow card for Riverside at 27:40."
+   },
+   "claim_id": "OV-E-0561-CARD",
+   "evidence_event_ids": [
+    "E-0561"
+   ],
+   "observed": null,
+   "query_id": "event-card-v1",
+   "reason": "The cited card event records the stated player",
+   "status": "verified",
+   "text": "Haddad was shown a yellow card for Riverside at 27:40."
+  },
+  {
+   "claim": {
     "assertion": {
      "comparator": "eq",
      "decimals": 1,
@@ -517,6 +543,58 @@
    "reason": "Registered metric recomputation satisfies the claim comparator",
    "status": "verified",
    "text": "Okafor's shot speed was 49.4 km/h between 58′ and 59′."
+  },
+  {
+   "claim": {
+    "claim_id": "OV-E-1402-CARD",
+    "evidence_event_ids": [
+     "E-1402"
+    ],
+    "fact": {
+     "event_id": "E-1402",
+     "player_id": "nbr-04",
+     "query": "card.v1",
+     "schema_version": "1.0"
+    },
+    "kind": "event_fact",
+    "schema_version": "1.0",
+    "text": "Mensah was shown a yellow card for Northbridge at 63:04."
+   },
+   "claim_id": "OV-E-1402-CARD",
+   "evidence_event_ids": [
+    "E-1402"
+   ],
+   "observed": null,
+   "query_id": "event-card-v1",
+   "reason": "The cited card event records the stated player",
+   "status": "verified",
+   "text": "Mensah was shown a yellow card for Northbridge at 63:04."
+  },
+  {
+   "claim": {
+    "claim_id": "OV-E-1421-SUB",
+    "evidence_event_ids": [
+     "E-1421"
+    ],
+    "fact": {
+     "event_id": "E-1421",
+     "player_id": "riv-07",
+     "query": "substitution.v1",
+     "schema_version": "1.0"
+    },
+    "kind": "event_fact",
+    "schema_version": "1.0",
+    "text": "Kovac replaced Barros for Riverside at 67:08."
+   },
+   "claim_id": "OV-E-1421-SUB",
+   "evidence_event_ids": [
+    "E-1421"
+   ],
+   "observed": null,
+   "query_id": "event-substitution-v1",
+   "reason": "The cited substitution event records the stated player",
+   "status": "verified",
+   "text": "Kovac replaced Barros for Riverside at 67:08."
   },
   {
    "claim": {
@@ -1397,7 +1475,9 @@
    }
   },
   {
-   "claim_ids": [],
+   "claim_ids": [
+    "OV-E-0561-CARD"
+   ],
    "clock": "27:40",
    "cue_id": "Q-003",
    "duration_ms": 8000,
@@ -1408,7 +1488,7 @@
    "players": [
     "riv-06"
    ],
-   "status": "logged",
+   "status": "verified",
    "t_ms": 1660000,
    "team": "riv",
    "text": {
@@ -1949,7 +2029,9 @@
    }
   },
   {
-   "claim_ids": [],
+   "claim_ids": [
+    "OV-E-1402-CARD"
+   ],
    "clock": "63:04",
    "cue_id": "Q-019",
    "duration_ms": 8000,
@@ -1960,7 +2042,7 @@
    "players": [
     "nbr-04"
    ],
-   "status": "logged",
+   "status": "verified",
    "t_ms": 3784000,
    "team": "nbr",
    "text": {
@@ -1982,7 +2064,9 @@
    }
   },
   {
-   "claim_ids": [],
+   "claim_ids": [
+    "OV-E-1421-SUB"
+   ],
    "clock": "67:08",
    "cue_id": "Q-020",
    "duration_ms": 8000,
@@ -1994,7 +2078,7 @@
     "riv-07",
     "riv-14"
    ],
-   "status": "logged",
+   "status": "verified",
    "t_ms": 4028000,
    "team": "riv",
    "text": {
@@ -2055,7 +2139,7 @@
   "fr"
  ],
  "match_id": "nbr-riv-canonical",
- "note": "Timed cues for on-screen graphics. Numbers come only from claims the verifier checked against the event log; speeds and distances come from the log's synthetic tracking; cards and substitutions are logged events with no registered query yet. Spanish and French are AI-assisted templates awaiting native review. Nothing here is published: a producer decides.",
+ "note": "Timed cues for on-screen graphics. Numbers come only from claims the verifier checked against the event log, cards and substitutions by their registered event-fact queries; speeds and distances come from the log's synthetic tracking. Spanish and French are AI-assisted templates awaiting native review. Nothing here is published: a producer decides.",
  "personas": [
   "analyst",
   "fan",

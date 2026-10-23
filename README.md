@@ -26,10 +26,14 @@ synthetic events):
   with timed broadcast overlays, automated half-time and replay-point recaps, and fan
   stories for every goal, personalised by club, player, focus statistic, style and
   language (EN/ES/FR).
+- An auto-eventing lab renders the synthetic match as video and reads the events back from the
+  pixels, scored against the log ([method](labs/auto_eventing/README.md)).
 - Other agents can use the same evidence and verifier through a read-only MCP endpoint
   (`/api/mcp`, [design](docs/design/mcp.md)).
-- Producer approval and publishing are not enabled; there is no deployed or
-  authenticated publishing service. Start with the [judging guide](docs/competition/judging-guide.md).
+- A demo producer approves the exact version of an eligible draft (bound to SHA-256
+  digests of its text and checks, withdrawn by any edit) and publishes it to a demo channel
+  in the browser. There is no authenticated sign-in or real destination. Start with the
+  [judging guide](docs/competition/judging-guide.md).
 
 ## What is implemented
 

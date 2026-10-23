@@ -93,7 +93,7 @@ export const HELP: readonly HelpTopic[] = [
     text: "Every factual sentence carries a structured claim: a metric, a team or player, a time window and a value. The verifier recalculates that value from all the recorded events and checks that the sentence states exactly that figure about exactly that subject.",
     link: { href: "/match/nbr-riv/evidence/CL-0214", label: "Open the evidence screen" } },
   { id: "approve", patterns: [/\bapprov/, /\bpublish/, /human (gate|producer|review)/, /who decides/, /send (it )?out/],
-    text: "Only a human producer can approve a draft, and only after it is eligible. In this demo the Approve button stays locked: the point is that AI and code can prepare a story, but a person decides.",
+    text: "Only a human producer can approve a draft, and only after it is eligible. In this demo you approve as a demo producer on the publication page: the approval binds the exact version, any edit withdraws it, and publishing goes only to a demo channel in your browser.",
     link: { href: "/producer/publish/D-031", label: "Open publication" } },
   { id: "composer", patterns: [/\bcompos/, /\bedit\b/, /\bdraft\b/, /\bfix\b/, /\brewrite/],
     text: "The composer re-verifies every sentence as you type. Change 58% to 60% and it fails; remove the unsupported sentence and the draft becomes eligible.",

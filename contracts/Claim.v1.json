@@ -2,7 +2,7 @@
   "$defs": {
     "EventFact": {
       "additionalProperties": false,
-      "description": "A registered, checkable statement about specific events, not about an aggregate.\n\n``goal_scorer.v1``: goal ``event_id`` was scored by ``player_id``.\n``sequence_gap.v1``: ``event_id`` followed ``from_event_id`` by ``gap_seconds`` whole\nseconds (rounded half up), and, when ``from_tag`` is given, the earlier event carries\nthat tag (a corner is a tagged pass in schema 1.0).",
+      "description": "A registered, checkable statement about specific events, not about an aggregate.\n\n``goal_scorer.v1``: goal ``event_id`` was scored by ``player_id``.\n``card.v1``: card ``event_id`` was shown to ``player_id``; the sentence's colour is checked\nagainst the recorded card.\n``substitution.v1``: substitution ``event_id`` took ``player_id`` off; the sentence must name\nthe recorded incoming player.\n``sequence_gap.v1``: ``event_id`` followed ``from_event_id`` by ``gap_seconds`` whole\nseconds (rounded half up), and, when ``from_tag`` is given, the earlier event carries\nthat tag (a corner is a tagged pass in schema 1.0).",
       "properties": {
         "event_id": {
           "maxLength": 96,
@@ -72,7 +72,9 @@
         "query": {
           "enum": [
             "goal_scorer.v1",
-            "sequence_gap.v1"
+            "sequence_gap.v1",
+            "card.v1",
+            "substitution.v1"
           ],
           "title": "Query",
           "type": "string"

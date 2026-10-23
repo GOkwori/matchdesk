@@ -63,7 +63,7 @@ def test_cues_are_verified_only_on_events_that_have_arrived() -> None:
             assert data["checked_at_ms"] >= data["t_ms"]
             cues.append(data)
     assert len(cues) == 21
-    assert {c["status"] for c in cues} == {"verified", "logged"}
+    assert {c["status"] for c in cues} == {"verified"}
     goal = next(c for c in cues if c["cue_id"] == "Q-015")
     assert goal["checked_at_ms"] == 3_498_000
     assert [r["status"] for r in goal["claims"]] == ["verified"] * 3
