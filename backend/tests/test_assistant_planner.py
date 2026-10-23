@@ -281,3 +281,26 @@ def test_help_topics_match_the_studio() -> None:
     source = ASK_TS.read_text(encoding="utf-8")
     help_block = source[source.index("export const HELP") : source.index("/* ---------- Parsing")]
     assert tuple(re.findall(r'\{ id: "([a-z]+)"', help_block)) == HELP_TOPICS
+
+
+def test_the_server_log_keeps_the_service_reason(caplog: pytest.LogCaptureFixture) -> None:
+    """A refused call logs the service's error body; the caller still sees only the unknown plan."""
+
+    class _Denied(Exception):
+        """Like openai.PermissionDeniedError: the body carries the reason."""
+
+        body = {"error": {"code": "PermissionDenied", "message": "lacks data action"}}
+
+    class _Wrapped:
+        """Wraps the service error the way the chat client does."""
+
+        async def run(self, prompt: str, **kwargs: Any) -> Any:
+            """Fail with the service error passed as an argument."""
+            raise RuntimeError("service failed to complete the prompt", _Denied("403"))
+
+    planner = AssistantPlanner(config=ON, factory=_Factory(_Wrapped()))  # type: ignore[arg-type]
+    with caplog.at_level("WARNING", logger="matchdesk.assistant"):
+        response = _client(planner).post("/api/assistant/plan", json={"question": "q"})
+    assert response.json() == {"plan": {"intent": "unknown"}}
+    assert "lacks data action" in caplog.text
+    assert "lacks data action" not in response.text

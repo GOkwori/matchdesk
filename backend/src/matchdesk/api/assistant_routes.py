@@ -32,6 +32,23 @@ class PlanRequest(BaseModel):
     question: str = Field(min_length=1, max_length=MAX_QUESTION_CHARS)
 
 
+def _service_detail(error: BaseException) -> str:
+    """The service's own error body, if any, for the server log only (never the response)."""
+    pending: list[BaseException] = [error]
+    for _ in range(8):
+        if not pending:
+            break
+        current = pending.pop(0)
+        body = getattr(current, "body", None)
+        if body:
+            return str(body)[:600]
+        pending.extend(arg for arg in current.args if isinstance(arg, BaseException))
+        for linked in (current.__cause__, current.__context__):
+            if linked is not None:
+                pending.append(linked)
+    return type(error).__name__
+
+
 def create_assistant_router(planner: AssistantPlanner) -> APIRouter:
     """Expose the planner; failures degrade to the unknown plan, never to a guess."""
     router = APIRouter()
@@ -55,8 +72,8 @@ def create_assistant_router(planner: AssistantPlanner) -> APIRouter:
                 status_code=422,
                 content={"detail": f"Ask a question of 1 to {MAX_QUESTION_CHARS} characters"},
             )
-        except Exception:  # noqa: BLE001 - a model or network fault must never surface as a guess
-            _log.warning("assistant planner call failed", exc_info=True)
+        except Exception as error:  # noqa: BLE001 - a fault must never surface as a guess
+            _log.warning("assistant planner call failed: %s", _service_detail(error), exc_info=True)
             return JSONResponse(status_code=200, content={"plan": {"intent": "unknown"}})
         return JSONResponse(status_code=200, content={"plan": result})
 
