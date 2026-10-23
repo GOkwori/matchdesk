@@ -20,7 +20,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse, Response
 
 from matchdesk.api.telemetry import tracer
-from matchdesk.domain.mcp_tools import TOOLS, TOOLS_BY_NAME, ToolError
+from matchdesk.domain.mcp_tools import TOOL_ERRORS, TOOLS, TOOLS_BY_NAME, ToolError
 
 PROTOCOL_VERSIONS = ("2025-06-18", "2025-03-26", "2024-11-05")
 SERVER_INFO = {"name": "matchdesk", "title": "MatchDesk match tools", "version": "1.0.0"}
@@ -55,14 +55,16 @@ def _call(params: dict[str, Any]) -> dict[str, Any]:
         span.set_attribute("matchdesk.mcp.tool", tool.name)
         try:
             if not isinstance(arguments, dict):
-                raise ToolError("arguments must be an object")
+                raise ToolError("arguments")
             unknown = set(arguments) - set(tool.schema["properties"])
             if unknown:
-                raise ToolError(f"unknown arguments: {', '.join(sorted(unknown))}")
+                raise ToolError("unknown_arguments")
             result = tool.handler(arguments)
         except ToolError as error:
             span.set_attribute("matchdesk.mcp.status", "tool_error")
-            return {"content": [{"type": "text", "text": str(error)}], "isError": True}
+            # A fixed message per code: no exception text reaches the client.
+            message = TOOL_ERRORS.get(error.code, "these arguments cannot be used")
+            return {"content": [{"type": "text", "text": message}], "isError": True}
         span.set_attribute("matchdesk.mcp.status", "ok")
     return {
         "content": [{"type": "text", "text": json.dumps(result, ensure_ascii=False)}],

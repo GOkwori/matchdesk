@@ -31,7 +31,39 @@ _TEAMS = (canonical.HOME, canonical.AWAY)
 
 
 class ToolError(ValueError):
-    """A tool was asked for something it cannot answer; the message says what to change."""
+    """A tool was asked for something it cannot answer; ``code`` names what to change.
+
+    Only the code leaves the server, looked up in ``TOOL_ERRORS``: no exception text, and
+    nothing from a validation error, ever reaches a client.
+    """
+
+    def __init__(self, code: str) -> None:
+        """Record which fixed message applies."""
+        super().__init__(code)
+        self.code = code
+
+
+TOOL_ERRORS: dict[str, str] = {
+    "persona": "persona must be one of analyst, fan, caption",
+    "language": "language must be one of en, es, fr",
+    "at": "at must be one of half-time, latest",
+    "from_minute": "from_minute must be a whole minute from 0 to 68",
+    "to_minute": "to_minute must be a whole minute from 0 to 68",
+    "period": "period must be 1 or 2",
+    "window": "to_minute must be after from_minute, and inside the replay",
+    "team": "team must be nbr (Northbridge) or riv (Riverside)",
+    "player": "player must be a player id such as nbr-09; list_players gives them all",
+    "subject": "give a team or a player",
+    "metric": "metric must be a registered metric id; list_metrics gives them all",
+    "sentence": "sentence must be text of 3 to 300 characters",
+    "value": "value must be the number the sentence states (a ratio as 0.58 for 58%)",
+    "assertion": "the sentence's figure does not fit the metric's unit or precision",
+    "claim": "the claim does not match the Claim contract (see /api/contracts/event and the design note)",
+    "limit": "limit must be from 1 to 200",
+    "story": "story must be a story slug or goal event id; call get_story without one to list them",
+    "arguments": "arguments must be an object",
+    "unknown_arguments": "unknown arguments: use only the names in the tool's input schema",
+}
 
 
 @lru_cache(maxsize=1)
@@ -64,7 +96,7 @@ def _choice(args: Mapping[str, Any], key: str, options: tuple[str, ...], default
     """A value from a fixed list, or the default."""
     value = args.get(key, default)
     if value not in options:
-        raise ToolError(f"{key} must be one of {', '.join(options)}")
+        raise ToolError(key)
     return str(value)
 
 
@@ -72,7 +104,7 @@ def _minute(args: Mapping[str, Any], key: str, default: int) -> int:
     """A whole minute inside the replay."""
     value = args.get(key, default)
     if not isinstance(value, int) or isinstance(value, bool) or not 0 <= value <= _LAST_MINUTE:
-        raise ToolError(f"{key} must be a whole minute from 0 to {_LAST_MINUTE}")
+        raise ToolError(key)
     return value
 
 
@@ -82,11 +114,11 @@ def _window(args: Mapping[str, Any]) -> MatchWindow:
     end = min(_minute(args, "to_minute", _LAST_MINUTE) * _MINUTE, REPLAY_END_MS)
     period = args.get("period")
     if period not in (None, 1, 2):
-        raise ToolError("period must be 1 or 2")
+        raise ToolError("period")
     if period == 2:
         start = max(start, canonical.SECOND_HALF_MS)
     if end <= start:
-        raise ToolError("to_minute must be after from_minute, and inside the replay")
+        raise ToolError("window")
     return MatchWindow(period=period, from_ms=start, to_ms=end)
 
 
@@ -94,12 +126,12 @@ def _subject(args: Mapping[str, Any]) -> Subject:
     """A team (nbr, riv) or a player id such as nbr-09."""
     team, player = args.get("team"), args.get("player")
     if team is not None and team not in _TEAMS:
-        raise ToolError("team must be nbr (Northbridge) or riv (Riverside)")
+        raise ToolError("team")
     players = {str(m["player_id"]) for team in _TEAMS for m in canonical.squad(team)}
     if player is not None and player not in players:
-        raise ToolError("player must be a player id such as nbr-09; list_players gives them all")
+        raise ToolError("player")
     if team is None and player is None:
-        raise ToolError("give a team or a player")
+        raise ToolError("subject")
     return Subject(team_id=team, player_id=player)
 
 
@@ -144,7 +176,7 @@ def compute(args: Mapping[str, Any]) -> dict[str, Any]:
     """One registered statistic for a team or player over a window of the match."""
     metric = args.get("metric")
     if metric not in METRIC_DEFINITIONS:
-        raise ToolError("metric must be a registered metric id; list_metrics gives them all")
+        raise ToolError("metric")
     window = _window(args)
     subject = _subject(args)
     value = compute_metric(str(metric), _log(), subject, window)
@@ -181,13 +213,13 @@ def check_sentence(args: Mapping[str, Any]) -> dict[str, Any]:
     """Check a sentence that states one registered statistic, as the studio checks its own."""
     text = args.get("sentence")
     if not isinstance(text, str) or not 3 <= len(text) <= 300:
-        raise ToolError("sentence must be text of 3 to 300 characters")
+        raise ToolError("sentence")
     metric = args.get("metric")
     if metric not in METRIC_DEFINITIONS:
-        raise ToolError("metric must be a registered metric id; list_metrics gives them all")
+        raise ToolError("metric")
     value = args.get("value")
     if not isinstance(value, int | float) or isinstance(value, bool):
-        raise ToolError("value must be the number the sentence states (a ratio as 0.58 for 58%)")
+        raise ToolError("value")
     window = _window(args)
     subject = _subject(args)
     definition = METRIC_DEFINITIONS[str(metric)]
@@ -220,7 +252,7 @@ def check_sentence(args: Mapping[str, Any]) -> dict[str, Any]:
             evidence_event_ids=tuple(cited[:50] if counted else cited[:1]) or ("E-0001",),
         )
     except ValidationError as error:
-        raise ToolError(f"the claim is malformed: {error.errors()[0]['msg']}") from error
+        raise ToolError("assertion") from error
     return {**_result(claim), "claim": claim.model_dump(mode="json", exclude_none=True)}
 
 
@@ -229,9 +261,7 @@ def verify(args: Mapping[str, Any]) -> dict[str, Any]:
     try:
         claim = Claim.model_validate(args.get("claim"))
     except ValidationError as error:
-        first = error.errors()[0]
-        where = ".".join(str(part) for part in first["loc"])
-        raise ToolError(f"the claim is malformed at {where}: {first['msg']}") from error
+        raise ToolError("claim") from error
     return _result(claim)
 
 
@@ -240,7 +270,7 @@ def get_events(args: Mapping[str, Any]) -> dict[str, Any]:
     window = _window(args)
     limit = args.get("limit", 50)
     if not isinstance(limit, int) or isinstance(limit, bool) or not 1 <= limit <= MAX_EVENTS:
-        raise ToolError(f"limit must be from 1 to {MAX_EVENTS}")
+        raise ToolError("limit")
     kind = args.get("type")
     team, player = args.get("team"), args.get("player")
     matched = [
@@ -371,9 +401,7 @@ def get_story(args: Mapping[str, Any]) -> dict[str, Any]:
         }
     story = next((s for s in stories if s["slug"] == slug or s["event_id"] == slug), None)
     if story is None:
-        raise ToolError(
-            "story must be a story slug or goal event id; call get_story without one to list them"
-        )
+        raise ToolError("story")
     claims = {c["claim_id"]: c for c in feed["claims"]}
     return {
         "story": story["slug"],
