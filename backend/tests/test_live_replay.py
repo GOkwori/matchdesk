@@ -21,6 +21,7 @@ def _frames(speed: int = 60, from_ms: int = 0, **kw: Any) -> list[tuple[str, dic
     """Run the replay to the end and parse every frame."""
 
     async def collect() -> list[str]:
+        """Every frame, in order."""
         return [
             frame
             async for frame in live_replay(
@@ -81,6 +82,7 @@ def test_pacing_follows_the_speed_and_never_stalls() -> None:
     waits: list[float] = []
 
     async def record(seconds: float) -> None:
+        """Keep the wait instead of sleeping."""
         waits.append(seconds)
 
     _frames(speed=1, sleep=record)
@@ -94,6 +96,7 @@ def _waits_at(speed: int) -> list[float]:
     waits: list[float] = []
 
     async def record(seconds: float) -> None:
+        """Keep the wait instead of sleeping."""
         waits.append(seconds)
 
     _frames(speed=speed, sleep=record)

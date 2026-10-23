@@ -63,6 +63,7 @@ def create_live_router(limit: int = MAX_LISTENERS) -> APIRouter:
         started = time.monotonic()
 
         async def frames() -> AsyncIterator[str]:
+            """The replay's frames; the listener's place is freed however it ends."""
             try:
                 async for frame in live_replay(
                     speed, from_ms, sleep=asyncio.sleep, elapsed=lambda: time.monotonic() - started
