@@ -663,6 +663,19 @@
         "additionalProperties": false,
         "description": "An immutable synthetic event, identified independently of arrival order.\n\nmatch_clock_ms is the display clock: period 2 starts at 45:00 regardless of\nfirst-half stoppage time. Sequence, not this clock alone, defines ordering.\nlinked_event_id associates a goal with its shot; existence is checked later\nby ingestion, not by structural validation.",
         "properties": {
+          "distance_m": {
+            "anyOf": [
+              {
+                "maximum": 6000.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Distance M"
+          },
           "end_location": {
             "anyOf": [
               {
@@ -750,6 +763,19 @@
             ],
             "title": "Player Id"
           },
+          "player_speed_kmh": {
+            "anyOf": [
+              {
+                "maximum": 45.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Player Speed Kmh"
+          },
           "possession_id": {
             "anyOf": [
               {
@@ -786,6 +812,19 @@
             "minimum": 0.0,
             "title": "Sequence",
             "type": "integer"
+          },
+          "shot_speed_kmh": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "maximum": 200.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Shot Speed Kmh"
           },
           "synthetic": {
             "const": true,
@@ -964,7 +1003,8 @@
               "metres",
               "per_minute",
               "rating",
-              "km_per_hour"
+              "km_per_hour",
+              "kilometres"
             ],
             "title": "Unit",
             "type": "string"

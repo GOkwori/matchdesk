@@ -74,6 +74,10 @@ export type VEvent = {
   end_y: number | null;
   under_pressure: boolean;
   tags: readonly string[];
+  /** Synthetic tracking: ball speed off a shot, the player's speed at the action, metres run since their last action. */
+  shot_speed_kmh: number | null;
+  player_speed_kmh: number | null;
+  distance_m: number | null;
 };
 
 /** Column-oriented log, as written by matchdesk.domain.verifier_parity.compact_events. */
@@ -94,6 +98,9 @@ export type CompactLog = {
   end_y?: readonly (number | null)[];
   pressure?: readonly number[];
   tags?: readonly (readonly string[])[];
+  shot_speed?: readonly (number | null)[];
+  player_speed?: readonly (number | null)[];
+  distance?: readonly (number | null)[];
 };
 
 export function expandLog(log: CompactLog): VEvent[] {
@@ -114,6 +121,9 @@ export function expandLog(log: CompactLog): VEvent[] {
     end_y: log.end_y ? log.end_y[i] : null,
     under_pressure: log.pressure ? log.pressure[i] === 1 : false,
     tags: log.tags ? log.tags[i] : [],
+    shot_speed_kmh: log.shot_speed ? log.shot_speed[i] : null,
+    player_speed_kmh: log.player_speed ? log.player_speed[i] : null,
+    distance_m: log.distance ? log.distance[i] : null,
   }));
 }
 
@@ -138,7 +148,14 @@ export const METRIC_UNITS: Readonly<Record<string, string>> = {
   "tackles.v1": "count",
   "interceptions.v1": "count",
   "recoveries.v1": "count",
+  "shot_speed.v1": "km_per_hour",
+  "top_speed.v1": "km_per_hour",
+  "distance_covered.v1": "kilometres",
+  "sprints.v1": "count",
 };
+
+/** An action at or above this speed counts as a sprint (matchdesk.domain.metrics.SPRINT_KMH). */
+export const SPRINT_KMH = 25.2;
 
 function eventsInWindow(events: readonly VEvent[], window: Window): VEvent[] {
   if (!events.length) return [];
@@ -269,6 +286,25 @@ function ballSpeed(events: readonly VEvent[], subject: Subject, window: Window):
 const taggedRecoveries = (tag: string) => (events: readonly VEvent[], subject: Subject, window: Window) =>
   eventsInWindow(events, window).filter((e) => e.type === "recovery" && e.tags.includes(tag) && matchesSubject(e, subject)).length;
 
+function shotSpeed(events: readonly VEvent[], subject: Subject, window: Window): number {
+  return mean(eventsInWindow(events, window).filter((e) => e.type === "shot" && e.shot_speed_kmh != null && matchesSubject(e, subject)).map((e) => e.shot_speed_kmh as number));
+}
+
+function topSpeed(events: readonly VEvent[], subject: Subject, window: Window): number {
+  let top = 0;
+  for (const e of eventsInWindow(events, window)) if (e.player_speed_kmh != null && matchesSubject(e, subject) && e.player_speed_kmh > top) top = e.player_speed_kmh;
+  return top;
+}
+
+function distanceCovered(events: readonly VEvent[], subject: Subject, window: Window): number {
+  let metres = 0;
+  for (const e of eventsInWindow(events, window)) if (e.distance_m != null && matchesSubject(e, subject)) metres += e.distance_m;
+  return metres / 1000.0;
+}
+
+const sprints = (events: readonly VEvent[], subject: Subject, window: Window) =>
+  eventsInWindow(events, window).filter((e) => e.player_speed_kmh != null && e.player_speed_kmh >= SPRINT_KMH && matchesSubject(e, subject)).length;
+
 const FORMULAS: Readonly<Record<string, (events: readonly VEvent[], subject: Subject, window: Window) => number>> = {
   "pass_distance.v1": (events, subject, window) => mean(passesOf(events, subject, window).map(metres)),
   "progressive_passes.v1": (events, subject, window) => passesOf(events, subject, window).filter(isProgressive).length,
@@ -284,6 +320,10 @@ const FORMULAS: Readonly<Record<string, (events: readonly VEvent[], subject: Sub
   "synthetic_xg.v1": syntheticXg,
   "final_third_entries.v1": finalThirdEntries,
   "possession_time.v1": possessionTime,
+  "shot_speed.v1": shotSpeed,
+  "top_speed.v1": topSpeed,
+  "distance_covered.v1": distanceCovered,
+  "sprints.v1": sprints,
 };
 
 export function computeMetric(metric: string, events: readonly VEvent[], subject: Subject, window: Window): number {
@@ -332,7 +372,7 @@ export function statedQuantities(text: string): { counts: number[]; percents: nu
 }
 
 // Units stated as a plain number at one decimal place unless the assertion says otherwise.
-const MEASURE_UNITS: ReadonlySet<string> = new Set(["metres", "km_per_hour", "rating", "per_minute"]);
+const MEASURE_UNITS: ReadonlySet<string> = new Set(["metres", "km_per_hour", "rating", "per_minute", "kilometres"]);
 
 function expectedQuantity(claim: Claim): ["count" | "percent", number] | null {
   const assertion = claim.assertion;
@@ -366,6 +406,11 @@ const METRIC_WORDS: readonly (readonly [string, string])[] = [
   ["pass_distance.v1", "pass(?:es|ing)? (?:length|distance)|metres|meters"],
   ["progressive_passes.v1", "progressive pass(?:es)?"],
   ["pressured_passes.v1", "pass(?:es)? under pressure|pressured pass(?:es)?"],
+  // Synthetic tracking; the unit is part of the phrase, so it is masked with it.
+  ["shot_speed.v1", "shot speed(?: of| was)? [0-9.]+ km/h|shot speed"],
+  ["top_speed.v1", "top speed(?: of| was)? [0-9.]+ km/h|top speed"],
+  ["distance_covered.v1", "(?:covered|ran) [0-9.]+ (?:km|kilometres)|distance covered"],
+  ["sprints.v1", "sprints?"],
   ["ball_speed.v1", "ball speed|km/h|speed"],
   ["tackles.v1", "tackles?|tackled"],
   ["interceptions.v1", "interceptions?|intercepted"],

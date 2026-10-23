@@ -142,7 +142,7 @@ def _subject_id(claim: Claim) -> str | None:
 
 
 # Units stated as a plain number at one decimal place unless the assertion says otherwise.
-_MEASURE_UNITS = frozenset({"metres", "km_per_hour", "rating", "per_minute"})
+_MEASURE_UNITS = frozenset({"metres", "km_per_hour", "rating", "per_minute", "kilometres"})
 
 _NEGATION = re.compile(
     _B + r"(?:not|no|never|none|neither|nor|without|failed to|fails to|[a-z]+n't|cannot)" + _E
@@ -157,6 +157,12 @@ _METRIC_WORDS: tuple[tuple[str, str], ...] = (
     ("pass_distance.v1", r"pass(?:es|ing)? (?:length|distance)|metres|meters"),
     ("progressive_passes.v1", r"progressive pass(?:es)?"),
     ("pressured_passes.v1", r"pass(?:es)? under pressure|pressured pass(?:es)?"),
+    # Synthetic tracking. Each names its own measure, so "km/h" alone stays a ball-speed word.
+    # The unit is part of the phrase, so it is masked with it.
+    ("shot_speed.v1", r"shot speed(?: of| was)? [0-9.]+ km/h|shot speed"),
+    ("top_speed.v1", r"top speed(?: of| was)? [0-9.]+ km/h|top speed"),
+    ("distance_covered.v1", r"(?:covered|ran) [0-9.]+ (?:km|kilometres)|distance covered"),
+    ("sprints.v1", r"sprints?"),
     ("ball_speed.v1", r"ball speed|km/h|speed"),
     ("tackles.v1", r"tackles?|tackled"),
     ("interceptions.v1", r"interceptions?|intercepted"),

@@ -309,6 +309,57 @@ def _pressured_passes(
     return float(sum(event.under_pressure for event in _passes(events, subject, window)))
 
 
+# An action at or above this speed counts as a sprint (the common 25.2 km/h, 7 m/s, threshold).
+SPRINT_KMH = 25.2
+
+
+def _shot_speed(events: tuple[MatchEvent, ...], subject: Subject, window: MatchWindow) -> float:
+    """Mean ball speed, in km/h, of the subject's shots that carry a tracked speed."""
+    return _mean(
+        [
+            event.shot_speed_kmh
+            for event in _events_in_window(events, window)
+            if event.type == "shot"
+            and event.shot_speed_kmh is not None
+            and _matches_subject(event, subject)
+        ]
+    )
+
+
+def _top_speed(events: tuple[MatchEvent, ...], subject: Subject, window: MatchWindow) -> float:
+    """Highest tracked speed, in km/h, of the subject at any of its actions; zero if none."""
+    speeds = [
+        event.player_speed_kmh
+        for event in _events_in_window(events, window)
+        if event.player_speed_kmh is not None and _matches_subject(event, subject)
+    ]
+    return max(speeds, default=0.0)
+
+
+def _distance_covered(
+    events: tuple[MatchEvent, ...], subject: Subject, window: MatchWindow
+) -> float:
+    """Kilometres the subject ran, summed from the metres tracked at each of its actions."""
+    metres = _plain_sum(
+        event.distance_m
+        for event in _events_in_window(events, window)
+        if event.distance_m is not None and _matches_subject(event, subject)
+    )
+    return metres / 1000.0
+
+
+def _sprints(events: tuple[MatchEvent, ...], subject: Subject, window: MatchWindow) -> float:
+    """Actions the subject made at sprint speed or faster."""
+    return float(
+        sum(
+            event.player_speed_kmh is not None
+            and event.player_speed_kmh >= SPRINT_KMH
+            and _matches_subject(event, subject)
+            for event in _events_in_window(events, window)
+        )
+    )
+
+
 def _tagged_recoveries(tag: str) -> MetricFormula:
     """Count the subject's ball recoveries that carry one tag (tackle or interception)."""
 
@@ -409,7 +460,30 @@ _NEW_DEFINITIONS: Mapping[str, MetricDefinition] = {
         description="Every ball recovery: tackles, interceptions and loose balls.",
     ),
 }
-METRIC_DEFINITIONS = {**METRIC_DEFINITIONS, **_NEW_DEFINITIONS}
+# Synthetic tracking: speeds and distances a tracking provider would add to the event log.
+_TRACKING_DEFINITIONS: Mapping[str, MetricDefinition] = {
+    "shot_speed.v1": MetricDefinition(
+        metric_id="shot_speed.v1",
+        unit="km_per_hour",
+        description="Mean tracked ball speed of the subject's shots (synthetic tracking).",
+    ),
+    "top_speed.v1": MetricDefinition(
+        metric_id="top_speed.v1",
+        unit="km_per_hour",
+        description="Highest tracked player speed at any of the subject's actions (synthetic).",
+    ),
+    "distance_covered.v1": MetricDefinition(
+        metric_id="distance_covered.v1",
+        unit="kilometres",
+        description="Kilometres run, summed from metres tracked between actions (synthetic).",
+    ),
+    "sprints.v1": MetricDefinition(
+        metric_id="sprints.v1",
+        unit="count",
+        description="Actions made at 25.2 km/h or faster (synthetic tracking).",
+    ),
+}
+METRIC_DEFINITIONS = {**METRIC_DEFINITIONS, **_NEW_DEFINITIONS, **_TRACKING_DEFINITIONS}
 
 _FORMULAS: Mapping[str, MetricFormula] = {
     "pass_distance.v1": _pass_distance,
@@ -426,6 +500,10 @@ _FORMULAS: Mapping[str, MetricFormula] = {
     "synthetic_xg.v1": _synthetic_xg,
     "final_third_entries.v1": _final_third_entries,
     "possession_time.v1": _possession_time,
+    "shot_speed.v1": _shot_speed,
+    "top_speed.v1": _top_speed,
+    "distance_covered.v1": _distance_covered,
+    "sprints.v1": _sprints,
 }
 
 

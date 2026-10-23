@@ -109,7 +109,7 @@ def _clock(ms: int) -> str:
 
 
 def list_metrics(args: Mapping[str, Any]) -> dict[str, Any]:
-    """The fourteen registered statistics: id, unit and definition."""
+    """The eighteen registered statistics: id, unit and definition."""
     del args
     return {
         "metrics": [
@@ -459,7 +459,7 @@ TOOLS: tuple[Tool, ...] = (
     Tool(
         "list_metrics",
         "Registered statistics",
-        "List the fourteen registered statistics MatchDesk computes from the event log, with units and definitions.",
+        "List the eighteen registered statistics MatchDesk computes from the event log (including synthetic tracking: shot speed, top speed, distance covered, sprints), with units and definitions.",
         _object({}),
         list_metrics,
     ),

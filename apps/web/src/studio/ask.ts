@@ -24,6 +24,10 @@ export const METRICS = {
   "tackles.v1": { unit: "count", label: "tackles" },
   "interceptions.v1": { unit: "count", label: "interceptions" },
   "recoveries.v1": { unit: "count", label: "ball recoveries" },
+  "shot_speed.v1": { unit: "km_per_hour", label: "shot speed" },
+  "top_speed.v1": { unit: "km_per_hour", label: "top speed" },
+  "distance_covered.v1": { unit: "kilometres", label: "distance covered" },
+  "sprints.v1": { unit: "count", label: "sprints" },
 } as const;
 export type Metric = keyof typeof METRICS;
 
@@ -121,7 +125,7 @@ export const HELP: readonly HelpTopic[] = [
     text: "Activity & Audit lists every verification and producer action in order.",
     link: { href: "/workspace/activity", label: "Open activity" } },
   { id: "metrics", patterns: [/what (is|are|does) (xg|synthetic xg|expected goals|possession|pass accuracy|final[- ]third entr(y|ies))\b/, /how (is|are|do you) .*(calculated|measured|computed|worked out)/, /what (metrics|statistics|stats) (can|do)/, /\bmetrics?\b/],
-    text: "I check fourteen metrics, recalculated from the event log every time. Attack: goals, shots, synthetic xG (this demo's own model), final-third entries. Passing: accuracy, average length in metres, progressive passes, a 0\u2013100 difficulty rating, passes under pressure, estimated ball speed. Defending: tackles, interceptions, recoveries. Possession, for teams.",
+    text: "I check eighteen metrics, recalculated from the log every time. Attack: goals, shots, synthetic xG, final-third entries. Passing: accuracy, length, progressive passes, a 0\u2013100 difficulty rating, passes under pressure, estimated ball speed. Defending: tackles, interceptions, recoveries. Possession, for teams. Synthetic tracking: shot speed, top speed, distance covered, sprints.",
     link: { href: "/match/nbr-riv/evidence/CL-0214", label: "See a metric being recalculated" } },
   { id: "what", patterns: [/what (is|does) matchdesk/, /what can (you|i) do/, /what is this/, /\bhelp\b/, /what can i ask/],
     text: "MatchDesk turns match events into stories you can check: AI drafts, code verifies every claim against the event log, and a human approves. Ask me about the match, such as the score, shots, possession or xG for a team, player or part of the game, or about how the app works.",
@@ -194,7 +198,9 @@ const UNSUPPORTED_STATS: readonly [RegExp, string][] = [
   [/\b(yellow|red) cards?\b|\bcards?\b|\bbookings?\b|\bbooked\b|\bsent off\b/, "cards"],
   [/\bfouls?\b|\bfouled\b|\boffsides?\b|\bfree[- ]kicks?\b|\bpenalt(y|ies)\b/, "fouls and set pieces"],
   [/\bclearances?\b|\bduels?\b|\bdribbles?\b|\bcrosses\b|\bblocks\b/, "clearances, duels, dribbles or crosses"],
-  [/\bhow many passes\b|\bnumber of passes\b|\bpasses (made|attempted)\b|\btouches\b|\bdistance (covered|run|ran)\b|\b(ran|run|running) (the )?(furthest|most)\b|\bsprints?\b|\bheat ?map\b|\b(top|max(imum)?) speed\b|\bshot (speed|power)\b|\bhow fast (was|is) (the|his|her) shot\b|\bpace of\b/, "pass counts, touches, shot speed or player tracking data"],
+  [/\bhow many passes\b|\bnumber of passes\b|\bpasses (made|attempted)\b|\btouches\b|\bheat ?map\b|\bpace of\b|\bacceleration\b|\bpositions?\b|\bformations?\b/, "pass counts, touches, heat maps or positional tracking"],
+  // Shot speed is a mean over a window; the speed of one shot is on its overlay, not answered here.
+  [/\b(fastest|hardest|quickest) (shot|strike)\b|\bshot power\b|\bhow fast (was|is) (the|that|his|her) (shot|strike|header|goal)\b|\bshot speed of (the|that) (goal|shot|header|strike)\b|\bspeed of the (goal|header|strike)\b/, "the speed of a single shot (each scoring shot's speed is on its overlay in the replay)"],
 ];
 
 // Qualifiers no registered metric or event field records. Answering without them would
@@ -221,7 +227,7 @@ const ORDINAL_GOAL = /\b(first|1st|opening|second|2nd|third|3rd|fourth|4th) goal
 // A record id such as nbr-09: only a named player's id may stand in for their name.
 const RECORD_ID = /(?<![a-z0-9-])([a-z]{2,5}-[0-9]{1,3})(?![a-z0-9-])/g;
 
-const PLAYER_QUESTION = /\bwhich player\b|\bwho (had|took|made|has|played|won) the (most|highest|longest|fastest|hardest)\b|\bmost (shots|goals|passes|tackles|interceptions|recoveries|progressive passes)\b|\btop (scorer|tackler)\b|\bleaders?\b|\bwho leads\b/;
+const PLAYER_QUESTION = /\bwhich player\b|\bwho (had|took|made|has|played|won) the (most|highest|longest|fastest|hardest)\b|\bmost (shots|goals|passes|tackles|interceptions|recoveries|progressive passes|sprints)\b|\btop (scorer|tackler)\b|\bleaders?\b|\bwho leads\b|\bwho (ran|covered|sprinted) (the )?(furthest|most)\b|\bwho (was|is) (the )?(fastest|quickest)\b|\bfastest player\b|\bquickest player\b/;
 const OPINION_RANKING = /\bbest player\b|\bman of the match\b|\bplayer of the match\b|\bstar man\b|\bmvp\b/;
 const KNOWN_WORDS = new Set([
   "who", "what", "which", "when", "how", "did", "does", "do", "is", "are", "was", "were", "the", "a", "an", "and", "or", "in", "on",
@@ -277,6 +283,10 @@ function parseMetric(q: string): Metric | null {
   if (/pass(es|ing)? (length|distance)|how (long|far) (were|are|was) (the |their |his |her )?pass|longest pass|average pass|pass(es)? travel/.test(q)) return "pass_distance.v1";
   if (/progressive pass|progressive/.test(q)) return "progressive_passes.v1";
   if (/under pressure|pressured pass|pressing/.test(q)) return "pressured_passes.v1";
+  if (/shot speed|speed of (his |her |their )?shots/.test(q)) return "shot_speed.v1";
+  if (/top speed|max(imum)? speed|fastest player|quickest player|who was (the )?fastest|sprint speed|how fast (did|does|can) [a-z]+ (run|sprint)/.test(q)) return "top_speed.v1";
+  if (/distance (covered|run|ran)|how far (did|has) [a-z]+ run|\bran (the )?(furthest|most)\b|covered the most (ground|distance)|kilomet(re|er)s?|\bkm\b(?!\/h)/.test(q)) return "distance_covered.v1";
+  if (/\bsprints?\b|\bsprinted\b|high[- ]speed runs?/.test(q)) return "sprints.v1";
   if (/ball speed|pass speed|speed of (the )?(ball|pass)|how fast (was|is|were) the (ball|pass)|km\/h|kph/.test(q)) return "ball_speed.v1";
   if (/\btackles?\b|\btackled\b|\btackling\b/.test(q)) return "tackles.v1";
   if (/\binterceptions?\b|\bintercepted\b/.test(q)) return "interceptions.v1";
@@ -311,7 +321,7 @@ export function parseQuestion(question: string, ctx: Pick<MatchContext, "names" 
     for (const topic of HELP) if (topic.patterns.some((p) => p.test(q))) return { intent: "help", topic: topic.id };
   }
   for (const [pattern, label] of UNSUPPORTED_STATS) {
-    if (pattern.test(q)) return decline("unsupported", `I can't check ${label}: it isn't one of the registered metrics, so I won't estimate it. I can check goals, shots, xG, final-third entries, pass accuracy, pass length, progressive passes, pass difficulty, passes under pressure, ball speed, tackles, interceptions, recoveries and possession.`);
+    if (pattern.test(q)) return decline("unsupported", `I can't check ${label}: it isn't one of the registered metrics, so I won't estimate it. I can check goals, shots, xG, final-third entries, pass accuracy, pass length, progressive passes, pass difficulty, passes under pressure, ball speed, tackles, interceptions, recoveries, possession, and from synthetic tracking shot speed, top speed, distance covered and sprints.`);
   }
   for (const [pattern, text] of QUALIFIERS) if (pattern.test(q)) return decline("unsupported", text);
   const named = "Ask about any player in either squad by name, such as Okafor, Mensah or Lindqvist.";
@@ -538,6 +548,10 @@ function sentence(metric: Metric, subject: string, value: number, phrase: string
     case "tackles.v1": return `${name} made ${value} ${value === 1 ? "tackle" : "tackles"} ${phrase}.`;
     case "interceptions.v1": return `${name} made ${value} ${value === 1 ? "interception" : "interceptions"} ${phrase}.`;
     case "recoveries.v1": return `${name} made ${value} ball ${value === 1 ? "recovery" : "recoveries"} ${phrase}.`;
+    case "shot_speed.v1": return `${name}'s shot speed was ${roundHalfUp(value, 1)} km/h ${phrase}.`;
+    case "top_speed.v1": return `${name} reached a top speed of ${roundHalfUp(value, 1)} km/h ${phrase}.`;
+    case "distance_covered.v1": return `${name} covered ${roundHalfUp(value, 1)} km ${phrase}.`;
+    case "sprints.v1": return `${name} made ${value} ${value === 1 ? "sprint" : "sprints"} ${phrase}.`;
   }
 }
 
@@ -550,10 +564,14 @@ export function decimalsFor(metric: Metric): number | null {
 /** Notes that say how a measure was obtained, shown with every answer that uses it. */
 const METRIC_NOTES: Partial<Record<Metric, string>> = {
   "synthetic_xg.v1": "Synthetic xG is this demo's own chance-quality model, not a licensed xG feed.",
-  "ball_speed.v1": "Ball speed is estimated: pass length over the time to the next logged event. There is no tracking data.",
+  "ball_speed.v1": "Ball speed is estimated: pass length over the time to the next logged event, not from tracking.",
   "pass_difficulty.v1": "Pass difficulty is a 0\u2013100 rating of each attempt: 45% length, 30% forward ambition, 15% a target in the final sixth, 10% pressure.",
   "pass_distance.v1": "Lengths are measured on a 105 m \u00d7 68 m pitch.",
   "progressive_passes.v1": "A progressive pass is completed, goes at least 10 m forward and ends at least 25% closer to goal.",
+  "shot_speed.v1": "Shot speed is the mean ball speed of the shots, from the log's synthetic tracking (this demo's own model, not a tracking provider).",
+  "top_speed.v1": "Top speed is the fastest a player was moving at any of their actions, from the log's synthetic tracking.",
+  "distance_covered.v1": "Distance is summed from the metres the log's synthetic tracking records between a player's actions.",
+  "sprints.v1": "A sprint is an action made at 25.2 km/h or faster, from the log's synthetic tracking.",
 };
 
 let claimCounter = 0;
@@ -611,6 +629,9 @@ function comparison(metric: Metric, lines: CheckedLine[], ctx: MatchContext): st
     "pass_distance.v1": "a longer average pass",
     "pass_difficulty.v1": "a higher pass difficulty rating",
     "ball_speed.v1": "a higher estimated ball speed",
+    "shot_speed.v1": "a higher shot speed",
+    "top_speed.v1": "a higher top speed",
+    "distance_covered.v1": "more distance covered",
   };
   return `${nameOf(hi.id, ctx)} had ${more[metric] ?? `more ${label}`} than ${nameOf(lo.id, ctx)}.`;
 }
@@ -654,7 +675,7 @@ const DECLINES: Record<DeclineReason, string> = {
   unsupported: "I can't check that against the event log, so I won't guess.",
 };
 
-export const UNKNOWN_TEXT = "I couldn't read that question. Try the score, scorers, shots, possession, xG, passing (accuracy, length, progressive passes, difficulty, ball speed, pressure) or defending (tackles, interceptions, recoveries), for a team, a player or part of the game; who led a statistic; or how the app works.";
+export const UNKNOWN_TEXT = "I couldn't read that question. Try the score, scorers, shots, possession, xG, passing (accuracy, length, progressive passes, difficulty, ball speed, pressure), defending (tackles, interceptions, recoveries) or tracking (shot speed, top speed, distance, sprints), for a team, a player or part of the game; who led a statistic; or how the app works.";
 
 const ordinalWord = (n: number) => ["first", "second", "third", "fourth"][n - 1] ?? `${n}th`;
 

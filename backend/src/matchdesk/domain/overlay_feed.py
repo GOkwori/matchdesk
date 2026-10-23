@@ -1,8 +1,9 @@
 """A timed, machine-readable overlay feed for broadcast and streaming graphics.
 
 Each cue is something a renderer can put on screen at a match time: a goal lower-third, a
-card or substitution strap, a stats card at fixed intervals, a spell of control, or a player
-spotlight. Every number in a cue comes from a structured claim that the verifier has checked
+card or substitution strap, a stats card at fixed intervals, a spell of control, a player
+spotlight, the speed of each scoring shot, or a player tag when synthetic tracking crosses a
+threshold (a sprint at 33 km/h or more, the first player on each side past 5 km). Every number in a cue comes from a structured claim that the verifier has checked
 against the event log; the cue's text is composed from those verified values in three
 languages and three personas, so the words on screen cannot drift from the figures. Cards and
 substitutions have no registered event-fact query yet, so they carry the logged event and the
@@ -37,6 +38,9 @@ STAT_CARD_MS = (900_000, 1_800_000, 2_700_000, 3_600_000)
 CUE_MS = 8_000
 SPELL = (1_800_000, 2_700_000)
 SPOTLIGHT_MS = 3_600_000
+# Thresholds that trigger a tracking tag on a player.
+SPEED_ALERT_KMH = 33.0
+DISTANCE_MILESTONE_KM = 5.0
 _TEAM = {canonical.HOME: "NBR", canonical.AWAY: "RIV"}
 
 
@@ -415,6 +419,176 @@ def _spotlight_cue(builder: _Builder) -> None:
     builder.cue(SPOTLIGHT_MS, "spotlight", texts, [line], team=team_id, players=(leader,))
 
 
+def _minute_window(ms: int) -> tuple[MatchWindow, int]:
+    """The whole match minute an event falls in, and its starting minute."""
+    start = ms // 60_000
+    return MatchWindow(from_ms=start * 60_000, to_ms=(start + 1) * 60_000), start
+
+
+def _shot_speed_cues(builder: _Builder) -> None:
+    """The ball speed of every scoring shot, shown once the goal lower-third has gone."""
+    for goal in (e for e in builder.log if e.type == "goal" and e.match_clock_ms < REPLAY_END_MS):
+        assert goal.player_id is not None and goal.team_id is not None
+        shot = next(e for e in builder.log if e.event_id == goal.linked_event_id)
+        window, minute = _minute_window(shot.match_clock_ms)
+        others = [
+            e
+            for e in builder.log
+            if e.type == "shot"
+            and e.player_id == goal.player_id
+            and window.from_ms <= e.match_clock_ms < window.to_ms
+        ]
+        assert others == [shot], "a scoring shot's minute must hold no other shot by the scorer"
+        name = _name(goal.player_id)
+        value, line = builder.metric(
+            f"OV-{goal.event_id}-SHOTSPEED",
+            "shot_speed.v1",
+            Subject(player_id=goal.player_id),
+            window,
+            f"{name}'s shot speed was {{v}} km/h between {minute}′ and {minute + 1}′.",
+            unit="km_per_hour",
+            decimals=1,
+            cites=(shot.event_id,),
+        )
+        kmh = str(round_half_up(value, 1))
+        whole = str(round_half_up(value, 0))
+        header = "header" in shot.tags
+        what = {
+            "en": "header" if header else "strike",
+            "es": "cabezazo" if header else "disparo",
+            "fr": "tête" if header else "frappe",
+        }
+        comma = kmh.replace(".", ",")
+        # French elides "de" before a vowel: d'Okafor.
+        de = f"d'{name}" if name[:1].lower() in "aeiouyh" else f"de {name}"
+        texts = {
+            "analyst": {
+                "en": f"Shot speed · {name} {what['en']} · {kmh} km/h · {shot.event_id}",
+                "es": f"Velocidad del tiro · {what['es']} de {name} · {comma} km/h · {shot.event_id}",
+                "fr": f"Vitesse de frappe · {what['fr']} {de} · {comma} km/h · {shot.event_id}",
+            },
+            "fan": {
+                "en": f"{name}'s {what['en']} left at {kmh} km/h",
+                "es": f"El {what['es']} de {name} salió a {comma} km/h",
+                "fr": f"La {what['fr']} {de} est partie à {comma} km/h",
+            },
+            "caption": {
+                "en": f"SHOT SPEED · {name} {whole} KM/H",
+                "es": f"VELOCIDAD · {name} {whole} KM/H",
+                "fr": f"VITESSE · {name} {whole} KM/H",
+            },
+        }
+        builder.cue(
+            goal.match_clock_ms + CUE_MS,
+            "shot_speed",
+            texts,
+            [line],
+            team=goal.team_id,
+            players=(goal.player_id,),
+            events=(shot.event_id,),
+        )
+
+
+def _tracking_cues(builder: _Builder) -> None:
+    """Tag a player when tracking crosses a threshold: a sprint, or the first past 5 km."""
+    seen: set[str] = set()
+    for event in builder.log:
+        if event.match_clock_ms >= REPLAY_END_MS or event.player_id is None:
+            continue
+        speed = event.player_speed_kmh
+        if speed is None or speed < SPEED_ALERT_KMH or event.player_id in seen:
+            continue
+        seen.add(event.player_id)
+        window, minute = _minute_window(event.match_clock_ms)
+        name = _name(event.player_id)
+        value, line = builder.metric(
+            f"OV-{event.event_id}-SPRINT",
+            "top_speed.v1",
+            Subject(player_id=event.player_id),
+            window,
+            f"{name} reached a top speed of {{v}} km/h between {minute}′ and {minute + 1}′.",
+            unit="km_per_hour",
+            decimals=1,
+            cites=(event.event_id,),
+        )
+        kmh = str(round_half_up(value, 1))
+        comma = kmh.replace(".", ",")
+        texts = {
+            "analyst": {
+                "en": f"Top speed · {name} · {kmh} km/h · {_clock(event.match_clock_ms)}",
+                "es": f"Velocidad máxima · {name} · {comma} km/h · {_clock(event.match_clock_ms)}",
+                "fr": f"Vitesse de pointe · {name} · {comma} km/h · {_clock(event.match_clock_ms)}",
+            },
+            "fan": {
+                "en": f"⚡ {name} flies at {kmh} km/h",
+                "es": f"⚡ {name} vuela a {comma} km/h",
+                "fr": f"⚡ {name} file à {comma} km/h",
+            },
+            "caption": {
+                lang: f"⚡ {name} · {kmh if lang == 'en' else comma} KM/H" for lang in LANGUAGES
+            },
+        }
+        builder.cue(
+            event.match_clock_ms,
+            "top_speed",
+            texts,
+            [line],
+            team=event.team_id,
+            players=(event.player_id,),
+            events=(event.event_id,),
+        )
+    for side in (canonical.HOME, canonical.AWAY):
+        run: dict[str, float] = {}
+        for event in builder.log:
+            if event.match_clock_ms >= REPLAY_END_MS or event.team_id != side:
+                continue
+            if event.player_id is None or event.distance_m is None:
+                continue
+            run[event.player_id] = run.get(event.player_id, 0.0) + event.distance_m
+            if run[event.player_id] < DISTANCE_MILESTONE_KM * 1000:
+                continue
+            stated_ms = (event.match_clock_ms // 1000 + 1) * 1000
+            name = _name(event.player_id)
+            value, line = builder.metric(
+                f"OV-{_TEAM[side]}-5KM",
+                "distance_covered.v1",
+                Subject(player_id=event.player_id),
+                MatchWindow(from_ms=0, to_ms=stated_ms),
+                f"{name} covered {{v}} km up to {_clock(stated_ms)}.",
+                unit="kilometres",
+                decimals=1,
+                cites=(event.event_id,),
+            )
+            km = str(round_half_up(value, 1))
+            comma = km.replace(".", ",")
+            minute = _minute(event.match_clock_ms)
+            texts = {
+                "analyst": {
+                    "en": f"Distance · {name} ({_name(side)}) first past 5 km · {km} km at {minute}′",
+                    "es": f"Distancia · {name} ({_name(side)}) primero en pasar de 5 km · {comma} km al {minute}′",
+                    "fr": f"Distance · {name} ({_name(side)}) premier au-delà de 5 km · {comma} km à la {minute}e",
+                },
+                "fan": {
+                    "en": f"{name} is the first {_name(side)} player past 5 km",
+                    "es": f"{name} es el primero del {_name(side)} en pasar de 5 km",
+                    "fr": f"{name}, premier de {_name(side)} à dépasser 5 km",
+                },
+                "caption": {
+                    lang: f"{name} · {km if lang == 'en' else comma} KM" for lang in LANGUAGES
+                },
+            }
+            builder.cue(
+                event.match_clock_ms,
+                "distance",
+                texts,
+                [line],
+                team=side,
+                players=(event.player_id,),
+                events=(event.event_id,),
+            )
+            break
+
+
 def build_overlay_feed(log: tuple[MatchEvent, ...] | None = None) -> dict[str, Any]:
     """Every cue to the replay point, in time order, with the claims behind it."""
     events = log if log is not None else canonical.generate_canonical_match()
@@ -424,6 +598,8 @@ def build_overlay_feed(log: tuple[MatchEvent, ...] | None = None) -> dict[str, A
     _stat_cards(builder)
     _spell_cue(builder)
     _spotlight_cue(builder)
+    _shot_speed_cues(builder)
+    _tracking_cues(builder)
     ordered = sorted(builder.cues, key=lambda cue: (cue["t_ms"], cue["cue_id"]))
     for number, cue in enumerate(ordered, start=1):
         cue["cue_id"] = f"Q-{number:03d}"
@@ -437,8 +613,8 @@ def build_overlay_feed(log: tuple[MatchEvent, ...] | None = None) -> dict[str, A
         "teams": {side: _name(side) for side in (canonical.HOME, canonical.AWAY)},
         "note": (
             "Timed cues for on-screen graphics. Numbers come only from claims the verifier "
-            "checked against the event log; cards and substitutions are logged events with no "
-            "registered query yet. Spanish and French are AI-assisted templates awaiting native "
+            "checked against the event log; speeds and distances come from the log's synthetic "
+            "tracking; cards and substitutions are logged events with no registered query yet. Spanish and French are AI-assisted templates awaiting native "
             "review. Nothing here is published: a producer decides."
         ),
         "cues": ordered,

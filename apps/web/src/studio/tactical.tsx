@@ -73,7 +73,7 @@ export function TacticalBody() {
           <p className="md-muted md-small">
             Each figure is a registered metric, recalculated from the event log and checkable in Ask MatchDesk. Lengths use a
             105 \u00d7 68 m pitch. A progressive pass goes at least 10 m forward and ends 25% closer to goal. Difficulty rates each
-            attempt by length, ambition, target and pressure. Ball speed is estimated from the time to the next event: there is no tracking data.
+            attempt by length, ambition, target and pressure. Ball speed is estimated from the time to the next event, not from tracking.
           </p>
           <button type="button" className="md-btn md-btn-secondary" onClick={() => openAssistant("Who made the most tackles?")}>Ask who led the tackles</button>
         </section>
