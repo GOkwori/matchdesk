@@ -138,6 +138,12 @@ class MatchEvent(Contract):
     linked_event_id: Identifier | None = None
     related_player_id: Identifier | None = None
     tags: EventIds = ()
+    # Synthetic physical detail, as a tracking provider would add it: the ball's speed off a
+    # shot, the acting player's speed at the action, and the metres they ran since their
+    # previous logged action. Optional: logs without tracking omit them.
+    shot_speed_kmh: Annotated[float, Field(gt=0, le=200, allow_inf_nan=False)] | None = None
+    player_speed_kmh: Annotated[float, Field(ge=0, le=45, allow_inf_nan=False)] | None = None
+    distance_m: Annotated[float, Field(ge=0, le=6000, allow_inf_nan=False)] | None = None
     synthetic: Annotated[Literal[True], BeforeValidator(plain_boolean)] = True
 
     @model_validator(mode="after")
@@ -160,6 +166,9 @@ class MatchEvent(Contract):
                     self.xg,
                     self.linked_event_id,
                     self.related_player_id,
+                    self.shot_speed_kmh,
+                    self.player_speed_kmh,
+                    self.distance_m,
                 )
             ):
                 raise ValueError("Period markers cannot carry player or on-ball fields")
@@ -174,6 +183,8 @@ class MatchEvent(Contract):
             raise ValueError("A movement event requires an end_location")
         if (self.type == "shot") != (self.xg is not None):
             raise ValueError("Exactly shot events require a synthetic xG estimate")
+        if self.shot_speed_kmh is not None and self.type != "shot":
+            raise ValueError("Only shot events carry a shot speed")
         if self.type == "goal" and self.linked_event_id is None:
             raise ValueError("A goal must reference its shot event")
         if self.type != "goal" and self.linked_event_id is not None:
@@ -230,7 +241,16 @@ class MetricAssertion(Contract):
     window: MatchWindow
     comparator: Literal["eq", "gte", "lte"] = "eq"
     value: Annotated[float, Field(ge=0, allow_inf_nan=False)]
-    unit: Literal["count", "ratio", "synthetic_xg", "metres", "per_minute", "rating", "km_per_hour"]
+    unit: Literal[
+        "count",
+        "ratio",
+        "synthetic_xg",
+        "metres",
+        "per_minute",
+        "rating",
+        "km_per_hour",
+        "kilometres",
+    ]
     # The precision the claim is stated at. "58%" of a ratio is value 0.58 with decimals 2:
     # it is verified when the recomputed value rounds (half up) to 0.58. Without it, "eq"
     # stays exact.

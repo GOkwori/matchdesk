@@ -90,6 +90,7 @@ function shown(unit: string, value: number): string {
   if (unit === "synthetic_xg") return roundHalfUp(value, 2);
   if (unit === "metres") return `${roundHalfUp(value, 1)} m`;
   if (unit === "km_per_hour") return `${roundHalfUp(value, 1)} km/h`;
+  if (unit === "kilometres") return `${roundHalfUp(value, 1)} km`;
   if (unit === "rating") return roundHalfUp(value, 1);
   return String(value);
 }

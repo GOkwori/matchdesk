@@ -16,7 +16,7 @@ To use it from VS Code, add `{"servers": {"matchdesk": {"type": "http", "url": "
 
 | Tool | What it does |
 |---|---|
-| `list_metrics` | The fourteen registered statistics, with unit and definition |
+| `list_metrics` | The eighteen registered statistics, with unit and definition, including synthetic tracking (shot speed, top speed, distance covered, sprints) |
 | `list_players` | Both squads: id, name, shirt, position, starter |
 | `compute_metric` | One statistic for a team or player over a window (minutes, or one half), recomputed from the log |
 | `check_sentence` | Checks a sentence that states one statistic. It recomputes the number at the stated precision and checks the sentence names the subject, the statistic and any window it states. Returns `verified` or the reason it was sent back |

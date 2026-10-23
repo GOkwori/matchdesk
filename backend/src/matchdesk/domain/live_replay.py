@@ -98,6 +98,9 @@ def _event_payload(event: MatchEvent) -> dict[str, Any]:
         "end_y": event.end_location.y if event.end_location else None,
         "pressure": 1 if event.under_pressure else 0,
         "tags": list(event.tags),
+        "shot_speed": event.shot_speed_kmh,
+        "player_speed": event.player_speed_kmh,
+        "distance": event.distance_m,
     }
 
 

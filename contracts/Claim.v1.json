@@ -187,7 +187,8 @@
             "metres",
             "per_minute",
             "rating",
-            "km_per_hour"
+            "km_per_hour",
+            "kilometres"
           ],
           "title": "Unit",
           "type": "string"

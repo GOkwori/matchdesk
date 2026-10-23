@@ -57,6 +57,9 @@ def compact_events(events: tuple[MatchEvent, ...]) -> dict[str, Any]:
         "end_y": [event.end_location.y if event.end_location else None for event in events],
         "pressure": [1 if event.under_pressure else 0 for event in events],
         "tags": [list(event.tags) for event in events],
+        "shot_speed": [event.shot_speed_kmh for event in events],
+        "player_speed": [event.player_speed_kmh for event in events],
+        "distance": [event.distance_m for event in events],
     }
 
 
@@ -64,7 +67,9 @@ def _assertion(
     metric: str,
     subject: Subject,
     value: float,
-    unit: Literal["count", "ratio", "synthetic_xg"],
+    unit: Literal[
+        "count", "ratio", "synthetic_xg", "metres", "rating", "km_per_hour", "kilometres"
+    ],
     *,
     window: MatchWindow | None = None,
     comparator: Literal["eq", "gte", "lte"] = "eq",
@@ -267,6 +272,9 @@ def parity_fixture() -> dict[str, Any]:
         "pass_distance.v1": "metres",
         "pass_difficulty.v1": "rating",
         "ball_speed.v1": "km_per_hour",
+        "shot_speed.v1": "km_per_hour",
+        "top_speed.v1": "km_per_hour",
+        "distance_covered.v1": "kilometres",
     }
     okafor_only = Subject(player_id="nbr-09")
     for metric, subject, window, template in (
@@ -294,6 +302,14 @@ def parity_fixture() -> dict[str, Any]:
             first_half,
             "Northbridge's estimated ball speed was {v} km/h in the first half.",
         ),
+        ("shot_speed.v1", okafor_only, replay_window(), "Okafor's shot speed was {v} km/h."),
+        (
+            "top_speed.v1",
+            away,
+            second_half,
+            "Riverside reached a top speed of {v} km/h in the second half.",
+        ),
+        ("distance_covered.v1", okafor_only, replay_window(), "Okafor covered {v} km."),
     ):
         value = measure(metric, subject, window)
         assertion = _assertion(metric, subject, value, unit_of[metric], window=window, decimals=1)  # type: ignore[arg-type]
@@ -328,10 +344,35 @@ def parity_fixture() -> dict[str, Any]:
             "Riverside made {v} interceptions in the first half.",
         ),
         ("recoveries.v1", okafor_only, replay_window(), "Okafor made {v} ball recoveries."),
+        ("sprints.v1", home, first_half, "Northbridge made {v} sprints in the first half."),
     ):
         value = observed(metric, subject, window)
         assertion = _assertion(metric, subject, value, "count", window=window)
         binding.append((f"{metric} count", assertion, ("E-0001",), template.format(v=int(value))))
+    shot = measure("shot_speed.v1", okafor_only, replay_window())
+    shot_speed = _assertion(
+        "shot_speed.v1",
+        okafor_only,
+        shot,
+        "km_per_hour",
+        decimals=1,
+    )
+    binding.append(
+        (
+            "a shot speed stated as a top speed",
+            shot_speed,
+            ("E-0001",),
+            f"Okafor's top speed was {shot:.1f} km/h.",
+        )
+    )
+    binding.append(
+        (
+            "a shot speed with only the unit",
+            shot_speed,
+            ("E-0001",),
+            f"Okafor hit {shot:.1f} km/h.",
+        )
+    )
     early = MatchWindow(from_ms=0, to_ms=2_059_000)
     nil = _assertion("goals.v1", away, 0, "count", window=early)
     binding.append(

@@ -62,9 +62,9 @@ def test_cues_are_verified_only_on_events_that_have_arrived() -> None:
             assert data["events_received"] == received
             assert data["checked_at_ms"] >= data["t_ms"]
             cues.append(data)
-    assert len(cues) == 13
+    assert len(cues) == 21
     assert {c["status"] for c in cues} == {"verified", "logged"}
-    goal = next(c for c in cues if c["cue_id"] == "Q-008")
+    goal = next(c for c in cues if c["cue_id"] == "Q-015")
     assert goal["checked_at_ms"] == 3_498_000
     assert [r["status"] for r in goal["claims"]] == ["verified"] * 3
 
@@ -74,7 +74,7 @@ def test_starting_mid_match_fast_forwards_without_replaying_old_cues() -> None:
     frames = _frames(from_ms=2_500_000)
     assert frames[0][1]["score"] == {"nbr": 1, "riv": 1}
     cue_ids = [data["cue_id"] for kind, data in frames if kind == "cue"]
-    assert cue_ids[0] == "Q-006" and "Q-004" not in cue_ids
+    assert cue_ids[0] == "Q-011" and "Q-009" not in cue_ids
 
 
 def test_pacing_follows_the_speed_and_never_stalls() -> None:

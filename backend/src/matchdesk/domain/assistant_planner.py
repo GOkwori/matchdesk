@@ -71,6 +71,10 @@ METRIC_IDS = (
     "tackles.v1",
     "interceptions.v1",
     "recoveries.v1",
+    "shot_speed.v1",
+    "top_speed.v1",
+    "distance_covered.v1",
+    "sprints.v1",
 )
 # The identities the studio can name: both teams and every player in either squad.
 SUBJECTS: Mapping[str, str] = {
@@ -95,6 +99,10 @@ MetricId = Literal[
     "tackles.v1",
     "interceptions.v1",
     "recoveries.v1",
+    "shot_speed.v1",
+    "top_speed.v1",
+    "distance_covered.v1",
+    "sprints.v1",
 ]
 Intent = Literal[
     "metric", "score", "scorers", "leaders", "summary", "help", "out_of_scope", "unknown"
@@ -203,7 +211,8 @@ def planner_instructions() -> str:
         "final_third_entries.v1, possession_time.v1 (teams only), pass_distance.v1 (average "
         "pass length), progressive_passes.v1, pass_difficulty.v1, ball_speed.v1 (estimated), "
         "pressured_passes.v1 (passes under pressure), tackles.v1, interceptions.v1, "
-        "recoveries.v1 (balls won back).\n"
+        "recoveries.v1 (balls won back), shot_speed.v1, top_speed.v1, distance_covered.v1, "
+        "sprints.v1 (synthetic tracking).\n"
         f"subjects (at most two; empty means both teams): {subjects}.\n"
         "window: period 1 or 2 for a half; from_minute/to_minute for minute bounds; "
         "last_minutes for 'the last N minutes'; leave all empty for the whole match so far.\n"

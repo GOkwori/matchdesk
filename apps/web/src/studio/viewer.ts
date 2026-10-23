@@ -41,6 +41,9 @@ export const FOCUS_METRICS = [
   { id: "pressured_passes.v1", label: "Passes under pressure" },
   { id: "tackles.v1", label: "Tackles" },
   { id: "recoveries.v1", label: "Ball recoveries" },
+  { id: "top_speed.v1", label: "Top speed (tracking)" },
+  { id: "distance_covered.v1", label: "Distance covered (tracking)" },
+  { id: "sprints.v1", label: "Sprints (tracking)" },
 ] as const;
 export type FocusMetric = (typeof FOCUS_METRICS)[number]["id"];
 

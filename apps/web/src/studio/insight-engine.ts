@@ -213,6 +213,7 @@ export function pressureChanges(ctx: MatchContext): PressureChange[] {
 export const PLAYER_METRICS: readonly Metric[] = [
   "goals.v1", "shots.v1", "synthetic_xg.v1", "pass_accuracy.v1", "pass_distance.v1", "progressive_passes.v1",
   "pass_difficulty.v1", "pressured_passes.v1", "tackles.v1", "interceptions.v1", "recoveries.v1",
+  "shot_speed.v1", "top_speed.v1", "distance_covered.v1", "sprints.v1",
 ];
 
 export type PlayerFocus = {
@@ -232,7 +233,11 @@ export function playerFocus(ctx: MatchContext, playerId: string, team: string): 
   const events = ctx.events.filter((e) => e.player_id === playerId && e.match_clock_ms < ctx.replayEndMs);
   const passes = events.filter((e) => e.type === "pass").length;
   const averages = new Set<Metric>(["pass_accuracy.v1", "pass_distance.v1", "pass_difficulty.v1"]);
-  const skipped = PLAYER_METRICS.filter((m) => averages.has(m) && passes === 0);
+  const shots = events.filter((e) => e.type === "shot").length;
+  const tracked = events.some((e) => e.player_speed_kmh != null);
+  const tracking = new Set<Metric>(["top_speed.v1", "distance_covered.v1", "sprints.v1"]);
+  // Averages need something to average; a player with no tracked action has no tracking figures.
+  const skipped = PLAYER_METRICS.filter((m) => (averages.has(m) && passes === 0) || (m === "shot_speed.v1" && shots === 0) || (tracking.has(m) && !tracked));
   const lines = PLAYER_METRICS.filter((m) => !skipped.includes(m)).map((m) => measuredLine(m, playerId, resolved, ctx, evidence));
   return { id: playerId, name: ctx.names[playerId] ?? playerId, team, passes, lines, skipped, events };
 }

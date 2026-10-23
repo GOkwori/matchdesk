@@ -118,7 +118,8 @@ def test_compute_events_overlays_stories_and_recaps() -> None:
     assert limited["returned"] == 5 and limited["count"] == 1421
     cues = _call("get_overlays", {"from_minute": 58, "to_minute": 59, "language": "fr"})
     assert [c["text"] for c in cues["structuredContent"]["cues"]] == [
-        "BUT ! Okafor marque pour Northbridge. 2–1."
+        "BUT ! Okafor marque pour Northbridge. 2–1.",
+        "La tête d'Okafor est partie à 49,4 km/h",
     ]
     stories = _call("get_story", {})["structuredContent"]["stories"]
     assert len(stories) == 3
@@ -132,7 +133,7 @@ def test_compute_events_overlays_stories_and_recaps() -> None:
     assert len(players) == 32 and any(
         p["player"] == "nbr-09" and p["name"] == "Okafor" and p["team"] == "nbr" for p in players
     )
-    assert len(_call("list_metrics", {})["structuredContent"]["metrics"]) == 14
+    assert len(_call("list_metrics", {})["structuredContent"]["metrics"]) == 18
 
 
 @pytest.mark.parametrize(

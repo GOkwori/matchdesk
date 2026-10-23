@@ -26,7 +26,7 @@ test('the replay re-verifies every overlay claim and shows the goal cue at its m
   const errors = watchErrors(page);
   await open(page, '/match/nbr-riv/live');
   const replay = page.locator('.md-lr');
-  await expect(replay.getByText(/13 timed overlays · 26 of 26 claims re-verified here/)).toBeVisible();
+  await expect(replay.getByText(/21 timed overlays · 34 of 34 claims re-verified here/)).toBeVisible();
   await replay.getByRole('button', { name: 'Goal 58:17' }).click();
   await replay.getByRole('button', { name: '1×' }).click();
   await replay.getByRole('button', { name: 'Play replay' }).click();
@@ -45,7 +45,7 @@ test('the replay re-verifies every overlay claim and shows the goal cue at its m
 test('logged cards are marked as logged, not verified', async ({ page }) => {
   await open(page, '/match/nbr-riv/live');
   const replay = page.locator('.md-lr');
-  await expect(replay.getByText(/26 of 26 claims/)).toBeVisible();
+  await expect(replay.getByText(/34 of 34 claims/)).toBeVisible();
   const slider = replay.getByRole('slider', { name: 'Match clock' });
   await slider.fill(String((27 * 60 + 41) * 1000));
   await expect(replay.locator('.md-lt')).toContainText('Yellow card');
@@ -89,7 +89,9 @@ test('player focus states verified figures and can set the favourite', async ({ 
   await page.getByRole('link', { name: /Okafor/ }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Okafor' })).toBeVisible();
   await expect(page.getByText('Okafor scored 2 goals up to 67:12.')).toBeVisible();
-  await expect(page.getByText('11 of 11 sentences verified')).toBeVisible();
+  await expect(page.getByText('15 of 15 sentences verified')).toBeVisible();
+  await expect(page.getByText('Okafor reached a top speed of 32.3 km/h up to 67:12.')).toBeVisible();
+  await expect(page.getByText("Okafor's shot speed was 58.5 km/h up to 67:12.")).toBeVisible();
   await page.getByRole('button', { name: '☆ Make Okafor my player' }).click();
   await expect(page.getByRole('button', { name: '★ Okafor is your player' })).toHaveAttribute('aria-pressed', 'true');
   expect(await page.evaluate(() => JSON.parse(window.localStorage.getItem('md.viewer')).player)).toBe('nbr-09');
@@ -168,4 +170,16 @@ test('pressure changes come with the verified counts on both sides', async ({ pa
   await expect(panel.getByText('Pressure rose from 12 to 26 passes under pressure.')).toBeVisible();
   await expect(panel.locator('.md-chip-failed')).toHaveCount(0);
   await expect(panel.getByText('Northbridge played 15 passes under pressure between 45′ and 50′.').first()).toBeVisible();
+});
+
+test('tracking thresholds tag the player on the replay, verified', async ({ page }) => {
+  await open(page, '/match/nbr-riv/live');
+  const replay = page.locator('.md-lr');
+  await expect(replay.getByText(/21 timed overlays · 34 of 34 claims re-verified here/)).toBeVisible();
+  await replay.getByRole('slider', { name: 'Match clock' }).fill(String(48 * 60_000 + 44_000));
+  await expect(replay.locator('.md-lt')).toContainText('Mensah flies at 35.4 km/h');
+  await expect(replay.locator('.md-lt .md-chip-verified')).toBeVisible();
+  await replay.getByRole('button', { name: 'Goal 58:17' }).click();
+  await replay.getByRole('slider', { name: 'Match clock' }).fill(String(58 * 60_000 + 26_000));
+  await expect(replay.locator('.md-lt')).toContainText("Okafor's header left at 49.4 km/h");
 });

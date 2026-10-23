@@ -27,6 +27,10 @@ const NOTES: Partial<Record<Metric, string>> = {
   "synthetic_xg.v1": "This demo's own chance-quality model, not a licensed xG feed.",
   "pass_difficulty.v1": "0–100 per attempt: 45% length, 30% forward ambition, 15% a target in the final sixth, 10% pressure.",
   "progressive_passes.v1": "Completed, at least 10 m forward and at least 25% closer to goal.",
+  "shot_speed.v1": "Mean ball speed of the shots, from the log's synthetic tracking.",
+  "top_speed.v1": "Fastest at any action, from the log's synthetic tracking.",
+  "distance_covered.v1": "Summed from metres tracked between actions (synthetic).",
+  "sprints.v1": "Actions at 25.2 km/h or faster (synthetic tracking).",
 };
 
 function figure(metric: Metric, value: number): string {
@@ -35,6 +39,8 @@ function figure(metric: Metric, value: number): string {
   if (unit === "synthetic_xg") return roundHalfUp(value, 2);
   if (unit === "metres") return `${roundHalfUp(value, 1)} m`;
   if (unit === "rating") return roundHalfUp(value, 1);
+  if (unit === "km_per_hour") return `${roundHalfUp(value, 1)} km/h`;
+  if (unit === "kilometres") return `${roundHalfUp(value, 1)} km`;
   return String(value);
 }
 
@@ -118,7 +124,7 @@ export default async function PlayerPage({ params }: { params: Promise<{ playerI
               );
             })}
           </ul>
-          {focus.skipped.length > 0 && <p className="md-muted md-small">No passes logged, so there is no pass accuracy, length or difficulty to state.</p>}
+          {focus.skipped.length > 0 && <p className="md-muted md-small">{focus.skipped.some((m) => m.startsWith("pass_")) ? "No passes logged, so there is no pass accuracy, length or difficulty to state. " : ""}{focus.skipped.includes("shot_speed.v1") ? "No shots, so no shot speed. " : ""}{focus.skipped.includes("top_speed.v1") ? "No tracked actions, so no speed, distance or sprints." : ""}</p>}
           <p className="md-muted md-small">Each sentence is a claim built from a registered metric and checked by the same verifier the newsroom uses, while this page was built. Nothing here is written by a model.</p>
         </section>
         <aside className="md-split-side" aria-label="Where and when">

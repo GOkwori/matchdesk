@@ -174,7 +174,7 @@ test('review: a windowed score never claims a lead it cannot show', () => {
 
 test('review: questions it cannot answer exactly are declined, never answered as a different question', () => {
   const declined = [
-    'How many shots did Fernandes take?', 'Who was the best player?', 'Who ran the furthest?',
+    'How many shots did Fernandes take?', 'Who was the best player?', 'Who had the fastest shot?',
     'shots on target', 'how many own goals', 'How many goals did Riverside concede?', 'shots conceded by Northbridge',
     'Okafor assists', 'corners', 'yellow cards', 'how many fouls', 'how many passes did Mensah make',
     'shots in the last 5 minutes of the first half', 'Northbridge, Riverside and Okafor shots', 'shots in stoppage time',
@@ -307,5 +307,18 @@ test('pass quality, ball speed and defending answers verify and say how they wer
     assert.deepEqual(new Set(statuses(a)), new Set(['verified']), `${q}: ${a.lines.map((l) => `${l.claim.text} -> ${l.result.reason}`).join(' | ')}`);
     if (note) assert.match(a.note, note, q);
   }
-  for (const q of ['What was the shot speed of the goal?', 'Who ran the furthest?', 'top speed of Okafor']) assert.equal(answer(q).kind, 'decline', q);
+  // The speed of one shot is on its overlay; a window's shot speed, top speed and distance are metrics.
+  for (const q of ['What was the shot speed of the goal?', 'fastest shot']) assert.equal(answer(q).kind, 'decline', q);
+  for (const [q, metric, first] of [
+    ['top speed of Okafor', 'top_speed.v1', 'Okafor reached a top speed of 32.3 km/h up to 67:12.'],
+    ['Who ran the furthest?', 'distance_covered.v1', 'Quinlan covered 8.0 km up to 67:12.'],
+    ['Riverside sprints in the first half', 'sprints.v1', 'Riverside made 10 sprints in the first half.'],
+    ['Lindqvist shot speed', 'shot_speed.v1', "Lindqvist's shot speed was 89.1 km/h up to 67:12."],
+  ]) {
+    const a = answer(q);
+    assert.equal(a.kind, 'match', q);
+    assert.equal(a.lines[0].claim.text, first, q);
+    assert.ok(a.lines.every((l) => l.claim.assertion.metric === metric && l.result.status === 'verified'), q);
+    assert.match(a.note, /synthetic tracking/, q);
+  }
 });

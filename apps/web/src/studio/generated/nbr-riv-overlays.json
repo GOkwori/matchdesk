@@ -4,6 +4,80 @@
    "claim": {
     "assertion": {
      "comparator": "eq",
+     "decimals": 1,
+     "metric": "top_speed.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "player_id": "nbr-08",
+      "schema_version": "1.0"
+     },
+     "unit": "km_per_hour",
+     "value": 33.8,
+     "window": {
+      "from_ms": 1260000,
+      "schema_version": "1.0",
+      "to_ms": 1320000
+     }
+    },
+    "claim_id": "OV-E-0441-SPRINT",
+    "evidence_event_ids": [
+     "E-0441"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Quinlan reached a top speed of 33.8 km/h between 21′ and 22′."
+   },
+   "claim_id": "OV-E-0441-SPRINT",
+   "evidence_event_ids": [
+    "E-0441"
+   ],
+   "observed": 33.8,
+   "query_id": "metric-top_speed-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Quinlan reached a top speed of 33.8 km/h between 21′ and 22′."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "decimals": 1,
+     "metric": "top_speed.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "player_id": "nbr-10",
+      "schema_version": "1.0"
+     },
+     "unit": "km_per_hour",
+     "value": 35.0,
+     "window": {
+      "from_ms": 1860000,
+      "schema_version": "1.0",
+      "to_ms": 1920000
+     }
+    },
+    "claim_id": "OV-E-0628-SPRINT",
+    "evidence_event_ids": [
+     "E-0628"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Delgado reached a top speed of 35.0 km/h between 31′ and 32′."
+   },
+   "claim_id": "OV-E-0628-SPRINT",
+   "evidence_event_ids": [
+    "E-0628"
+   ],
+   "observed": 35.0,
+   "query_id": "metric-top_speed-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Delgado reached a top speed of 35.0 km/h between 31′ and 32′."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
      "metric": "goals.v1",
      "schema_version": "1.0",
      "subject": {
@@ -97,6 +171,43 @@
    "reason": "The cited goal event records the stated scorer",
    "status": "verified",
    "text": "Okafor scored for Northbridge at 34:18."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "decimals": 1,
+     "metric": "shot_speed.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "player_id": "nbr-09",
+      "schema_version": "1.0"
+     },
+     "unit": "km_per_hour",
+     "value": 67.6,
+     "window": {
+      "from_ms": 2040000,
+      "schema_version": "1.0",
+      "to_ms": 2100000
+     }
+    },
+    "claim_id": "OV-E-0688-SHOTSPEED",
+    "evidence_event_ids": [
+     "E-0687"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Okafor's shot speed was 67.6 km/h between 34′ and 35′."
+   },
+   "claim_id": "OV-E-0688-SHOTSPEED",
+   "evidence_event_ids": [
+    "E-0687"
+   ],
+   "observed": 67.6,
+   "query_id": "metric-shot_speed-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Okafor's shot speed was 67.6 km/h between 34′ and 35′."
   },
   {
    "claim": {
@@ -200,6 +311,80 @@
    "claim": {
     "assertion": {
      "comparator": "eq",
+     "decimals": 1,
+     "metric": "shot_speed.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "player_id": "riv-11",
+      "schema_version": "1.0"
+     },
+     "unit": "km_per_hour",
+     "value": 89.1,
+     "window": {
+      "from_ms": 2460000,
+      "schema_version": "1.0",
+      "to_ms": 2520000
+     }
+    },
+    "claim_id": "OV-E-0790-SHOTSPEED",
+    "evidence_event_ids": [
+     "E-0789"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Lindqvist's shot speed was 89.1 km/h between 41′ and 42′."
+   },
+   "claim_id": "OV-E-0790-SHOTSPEED",
+   "evidence_event_ids": [
+    "E-0789"
+   ],
+   "observed": 89.1,
+   "query_id": "metric-shot_speed-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Lindqvist's shot speed was 89.1 km/h between 41′ and 42′."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "decimals": 1,
+     "metric": "top_speed.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "player_id": "nbr-04",
+      "schema_version": "1.0"
+     },
+     "unit": "km_per_hour",
+     "value": 35.4,
+     "window": {
+      "from_ms": 2880000,
+      "schema_version": "1.0",
+      "to_ms": 2940000
+     }
+    },
+    "claim_id": "OV-E-0990-SPRINT",
+    "evidence_event_ids": [
+     "E-0990"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Mensah reached a top speed of 35.4 km/h between 48′ and 49′."
+   },
+   "claim_id": "OV-E-0990-SPRINT",
+   "evidence_event_ids": [
+    "E-0990"
+   ],
+   "observed": 35.4,
+   "query_id": "metric-top_speed-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Mensah reached a top speed of 35.4 km/h between 48′ and 49′."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
      "metric": "goals.v1",
      "schema_version": "1.0",
      "subject": {
@@ -295,6 +480,117 @@
    "reason": "The cited goal event records the stated scorer",
    "status": "verified",
    "text": "Okafor scored for Northbridge at 58:17."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "decimals": 1,
+     "metric": "shot_speed.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "player_id": "nbr-09",
+      "schema_version": "1.0"
+     },
+     "unit": "km_per_hour",
+     "value": 49.4,
+     "window": {
+      "from_ms": 3480000,
+      "schema_version": "1.0",
+      "to_ms": 3540000
+     }
+    },
+    "claim_id": "OV-E-1366-SHOTSPEED",
+    "evidence_event_ids": [
+     "E-1365"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Okafor's shot speed was 49.4 km/h between 58′ and 59′."
+   },
+   "claim_id": "OV-E-1366-SHOTSPEED",
+   "evidence_event_ids": [
+    "E-1365"
+   ],
+   "observed": 49.4,
+   "query_id": "metric-shot_speed-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Okafor's shot speed was 49.4 km/h between 58′ and 59′."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "decimals": 1,
+     "metric": "distance_covered.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "player_id": "nbr-08",
+      "schema_version": "1.0"
+     },
+     "unit": "kilometres",
+     "value": 5.1,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 2506000
+     }
+    },
+    "claim_id": "OV-NBR-5KM",
+    "evidence_event_ids": [
+     "E-0794"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Quinlan covered 5.1 km up to 41:46."
+   },
+   "claim_id": "OV-NBR-5KM",
+   "evidence_event_ids": [
+    "E-0794"
+   ],
+   "observed": 5.0944,
+   "query_id": "metric-distance_covered-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Quinlan covered 5.1 km up to 41:46."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "decimals": 1,
+     "metric": "distance_covered.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "player_id": "riv-07",
+      "schema_version": "1.0"
+     },
+     "unit": "kilometres",
+     "value": 5.0,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 2453000
+     }
+    },
+    "claim_id": "OV-RIV-5KM",
+    "evidence_event_ids": [
+     "E-0786"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Barros covered 5.0 km up to 40:53."
+   },
+   "claim_id": "OV-RIV-5KM",
+   "evidence_event_ids": [
+    "E-0786"
+   ],
+   "observed": 5.011299999999999,
+   "query_id": "metric-distance_covered-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Barros covered 5.0 km up to 40:53."
   },
   {
    "claim": {
@@ -1066,9 +1362,44 @@
    }
   },
   {
+   "claim_ids": [
+    "OV-E-0441-SPRINT"
+   ],
+   "clock": "21:44",
+   "cue_id": "Q-002",
+   "duration_ms": 8000,
+   "event_ids": [
+    "E-0441"
+   ],
+   "kind": "top_speed",
+   "players": [
+    "nbr-08"
+   ],
+   "status": "verified",
+   "t_ms": 1304412,
+   "team": "nbr",
+   "text": {
+    "analyst": {
+     "en": "Top speed · Quinlan · 33.8 km/h · 21:44",
+     "es": "Velocidad máxima · Quinlan · 33,8 km/h · 21:44",
+     "fr": "Vitesse de pointe · Quinlan · 33,8 km/h · 21:44"
+    },
+    "caption": {
+     "en": "⚡ Quinlan · 33.8 KM/H",
+     "es": "⚡ Quinlan · 33,8 KM/H",
+     "fr": "⚡ Quinlan · 33,8 KM/H"
+    },
+    "fan": {
+     "en": "⚡ Quinlan flies at 33.8 km/h",
+     "es": "⚡ Quinlan vuela a 33,8 km/h",
+     "fr": "⚡ Quinlan file à 33,8 km/h"
+    }
+   }
+  },
+  {
    "claim_ids": [],
    "clock": "27:40",
-   "cue_id": "Q-002",
+   "cue_id": "Q-003",
    "duration_ms": 8000,
    "event_ids": [
     "E-0561"
@@ -1105,7 +1436,7 @@
     "OV-STATS-30-SHOTS-RIV"
    ],
    "clock": "30:00",
-   "cue_id": "Q-003",
+   "cue_id": "Q-004",
    "duration_ms": 8000,
    "event_ids": [],
    "kind": "stats",
@@ -1133,12 +1464,47 @@
   },
   {
    "claim_ids": [
+    "OV-E-0628-SPRINT"
+   ],
+   "clock": "31:11",
+   "cue_id": "Q-005",
+   "duration_ms": 8000,
+   "event_ids": [
+    "E-0628"
+   ],
+   "kind": "top_speed",
+   "players": [
+    "nbr-10"
+   ],
+   "status": "verified",
+   "t_ms": 1871720,
+   "team": "nbr",
+   "text": {
+    "analyst": {
+     "en": "Top speed · Delgado · 35.0 km/h · 31:11",
+     "es": "Velocidad máxima · Delgado · 35,0 km/h · 31:11",
+     "fr": "Vitesse de pointe · Delgado · 35,0 km/h · 31:11"
+    },
+    "caption": {
+     "en": "⚡ Delgado · 35.0 KM/H",
+     "es": "⚡ Delgado · 35,0 KM/H",
+     "fr": "⚡ Delgado · 35,0 KM/H"
+    },
+    "fan": {
+     "en": "⚡ Delgado flies at 35.0 km/h",
+     "es": "⚡ Delgado vuela a 35,0 km/h",
+     "fr": "⚡ Delgado file à 35,0 km/h"
+    }
+   }
+  },
+  {
+   "claim_ids": [
     "OV-E-0688-SCORER",
     "OV-E-0688-NBR",
     "OV-E-0688-RIV"
    ],
    "clock": "34:18",
-   "cue_id": "Q-004",
+   "cue_id": "Q-006",
    "duration_ms": 8000,
    "event_ids": [
     "E-0688"
@@ -1170,12 +1536,82 @@
   },
   {
    "claim_ids": [
+    "OV-E-0688-SHOTSPEED"
+   ],
+   "clock": "34:26",
+   "cue_id": "Q-007",
+   "duration_ms": 8000,
+   "event_ids": [
+    "E-0687"
+   ],
+   "kind": "shot_speed",
+   "players": [
+    "nbr-09"
+   ],
+   "status": "verified",
+   "t_ms": 2066000,
+   "team": "nbr",
+   "text": {
+    "analyst": {
+     "en": "Shot speed · Okafor strike · 67.6 km/h · E-0687",
+     "es": "Velocidad del tiro · disparo de Okafor · 67,6 km/h · E-0687",
+     "fr": "Vitesse de frappe · frappe d'Okafor · 67,6 km/h · E-0687"
+    },
+    "caption": {
+     "en": "SHOT SPEED · Okafor 68 KM/H",
+     "es": "VELOCIDAD · Okafor 68 KM/H",
+     "fr": "VITESSE · Okafor 68 KM/H"
+    },
+    "fan": {
+     "en": "Okafor's strike left at 67.6 km/h",
+     "es": "El disparo de Okafor salió a 67,6 km/h",
+     "fr": "La frappe d'Okafor est partie à 67,6 km/h"
+    }
+   }
+  },
+  {
+   "claim_ids": [
+    "OV-RIV-5KM"
+   ],
+   "clock": "40:52",
+   "cue_id": "Q-008",
+   "duration_ms": 8000,
+   "event_ids": [
+    "E-0786"
+   ],
+   "kind": "distance",
+   "players": [
+    "riv-07"
+   ],
+   "status": "verified",
+   "t_ms": 2452484,
+   "team": "riv",
+   "text": {
+    "analyst": {
+     "en": "Distance · Barros (Riverside) first past 5 km · 5.0 km at 41′",
+     "es": "Distancia · Barros (Riverside) primero en pasar de 5 km · 5,0 km al 41′",
+     "fr": "Distance · Barros (Riverside) premier au-delà de 5 km · 5,0 km à la 41e"
+    },
+    "caption": {
+     "en": "Barros · 5.0 KM",
+     "es": "Barros · 5,0 KM",
+     "fr": "Barros · 5,0 KM"
+    },
+    "fan": {
+     "en": "Barros is the first Riverside player past 5 km",
+     "es": "Barros es el primero del Riverside en pasar de 5 km",
+     "fr": "Barros, premier de Riverside à dépasser 5 km"
+    }
+   }
+  },
+  {
+   "claim_ids": [
     "OV-E-0790-SCORER",
     "OV-E-0790-NBR",
     "OV-E-0790-RIV"
    ],
    "clock": "41:03",
-   "cue_id": "Q-005",
+   "cue_id": "Q-009",
    "duration_ms": 8000,
    "event_ids": [
     "E-0790"
@@ -1207,12 +1643,82 @@
   },
   {
    "claim_ids": [
+    "OV-E-0790-SHOTSPEED"
+   ],
+   "clock": "41:11",
+   "cue_id": "Q-010",
+   "duration_ms": 8000,
+   "event_ids": [
+    "E-0789"
+   ],
+   "kind": "shot_speed",
+   "players": [
+    "riv-11"
+   ],
+   "status": "verified",
+   "t_ms": 2471000,
+   "team": "riv",
+   "text": {
+    "analyst": {
+     "en": "Shot speed · Lindqvist strike · 89.1 km/h · E-0789",
+     "es": "Velocidad del tiro · disparo de Lindqvist · 89,1 km/h · E-0789",
+     "fr": "Vitesse de frappe · frappe de Lindqvist · 89,1 km/h · E-0789"
+    },
+    "caption": {
+     "en": "SHOT SPEED · Lindqvist 89 KM/H",
+     "es": "VELOCIDAD · Lindqvist 89 KM/H",
+     "fr": "VITESSE · Lindqvist 89 KM/H"
+    },
+    "fan": {
+     "en": "Lindqvist's strike left at 89.1 km/h",
+     "es": "El disparo de Lindqvist salió a 89,1 km/h",
+     "fr": "La frappe de Lindqvist est partie à 89,1 km/h"
+    }
+   }
+  },
+  {
+   "claim_ids": [
+    "OV-NBR-5KM"
+   ],
+   "clock": "41:45",
+   "cue_id": "Q-011",
+   "duration_ms": 8000,
+   "event_ids": [
+    "E-0794"
+   ],
+   "kind": "distance",
+   "players": [
+    "nbr-08"
+   ],
+   "status": "verified",
+   "t_ms": 2505420,
+   "team": "nbr",
+   "text": {
+    "analyst": {
+     "en": "Distance · Quinlan (Northbridge) first past 5 km · 5.1 km at 42′",
+     "es": "Distancia · Quinlan (Northbridge) primero en pasar de 5 km · 5,1 km al 42′",
+     "fr": "Distance · Quinlan (Northbridge) premier au-delà de 5 km · 5,1 km à la 42e"
+    },
+    "caption": {
+     "en": "Quinlan · 5.1 KM",
+     "es": "Quinlan · 5,1 KM",
+     "fr": "Quinlan · 5,1 KM"
+    },
+    "fan": {
+     "en": "Quinlan is the first Northbridge player past 5 km",
+     "es": "Quinlan es el primero del Northbridge en pasar de 5 km",
+     "fr": "Quinlan, premier de Northbridge à dépasser 5 km"
+    }
+   }
+  },
+  {
+   "claim_ids": [
     "OV-STATS-45-POSS",
     "OV-STATS-45-SHOTS-NBR",
     "OV-STATS-45-SHOTS-RIV"
    ],
    "clock": "45:00",
-   "cue_id": "Q-006",
+   "cue_id": "Q-012",
    "duration_ms": 8000,
    "event_ids": [],
    "kind": "stats",
@@ -1243,7 +1749,7 @@
     "OV-SPELL-RIV"
    ],
    "clock": "45:00",
-   "cue_id": "Q-007",
+   "cue_id": "Q-013",
    "duration_ms": 8000,
    "event_ids": [],
    "kind": "spell",
@@ -1271,12 +1777,47 @@
   },
   {
    "claim_ids": [
+    "OV-E-0990-SPRINT"
+   ],
+   "clock": "48:43",
+   "cue_id": "Q-014",
+   "duration_ms": 8000,
+   "event_ids": [
+    "E-0990"
+   ],
+   "kind": "top_speed",
+   "players": [
+    "nbr-04"
+   ],
+   "status": "verified",
+   "t_ms": 2923063,
+   "team": "nbr",
+   "text": {
+    "analyst": {
+     "en": "Top speed · Mensah · 35.4 km/h · 48:43",
+     "es": "Velocidad máxima · Mensah · 35,4 km/h · 48:43",
+     "fr": "Vitesse de pointe · Mensah · 35,4 km/h · 48:43"
+    },
+    "caption": {
+     "en": "⚡ Mensah · 35.4 KM/H",
+     "es": "⚡ Mensah · 35,4 KM/H",
+     "fr": "⚡ Mensah · 35,4 KM/H"
+    },
+    "fan": {
+     "en": "⚡ Mensah flies at 35.4 km/h",
+     "es": "⚡ Mensah vuela a 35,4 km/h",
+     "fr": "⚡ Mensah file à 35,4 km/h"
+    }
+   }
+  },
+  {
+   "claim_ids": [
     "OV-E-1366-SCORER",
     "OV-E-1366-NBR",
     "OV-E-1366-RIV"
    ],
    "clock": "58:17",
-   "cue_id": "Q-008",
+   "cue_id": "Q-015",
    "duration_ms": 8000,
    "event_ids": [
     "E-1366"
@@ -1308,12 +1849,47 @@
   },
   {
    "claim_ids": [
+    "OV-E-1366-SHOTSPEED"
+   ],
+   "clock": "58:25",
+   "cue_id": "Q-016",
+   "duration_ms": 8000,
+   "event_ids": [
+    "E-1365"
+   ],
+   "kind": "shot_speed",
+   "players": [
+    "nbr-09"
+   ],
+   "status": "verified",
+   "t_ms": 3505000,
+   "team": "nbr",
+   "text": {
+    "analyst": {
+     "en": "Shot speed · Okafor header · 49.4 km/h · E-1365",
+     "es": "Velocidad del tiro · cabezazo de Okafor · 49,4 km/h · E-1365",
+     "fr": "Vitesse de frappe · tête d'Okafor · 49,4 km/h · E-1365"
+    },
+    "caption": {
+     "en": "SHOT SPEED · Okafor 49 KM/H",
+     "es": "VELOCIDAD · Okafor 49 KM/H",
+     "fr": "VITESSE · Okafor 49 KM/H"
+    },
+    "fan": {
+     "en": "Okafor's header left at 49.4 km/h",
+     "es": "El cabezazo de Okafor salió a 49,4 km/h",
+     "fr": "La tête d'Okafor est partie à 49,4 km/h"
+    }
+   }
+  },
+  {
+   "claim_ids": [
     "OV-STATS-60-POSS",
     "OV-STATS-60-SHOTS-NBR",
     "OV-STATS-60-SHOTS-RIV"
    ],
    "clock": "60:00",
-   "cue_id": "Q-009",
+   "cue_id": "Q-017",
    "duration_ms": 8000,
    "event_ids": [],
    "kind": "stats",
@@ -1344,7 +1920,7 @@
     "OV-SPOT-TACKLES"
    ],
    "clock": "60:00",
-   "cue_id": "Q-010",
+   "cue_id": "Q-018",
    "duration_ms": 8000,
    "event_ids": [],
    "kind": "spotlight",
@@ -1375,7 +1951,7 @@
   {
    "claim_ids": [],
    "clock": "63:04",
-   "cue_id": "Q-011",
+   "cue_id": "Q-019",
    "duration_ms": 8000,
    "event_ids": [
     "E-1402"
@@ -1408,7 +1984,7 @@
   {
    "claim_ids": [],
    "clock": "67:08",
-   "cue_id": "Q-012",
+   "cue_id": "Q-020",
    "duration_ms": 8000,
    "event_ids": [
     "E-1421"
@@ -1446,7 +2022,7 @@
     "OV-STATS-67-SHOTS-RIV"
    ],
    "clock": "67:12",
-   "cue_id": "Q-013",
+   "cue_id": "Q-021",
    "duration_ms": 8000,
    "event_ids": [],
    "kind": "stats",
@@ -1479,7 +2055,7 @@
   "fr"
  ],
  "match_id": "nbr-riv-canonical",
- "note": "Timed cues for on-screen graphics. Numbers come only from claims the verifier checked against the event log; cards and substitutions are logged events with no registered query yet. Spanish and French are AI-assisted templates awaiting native review. Nothing here is published: a producer decides.",
+ "note": "Timed cues for on-screen graphics. Numbers come only from claims the verifier checked against the event log; speeds and distances come from the log's synthetic tracking; cards and substitutions are logged events with no registered query yet. Spanish and French are AI-assisted templates awaiting native review. Nothing here is published: a producer decides.",
  "personas": [
   "analyst",
   "fan",

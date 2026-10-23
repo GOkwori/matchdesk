@@ -153,6 +153,9 @@ class _Draft:
     anchor: bool = False
     run: int | None = None
     pressure: bool = False
+    shot_speed: float | None = None
+    player_speed: float | None = None
+    distance: float | None = None
 
 
 @dataclass
@@ -599,6 +602,9 @@ def _to_event(draft: _Draft) -> MatchEvent:
                 "related_player_id": draft.related_player,
                 "under_pressure": draft.pressure,
                 "tags": draft.tags,
+                "shot_speed_kmh": draft.shot_speed,
+                "player_speed_kmh": draft.player_speed,
+                "distance_m": draft.distance,
             }
         )
     return MatchEvent.model_validate(payload)
@@ -631,6 +637,66 @@ def _add_defending_detail(drafts: dict[int, _Draft], seed: int) -> None:
             draft.tags = ("tackle",) if roll < 0.34 else ("interception",) if roll < 0.66 else ()
 
 
+# Typical running pace between logged actions, metres per second, by position.
+_WORK_RATE = {"GK": 0.75, "DF": 1.75, "MF": 2.0, "FW": 1.85}
+# Speed of the acting player at an action, km/h, by event type (low, high).
+_ACTION_SPEED: dict[str, tuple[float, float]] = {
+    "pass": (4.0, 16.0),
+    "carry": (13.0, 26.0),
+    "dribble": (15.0, 28.0),
+    "shot": (7.0, 22.0),
+    "recovery": (9.0, 25.0),
+    "clearance": (6.0, 18.0),
+    "foul": (8.0, 20.0),
+    "kickoff": (0.0, 2.0),
+}
+SPRINT_KMH = 25.2
+
+
+def _add_physical_detail(drafts: dict[int, _Draft], seed: int) -> None:
+    """Add the synthetic tracking a provider would supply, without moving any event.
+
+    A third, independent generator keeps every identity, clock, location, outcome and tag
+    exactly as before. Each shot gets the ball's speed off the foot or head: headers are
+    slower, strikes from distance faster. Each player action gets the player's speed at that
+    moment, with occasional sprints, and the metres the player ran since their previous logged
+    action, from the time elapsed and a work rate for their position.
+    """
+    generator = _rng(seed * 104_729 + 31)
+    positions = {
+        str(member["player_id"]): str(member["position"])
+        for team in (HOME, AWAY)
+        for member in squad(team)
+    }
+    last_seen: dict[str, int] = {}
+    for number in sorted(drafts):
+        draft = drafts[number]
+        if draft.type == "shot" and draft.location is not None:
+            # Distance to goal on a 105 m x 68 m pitch, attacking towards x = 100.
+            metres = ((100.0 - draft.location[0]) * 1.05) ** 2 + (
+                (50.0 - draft.location[1]) * 0.68
+            ) ** 2
+            metres = metres**0.5
+            if "header" in draft.tags:
+                speed = generator.uniform(38.0, 62.0)
+            else:
+                speed = generator.uniform(64.0, 92.0) + max(0.0, metres - 16.0) * generator.uniform(
+                    0.8, 1.6
+                )
+            draft.shot_speed = round(min(speed, 125.0), 1)
+        if draft.player is None or draft.type in ("card", "substitution", "goal"):
+            continue
+        low, high = _ACTION_SPEED.get(draft.type, (5.0, 18.0))
+        speed = generator.uniform(low, high)
+        if draft.type in ("carry", "dribble", "recovery", "shot") and generator.random() < 0.12:
+            speed = min(speed + generator.uniform(6.0, 11.0), 35.4)
+        draft.player_speed = round(speed, 1)
+        elapsed = (draft.clock - last_seen.get(draft.player, 0)) / 1000.0
+        rate = _WORK_RATE[positions.get(draft.player, "MF")]
+        draft.distance = round(min(elapsed * rate * generator.uniform(0.85, 1.15), 6000.0), 1)
+        last_seen[draft.player] = draft.clock
+
+
 def generate_canonical_match(seed: int = CANONICAL_SEED) -> tuple[MatchEvent, ...]:
     """Generate the full canonical event log, E-0001 to E-1421, in sequence order."""
     generator = _rng(seed)
@@ -641,4 +707,5 @@ def generate_canonical_match(seed: int = CANONICAL_SEED) -> tuple[MatchEvent, ..
     _fill_actions(by_number, runs, generator)
     _place_statistics(by_number, runs, generator)
     _add_defending_detail(by_number, seed)
+    _add_physical_detail(by_number, seed)
     return tuple(_to_event(by_number[number]) for number in sorted(by_number))

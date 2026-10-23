@@ -143,7 +143,7 @@ export function ControlTimeline() {
           ))}
         </ol>
       </section>
-      <p className="md-muted md-small">Ball speed is estimated from pass length and the time to the next logged event; there is no tracking data. The match is synthetic, so these phases describe invented play.</p>
+      <p className="md-muted md-small">Ball speed is estimated from pass length and the time to the next logged event, not from tracking. The match is synthetic, so these phases describe invented play.</p>
     </section>
   );
 }

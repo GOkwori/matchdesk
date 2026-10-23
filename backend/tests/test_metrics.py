@@ -184,6 +184,10 @@ def _whole_window() -> MatchWindow:
 def test_registry_contains_only_the_registered_formula_ids() -> None:
     """The public registry is explicit so formulas cannot be selected by fuzzy names."""
     assert set(METRIC_DEFINITIONS) == {
+        "shot_speed.v1",
+        "top_speed.v1",
+        "distance_covered.v1",
+        "sprints.v1",
         "shots.v1",
         "goals.v1",
         "pass_accuracy.v1",
