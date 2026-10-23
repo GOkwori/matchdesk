@@ -5,8 +5,8 @@ MatchDesk runs on one invented match, Northbridge FC 2–1 Riverside United, rep
 
 ## The three-minute path
 
-Open [matchdesk-seven.vercel.app](https://matchdesk-seven.vercel.app) (or run it yourself, below)
-and choose **Start the 3-minute guided demo**. The tour has
+Open the studio on Azure, [mdesk-web.icybeach-62467e8a.uksouth.azurecontainerapps.io](https://mdesk-web.icybeach-62467e8a.uksouth.azurecontainerapps.io) (Azure Container Apps: the Next.js studio in front of the FastAPI service). A studio-only copy runs at [matchdesk-seven.vercel.app](https://matchdesk-seven.vercel.app). Or run it yourself, below.
+Choose **Start the 3-minute guided demo**. The tour has
 seven stops:
 
 1. **Overview.** The score, the replay slider, and a "try to fool the verifier" panel.
@@ -41,7 +41,7 @@ season, "after the equaliser") are declined rather than answered with a nearby f
   re-verified in your browser; cards and the substitution are labelled as logged events,
   because no query checks them yet.
 - **Machine-readable overlay feed.** The same cues as JSON at
-  [`/overlays/nbr-riv.json`](https://matchdesk-seven.vercel.app/overlays/nbr-riv.json)
+  [`/overlays/nbr-riv.json`](https://mdesk-web.icybeach-62467e8a.uksouth.azurecontainerapps.io/overlays/nbr-riv.json)
   (schema `matchdesk-overlay-feed/1`): time, kind, team, players, event ids, every persona
   and language, and each claim in full, so a graphics engine or a judge can re-run the
   verifier on it.
@@ -69,7 +69,8 @@ season, "after the equaliser") are declined rather than answered with a nearby f
 | Personalisation | Real, on the device only: no account, nothing sent |
 | Audience variants | Produced by the Audience Adapter. Each cites only verified claims, and its fact comes from them; the surrounding tone ("Incredible performance!") is labelled as not checked. Human language review not run |
 | Producer approval and publishing | Not enabled; Approve is shown locked |
-| Identity, hosting of the backend | Not part of the demo |
+| Hosting | Azure Container Apps in UK South: the studio (public) and the API (internal only, reached through the studio's same-origin `/api`), images in Azure Container Registry, pulled by a managed identity with no passwords; logs in Log Analytics. Deployed from GitHub Actions with OIDC, no stored cloud keys |
+| Producer sign-in | Not part of the demo |
 
 ## What the verifier does not check
 
