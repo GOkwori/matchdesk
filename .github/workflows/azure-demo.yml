@@ -229,7 +229,7 @@ jobs:
             code="$(curl -s -o /dev/null -w '%{http_code}' "$WEB_URL/")" && [ "$code" = "200" ] && break
             sleep 10
           done
-          for path in / /match/nbr-riv /match/nbr-riv/insights /producer/compose/D-031 /story/okafor-header-restores-northbridge-lead /sw.js; do
+          for path in / /match/nbr-riv /match/nbr-riv/live /match/nbr-riv/insights /match/nbr-riv/players /producer/compose/D-031 /story /story/okafor-header-restores-northbridge-lead /overlays/nbr-riv.json /sw.js; do
             code="$(curl -s -o /dev/null -w '%{http_code}' "$WEB_URL$path")"
             echo "$path -> $code"
             [ "$code" = "200" ]
@@ -239,12 +239,17 @@ jobs:
           echo "api health: $health"
           grep -q '"status"' <<<"$health"
           if [ "${{ inputs.assistant }}" = "true" ]; then
-            plan="$(curl -s -X POST "$WEB_URL/api/assistant/plan" -H 'content-type: application/json' \
-              -d '{"question":"Did the side in stripes run out of steam after the break?"}')"
-            echo "planner: $plan"
-            grep -q '"plan"' <<<"$plan"
+            # A question only the planner can read; the first call after a deploy can be cold.
+            for attempt in 1 2 3; do
+              plan="$(curl -s -X POST "$WEB_URL/api/assistant/plan" -H 'content-type: application/json' \
+                -d '{"question":"which player won the ball back most after the break"}')"
+              echo "planner (attempt $attempt): $plan"
+              grep -q '"plan"' <<<"$plan"
+              grep -q '"intent":"unknown"' <<<"$plan" || break
+              sleep 5
+            done
             if grep -q '"intent":"unknown"' <<<"$plan"; then
-              echo "::warning title=Foundry access::The planner answered 'unknown'. If this persists, give the managed identity ${{ steps.base.outputs.identityPrincipalId }} the Azure AI User role on the Foundry project."
+              echo "::warning title=Foundry access::The planner answered 'unknown' three times. Run mode diagnose; the identity ${{ steps.base.outputs.identityPrincipalId }} needs Cognitive Services User (or Azure AI User) on the Foundry account."
             fi
           fi
 

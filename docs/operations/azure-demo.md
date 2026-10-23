@@ -35,8 +35,9 @@ inside the Container Apps monthly free grant. Planner calls cost a few pence a d
    `development` branch, and give it **Contributor** on that resource group only.
 3. In GitHub, set the secret `AZURE_SUBSCRIPTION_ID` and the variable `AZURE_RESOURCE_GROUP`. Optionally, set
    `AZURE_BUDGET_EMAILS` to the addresses for budget alerts, comma-separated or as a JSON array.
-4. After the first deploy, give the managed identity `mdesk-demo-id` the **Azure AI User** role on the Foundry
-   project. The workflow summary prints its principal ID. Until then the planner answers "unknown", and the studio
+4. After the first deploy, give the managed identity `mdesk-demo-id` the **Cognitive Services User** role (or **Azure AI User**)
+   on the Foundry **account**, not only the project. Management roles such as Azure AI Developer or Azure AI Administrator
+   do not carry the permission to call the model, and the planner then gets an empty 403 (`mode: diagnose` shows the roles). The workflow summary prints its principal ID. Until then the planner answers "unknown", and the studio
    falls back to its built-in parser.
 
 ## Deploy
