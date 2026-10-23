@@ -105,7 +105,7 @@ def test_verify_claim_takes_a_full_contract_including_event_facts() -> None:
     }
     assert _call("verify_claim", {"claim": fact})["structuredContent"]["status"] == "verified"
     broken = _call("verify_claim", {"claim": {"claim_id": "X-2"}})
-    assert broken["isError"] is True and "malformed" in broken["content"][0]["text"]
+    assert broken["isError"] is True and "Claim contract" in broken["content"][0]["text"]
 
 
 def test_compute_events_overlays_stories_and_recaps() -> None:
