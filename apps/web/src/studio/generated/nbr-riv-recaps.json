@@ -1147,7 +1147,7 @@
      ],
      "label": {
       "en": "Tackles leader, Sorensen",
-      "es": "Líder en entradas, Sorensen",
+      "es": "Jugador con más entradas: Sorensen",
       "fr": "Meilleur tacleur, Sorensen"
      }
     }
@@ -1266,12 +1266,12 @@
       "headline": "HT · NBR 1–1 RIV"
      },
      "es": {
-      "body": "Posesión 56–44 · Tiros 5–6 · Pases 89 %–86 % · xG 1,0–0,8 · Entradas: Sorensen (Riverside) 6 · Okafor 34:18, Lindqvist 41:03",
-      "headline": "HT · NBR 1–1 RIV"
+      "body": "Posesión 56–44 · Tiros 5–6 · Precisión de pase 89 %–86 % · xG 1,0–0,8 · Entradas: Sorensen (Riverside) 6 · Okafor 34:18, Lindqvist 41:03",
+      "headline": "DESC · NBR 1–1 RIV"
      },
      "fr": {
-      "body": "Possession 56–44 · Tirs 5–6 · Passes 89 %–86 % · xG 1,0–0,8 · Tacles: Sorensen (Riverside) 6 · Okafor 34:18, Lindqvist 41:03",
-      "headline": "HT · NBR 1–1 RIV"
+      "body": "Possession 56–44 · Tirs 5–6 · Précision des passes 89 %–86 % · xG 1,0–0,8 · Tacles : Sorensen (Riverside) 6 · Okafor 34:18, Lindqvist 41:03",
+      "headline": "MT · NBR 1–1 RIV"
      }
     },
     "caption": {
@@ -1281,11 +1281,11 @@
      },
      "es": {
       "body": "Okafor 35′, Lindqvist 42′",
-      "headline": "HT · NBR 1–1 RIV"
+      "headline": "DESC · NBR 1–1 RIV"
      },
      "fr": {
       "body": "Okafor 35′, Lindqvist 42′",
-      "headline": "HT · NBR 1–1 RIV"
+      "headline": "MT · NBR 1–1 RIV"
      }
     },
     "fan": {
@@ -1294,11 +1294,11 @@
       "headline": "Half-time · Northbridge 1–1 Riverside"
      },
      "es": {
-      "body": "Descanso: Northbridge 1–1 Riverside. Goles: Okafor 34:18, Lindqvist 41:03. El Northbridge tuvo el 56 % del balón y 5 tiros por 6 del Riverside; goles esperados 1,0–0,8. Sorensen lidera las entradas con 6.",
+      "body": "Descanso: Northbridge 1–1 Riverside. Goles: Okafor 34:18, Lindqvist 41:03. Northbridge tuvo el 56 % de la posesión y realizó 5 tiros frente a los 6 de Riverside; goles esperados: 1,0–0,8. Sorensen fue el jugador con más entradas: 6.",
       "headline": "Descanso · Northbridge 1–1 Riverside"
      },
      "fr": {
-      "body": "Mi-temps : Northbridge 1–1 Riverside. Buts : Okafor 34:18, Lindqvist 41:03. Northbridge a eu 56 % du ballon et 5 tirs contre 6 pour Riverside ; buts attendus 1,0–0,8. Sorensen mène aux tacles avec 6.",
+      "body": "Mi-temps : Northbridge 1–1 Riverside. Buts : Okafor 34:18, Lindqvist 41:03. Northbridge a eu 56 % de possession et a tiré 5 fois contre 6 pour Riverside ; buts attendus : 1,0–0,8. Sorensen a réalisé le plus de tacles : 6.",
       "headline": "Mi-temps · Northbridge 1–1 Riverside"
      }
     }
@@ -1311,12 +1311,12 @@
    "unchecked": [
     {
      "en": "Why the score changed: tactics and individual errors",
-     "es": "Por qué cambió el marcador: táctica y errores individuales",
+     "es": "Por qué cambió el marcador: aspectos tácticos y errores individuales",
      "fr": "Pourquoi le score a changé : tactique et erreurs individuelles"
     },
     {
      "en": "Who made the decisive pass or run",
-     "es": "Autor del pase o desmarque decisivo",
+     "es": "Quién dio el pase decisivo o realizó el desmarque clave",
      "fr": "Auteur de la passe ou de l'appel décisif"
     }
    ],
@@ -1401,7 +1401,7 @@
      ],
      "label": {
       "en": "Tackles leader, Sorensen",
-      "es": "Líder en entradas, Sorensen",
+      "es": "Jugador con más entradas: Sorensen",
       "fr": "Meilleur tacleur, Sorensen"
      }
     }
@@ -1537,7 +1537,7 @@
      "kind": "goal",
      "label": {
       "en": "Lead restored · Okafor",
-      "es": "Vuelve a ponerse por delante · Okafor",
+      "es": "Recupera la ventaja · Okafor",
       "fr": "Avantage repris · Okafor"
      },
      "t_ms": 3497000,
@@ -1552,7 +1552,7 @@
      "label": {
       "en": "Okafor's brace",
       "es": "Doblete de Okafor",
-      "fr": "Doublé de Okafor"
+      "fr": "Doublé d’Okafor"
      },
      "t_ms": 3497000,
      "team": "nbr"
@@ -1570,11 +1570,11 @@
       "headline": "67:12 · NBR 2–1 RIV"
      },
      "es": {
-      "body": "Posesión 58–42 · Tiros 14–9 · Pases 90 %–85 % · xG 2,5–1,5 · Entradas: Sorensen (Riverside) 8 · Okafor 34:18, Lindqvist 41:03, Okafor 58:17",
+      "body": "Posesión 58–42 · Tiros 14–9 · Precisión de pase 90 %–85 % · xG 2,5–1,5 · Entradas: Sorensen (Riverside) 8 · Okafor 34:18, Lindqvist 41:03, Okafor 58:17",
       "headline": "67:12 · NBR 2–1 RIV"
      },
      "fr": {
-      "body": "Possession 58–42 · Tirs 14–9 · Passes 90 %–85 % · xG 2,5–1,5 · Tacles: Sorensen (Riverside) 8 · Okafor 34:18, Lindqvist 41:03, Okafor 58:17",
+      "body": "Possession 58–42 · Tirs 14–9 · Précision des passes 90 %–85 % · xG 2,5–1,5 · Tacles : Sorensen (Riverside) 8 · Okafor 34:18, Lindqvist 41:03, Okafor 58:17",
       "headline": "67:12 · NBR 2–1 RIV"
      }
     },
@@ -1598,11 +1598,11 @@
       "headline": "At 67:12 · Northbridge 2–1 Riverside"
      },
      "es": {
-      "body": "En el 67:12: Northbridge 2–1 Riverside. Goles: Okafor 34:18, Lindqvist 41:03, Okafor 58:17. El Northbridge tuvo el 58 % del balón y 14 tiros por 9 del Riverside; goles esperados 2,5–1,5. Sorensen lidera las entradas con 8.",
+      "body": "En el 67:12: Northbridge 2–1 Riverside. Goles: Okafor 34:18, Lindqvist 41:03, Okafor 58:17. Northbridge tuvo el 58 % de la posesión y realizó 14 tiros frente a los 9 de Riverside; goles esperados: 2,5–1,5. Sorensen fue el jugador con más entradas: 8.",
       "headline": "En el 67:12 · Northbridge 2–1 Riverside"
      },
      "fr": {
-      "body": "À 67:12 : Northbridge 2–1 Riverside. Buts : Okafor 34:18, Lindqvist 41:03, Okafor 58:17. Northbridge a eu 58 % du ballon et 14 tirs contre 9 pour Riverside ; buts attendus 2,5–1,5. Sorensen mène aux tacles avec 8.",
+      "body": "À 67:12 : Northbridge 2–1 Riverside. Buts : Okafor 34:18, Lindqvist 41:03, Okafor 58:17. Northbridge a eu 58 % de possession et a tiré 14 fois contre 9 pour Riverside ; buts attendus : 2,5–1,5. Sorensen a réalisé le plus de tacles : 8.",
       "headline": "À 67:12 · Northbridge 2–1 Riverside"
      }
     }
@@ -1615,12 +1615,12 @@
    "unchecked": [
     {
      "en": "Why the score changed: tactics and individual errors",
-     "es": "Por qué cambió el marcador: táctica y errores individuales",
+     "es": "Por qué cambió el marcador: aspectos tácticos y errores individuales",
      "fr": "Pourquoi le score a changé : tactique et erreurs individuelles"
     },
     {
      "en": "Who made the decisive pass or run",
-     "es": "Autor del pase o desmarque decisivo",
+     "es": "Quién dio el pase decisivo o realizó el desmarque clave",
      "fr": "Auteur de la passe ou de l'appel décisif"
     }
    ],

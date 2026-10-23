@@ -34,6 +34,8 @@ from matchdesk.domain.verification import verify_claim
 OVERLAY_SCHEMA = "matchdesk-overlay-feed/1"
 PERSONAS = ("analyst", "fan", "caption")
 LANGUAGES = ("en", "es", "fr")
+# French sets a colon off with a non-breaking space.
+_COLON = {"en": ":", "es": ":", "fr": "\u00a0:"}
 STAT_CARD_MS = (900_000, 1_800_000, 2_700_000, 3_600_000)
 CUE_MS = 8_000
 SPELL = (1_800_000, 2_700_000)
@@ -220,7 +222,7 @@ def _goal_cues(builder: _Builder) -> None:
             "fan": {
                 "en": f"GOAL! {scorer} scores for {team}. It's {home}–{away}.",
                 "es": f"¡GOL! {scorer} marca para el {team}. {home}–{away}.",
-                "fr": f"BUT ! {scorer} marque pour {team}. {home}–{away}.",
+                "fr": f"BUT ! {scorer} marque pour {team}. Le score est de {home}–{away}.",
             },
             "caption": {
                 "en": f"{minute}′ GOAL · {scorer} · NBR {home}–{away} RIV",
@@ -272,7 +274,9 @@ def _event_cues(builder: _Builder) -> None:
                 "analyst": {
                     lang: f"{colour[lang]} {clock} · {player} ({team})" for lang in LANGUAGES
                 },
-                "fan": {lang: f"{colour[lang]}: {player} ({team})" for lang in LANGUAGES},
+                "fan": {
+                    lang: f"{colour[lang]}{_COLON[lang]} {player} ({team})" for lang in LANGUAGES
+                },
                 "caption": {
                     lang: f"{minute}′ {colour[lang].upper()} · {player}" for lang in LANGUAGES
                 },
@@ -307,7 +311,9 @@ def _event_cues(builder: _Builder) -> None:
                 "analyst": {
                     lang: f"{word[lang]} {clock} · {team} · {arrows}" for lang in LANGUAGES
                 },
-                "fan": {lang: f"{word[lang]} · {team}: {arrows}" for lang in LANGUAGES},
+                "fan": {
+                    lang: f"{word[lang]} · {team}{_COLON[lang]} {arrows}" for lang in LANGUAGES
+                },
                 "caption": {
                     lang: f"{minute}′ {word[lang].upper()} · {arrows}" for lang in LANGUAGES
                 },
@@ -362,7 +368,7 @@ def _stat_cards(builder: _Builder) -> None:
             "fan": {
                 "en": f"After {minute} minutes: Northbridge {home}% of the ball, shots {nbr}–{riv}",
                 "es": f"Tras {minute} minutos: Northbridge {home} % del balón, tiros {nbr}–{riv}",
-                "fr": f"Après {minute} minutes : Northbridge {home} % du ballon, tirs {nbr}–{riv}",
+                "fr": f"Après {minute} minutes : Northbridge a eu {home} % de possession, tirs {nbr}–{riv}",
             },
             "caption": {
                 "en": f"POSS {home}–{away} · SHOTS {nbr}–{riv}",
@@ -390,7 +396,7 @@ def _spell_cue(builder: _Builder) -> None:
         "analyst": {
             "en": f"Control shift · Riverside {pct}% possession, 30′–45′",
             "es": f"Cambio de control · Riverside {pct} % de posesión, 30′–45′",
-            "fr": f"Bascule · Riverside {pct} % de possession, 30′–45′",
+            "fr": f"Changement de domination · Riverside {pct} % de possession, 30′–45′",
         },
         "fan": {
             "en": f"Riverside had {pct}% of the ball from 30′ to 45′",
@@ -436,7 +442,7 @@ def _spotlight_cue(builder: _Builder) -> None:
         "fan": {
             "en": f"{_name(leader)} has made {count} tackles, the most on the pitch",
             "es": f"{_name(leader)} lleva {count} entradas, más que nadie",
-            "fr": f"{_name(leader)} compte {count} tacles, le plus haut total du match",
+            "fr": f"{_name(leader)} a réalisé {count} tacles, soit le plus grand nombre sur le terrain",
         },
         "caption": {
             "en": f"TACKLES · {_name(leader)} {count}",
@@ -487,23 +493,23 @@ def _shot_speed_cues(builder: _Builder) -> None:
             "fr": "tête" if header else "frappe",
         }
         comma = kmh.replace(".", ",")
-        # French elides "de" before a vowel: d'Okafor.
-        de = f"d'{name}" if name[:1].lower() in "aeiouyh" else f"de {name}"
+        # French elides "de" before a vowel: d’Okafor.
+        de = f"d’{name}" if name[:1].lower() in "aeiouyh" else f"de {name}"
         texts = {
             "analyst": {
                 "en": f"Shot speed · {name} {what['en']} · {kmh} km/h · {shot.event_id}",
                 "es": f"Velocidad del tiro · {what['es']} de {name} · {comma} km/h · {shot.event_id}",
-                "fr": f"Vitesse de frappe · {what['fr']} {de} · {comma} km/h · {shot.event_id}",
+                "fr": f"Vitesse du tir · {what['fr']} {de} · {comma} km/h · {shot.event_id}",
             },
             "fan": {
                 "en": f"{name}'s {what['en']} left at {kmh} km/h",
                 "es": f"El {what['es']} de {name} salió a {comma} km/h",
-                "fr": f"La {what['fr']} {de} est partie à {comma} km/h",
+                "fr": f"La {what['fr']} {de} a été mesurée à {comma} km/h",
             },
             "caption": {
                 "en": f"SHOT SPEED · {name} {whole} KM/H",
-                "es": f"VELOCIDAD · {name} {whole} KM/H",
-                "fr": f"VITESSE · {name} {whole} KM/H",
+                "es": f"VELOCIDAD DEL TIRO · {name} {whole} KM/H",
+                "fr": f"VITESSE DU TIR · {name} {whole} KM/H",
             },
         }
         builder.cue(
@@ -593,13 +599,13 @@ def _tracking_cues(builder: _Builder) -> None:
             texts = {
                 "analyst": {
                     "en": f"Distance · {name} ({_name(side)}) first past 5 km · {km} km at {minute}′",
-                    "es": f"Distancia · {name} ({_name(side)}) primero en pasar de 5 km · {comma} km al {minute}′",
-                    "fr": f"Distance · {name} ({_name(side)}) premier au-delà de 5 km · {comma} km à la {minute}e",
+                    "es": f"Distancia · {name} ({_name(side)}), primero en superar los 5 km · {comma} km en el {minute}′",
+                    "fr": f"Distance · {name} ({_name(side)}), premier à dépasser les 5 km · {comma} km à la {minute}e minute",
                 },
                 "fan": {
                     "en": f"{name} is the first {_name(side)} player past 5 km",
                     "es": f"{name} es el primero del {_name(side)} en pasar de 5 km",
-                    "fr": f"{name}, premier de {_name(side)} à dépasser 5 km",
+                    "fr": f"{name} est le premier joueur de {_name(side)} à dépasser les 5 km parcourus",
                 },
                 "caption": {
                     lang: f"{name} · {km if lang == 'en' else comma} KM" for lang in LANGUAGES

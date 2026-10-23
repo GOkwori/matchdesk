@@ -6,6 +6,7 @@
 
 ## Competition build — 21 October 2026
 
+- [Spanish and French language review, 23 October](language-review-es-fr-20261023.md): 330 strings reviewed, 77 corrections applied, certified by the owner; the completed workbook is kept alongside.
 - [Azure live checks, 23 October (evening)](azure-live-checks-20261023.md): the redeploy at `88db1b2`, MCP over the public URL, the live stream's verified half-time recap, and a completed live agent run on Foundry (3 verification rounds).
 - [Azure deployment record, 23 October](azure-deployment-20261023.md): the studio and API on Azure Container Apps from `af477a3`, the runs that got there, the Foundry planner checked live, cost and lifetime.
 - [Hosted judge-path walkthrough, 22 October](hosted-walkthrough-20261022.md): the judge path run on the live site in a real browser, with screenshots, and one finding (a draft sentence that said more than its claim) and its fix.

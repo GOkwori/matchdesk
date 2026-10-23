@@ -1435,7 +1435,7 @@
     "fan": {
      "en": "After 15 minutes: Northbridge 62% of the ball, shots 2–2",
      "es": "Tras 15 minutos: Northbridge 62 % del balón, tiros 2–2",
-     "fr": "Après 15 minutes : Northbridge 62 % du ballon, tirs 2–2"
+     "fr": "Après 15 minutes : Northbridge a eu 62 % de possession, tirs 2–2"
     }
    }
   },
@@ -1505,7 +1505,7 @@
     "fan": {
      "en": "Yellow card: Haddad (Riverside)",
      "es": "Tarjeta amarilla: Haddad (Riverside)",
-     "fr": "Carton jaune: Haddad (Riverside)"
+     "fr": "Carton jaune : Haddad (Riverside)"
     }
    }
   },
@@ -1538,7 +1538,7 @@
     "fan": {
      "en": "After 30 minutes: Northbridge 61% of the ball, shots 4–4",
      "es": "Tras 30 minutos: Northbridge 61 % del balón, tiros 4–4",
-     "fr": "Après 30 minutes : Northbridge 61 % du ballon, tirs 4–4"
+     "fr": "Après 30 minutes : Northbridge a eu 61 % de possession, tirs 4–4"
     }
    }
   },
@@ -1610,7 +1610,7 @@
     "fan": {
      "en": "GOAL! Okafor scores for Northbridge. It's 1–0.",
      "es": "¡GOL! Okafor marca para el Northbridge. 1–0.",
-     "fr": "BUT ! Okafor marque pour Northbridge. 1–0."
+     "fr": "BUT ! Okafor marque pour Northbridge. Le score est de 1–0."
     }
    }
   },
@@ -1635,17 +1635,17 @@
     "analyst": {
      "en": "Shot speed · Okafor strike · 67.6 km/h · E-0687",
      "es": "Velocidad del tiro · disparo de Okafor · 67,6 km/h · E-0687",
-     "fr": "Vitesse de frappe · frappe d'Okafor · 67,6 km/h · E-0687"
+     "fr": "Vitesse du tir · frappe d’Okafor · 67,6 km/h · E-0687"
     },
     "caption": {
      "en": "SHOT SPEED · Okafor 68 KM/H",
-     "es": "VELOCIDAD · Okafor 68 KM/H",
-     "fr": "VITESSE · Okafor 68 KM/H"
+     "es": "VELOCIDAD DEL TIRO · Okafor 68 KM/H",
+     "fr": "VITESSE DU TIR · Okafor 68 KM/H"
     },
     "fan": {
      "en": "Okafor's strike left at 67.6 km/h",
      "es": "El disparo de Okafor salió a 67,6 km/h",
-     "fr": "La frappe d'Okafor est partie à 67,6 km/h"
+     "fr": "La frappe d’Okafor a été mesurée à 67,6 km/h"
     }
    }
   },
@@ -1669,8 +1669,8 @@
    "text": {
     "analyst": {
      "en": "Distance · Barros (Riverside) first past 5 km · 5.0 km at 41′",
-     "es": "Distancia · Barros (Riverside) primero en pasar de 5 km · 5,0 km al 41′",
-     "fr": "Distance · Barros (Riverside) premier au-delà de 5 km · 5,0 km à la 41e"
+     "es": "Distancia · Barros (Riverside), primero en superar los 5 km · 5,0 km en el 41′",
+     "fr": "Distance · Barros (Riverside), premier à dépasser les 5 km · 5,0 km à la 41e minute"
     },
     "caption": {
      "en": "Barros · 5.0 KM",
@@ -1680,7 +1680,7 @@
     "fan": {
      "en": "Barros is the first Riverside player past 5 km",
      "es": "Barros es el primero del Riverside en pasar de 5 km",
-     "fr": "Barros, premier de Riverside à dépasser 5 km"
+     "fr": "Barros est le premier joueur de Riverside à dépasser les 5 km parcourus"
     }
    }
   },
@@ -1717,7 +1717,7 @@
     "fan": {
      "en": "GOAL! Lindqvist scores for Riverside. It's 1–1.",
      "es": "¡GOL! Lindqvist marca para el Riverside. 1–1.",
-     "fr": "BUT ! Lindqvist marque pour Riverside. 1–1."
+     "fr": "BUT ! Lindqvist marque pour Riverside. Le score est de 1–1."
     }
    }
   },
@@ -1742,17 +1742,17 @@
     "analyst": {
      "en": "Shot speed · Lindqvist strike · 89.1 km/h · E-0789",
      "es": "Velocidad del tiro · disparo de Lindqvist · 89,1 km/h · E-0789",
-     "fr": "Vitesse de frappe · frappe de Lindqvist · 89,1 km/h · E-0789"
+     "fr": "Vitesse du tir · frappe de Lindqvist · 89,1 km/h · E-0789"
     },
     "caption": {
      "en": "SHOT SPEED · Lindqvist 89 KM/H",
-     "es": "VELOCIDAD · Lindqvist 89 KM/H",
-     "fr": "VITESSE · Lindqvist 89 KM/H"
+     "es": "VELOCIDAD DEL TIRO · Lindqvist 89 KM/H",
+     "fr": "VITESSE DU TIR · Lindqvist 89 KM/H"
     },
     "fan": {
      "en": "Lindqvist's strike left at 89.1 km/h",
      "es": "El disparo de Lindqvist salió a 89,1 km/h",
-     "fr": "La frappe de Lindqvist est partie à 89,1 km/h"
+     "fr": "La frappe de Lindqvist a été mesurée à 89,1 km/h"
     }
    }
   },
@@ -1776,8 +1776,8 @@
    "text": {
     "analyst": {
      "en": "Distance · Quinlan (Northbridge) first past 5 km · 5.1 km at 42′",
-     "es": "Distancia · Quinlan (Northbridge) primero en pasar de 5 km · 5,1 km al 42′",
-     "fr": "Distance · Quinlan (Northbridge) premier au-delà de 5 km · 5,1 km à la 42e"
+     "es": "Distancia · Quinlan (Northbridge), primero en superar los 5 km · 5,1 km en el 42′",
+     "fr": "Distance · Quinlan (Northbridge), premier à dépasser les 5 km · 5,1 km à la 42e minute"
     },
     "caption": {
      "en": "Quinlan · 5.1 KM",
@@ -1787,7 +1787,7 @@
     "fan": {
      "en": "Quinlan is the first Northbridge player past 5 km",
      "es": "Quinlan es el primero del Northbridge en pasar de 5 km",
-     "fr": "Quinlan, premier de Northbridge à dépasser 5 km"
+     "fr": "Quinlan est le premier joueur de Northbridge à dépasser les 5 km parcourus"
     }
    }
   },
@@ -1820,7 +1820,7 @@
     "fan": {
      "en": "After 45 minutes: Northbridge 56% of the ball, shots 5–6",
      "es": "Tras 45 minutos: Northbridge 56 % del balón, tiros 5–6",
-     "fr": "Après 45 minutes : Northbridge 56 % du ballon, tirs 5–6"
+     "fr": "Après 45 minutes : Northbridge a eu 56 % de possession, tirs 5–6"
     }
    }
   },
@@ -1841,7 +1841,7 @@
     "analyst": {
      "en": "Control shift · Riverside 55% possession, 30′–45′",
      "es": "Cambio de control · Riverside 55 % de posesión, 30′–45′",
-     "fr": "Bascule · Riverside 55 % de possession, 30′–45′"
+     "fr": "Changement de domination · Riverside 55 % de possession, 30′–45′"
     },
     "caption": {
      "en": "RIV 55% POSS · 30′–45′",
@@ -1923,7 +1923,7 @@
     "fan": {
      "en": "GOAL! Okafor scores for Northbridge. It's 2–1.",
      "es": "¡GOL! Okafor marca para el Northbridge. 2–1.",
-     "fr": "BUT ! Okafor marque pour Northbridge. 2–1."
+     "fr": "BUT ! Okafor marque pour Northbridge. Le score est de 2–1."
     }
    }
   },
@@ -1948,17 +1948,17 @@
     "analyst": {
      "en": "Shot speed · Okafor header · 49.4 km/h · E-1365",
      "es": "Velocidad del tiro · cabezazo de Okafor · 49,4 km/h · E-1365",
-     "fr": "Vitesse de frappe · tête d'Okafor · 49,4 km/h · E-1365"
+     "fr": "Vitesse du tir · tête d’Okafor · 49,4 km/h · E-1365"
     },
     "caption": {
      "en": "SHOT SPEED · Okafor 49 KM/H",
-     "es": "VELOCIDAD · Okafor 49 KM/H",
-     "fr": "VITESSE · Okafor 49 KM/H"
+     "es": "VELOCIDAD DEL TIRO · Okafor 49 KM/H",
+     "fr": "VITESSE DU TIR · Okafor 49 KM/H"
     },
     "fan": {
      "en": "Okafor's header left at 49.4 km/h",
      "es": "El cabezazo de Okafor salió a 49,4 km/h",
-     "fr": "La tête d'Okafor est partie à 49,4 km/h"
+     "fr": "La tête d’Okafor a été mesurée à 49,4 km/h"
     }
    }
   },
@@ -1991,7 +1991,7 @@
     "fan": {
      "en": "After 60 minutes: Northbridge 57% of the ball, shots 14–8",
      "es": "Tras 60 minutos: Northbridge 57 % del balón, tiros 14–8",
-     "fr": "Après 60 minutes : Northbridge 57 % du ballon, tirs 14–8"
+     "fr": "Après 60 minutes : Northbridge a eu 57 % de possession, tirs 14–8"
     }
    }
   },
@@ -2024,7 +2024,7 @@
     "fan": {
      "en": "Sorensen has made 7 tackles, the most on the pitch",
      "es": "Sorensen lleva 7 entradas, más que nadie",
-     "fr": "Sorensen compte 7 tacles, le plus haut total du match"
+     "fr": "Sorensen a réalisé 7 tacles, soit le plus grand nombre sur le terrain"
     }
    }
   },
@@ -2059,7 +2059,7 @@
     "fan": {
      "en": "Yellow card: Mensah (Northbridge)",
      "es": "Tarjeta amarilla: Mensah (Northbridge)",
-     "fr": "Carton jaune: Mensah (Northbridge)"
+     "fr": "Carton jaune : Mensah (Northbridge)"
     }
    }
   },
@@ -2095,7 +2095,7 @@
     "fan": {
      "en": "Substitution · Riverside: Kovac ↑ Barros ↓",
      "es": "Cambio · Riverside: Kovac ↑ Barros ↓",
-     "fr": "Remplacement · Riverside: Kovac ↑ Barros ↓"
+     "fr": "Remplacement · Riverside : Kovac ↑ Barros ↓"
     }
    }
   },
@@ -2128,7 +2128,7 @@
     "fan": {
      "en": "After 67 minutes: Northbridge 58% of the ball, shots 14–9",
      "es": "Tras 67 minutos: Northbridge 58 % del balón, tiros 14–9",
-     "fr": "Après 67 minutes : Northbridge 58 % du ballon, tirs 14–9"
+     "fr": "Après 67 minutes : Northbridge a eu 58 % de possession, tirs 14–9"
     }
    }
   }

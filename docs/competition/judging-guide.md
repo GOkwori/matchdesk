@@ -131,7 +131,7 @@ season, "after the equaliser") are declined rather than answered with a nearby f
 | Synthetic tracking (shot speed, player speed, distance) | Generated with the match by a seeded model, as a tracking provider would supply it; not measured from video. The metrics over it are real and verified |
 | MCP endpoint | Real, read-only, on Azure only; the same verifier and feeds |
 | Personalisation | Real, on the device only: no account, nothing sent |
-| Audience variants | Produced by the Audience Adapter. Each cites only verified claims, and its fact comes from them; the surrounding tone ("Incredible performance!") is labelled as not checked. Human language review not run |
+| Audience variants | Produced by the Audience Adapter. Each cites only verified claims, and its fact comes from them; the surrounding tone ("Incredible performance!") is labelled as not checked. The Spanish and French templates were reviewed and corrected on 23 October and certified by the owner ([record](../evidence/language-review-es-fr-20261023.md)); live model variants have not had a human language review |
 | Producer approval and publishing | Demo: approve D-031's exact version without sign-in, then publish to a demo channel in your browser (one destination times out first, to show a safe retry). No real sign-in or destination |
 | Hosting | Azure Container Apps in UK South, traced to Application Insights: the studio (public) and the API (internal only, reached through the studio's same-origin `/api`), images in Azure Container Registry, pulled by a managed identity with no passwords; logs in Log Analytics. Deployed from GitHub Actions with OIDC, no stored cloud keys |
 | Producer sign-in | Not part of the demo |
@@ -149,7 +149,7 @@ back for revision rather than passed.
   replay point. Negative sentences ("did not score") are sent back, not checked.
 - **It does not check:** tone and judgement ("a critical goal", "dominant"), which are shown
   as interpretation; Spanish and French sentences word by word (they carry the verified
-  claims they cite and need a human language review); anything outside its fixed vocabulary
+  claims they cite; their wording had a separate, certified language review); anything outside its fixed vocabulary
   of statistic and detail words; event facts beyond the four registered queries (who scored,
   the gap between two events, a card and its colour, a substitution and both players).
 - **Data limits:** one synthetic match. Possession is time on the ball between consecutive

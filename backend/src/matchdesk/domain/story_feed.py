@@ -42,8 +42,8 @@ def _name(identity: str) -> str:
 
 
 def _of_fr(name: str) -> str:
-    """French "de" with elision before a vowel: d'Okafor, de Lindqvist."""
-    return f"d'{name}" if name[:1].lower() in "aeiouyh" else f"de {name}"
+    """French "de" with elision before a vowel: d’Okafor, de Lindqvist."""
+    return f"d’{name}" if name[:1].lower() in "aeiouyh" else f"de {name}"
 
 
 def _slugify(text: str) -> str:
@@ -167,13 +167,13 @@ def _lead_in_words(kind: str, seconds: int) -> dict[str, dict[str, str]]:
     return {
         "clause": {
             "en": f"{seconds} seconds after the move began",
-            "es": f"{seconds} segundos después de iniciarse la jugada",
+            "es": f"{seconds} segundos después del inicio de la jugada",
             "fr": f"{seconds} secondes après le début de l'action",
         },
         "check": {
             "en": f"Move began, goal {seconds} s later",
             "es": f"Inicio de la jugada y gol {seconds}\u00a0s después",
-            "fr": f"Début de l'action, puis but {seconds}\u00a0s plus tard",
+            "fr": f"Début de l’action, puis but {seconds}\u00a0s plus tard",
         },
         "start": {"en": "Move begins", "es": "Empieza la jugada", "fr": "Début de l'action"},
     }
@@ -265,14 +265,18 @@ def _story(
     }
     tally_sentence = {
         "en": f" It is {scorer}'s {_ORDINAL['en'][count]} goal of the match." if count > 1 else "",
-        "es": f" Es el {_ORDINAL['es'][count]} gol de {scorer} en el partido." if count > 1 else "",
+        "es": f" Es su {_ORDINAL['es'][count]} gol del partido." if count > 1 else "",
         "fr": f" C'est le {_ORDINAL['fr'][count]} but {_of_fr(scorer)} dans le match."
         if count > 1
         else "",
     }
-    score_word = {"en": "It's", "es": "Ahora", "fr": "Score\u00a0:"}
+    score_word = {"en": "It's", "es": "El marcador es", "fr": "Score\u00a0:"}
     goal_word = {"en": "GOAL", "es": "GOL", "fr": "BUT"}
-    goals_word = {"en": "goals", "es": "goles", "fr": "buts"}
+    tally_words = {
+        "en": f"{scorer} goals: {count}",
+        "es": f"Goles de {scorer}: {count}",
+        "fr": f"Buts {_of_fr(scorer)}\u00a0: {count}",
+    }
     text: dict[str, dict[str, dict[str, str]]] = {persona: {} for persona in PERSONAS}
     for lang in LANGUAGES:
         clause = words["clause"][lang]
@@ -297,12 +301,12 @@ def _story(
                 f"{goal_word[lang]} {key} · {clock} · {scorer}"
                 f"{' · ' + {'en': 'header', 'es': 'cabezazo', 'fr': 'tête'}[lang] if header else ''}"
                 f" · {words['check'][lang]} ({start.event_id})"
-                f" · {scorer} {goals_word[lang]}: {count} · Northbridge {home}–{away} Riverside"
+                f" · {tally_words[lang]} · Northbridge {home}–{away} Riverside"
             ),
         }
         text["caption"][lang] = {
             "headline": f"{minute}′ {goal_word[lang]} · {scorer} · NBR {home}–{away} RIV",
-            "body": f"{words['check'][lang]} · {scorer} {goals_word[lang]}: {count}",
+            "body": f"{words['check'][lang]} · {tally_words[lang]}",
         }
     index = log.index(goal)
     buildup = [

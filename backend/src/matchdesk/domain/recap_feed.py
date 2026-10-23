@@ -27,7 +27,7 @@ from matchdesk.domain.models import (
     round_half_up,
 )
 from matchdesk.domain.overlay_feed import LANGUAGES, PERSONAS, _Builder, _clock, _minute
-from matchdesk.domain.story_feed import _context, build_story_feed
+from matchdesk.domain.story_feed import _context, _of_fr, build_story_feed
 
 RECAP_SCHEMA = "matchdesk-recap-feed/1"
 # The first half's window: every first-half event, up to the second after the half-time whistle.
@@ -58,7 +58,7 @@ _MOMENT = {
     "equaliser": {"en": "Equaliser", "es": "Empate", "fr": "Égalisation"},
     "lead_restored": {
         "en": "Lead restored",
-        "es": "Vuelve a ponerse por delante",
+        "es": "Recupera la ventaja",
         "fr": "Avantage repris",
     },
     "lead_taken": {"en": "Goes in front", "es": "Se pone por delante", "fr": "Passe devant"},
@@ -122,7 +122,7 @@ def _milestones(builder: _Builder, end_ms: int) -> list[dict[str, Any]]:
                     "label": {
                         "en": f"{_name(scorer)}'s brace",
                         "es": f"Doblete de {_name(scorer)}",
-                        "fr": f"Doublé de {_name(scorer)}",
+                        "fr": f"Doublé {_of_fr(_name(scorer))}",
                     },
                     "claim_ids": [brace["claim_id"]],
                 }
@@ -273,7 +273,10 @@ def _recap(
         "es": "Descanso" if half else f"En el {_clock(end_ms)}",
         "fr": "Mi-temps" if half else f"À {_clock(end_ms)}",
     }
-    tag = "HT" if half else _clock(end_ms)
+    tag = {
+        lang: ({"en": "HT", "es": "DESC", "fr": "MT"}[lang] if half else _clock(end_ms))
+        for lang in LANGUAGES
+    }
     shown_ms = canonical.SECOND_HALF_MS if half else end_ms
     none = {"en": "no goals yet", "es": "sin goles todavía", "fr": "pas encore de but"}
     text: dict[str, dict[str, dict[str, str]]] = {persona: {} for persona in PERSONAS}
@@ -289,13 +292,15 @@ def _recap(
             ),
             "es": (
                 f"{when['es']}: Northbridge {h}–{a} Riverside. Goles: {scored}. "
-                f"El Northbridge tuvo el {ph} % del balón y {sh} tiros por {sa} del Riverside; "
-                f"goles esperados {x['nbr']}–{x['riv']}. {who} lidera las entradas con {tk}."
+                f"Northbridge tuvo el {ph} % de la posesión y realizó {sh} tiros frente a los "
+                f"{sa} de Riverside; goles esperados: {x['nbr']}–{x['riv']}. "
+                f"{who} fue el jugador con más entradas: {tk}."
             ),
             "fr": (
                 f"{when['fr']} : Northbridge {h}–{a} Riverside. Buts : {scored}. "
-                f"Northbridge a eu {ph} % du ballon et {sh} tirs contre {sa} pour Riverside ; "
-                f"buts attendus {x['nbr']}–{x['riv']}. {who} mène aux tacles avec {tk}."
+                f"Northbridge a eu {ph} % de possession et a tiré {sh} fois contre {sa} pour "
+                f"Riverside ; buts attendus : {x['nbr']}–{x['riv']}. "
+                f"{who} a réalisé le plus de tacles : {tk}."
             ),
         }[lang]
         text["fan"][lang] = {
@@ -303,21 +308,22 @@ def _recap(
             "body": fan_body,
         }
         pct = "%" if lang == "en" else "\u00a0%"
+        colon = "\u00a0:" if lang == "fr" else ":"
         labels = {
             "en": ("Poss", "Shots", "Passing", "xG", "Tackles"),
-            "es": ("Posesión", "Tiros", "Pases", "xG", "Entradas"),
-            "fr": ("Possession", "Tirs", "Passes", "xG", "Tacles"),
+            "es": ("Posesión", "Tiros", "Precisión de pase", "xG", "Entradas"),
+            "fr": ("Possession", "Tirs", "Précision des passes", "xG", "Tacles"),
         }[lang]
         text["analyst"][lang] = {
-            "headline": f"{tag} · NBR {h}–{a} RIV",
+            "headline": f"{tag[lang]} · NBR {h}–{a} RIV",
             "body": (
                 f"{labels[0]} {ph}–{pa} · {labels[1]} {sh}–{sa} · {labels[2]} {acc['nbr']}{pct}–{acc['riv']}{pct} · "
-                f"{labels[3]} {x['nbr']}–{x['riv']} · {labels[4]}: {who} ({_name(leader_team)}) {tk}"
+                f"{labels[3]} {x['nbr']}–{x['riv']} · {labels[4]}{colon} {who} ({_name(leader_team)}) {tk}"
                 + (f" · {scored}" if goals_list else "")
             ),
         }
         text["caption"][lang] = {
-            "headline": f"{tag} · NBR {h}–{a} RIV",
+            "headline": f"{tag[lang]} · NBR {h}–{a} RIV",
             "body": goals_caption or none[lang],
         }
     checks = [
@@ -360,7 +366,7 @@ def _recap(
         (
             {
                 "en": f"Tackles leader, {who}",
-                "es": f"Líder en entradas, {who}",
+                "es": f"Jugador con más entradas: {who}",
                 "fr": f"Meilleur tacleur, {who}",
             },
             [tackles],
@@ -405,12 +411,12 @@ def _recap(
         "unchecked": [
             {
                 "en": "Why the score changed: tactics and individual errors",
-                "es": "Por qué cambió el marcador: táctica y errores individuales",
+                "es": "Por qué cambió el marcador: aspectos tácticos y errores individuales",
                 "fr": "Pourquoi le score a changé : tactique et erreurs individuelles",
             },
             {
                 "en": "Who made the decisive pass or run",
-                "es": "Autor del pase o desmarque decisivo",
+                "es": "Quién dio el pase decisivo o realizó el desmarque clave",
                 "fr": "Auteur de la passe ou de l'appel décisif",
             },
         ],
