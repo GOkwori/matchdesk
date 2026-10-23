@@ -412,7 +412,8 @@ def build_story_feed(log: tuple[MatchEvent, ...] | None = None) -> dict[str, Any
         "note": (
             "One story per goal. Every figure and fact in the text comes from a claim the "
             "verifier checked against the event log; what the log cannot show is listed as not "
-            "checked. Spanish and French are AI-assisted templates awaiting native review. "
+            "checked. Spanish and French are AI-assisted templates, reviewed and corrected on "
+            "23 October 2026; no native speaker has signed them off. "
             "Fans only see a story after a producer approves it."
         ),
         "stories": stories,
