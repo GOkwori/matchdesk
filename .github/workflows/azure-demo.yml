@@ -88,7 +88,7 @@ jobs:
           for ns in Microsoft.App Microsoft.ContainerRegistry Microsoft.OperationalInsights Microsoft.ManagedIdentity; do
             state="$(az provider show --namespace "$ns" --query registrationState -o tsv 2>/dev/null || echo unknown)"
             if [ "$state" != "Registered" ]; then
-              az provider register --namespace "$ns" --wait || echo "::warning::Could not register $ns ($state); an owner may need to register it"
+              az provider register --namespace "$ns" --wait || echo "::warning::Could not register $ns ($state). A subscription owner must register it: Subscriptions > Resource providers > $ns > Register"
             fi
           done
 
@@ -96,9 +96,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          az deployment group what-if --resource-group "$RESOURCE_GROUP" \
+          if ! out="$(az deployment group what-if --resource-group "$RESOURCE_GROUP" \
             --template-file "$TEMPLATE" --parameters deployApps=false \
-            budgetContactEmails='${{ vars.AZURE_BUDGET_EMAILS || '[]' }}'
+            budgetContactEmails='${{ vars.AZURE_BUDGET_EMAILS || '[]' }}' 2>"$RUNNER_TEMP/az.err")"; then
+            # Job logs are not always readable; put Azure's reason where the run summary shows it.
+            echo "::error title=What-if failed::$(grep -iE 'error|code|message' "$RUNNER_TEMP/az.err" | tail -n 6 | tr '\n' ' ' | cut -c1-1500)"
+            exit 1
+          fi
+          printf '%s\n' "$out"
 
       - name: Create or update the base resources
         if: ${{ inputs.mode == 'deploy' }}
@@ -106,10 +111,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          out="$(az deployment group create --resource-group "$RESOURCE_GROUP" --name matchdesk-demo-base \
+          if ! out="$(az deployment group create --resource-group "$RESOURCE_GROUP" --name matchdesk-demo-base \
             --template-file "$TEMPLATE" --parameters deployApps=false \
             budgetContactEmails='${{ vars.AZURE_BUDGET_EMAILS || '[]' }}' \
-            --query properties.outputs -o json)"
+            --query properties.outputs -o json 2>"$RUNNER_TEMP/az.err")"; then
+            echo "::error title=Base deployment failed::$(grep -iE 'error|code|message' "$RUNNER_TEMP/az.err" | tail -n 6 | tr '\n' ' ' | cut -c1-1500)"
+            exit 1
+          fi
           for key in registryLoginServer registryName environmentDefaultDomain webUrl identityPrincipalId; do
             echo "$key=$(jq -r ".$key.value" <<<"$out")" >> "$GITHUB_OUTPUT"
           done
