@@ -39,7 +39,15 @@ season, "after the equaliser") are declined rather than answered with a nearby f
   leader, cards and the substitution) appear at their moments in fan, analyst or caption
   style, in English, Spanish or French. Before any is shown, all 26 claims behind them are
   re-verified in your browser; cards and the substitution are labelled as logged events,
-  because no query checks them yet.
+  because no query checks them yet. **On Azure the replay streams from the API**: each event
+  goes through the backend's ordered ingestor and football-state reducer, and each overlay is
+  verified on the server the moment its window closes, using only the events received so far
+  ("Checked on the server at 15:00, on the 305 events received").
+- **Run the agents live** (AI insights › *Run it live now*, Azure only). Starts a fresh run of
+  the four specialists on Microsoft Foundry for the 58′ goal and shows each step as it
+  happens: tool calls, claims sent back by the verifier, the revision, the audience versions.
+  It takes one to three minutes; runs are five minutes apart and at most twelve a day, to
+  bound cost. If one has just run, you will see it and when the next can start.
 - **Machine-readable overlay feed.** The same cues as JSON at
   [`/overlays/nbr-riv.json`](https://mdesk-web.icybeach-62467e8a.uksouth.azurecontainerapps.io/overlays/nbr-riv.json)
   (schema `matchdesk-overlay-feed/1`): time, kind, team, players, event ids, every persona
@@ -71,12 +79,12 @@ season, "after the equaliser") are declined rather than answered with a nearby f
 | Event log, metrics, moment detection | Deterministic code over synthetic data |
 | Claim verification (numbers, names, statistic, time window, team, citations, event facts) | Real; the same verifier runs in Python and, ported exactly, in the browser. Limits below |
 | Ask MatchDesk | Real; answers are built from registered metrics and verified before they are shown. When the built-in reader cannot read a question, a planner on Microsoft Foundry may turn it into a query plan, never an answer: it is on for the Azure deployment (bounded to 200 output tokens, 10 seconds, 20 calls a minute) and off on the Vercel copy |
-| Four-specialist workflow | Real orchestration, role-scoped tools and verification loop. AI insights shows a live run recorded on Microsoft Foundry on 21 October 2026 (replayed, not called on page load) beside the deterministic rehearsal; every verdict in both is re-checked by the test suite |
-| Live replay and overlay feed | Real: the replay is the recorded log played back (not a live feed); overlay numbers come from verified claims, re-verified in the browser before display. Cards and substitutions are marked as logged, not verified |
+| Four-specialist workflow | Real orchestration, role-scoped tools and verification loop on Microsoft Foundry. AI insights opens on a run recorded on 21 October 2026 beside the deterministic rehearsal, and on Azure you can start a fresh live run (rate-limited). Every verdict is the real verifier's |
+| Live replay and overlay feed | Real: the recorded synthetic log played back (not a real match); on Azure it streams from the API through the ingestor, reducer and verifier; overlay numbers come from verified claims, re-verified in the browser before display. Cards and substitutions are marked as logged, not verified |
 | Personalisation | Real, on the device only: no account, nothing sent |
 | Audience variants | Produced by the Audience Adapter. Each cites only verified claims, and its fact comes from them; the surrounding tone ("Incredible performance!") is labelled as not checked. Human language review not run |
 | Producer approval and publishing | Not enabled; Approve is shown locked |
-| Hosting | Azure Container Apps in UK South: the studio (public) and the API (internal only, reached through the studio's same-origin `/api`), images in Azure Container Registry, pulled by a managed identity with no passwords; logs in Log Analytics. Deployed from GitHub Actions with OIDC, no stored cloud keys |
+| Hosting | Azure Container Apps in UK South, traced to Application Insights: the studio (public) and the API (internal only, reached through the studio's same-origin `/api`), images in Azure Container Registry, pulled by a managed identity with no passwords; logs in Log Analytics. Deployed from GitHub Actions with OIDC, no stored cloud keys |
 | Producer sign-in | Not part of the demo |
 
 ## What the verifier does not check

@@ -1,20 +1,27 @@
 # Demo script (under 2 minutes)
 
-Recorded on the hosted studio with the synthetic Northbridge v Riverside replay. Narration
-is first person. No music. Before recording: Settings › **Reset demo data**, and close the
-tour.
+Recorded on the Azure deployment, https://mdesk-web.icybeach-62467e8a.uksouth.azurecontainerapps.io, with the
+synthetic Northbridge v Riverside replay. Narration is first person. No music.
+
+**Before recording**
+
+1. Settings › **Reset demo data**, close the tour, then in **My match** choose Riverside, Lindqvist, Fan, English.
+2. About three minutes before you record, open AI insights › **Run it live now** › **Start a live run**, so a fresh
+   run has finished when you reach that screen (runs are five minutes apart).
+3. Open Application Insights › *Transaction search* in another tab, filtered on `matchdesk.agents.live_run`.
 
 | Time | Screen | Action | Narration |
 | --- | --- | --- | --- |
-| 0:00 | Home | Show the headline | "MatchDesk lets AI draft football stories, but only code can certify a fact, and only a producer can publish." |
-| 0:08 | Overview | Click **Claim 59% instead** | "One click shows the idea. Northbridge had 57.96% of the ball. Claim 59% and it is rejected, recomputed from every event." |
-| 0:20 | Live Intelligence | **Goal 58:17**, press Play at 10×; switch to **Español** and **Broadcast caption** | "Play the match back and the graphics arrive on time. Every number on screen comes from a claim the verifier passed, re-checked in this browser, in fan, analyst or caption style and three languages. The same cues are a JSON feed any graphics engine can read." |
-| 0:42 | AI insights | Step through the live run | "This is a real run on Microsoft Foundry. Four specialists worked on the goal through role-scoped tools; code rejected a malformed answer and verified the scorer." |
-| 1:00 | Composer | Change 58 to 60 in a sentence | "Edit a sentence and it fails as I type. The words are checked, not just the data behind them." |
-| 1:12 | Settings › My match, then Overview | Choose Riverside and Lindqvist, focus on tackles | "Make it your match: a club, a player, a statistic. The overview, the overlays and the player page follow you, and each line is still verified." |
-| 1:28 | Tactical Analysis | Scroll to Control and chaos | "Who controlled each spell, and when it turned to chaos, is a published rule over recomputed figures, with the verified sentences behind every label." |
-| 1:42 | Ask | Ask "Who made the most tackles?" | "And you can just ask. Every figure in the answer is computed and checked." |
-| 1:52 | Home | End | "AI-assisted. Verified. Human-led." |
+| 0:00 | Home | Show the headline | "MatchDesk lets AI draft football stories, but only code can certify a fact, and only a producer can publish. It runs on Azure." |
+| 0:08 | Overview | Click **Claim 59% instead** | "Northbridge had 57.96% of the ball. Claim 59% and it is rejected, recomputed from every event." |
+| 0:18 | Live Intelligence | **Goal 58:17**, Play at 10×; then **Español** and **Broadcast caption** | "The match streams from the API on Azure: each event is ingested and reduced as it arrives, and each graphic is verified on the server the moment its window closes, using only what has arrived. Fan, analyst or caption, in three languages, and the same cues are a JSON feed." |
+| 0:42 | AI insights | **Run it live now**: show the finished run's steps | "This run happened minutes ago on Microsoft Foundry. Four specialists, role-scoped tools, and here the verifier sent a claim back; the composer revised it, and only then did the audience versions go out." |
+| 1:02 | Composer | Change 58 to 60 in a sentence | "Edit a sentence and it fails as I type. The words are checked, not just the data." |
+| 1:12 | Audience Stories | Open Lindqvist's equaliser | "Every goal gets a story for fans, in their language, with the checks behind it, run again in their browser. It knows Lindqvist is my player." |
+| 1:24 | Tactical Analysis | Scroll to Control and chaos | "Who controlled each spell, and when it turned to chaos, is a published rule over recomputed figures, not a model's opinion." |
+| 1:34 | Ask | Ask "which player won the ball back most after the break" | "Ask anything. Foundry reads the question into a plan; code computes and verifies every figure." |
+| 1:46 | Application Insights | Show the live-run span | "Every run, question and stream is traced in Application Insights." |
+| 1:54 | Home | End | "AI-assisted. Verified. Human-led." |
 
-AI insights opens on the recorded live run; its banner names the provider and the date.
-The rehearsal is one click away and is labelled as such.
+If a live run is not available when you record (the five-minute spacing), use **Recorded live run**; its banner
+names the provider and the date.

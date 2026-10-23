@@ -40,8 +40,8 @@ hand-off. It does not call a model and it does not give an agent publishing auth
 Later Phase 2 slices add evidence verification, scoped specialists, one bounded
 live Foundry invocation and tested retry/recovery and model-evaluation controls.
 
-The submission build has 1,596 Python tests, a 92-case Python/TypeScript verifier
-parity fixture and 186 studio browser tests (three viewports, axe on every page).
+The submission build has 1,623 Python tests, a 92-case Python/TypeScript verifier
+parity fixture and 189 studio browser tests (three viewports, axe on every page).
 Ruff, formatting, strict mypy, frontend build, dependency audit and source security
 run in hosted CI on every pull request.
 
@@ -77,14 +77,45 @@ before treating any capability as tested or available.
 
 ```mermaid
 flowchart LR
-    S[Seeded synthetic simulator - TESTED] --> I[Ingest and deterministic intelligence - TESTED]
-    I --> E[Evidence and claim contracts - implemented]
-    E --> C[Bounded four-specialist control plane - TESTED]
-    C --> A[Agent Framework / Foundry workflow with traced tools - TESTED]
-    A --> V[Claim and sentence verification, Python and browser - TESTED]
-    V --> P[Producer review and exact-binding domain gate - TESTED]
-    P --> O[Authenticated publishing - PLANNED]
+    subgraph Browser["Browser"]
+        UI["MatchDesk studio<br/>Next.js · replay, overlays, stories, Ask"]
+        BV["Verifier, TypeScript port<br/>re-checks every claim on screen"]
+    end
+    subgraph ACA["Azure Container Apps, UK South"]
+        WEB["mdesk-web<br/>public HTTPS"]
+        subgraph APIBOX["mdesk-api · internal only"]
+            LIVE["Live replay<br/>ingestor → reducer → cues"]
+            RUNS["Live agent runs<br/>one at a time, capped"]
+            PLAN["Ask planner<br/>question → plan only"]
+            VER["Verifier<br/>registered metrics, sentence binding"]
+        end
+    end
+    subgraph FOUNDRY["Microsoft Foundry"]
+        AF["Agent Framework<br/>Tactical Analyst → Narrative Composer →<br/>Editorial Reviewer → Audience Adapter"]
+    end
+    LOG["Synthetic event log<br/>1,421 events"]
+    AI["Application Insights<br/>+ Log Analytics"]
+    ACR["Container Registry"]
+    ID["Managed identity<br/>no keys"]
+
+    UI -- "same-origin /api" --> WEB --> APIBOX
+    LOG --> LIVE --> VER
+    RUNS --> AF
+    PLAN --> AF
+    AF -- "proposed claims" --> VER
+    VER -- "verified, or sent back" --> RUNS
+    LIVE -- "server-sent events" --> UI
+    UI --> BV
+    APIBOX -. traces .-> AI
+    ID -. pulls images .-> ACR
+    ID -. calls models .-> FOUNDRY
 ```
+
+Agents may only propose. Every figure that reaches a screen, an overlay or a story is a
+structured claim the verifier recomputes from the event log, first on the server and again
+in the browser; anything it cannot check is labelled as such, and only a producer may
+publish. GitHub Actions builds both images from the exact commit and deploys with OIDC
+([Azure demo](docs/operations/azure-demo.md)); a studio-only copy also runs on Vercel.
 
 The [solution design](docs/solution-design/02-architecture.md) explains the deterministic, specialist, verification and producer trust boundaries, plus the later authenticated publication path.
 
