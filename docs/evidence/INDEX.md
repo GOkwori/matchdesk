@@ -6,6 +6,7 @@
 
 ## Competition build — 21 October 2026
 
+- [Azure deployment record, 23 October](azure-deployment-20261023.md): the studio and API on Azure Container Apps from `af477a3`, the runs that got there, the Foundry planner checked live, cost and lifetime.
 - [Hosted judge-path walkthrough, 22 October](hosted-walkthrough-20261022.md): the judge path run on the live site in a real browser, with screenshots, and one finding (a draft sentence that said more than its claim) and its fix.
 - [Competition build record, 22 October](competition-build-20261022.md): submission build `76de6c4` (hosted on Vercel from `release/submission-2026-10`), what changed since 21 October, three live Foundry runs on the stricter verifier and how often it sent claims back, and the checks at this build.
 - [Competition build record](competition-build-20261021.md): submission build `ed9ff4d` (hosted on Vercel, preserved as `release/submission-2026-10`), Phases 0–4 by pull request, the eight live Foundry runs and the defect each one exposed, and the checks at submission.
