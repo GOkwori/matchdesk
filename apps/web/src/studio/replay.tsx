@@ -25,7 +25,8 @@ type Verifier = typeof import("./verifier");
 type Loaded = { events: VEvent[]; feed: Feed; verifier: Verifier; recheck: Record<string, boolean> };
 type Score = { nbr: number; riv: number };
 type ServerVerdict = { cue_id: string; t_ms: number; checked_at_ms: number; events_received: number; status: "verified" | "logged" | "failed" };
-type ServerState = { connected: boolean; received: number; score: Score | null; verdicts: Record<string, ServerVerdict> };
+type RecapVerdict = { recap_id: "half-time" | "latest"; checked_at_ms: number; events_received: number; status: "verified" | "failed" };
+type ServerState = { connected: boolean; received: number; score: Score | null; verdicts: Record<string, ServerVerdict>; recaps: Record<string, RecapVerdict> };
 
 const SPEEDS = [1, 10, 30, 60] as const;
 /** Set at build time where an API with the live replay sits behind /api (the Azure demo). */
@@ -44,6 +45,16 @@ const SERVER_NOTE: Record<ViewerLanguage, (at: string, n: number) => string> = {
   en: (at, n) => `Checked on the server at ${at}, on the ${n.toLocaleString("en-GB")} events received`,
   es: (at, n) => `Comprobado en el servidor en el ${at}, con los ${n.toLocaleString("es-ES")} eventos recibidos`,
   fr: (at, n) => `Vérifié sur le serveur à ${at}, sur les ${n.toLocaleString("fr-FR")} événements reçus`,
+};
+/** Recaps the replay offers once their part of the match has been played. */
+const RECAPS = [
+  { id: "half-time", at: 2_700_000, title: { en: "Half-time recap", es: "Resumen al descanso", fr: "Résumé à la mi-temps" } },
+  { id: "latest", at: END, title: { en: `Recap at ${clock(END / 1000)}`, es: `Resumen en el ${clock(END / 1000)}`, fr: `Résumé à ${clock(END / 1000)}` } },
+] as const;
+const RECAP_READY: Record<ViewerLanguage, { ready: string; open: string; server: (at: string, n: number) => string }> = {
+  en: { ready: "ready", open: "Open the recap", server: (at, n) => `verified on the server at ${at}, on the ${n.toLocaleString("en-GB")} events received` },
+  es: { ready: "listo", open: "Abrir el resumen", server: (at, n) => `verificado en el servidor en el ${at}, con los ${n.toLocaleString("es-ES")} eventos recibidos` },
+  fr: { ready: "prêt", open: "Ouvrir le résumé", server: (at, n) => `vérifié sur le serveur à ${at}, sur les ${n.toLocaleString("fr-FR")} événements reçus` },
 };
 const TYPE_LABEL: Record<string, string> = {
   pass: "Pass", carry: "Carry", recovery: "Recovery", clearance: "Clearance", shot: "Shot", goal: "Goal", foul: "Foul",
@@ -100,7 +111,7 @@ export default function ReplayPlayer() {
   // The API streams the replay through the ingestor, reducer and verifier when it is there
   // (the Azure deployment); otherwise the page plays its own copy of the log.
   const [source, setSource] = useState<"server" | "page">(STREAM_AVAILABLE ? "server" : "page");
-  const [server, setServer] = useState<ServerState>({ connected: false, received: 0, score: null, verdicts: {} });
+  const [server, setServer] = useState<ServerState>({ connected: false, received: 0, score: null, verdicts: {}, recaps: {} });
   const [restart, setRestart] = useState(0);
   const tRef = useRef(0);
   tRef.current = t;
@@ -124,6 +135,10 @@ export default function ReplayPlayer() {
     stream.addEventListener("cue", (e) => {
       const d = read(e) as unknown as ServerVerdict;
       setServer((s) => ({ ...s, verdicts: { ...s.verdicts, [d.cue_id]: d } }));
+    });
+    stream.addEventListener("recap", (e) => {
+      const d = read(e) as unknown as RecapVerdict;
+      setServer((s) => ({ ...s, recaps: { ...s.recaps, [d.recap_id]: d } }));
     });
     stream.addEventListener("end", (e) => {
       const d = read(e);
@@ -244,6 +259,19 @@ export default function ReplayPlayer() {
           )}
         </div>
       </div>
+
+      {(() => {
+        const recap = [...RECAPS].reverse().find((r) => t >= r.at);
+        if (!recap) return null;
+        const onServer = server.recaps[recap.id];
+        return (
+          <p className="md-lr-recap" role="status">
+            <span className={`md-chip md-chip-${onServer && onServer.status !== "verified" ? "failed" : "verified"}`}><span aria-hidden="true">{onServer && onServer.status !== "verified" ? "✕" : "✓"}</span> {recap.title[lang]} · {RECAP_READY[lang].ready}</span>
+            {onServer && <span className="md-subtle md-small">{RECAP_READY[lang].server(clock(Math.floor(onServer.checked_at_ms / 1000)), onServer.events_received)}</span>}
+            <Link className="md-link" href={`/story/recap?at=${recap.id}`}>{RECAP_READY[lang].open}</Link>
+          </p>
+        );
+      })()}
 
       <div className="md-lr-controls">
         <button type="button" className="md-btn md-btn-primary md-lr-play" onClick={() => { if (t >= END) seek(0); setPlaying((p) => !p); }} disabled={!loaded} aria-label={playing ? "Pause replay" : "Play replay"}>

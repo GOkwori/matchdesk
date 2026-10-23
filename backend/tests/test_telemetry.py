@@ -145,3 +145,24 @@ def test_the_live_run_span_records_totals() -> None:
     assert span.attributes["matchdesk.run.status"] == "completed"
     assert span.attributes["matchdesk.run.verification_rounds"] == 2
     assert span.attributes["matchdesk.run.specialist_turns"] >= 4
+
+
+def test_the_mcp_span_names_the_tool_and_its_outcome() -> None:
+    """One span per tool call, with the tool and whether it answered; never the arguments."""
+    from matchdesk.api.mcp_routes import create_mcp_router
+
+    client = TestClient(create_app(assistant_router=create_mcp_router()))
+    EXPORTER.clear()
+    for arguments in ({"metric": "shots.v1", "team": "nbr"}, {"metric": "nope"}):
+        client.post(
+            "/api/mcp",
+            json={
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "tools/call",
+                "params": {"name": "compute_metric", "arguments": arguments},
+            },
+        )
+    spans = [s for s in EXPORTER.get_finished_spans() if s.name == "matchdesk.mcp.call"]
+    assert [(s.attributes or {}).get("matchdesk.mcp.status") for s in spans] == ["ok", "tool_error"]
+    assert all((s.attributes or {}).get("matchdesk.mcp.tool") == "compute_metric" for s in spans)
