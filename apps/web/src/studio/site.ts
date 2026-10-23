@@ -23,6 +23,7 @@ export const siteRoutes: readonly SiteRoute[] = [
   ...stories.map((s) => ({ path: `/story/${s.slug}`, indexable: true })),
   { path: "/match/nbr-riv", indexable: true },
   { path: "/match/nbr-riv/live", indexable: false },
+  { path: "/match/nbr-riv/auto-eventing", indexable: false },
   { path: "/match/nbr-riv/moments", indexable: false },
   { path: "/match/nbr-riv/tactical", indexable: false },
   { path: "/match/nbr-riv/players", indexable: false },

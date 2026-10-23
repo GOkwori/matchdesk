@@ -203,6 +203,12 @@ _WINDOW_TO_CLOCK = re.compile(_B + r"(?:before|by|until|up to) ([0-9]{1,3}):([0-
 _WINDOW_LAST = re.compile(_B + r"(?:last|final) ([0-9]{1,3}) minutes?" + _E)
 _FACT_MINUTE = re.compile(_B + r"([0-9]{1,3})(?:'|\u2032|\u2019|(?:st|nd|rd|th) minute)")
 _MINUTE_MS = 60_000
+_CARD_WORDS = re.compile(_B + r"(?:cards?|booked|booking|cautioned|sent off|dismissed)" + _E)
+_RED_WORDS = re.compile(_B + r"(?:red|sent off|dismissed|second yellow)" + _E)
+_YELLOW_WORDS = re.compile(_B + r"(?:yellow|booked|booking|cautioned)" + _E)
+_SUB_WORDS = re.compile(
+    _B + r"(?:replaced|replaces|substitut(?:ed|es|ion)|comes on|came on|on for|off for)" + _E
+)
 _GOAL_WORDS = re.compile(
     _B
     + r"(?:goals?|scor(?:ed|es|ing)|netted|(?:headed|nodded|fired|slotted|tapped|poked|"
@@ -311,7 +317,12 @@ def _scoring_shot(goal: MatchEvent, events: Sequence[MatchEvent]) -> MatchEvent 
     return None
 
 
-def _fact_problem(claim: Claim, lowered: str, events: Sequence[MatchEvent]) -> str | None:
+def _fact_problem(
+    claim: Claim,
+    lowered: str,
+    events: Sequence[MatchEvent],
+    names: Mapping[str, str] | None = None,
+) -> str | None:
     """Clock times, minutes and details in an event fact must be those of its cited events."""
     fact = claim.fact
     if fact is None:
@@ -341,6 +352,25 @@ def _fact_problem(claim: Claim, lowered: str, events: Sequence[MatchEvent]) -> s
                 return "Claim text states a detail the event log does not record"
     if fact.query == "goal_scorer.v1" and not _GOAL_WORDS.search(lowered):
         return "Claim text does not say this was a goal"
+    target = by_id.get(fact.event_id)
+    if fact.query == "card.v1" and target is not None:
+        if not _CARD_WORDS.search(lowered):
+            return "Claim text does not say this was a card"
+        says_red = _RED_WORDS.search(lowered) is not None
+        says_yellow = _YELLOW_WORDS.search(lowered) is not None
+        # A yellow must read as a yellow; a red or second yellow must read as a sending-off.
+        if target.outcome == "yellow" and (says_red or not says_yellow):
+            return "Claim text states a card colour the event log does not record"
+        if target.outcome == "red" and (says_yellow or not says_red):
+            return "Claim text states a card colour the event log does not record"
+        if target.outcome == "second_yellow" and not says_red:
+            return "Claim text states a card colour the event log does not record"
+    if fact.query == "substitution.v1" and target is not None:
+        if not _SUB_WORDS.search(lowered):
+            return "Claim text does not say this was a substitution"
+        incoming = names.get(target.related_player_id or "") if names else None
+        if incoming is None or not _names_subject(lowered, incoming):
+            return "Claim text does not name the incoming player"
     return None
 
 
@@ -401,5 +431,5 @@ def text_binding_problem(
         by_id = {event.event_id: event for event in events}
         target = by_id.get(claim.fact.event_id)
         problem = _team_problem(lowered, target.team_id if target else None, names, teams)
-        return problem or _fact_problem(claim, lowered, events)
+        return problem or _fact_problem(claim, lowered, events, names)
     return None

@@ -60,6 +60,7 @@ def compact_events(events: tuple[MatchEvent, ...]) -> dict[str, Any]:
         "shot_speed": [event.shot_speed_kmh for event in events],
         "player_speed": [event.player_speed_kmh for event in events],
         "distance": [event.distance_m for event in events],
+        "related": [event.related_player_id for event in events],
     }
 
 
@@ -676,6 +677,46 @@ def parity_fixture() -> dict[str, Any]:
                 "Mensah scored at 58:17.",
                 EventFact(query="goal_scorer.v1", event_id="E-1366", player_id="nbr-04"),
                 ("E-1366",),
+            ),
+        ),
+        (
+            "fact: a yellow card verifies",
+            fact(
+                "Haddad was shown a yellow card for Riverside at 27:40.",
+                EventFact(query="card.v1", event_id="E-0561", player_id="riv-06"),
+                ("E-0561",),
+            ),
+        ),
+        (
+            "fact: a yellow card told as a sending-off is sent back",
+            fact(
+                "Haddad was sent off for Riverside at 27:40.",
+                EventFact(query="card.v1", event_id="E-0561", player_id="riv-06"),
+                ("E-0561",),
+            ),
+        ),
+        (
+            "fact: a card for the wrong player is sent back",
+            fact(
+                "Mensah was shown a yellow card at 27:40.",
+                EventFact(query="card.v1", event_id="E-0561", player_id="nbr-04"),
+                ("E-0561",),
+            ),
+        ),
+        (
+            "fact: a substitution names both players",
+            fact(
+                "Kovac replaced Barros for Riverside at 67:08.",
+                EventFact(query="substitution.v1", event_id="E-1421", player_id="riv-07"),
+                ("E-1421",),
+            ),
+        ),
+        (
+            "fact: a substitution without the incoming player is sent back",
+            fact(
+                "Barros was substituted for Riverside at 67:08.",
+                EventFact(query="substitution.v1", event_id="E-1421", player_id="riv-07"),
+                ("E-1421",),
             ),
         ),
         (

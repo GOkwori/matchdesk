@@ -54,6 +54,7 @@ class LiveRuns:
     status: str = "idle"
     started_at: str | None = None
     started: float | None = None
+    finished: float | None = None
     progress: list[dict[str, Any]] = field(default_factory=list)
     trace: dict[str, Any] | None = None
     error: str | None = None
@@ -78,6 +79,7 @@ class LiveRuns:
         self.run_id = f"live-{int(time.time())}"
         self.status = "running"
         self.started = moment
+        self.finished = None
         self.started_at = dt.datetime.now(dt.UTC).isoformat(timespec="seconds")
         self.progress = []
         self.trace = None
@@ -113,11 +115,15 @@ class LiveRuns:
             )
         except Exception as error:  # noqa: BLE001 - a provider fault is reported, not raised
             self.status, self.error = "failed", describe_error(error)
+        finally:
+            # A finished run reports how long it took, not how long ago it started.
+            self.finished = self.now()
 
     def report(self) -> dict[str, Any]:
         """What the studio shows: the run's state, its steps so far, and the trace when done."""
         steps = trace_view({"steps": list(self.progress)})["steps"]
-        elapsed = None if self.started is None else int((self.now() - self.started) * 1000)
+        end = self.finished if self.finished is not None else self.now()
+        elapsed = None if self.started is None else int((end - self.started) * 1000)
         return {
             "run_id": self.run_id,
             "status": self.status,

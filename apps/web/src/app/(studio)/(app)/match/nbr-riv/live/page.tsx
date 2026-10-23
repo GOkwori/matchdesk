@@ -24,6 +24,11 @@ export default function LivePage() {
       <ScoreStrip crumbs={[{ label: "Overview", href: "/match/nbr-riv" }, { label: "Live Intelligence" }]} />
       <PageHead title="Live Intelligence" sub={`Replay the match with timed, verified overlays, then the newest events, every shot, and what the detection rules found across ${eventCountText} events.`}><TopActions /></PageHead>
       <ReplayHost />
+      <section className="md-panel md-ae-link" aria-labelledby="md-ae-link-title">
+        <div className="md-panel-head"><h2 id="md-ae-link-title">Auto-eventing from video</h2><span className="md-chip md-chip-not-yet">Lab</span></div>
+        <p className="md-muted">A detector reads passes, carries, shots and speeds from a synthetic top-down video of this match, without the log, and is scored against it: touches, types, teams, lengths and speeds.</p>
+        <Link href="/match/nbr-riv/auto-eventing" className="md-btn md-btn-secondary">Open the auto-eventing lab <Icon name="arrow" size={16} /></Link>
+      </section>
       <div className="md-three">
         <section className="md-panel md-feed" aria-labelledby="md-feed-title">
           <div className="md-panel-head"><h2 id="md-feed-title">Latest events</h2><span className="md-muted md-mono">to {fixture.latestEvent}</span></div>

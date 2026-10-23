@@ -409,9 +409,9 @@ def _recap(
                 "fr": "Pourquoi le score a changé : tactique et erreurs individuelles",
             },
             {
-                "en": "Cards and substitutions (logged, no registered check yet)",
-                "es": "Tarjetas y cambios (registrados, sin comprobación todavía)",
-                "fr": "Cartons et remplacements (enregistrés, pas encore de vérification)",
+                "en": "Who made the decisive pass or run",
+                "es": "Autor del pase o desmarque decisivo",
+                "fr": "Auteur de la passe ou de l'appel décisif",
             },
         ],
         "text": text,

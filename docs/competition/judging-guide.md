@@ -43,8 +43,8 @@ season, "after the equaliser") are declined rather than answered with a nearby f
   - a player tag when a sprint reaches 33 km/h, and the first player on each side past 5 km;
   - cards and the substitution.
 
-  Before any is shown, all 34 claims behind them are re-verified in your browser. Cards and
-  the substitution are labelled as logged events, because no query checks them yet.
+  Before any is shown, all 37 claims behind them are re-verified in your browser; cards and
+  the substitution are checked by their own event-fact queries (the colour and both players).
   **On Azure the replay streams from the API.** Each event goes through the backend's
   ordered ingestor and football-state reducer, and each overlay is verified on the server
   the moment its window closes, using only the events received so far ("Checked on the
@@ -62,8 +62,22 @@ season, "after the equaliser") are declined rather than answered with a nearby f
 - **Run the agents live** (AI insights › *Run it live now*, Azure only). Starts a fresh run of
   the four specialists on Microsoft Foundry for the 58′ goal and shows each step as it
   happens: tool calls, claims sent back by the verifier, the revision, the audience versions.
-  It takes one to three minutes; runs are five minutes apart and at most twelve a day, to
+  It takes a few minutes (at most six); runs are five minutes apart and at most twelve a day, to
   bound cost. If one has just run, you will see it and when the next can start.
+- **Auto-eventing from video** (Live Intelligence › *Open the auto-eventing lab*). The synthetic
+  match is rendered as a top-down video with sensor noise and an occasionally hidden ball. A
+  detector that sees only the pixels finds every touch and reads passes, carries, shots,
+  pass lengths and ball and shot speeds. The lab scores it against the log over the whole
+  replay: touches found, precision, type and team accuracy, length and speed errors, shot
+  speeds against the synthetic tracking, and possession from the video against the registered
+  metric. It is synthetic video and much easier than broadcast footage, and the page says so
+  ([method](../../labs/auto_eventing/README.md)).
+- **Approve and publish, as a demo producer** (Producer Tools › Publication, once D-031 is
+  eligible). The approval binds SHA-256 digests of the exact text and of the claims' verdicts;
+  edit the draft afterwards and the approval is withdrawn. Publishing sends the approved
+  version to four demo destinations, each with a publication id derived from the digest; the
+  social channel times out on its first attempt, and Retry sends only that one again. Every
+  step goes into an audit trail. No sign-in, and nothing leaves your browser.
 - **Machine-readable overlay feed.** The same cues as JSON at
   [`/overlays/nbr-riv.json`](https://mdesk-web.icybeach-62467e8a.uksouth.azurecontainerapps.io/overlays/nbr-riv.json)
   (schema `matchdesk-overlay-feed/1`): time, kind, team, players, event ids, every persona
@@ -112,13 +126,13 @@ season, "after the equaliser") are declined rather than answered with a nearby f
 | Claim verification (numbers, names, statistic, time window, team, citations, event facts) | Real; the same verifier runs in Python and, ported exactly, in the browser. Limits below |
 | Ask MatchDesk | Real; answers are built from registered metrics and verified before they are shown. When the built-in reader cannot read a question, a planner on Microsoft Foundry may turn it into a query plan, never an answer: it is on for the Azure deployment (bounded to 200 output tokens, 10 seconds, 20 calls a minute) and off on the Vercel copy |
 | Four-specialist workflow | Real orchestration, role-scoped tools and verification loop on Microsoft Foundry. AI insights opens on a run recorded on 21 October 2026 beside the deterministic rehearsal, and on Azure you can start a fresh live run (rate-limited). Every verdict is the real verifier's |
-| Live replay and overlay feed | Real: the recorded synthetic log played back (not a real match); on Azure it streams from the API through the ingestor, reducer and verifier; overlay numbers come from verified claims, re-verified in the browser before display. Cards and substitutions are marked as logged, not verified |
+| Live replay and overlay feed | Real: the recorded synthetic log played back (not a real match); on Azure it streams from the API through the ingestor, reducer and verifier; overlay numbers come from verified claims, re-verified in the browser before display. Cards and substitutions are verified by registered event facts (`card.v1`, `substitution.v1`) |
 | Recaps | Real: built from verified claims at half-time and the replay point; on Azure streamed and verified on the events received |
 | Synthetic tracking (shot speed, player speed, distance) | Generated with the match by a seeded model, as a tracking provider would supply it; not measured from video. The metrics over it are real and verified |
 | MCP endpoint | Real, read-only, on Azure only; the same verifier and feeds |
 | Personalisation | Real, on the device only: no account, nothing sent |
 | Audience variants | Produced by the Audience Adapter. Each cites only verified claims, and its fact comes from them; the surrounding tone ("Incredible performance!") is labelled as not checked. Human language review not run |
-| Producer approval and publishing | Not enabled; Approve is shown locked |
+| Producer approval and publishing | Demo: approve D-031's exact version without sign-in, then publish to a demo channel in your browser (one destination times out first, to show a safe retry). No real sign-in or destination |
 | Hosting | Azure Container Apps in UK South, traced to Application Insights: the studio (public) and the API (internal only, reached through the studio's same-origin `/api`), images in Azure Container Registry, pulled by a managed identity with no passwords; logs in Log Analytics. Deployed from GitHub Actions with OIDC, no stored cloud keys |
 | Producer sign-in | Not part of the demo |
 
@@ -136,13 +150,14 @@ back for revision rather than passed.
 - **It does not check:** tone and judgement ("a critical goal", "dominant"), which are shown
   as interpretation; Spanish and French sentences word by word (they carry the verified
   claims they cite and need a human language review); anything outside its fixed vocabulary
-  of statistic and detail words; event facts beyond the two registered queries (who scored,
-  and the gap between two events).
+  of statistic and detail words; event facts beyond the four registered queries (who scored,
+  the gap between two events, a card and its colour, a substitution and both players).
 - **Data limits:** one synthetic match. Possession is time on the ball between consecutive
   events; synthetic xG is this demo's own model; ball speed is estimated from the time to the
   next event. Shot speed, player speed and distance come from synthetic tracking generated
   with the log, one sample per action, so distance is metres run between a player's actions.
-  There are no positions of players off the ball and no auto-eventing from video.
+  There are no positions of players off the ball; auto-eventing runs on synthetic video only
+  (the lab), not on broadcast footage.
 
 ## Running it yourself
 

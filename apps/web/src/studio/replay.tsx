@@ -347,7 +347,7 @@ export default function ReplayPlayer() {
       <div className="md-lr-feed">
         <a className="md-btn md-btn-secondary" href="/overlays/nbr-riv.json" download>Download the overlay feed (JSON)</a>
         <p className="md-muted md-small">
-          The same cues any graphics engine can read: time, kind, team, players, event ids, the claims behind every number, and text for each persona in English, Spanish and French. Cards and substitutions are logged events with no checking query yet, and are marked so. Spanish and French are AI-assisted templates awaiting native review.
+          The same cues any graphics engine can read: time, kind, team, players, event ids, the claims behind every number, and text for each persona in English, Spanish and French. Cards and substitutions are checked by registered event facts. Spanish and French are AI-assisted templates awaiting native review.
         </p>
       </div>
     </section>

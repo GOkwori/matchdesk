@@ -29,15 +29,19 @@ def test_every_cue_has_every_persona_and_language() -> None:
                 assert cue["text"][persona][language].strip(), (cue["cue_id"], persona, language)
 
 
-def test_numeric_cues_are_verified_and_logged_cues_say_so() -> None:
-    """Goals, stats, the spell and the spotlight are verified; cards and changes are logged."""
-    kinds = {cue["kind"]: cue["status"] for cue in FEED["cues"]}
-    assert kinds["goal"] == kinds["stats"] == kinds["spell"] == kinds["spotlight"] == "verified"
-    assert kinds["card"] == kinds["substitution"] == "logged"
+def test_every_cue_is_verified_cards_and_changes_by_event_facts() -> None:
+    """Every cue, cards and the substitution included, rests on claims that verified."""
+    assert {cue["status"] for cue in FEED["cues"]} == {"verified"}
     for cue in FEED["cues"]:
-        statuses = {CLAIMS[claim_id]["status"] for claim_id in cue["claim_ids"]}
-        assert statuses <= {"verified"}, cue["cue_id"]
-        assert bool(cue["claim_ids"]) == (cue["status"] == "verified")
+        assert cue["claim_ids"], cue["cue_id"]
+        assert {CLAIMS[i]["status"] for i in cue["claim_ids"]} == {"verified"}, cue["cue_id"]
+    cards = [c for c in FEED["cues"] if c["kind"] == "card"]
+    assert [CLAIMS[c["claim_ids"][0]]["text"] for c in cards] == [
+        "Haddad was shown a yellow card for Riverside at 27:40.",
+        "Mensah was shown a yellow card for Northbridge at 63:04.",
+    ]
+    change = next(c for c in FEED["cues"] if c["kind"] == "substitution")
+    assert CLAIMS[change["claim_ids"][0]]["text"] == "Kovac replaced Barros for Riverside at 67:08."
 
 
 def test_goal_cues_show_the_verified_scorer_and_score() -> None:

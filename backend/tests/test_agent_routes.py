@@ -158,3 +158,22 @@ def test_the_host_identity_is_the_managed_identity_on_container_apps() -> None:
     assert host_credential(identity, env) == ("managed", "abc")
     assert host_credential(identity, {"AZURE_CLIENT_ID": "abc"}) == "cli"
     assert host_credential(identity, {"CONTAINER_APP_NAME": "x"}) == "cli"
+
+
+def test_a_finished_run_reports_its_duration_not_its_age() -> None:
+    """Elapsed time stops when the run ends."""
+    clock = _Clock()
+
+    async def scenario() -> tuple[int, int]:
+        """Start at 0, finish at 120 s, read at 120 s and again an hour later."""
+        runs = _runs(clock=clock)
+        runs.start()
+        clock.t = 120.0
+        assert runs._task is not None
+        await runs._task
+        first = runs.report()["elapsed_ms"]
+        clock.t = 3_720.0
+        return first, runs.report()["elapsed_ms"]
+
+    first, later = asyncio.run(scenario())
+    assert first == later == 120_000

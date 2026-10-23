@@ -6,8 +6,8 @@ spotlight, the speed of each scoring shot, or a player tag when synthetic tracki
 threshold (a sprint at 33 km/h or more, the first player on each side past 5 km). Every number in a cue comes from a structured claim that the verifier has checked
 against the event log; the cue's text is composed from those verified values in three
 languages and three personas, so the words on screen cannot drift from the figures. Cards and
-substitutions have no registered event-fact query yet, so they carry the logged event and the
-status ``logged`` instead of ``verified``.
+substitutions are checked by their registered event-fact queries (``card.v1``,
+``substitution.v1``).
 
 The feed is deterministic. Nothing here publishes anything: a producer still decides.
 """
@@ -239,22 +239,38 @@ def _goal_cues(builder: _Builder) -> None:
         )
 
 
-def _logged_cues(builder: _Builder) -> None:
-    """Cards and substitutions: logged events, shown as such until a query can check them."""
+def _event_cues(builder: _Builder) -> None:
+    """Cards and substitutions, each checked by its registered event-fact query."""
     for event in builder.log:
         if event.match_clock_ms >= REPLAY_END_MS or event.team_id is None:
             continue
         team = _name(event.team_id)
         minute = _minute(event.match_clock_ms)
+        clock = _clock(event.match_clock_ms)
         if event.type == "card" and event.player_id:
             player = _name(event.player_id)
+            red = event.outcome in ("red", "second_yellow")
             colour = {"en": "Yellow card", "es": "Tarjeta amarilla", "fr": "Carton jaune"}
-            if event.outcome in ("red", "second_yellow"):
+            if red:
                 colour = {"en": "Red card", "es": "Tarjeta roja", "fr": "Carton rouge"}
+            fact = builder.check(
+                Claim(
+                    claim_id=f"OV-{event.event_id}-CARD",
+                    text=(
+                        f"{player} was sent off for {team} at {clock}."
+                        if red
+                        else f"{player} was shown a yellow card for {team} at {clock}."
+                    ),
+                    kind="event_fact",
+                    fact=EventFact(
+                        query="card.v1", event_id=event.event_id, player_id=event.player_id
+                    ),
+                    evidence_event_ids=(event.event_id,),
+                )
+            )
             texts = {
                 "analyst": {
-                    lang: f"{colour[lang]} {_clock(event.match_clock_ms)} · {player} ({team})"
-                    for lang in LANGUAGES
+                    lang: f"{colour[lang]} {clock} · {player} ({team})" for lang in LANGUAGES
                 },
                 "fan": {lang: f"{colour[lang]}: {player} ({team})" for lang in LANGUAGES},
                 "caption": {
@@ -265,19 +281,31 @@ def _logged_cues(builder: _Builder) -> None:
                 event.match_clock_ms,
                 "card",
                 texts,
-                [],
+                [fact],
                 team=event.team_id,
                 players=(event.player_id,),
                 events=(event.event_id,),
             )
         if event.type == "substitution" and event.player_id and event.related_player_id:
             off, on = _name(event.player_id), _name(event.related_player_id)
+            fact = builder.check(
+                Claim(
+                    claim_id=f"OV-{event.event_id}-SUB",
+                    text=f"{on} replaced {off} for {team} at {clock}.",
+                    kind="event_fact",
+                    fact=EventFact(
+                        query="substitution.v1",
+                        event_id=event.event_id,
+                        player_id=event.player_id,
+                    ),
+                    evidence_event_ids=(event.event_id,),
+                )
+            )
             word = {"en": "Substitution", "es": "Cambio", "fr": "Remplacement"}
             arrows = f"{on} ↑ {off} ↓"
             texts = {
                 "analyst": {
-                    lang: f"{word[lang]} {_clock(event.match_clock_ms)} · {team} · {arrows}"
-                    for lang in LANGUAGES
+                    lang: f"{word[lang]} {clock} · {team} · {arrows}" for lang in LANGUAGES
                 },
                 "fan": {lang: f"{word[lang]} · {team}: {arrows}" for lang in LANGUAGES},
                 "caption": {
@@ -288,7 +316,7 @@ def _logged_cues(builder: _Builder) -> None:
                 event.match_clock_ms,
                 "substitution",
                 texts,
-                [],
+                [fact],
                 team=event.team_id,
                 players=(event.player_id, event.related_player_id),
                 events=(event.event_id,),
@@ -594,7 +622,7 @@ def build_overlay_feed(log: tuple[MatchEvent, ...] | None = None) -> dict[str, A
     events = log if log is not None else canonical.generate_canonical_match()
     builder = _Builder(events)
     _goal_cues(builder)
-    _logged_cues(builder)
+    _event_cues(builder)
     _stat_cards(builder)
     _spell_cue(builder)
     _spotlight_cue(builder)
@@ -613,8 +641,8 @@ def build_overlay_feed(log: tuple[MatchEvent, ...] | None = None) -> dict[str, A
         "teams": {side: _name(side) for side in (canonical.HOME, canonical.AWAY)},
         "note": (
             "Timed cues for on-screen graphics. Numbers come only from claims the verifier "
-            "checked against the event log; speeds and distances come from the log's synthetic "
-            "tracking; cards and substitutions are logged events with no registered query yet. Spanish and French are AI-assisted templates awaiting native "
+            "checked against the event log, cards and substitutions by their registered "
+            "event-fact queries; speeds and distances come from the log's synthetic tracking. Spanish and French are AI-assisted templates awaiting native "
             "review. Nothing here is published: a producer decides."
         ),
         "cues": ordered,

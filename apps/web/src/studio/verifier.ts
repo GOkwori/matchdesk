@@ -29,7 +29,7 @@ export type Assertion = {
   decimals?: number | null;
 };
 export type EventFact = {
-  query: "goal_scorer.v1" | "sequence_gap.v1";
+  query: "goal_scorer.v1" | "sequence_gap.v1" | "card.v1" | "substitution.v1";
   event_id: string;
   player_id?: string | null;
   from_event_id?: string | null;
@@ -78,6 +78,8 @@ export type VEvent = {
   shot_speed_kmh: number | null;
   player_speed_kmh: number | null;
   distance_m: number | null;
+  /** The incoming player of a substitution. */
+  related_player_id: string | null;
 };
 
 /** Column-oriented log, as written by matchdesk.domain.verifier_parity.compact_events. */
@@ -101,6 +103,7 @@ export type CompactLog = {
   shot_speed?: readonly (number | null)[];
   player_speed?: readonly (number | null)[];
   distance?: readonly (number | null)[];
+  related?: readonly (string | null)[];
 };
 
 export function expandLog(log: CompactLog): VEvent[] {
@@ -124,6 +127,7 @@ export function expandLog(log: CompactLog): VEvent[] {
     shot_speed_kmh: log.shot_speed ? log.shot_speed[i] : null,
     player_speed_kmh: log.player_speed ? log.player_speed[i] : null,
     distance_m: log.distance ? log.distance[i] : null,
+    related_player_id: log.related ? log.related[i] : null,
   }));
 }
 
@@ -444,6 +448,10 @@ const WINDOW_TO_CLOCK = new RegExp(`${B}(?:before|by|until|up to) ([0-9]{1,3}):(
 const WINDOW_LAST = new RegExp(`${B}(?:last|final) ([0-9]{1,3}) minutes?${E}`);
 const FACT_MINUTE = new RegExp(`${B}([0-9]{1,3})(?:'|\u2032|\u2019|(?:st|nd|rd|th) minute)`, "g");
 const GOAL_WORDS = new RegExp(`${B}(?:goals?|scor(?:ed|es|ing)|netted|(?:headed|nodded|fired|slotted|tapped|poked|swept|curled|volleyed|turned) (?:in|home))${E}`);
+const CARD_WORDS = new RegExp(`${B}(?:cards?|booked|booking|cautioned|sent off|dismissed)${E}`);
+const RED_WORDS = new RegExp(`${B}(?:red|sent off|dismissed|second yellow)${E}`);
+const YELLOW_WORDS = new RegExp(`${B}(?:yellow|booked|booking|cautioned)${E}`);
+const SUB_WORDS = new RegExp(`${B}(?:replaced|replaces|substitut(?:ed|es|ion)|comes on|came on|on for|off for)${E}`);
 const MINUTE_MS = 60_000;
 const word = (words: string) => new RegExp(`${B}(?:${words})${E}`);
 
@@ -505,7 +513,7 @@ function scoringShot(goal: VEvent, events: readonly VEvent[]): VEvent | null {
   return events.find((e) => e.sequence === goal.sequence - 1 && e.type === "shot" && e.outcome === "goal" && e.player_id === goal.player_id) ?? null;
 }
 
-function factProblem(claim: Claim, lowered: string, events: readonly VEvent[]): string | null {
+function factProblem(claim: Claim, lowered: string, events: readonly VEvent[], names?: Names | null): string | null {
   const fact = claim.fact;
   if (!fact) return null;
   const byId = new Map(events.map((e) => [e.event_id, e]));
@@ -531,6 +539,21 @@ function factProblem(claim: Claim, lowered: string, events: readonly VEvent[]): 
     }
   }
   if (fact.query === "goal_scorer.v1" && !GOAL_WORDS.test(lowered)) return "Claim text does not say this was a goal";
+  const target = events.find((e) => e.event_id === fact.event_id);
+  if (fact.query === "card.v1" && target) {
+    if (!CARD_WORDS.test(lowered)) return "Claim text does not say this was a card";
+    const saysRed = RED_WORDS.test(lowered);
+    const saysYellow = YELLOW_WORDS.test(lowered);
+    // A yellow must read as a yellow; a red or second yellow must read as a sending-off.
+    if (target.outcome === "yellow" && (saysRed || !saysYellow)) return "Claim text states a card colour the event log does not record";
+    if (target.outcome === "red" && (saysYellow || !saysRed)) return "Claim text states a card colour the event log does not record";
+    if (target.outcome === "second_yellow" && !saysRed) return "Claim text states a card colour the event log does not record";
+  }
+  if (fact.query === "substitution.v1" && target) {
+    if (!SUB_WORDS.test(lowered)) return "Claim text does not say this was a substitution";
+    const incoming = names && target.related_player_id ? names[target.related_player_id] : undefined;
+    if (incoming === undefined || !namesSubject(lowered, incoming)) return "Claim text does not name the incoming player";
+  }
   return null;
 }
 
@@ -568,7 +591,7 @@ export function textBindingProblem(claim: Claim, names?: Names | null, events: r
   }
   if (claim.fact) {
     const target = events.find((e) => e.event_id === claim.fact?.event_id);
-    return teamProblem(lowered, target ? target.team_id : null, names, teams) ?? factProblem(claim, lowered, events);
+    return teamProblem(lowered, target ? target.team_id : null, names, teams) ?? factProblem(claim, lowered, events, names);
   }
   return null;
 }
@@ -598,6 +621,12 @@ function factResult(claim: Claim, fact: EventFact, evidence: Evidence, events: r
   const byId = new Map(events.map((e) => [e.event_id, e]));
   const target = byId.get(fact.event_id) as VEvent;
   if (evidence.window && target.match_clock_ms >= evidence.window.to_ms) return ["blocked", query, "Event fact reads events after the evidence window", null, null];
+  if (fact.query === "card.v1" || fact.query === "substitution.v1") {
+    const kind = fact.query === "card.v1" ? "card" : "substitution";
+    return target.type === kind && target.player_id === fact.player_id
+      ? ["verified", query, `The cited ${kind} event records the stated player`, null, null]
+      : ["needs_revision", query, `The cited event is not a ${kind} for the stated player`, null, null];
+  }
   if (fact.query === "goal_scorer.v1") {
     return target.type === "goal" && target.player_id === fact.player_id
       ? ["verified", query, "The cited goal event records the stated scorer", null, null]

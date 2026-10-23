@@ -203,7 +203,7 @@ export function ComposerBody() {
             </button>
           </div>
           <p id="md-submit-help" className="md-muted md-small">{elig.eligible ? "A producer approves or rejects it next. Approval and publishing stay with a human." : "Resolve the blocking claims to submit."}</p>
-          <div className="md-btn-row"><p className="md-locked"><Icon name="lock" size={14} /> Approve · Planned</p><Link href="/producer/publish/D-031" className="md-link">See the publication journey <Icon name="arrow" size={14} /></Link></div>
+          <div className="md-btn-row"><Link href="/producer/publish/D-031" className="md-link">{elig.eligible ? "Approve and publish (demo producer)" : "See the publication journey"} <Icon name="arrow" size={14} /></Link></div>
         </div>
       </div>
     </>

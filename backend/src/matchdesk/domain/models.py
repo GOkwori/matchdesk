@@ -275,12 +275,16 @@ class EventFact(Contract):
     """A registered, checkable statement about specific events, not about an aggregate.
 
     ``goal_scorer.v1``: goal ``event_id`` was scored by ``player_id``.
+    ``card.v1``: card ``event_id`` was shown to ``player_id``; the sentence's colour is checked
+    against the recorded card.
+    ``substitution.v1``: substitution ``event_id`` took ``player_id`` off; the sentence must name
+    the recorded incoming player.
     ``sequence_gap.v1``: ``event_id`` followed ``from_event_id`` by ``gap_seconds`` whole
     seconds (rounded half up), and, when ``from_tag`` is given, the earlier event carries
     that tag (a corner is a tagged pass in schema 1.0).
     """
 
-    query: Literal["goal_scorer.v1", "sequence_gap.v1"]
+    query: Literal["goal_scorer.v1", "sequence_gap.v1", "card.v1", "substitution.v1"]
     event_id: Identifier
     player_id: Identifier | None = None
     from_event_id: Identifier | None = None
@@ -290,11 +294,11 @@ class EventFact(Contract):
     @model_validator(mode="after")
     def validate_fact(self) -> Self:
         """Require exactly the parameters each registered query reads."""
-        if self.query == "goal_scorer.v1":
+        if self.query in ("goal_scorer.v1", "card.v1", "substitution.v1"):
             if self.player_id is None or any(
                 value is not None for value in (self.from_event_id, self.from_tag, self.gap_seconds)
             ):
-                raise ValueError("goal_scorer.v1 takes event_id and player_id only")
+                raise ValueError(f"{self.query} takes event_id and player_id only")
         elif (
             self.from_event_id is None
             or self.gap_seconds is None

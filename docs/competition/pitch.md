@@ -79,6 +79,8 @@ United, 1,421 events):
   checked this" panel.
 - **Ask MatchDesk.** Ask "Who ran the furthest?" or "Who scored the second goal?" and get
   an answer whose every figure was computed and verified, or an honest "I can't check that".
+- **Auto-eventing from video.** A detector that sees only a synthetic top-down video of the match
+  finds the touches, passes, carries, shots and speeds, and is scored against the log.
 - **Connect your own agent.** Point an MCP client at `/api/mcp` and use `check_sentence`
   to have its own sentences verified.
 

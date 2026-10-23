@@ -2,7 +2,7 @@
   "files": {
     "ApprovalBinding.v1.json": "f606b3daec2041d051e5243c148001f49299d8bae82f5f4b0d126b91cce906eb",
     "BroadcastEnvelope.v1.json": "44dbc8fea38533df59b831d481be36bf1023948dec364db789b38edaa1b90d74",
-    "Claim.v1.json": "7b8a14a6ba2eea87e088abefbc0a3898cae1fd4a0c9296c340bcde48fc0a417b",
+    "Claim.v1.json": "f7fd0275e1eafc5aa30b333ba8ab856bf414aacb36c6913c0ee330366ddee499",
     "EvidenceRecord.v1.json": "044ef92d4b6e2698160097f45fd24cd149111bdf7987216356167a296892c5ad",
     "Location.v1.json": "b16622287c248d9750ac2492d9f9e1bba7e2da3b7d8c0112982207fd18e314d4",
     "MatchEvent.v1.json": "e3559f17a3f7b008e424f5e3eb3320315bec3bcecc979e29338bc4e22c64bb4a",
@@ -10,7 +10,7 @@
     "MetricAssertion.v1.json": "4af6a17ee0139c27e13d8833460fd96cd1231d9e59e0a59e8ddbe90cc6e2c8a9",
     "Subject.v1.json": "4b36259afe9e940cce73534df733a4070c46cecad646e6ca74989b0764693122",
     "VerificationResult.v1.json": "22e1512f41f8e213264e88c35fbedc249de0f17b20f107dffb4fbb4c795b4944",
-    "openapi.json": "51bd474319ddd7a3ffe3aeffa7963a44bc6b1ffe8666bab6900997c9b503b59a"
+    "openapi.json": "843204b11648b7bd5b1188ac372604e397544d2bb7c21129d5286528b85b2670"
   },
   "schema_version": "1.0"
 }

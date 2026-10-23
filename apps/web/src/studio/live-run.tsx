@@ -79,7 +79,7 @@ export default function LiveRunPanel({ onTrace }: { onTrace: (trace: unknown) =>
         {running && <span className="md-chip md-chip-pending" role="status">Running · {Math.round((report?.elapsed_ms ?? 0) / 1000)} s</span>}
       </div>
       <p className="md-muted md-small">
-        A fresh run on Microsoft Foundry for the 58′ goal: the same role-scoped tools, claim contract and verifier as the recorded run. It takes one to three minutes. Runs make billable model calls, so they are five minutes apart and at most twelve a day.
+        A fresh run on Microsoft Foundry for the 58′ goal: the same role-scoped tools, claim contract and verifier as the recorded run. It takes a few minutes (at most six). Runs make billable model calls, so they are five minutes apart and at most twelve a day.
       </p>
       <div className="md-btn-row">
         <button type="button" className="md-btn md-btn-primary" onClick={() => void start()} disabled={!report || running || wait > 0}>

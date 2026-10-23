@@ -48,7 +48,16 @@ def _log() -> tuple[MatchEvent, ...]:
 def _due(t_ms: int, bound: list[Claim]) -> int:
     """When every claim's window has closed and, for possession, the next event has arrived."""
     windows = [c.assertion.window.to_ms for c in bound if c.assertion is not None]
-    due = max([t_ms, *windows])
+    # An event fact can be checked once the events it reads have arrived.
+    clocks = {e.event_id: e.match_clock_ms for e in _log()}
+    facts = [
+        clocks[event_id] + 1
+        for c in bound
+        if c.fact is not None
+        for event_id in c.fact.referenced_event_ids()
+        if event_id in clocks
+    ]
+    due = max([t_ms, *windows, *facts])
     if any(c.assertion is not None and c.assertion.metric == "possession_time.v1" for c in bound):
         # Time on the ball runs until the next event, so possession waits for it.
         following = next((e.match_clock_ms for e in _log() if e.match_clock_ms >= due), due)
