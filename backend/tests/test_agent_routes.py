@@ -33,6 +33,7 @@ def _runs(runner: Any = None, clock: _Clock | None = None, **kw: Any) -> LiveRun
     async def rehearsal(
         executor: WorkflowExecutor, progress: list[dict[str, Any]]
     ) -> dict[str, Any]:
+        """Run the deterministic rehearsal with the shared progress list."""
         return await record_agent_run(executor, clock=lambda: None, progress=progress)
 
     return LiveRuns(
@@ -56,6 +57,7 @@ def test_a_run_completes_and_reports_the_same_view_as_a_recording() -> None:
     """Start, then read the finished trace, with progress steps and the verifier's rounds."""
 
     async def scenario() -> dict[str, Any]:
+        """Start a run and wait for it."""
         runs = _runs()
         assert runs.wait_seconds() == 0
         runs.start()
@@ -93,13 +95,16 @@ def test_provider_faults_and_timeouts_are_reported_not_raised() -> None:
     """A crashing or slow provider leaves a readable failure."""
 
     async def crash(executor: WorkflowExecutor, progress: list[dict[str, Any]]) -> dict[str, Any]:
+        """A provider that fails."""
         raise RuntimeError("upstream unavailable")
 
     async def slow(executor: WorkflowExecutor, progress: list[dict[str, Any]]) -> dict[str, Any]:
+        """A provider slower than the limit."""
         await asyncio.sleep(5)
         return {}
 
     async def scenario(runner: Any, timeout: float) -> dict[str, Any]:
+        """Start a run and wait for it."""
         runs = _runs(runner=runner, timeout=timeout)
         runs.start()
         assert runs._task is not None
@@ -117,6 +122,7 @@ def test_the_routes_start_refuse_and_report() -> None:
     gate = asyncio.Event()
 
     async def held(executor: WorkflowExecutor, progress: list[dict[str, Any]]) -> dict[str, Any]:
+        """A run that waits until the test lets it finish."""
         await gate.wait()
         return {"status": "completed", "steps": []}
 
