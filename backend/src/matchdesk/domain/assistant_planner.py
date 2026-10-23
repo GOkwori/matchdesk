@@ -11,6 +11,7 @@ size, output tokens, time and request rate.
 from __future__ import annotations
 
 import asyncio
+import logging
 import os
 import threading
 import time
@@ -96,6 +97,8 @@ MetricId = Literal[
 ]
 Intent = Literal["metric", "score", "scorers", "summary", "help", "out_of_scope", "unknown"]
 Reason = Literal["prediction", "other_match", "personal", "unsupported"]
+
+_log = logging.getLogger("matchdesk.assistant")
 
 
 class PlannedQuestion(BaseModel):
@@ -333,5 +336,6 @@ class AssistantPlanner:
         try:
             planned = cast(PlannedQuestion, _extract_proposal(result, PlannedQuestion))
         except ValueError:  # includes ValidationError: output outside the schema is never used
+            _log.warning("assistant planner output was outside the plan schema")
             return {"intent": "unknown"}
         return planned.to_plan()

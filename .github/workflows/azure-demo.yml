@@ -2,16 +2,17 @@ name: Azure demo (studio and API)
 
 # Deploys the competition demo described in infra/azure/demo.bicep: the studio and the API on
 # Azure Container Apps, with the Ask MatchDesk planner on Microsoft Foundry when switched on.
-# what-if is read-only and creates nothing. deploy needs the typed confirmation.
+# what-if is read-only and creates nothing. deploy needs the typed confirmation. diagnose only reads
+# the API's recent console log and reports error lines as annotations.
 # Rollback: delete the resource group; the Vercel copy of the studio is unaffected.
 on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "what-if (read-only) or deploy"
+        description: "what-if (read-only), deploy, or diagnose (read the API's recent errors)"
         required: true
         type: choice
-        options: [what-if, deploy]
+        options: [what-if, deploy, diagnose]
         default: what-if
       assistant:
         description: "Switch on the Ask MatchDesk planner on Microsoft Foundry"
@@ -107,6 +108,7 @@ jobs:
           done
 
       - name: Preview the base resources (what-if, read-only)
+        if: ${{ inputs.mode != 'diagnose' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -118,6 +120,22 @@ jobs:
             exit 1
           fi
           printf '%s\n' "$out"
+
+      - name: Report the API's recent errors (diagnose, read-only)
+        if: ${{ inputs.mode == 'diagnose' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          az config set extension.use_dynamic_install=yes_without_prompt >/dev/null
+          az containerapp logs show --resource-group "$RESOURCE_GROUP" --name mdesk-api --type console \
+            --tail 300 --format text -o tsv > "$RUNNER_TEMP/api.log" 2>"$RUNNER_TEMP/az.err" || {
+            echo "::error title=Could not read logs::$(tail -n 4 "$RUNNER_TEMP/az.err" | tr '\n' ' ' | cut -c1-800)"; exit 1; }
+          echo "Read $(wc -l < "$RUNNER_TEMP/api.log") log lines"
+          # Exception names and messages only; GitHub masks any secret values that appear.
+          grep -E "planner call failed|Error|Exception|error:" "$RUNNER_TEMP/api.log" | grep -v '^\s*File ' | tail -n 10 \
+            | while IFS= read -r line; do echo "::warning title=API log::$(printf '%s' "$line" | cut -c1-600)"; done || true
+          az containerapp show --resource-group "$RESOURCE_GROUP" --name mdesk-api \
+            --query "{revision: properties.latestRevisionName, running: properties.runningStatus, identity: identity.type}" -o json
 
       - name: Create or update the base resources
         if: ${{ inputs.mode == 'deploy' }}
