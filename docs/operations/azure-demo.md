@@ -34,7 +34,7 @@ inside the Container Apps monthly free grant. Planner calls cost a few pence a d
 2. On the identity GitHub Actions already uses for Foundry, add a federated credential for this repository's
    `development` branch, and give it **Contributor** on that resource group only.
 3. In GitHub, set the secret `AZURE_SUBSCRIPTION_ID` and the variable `AZURE_RESOURCE_GROUP`. Optionally, set
-   `AZURE_BUDGET_EMAILS` to a JSON array of addresses.
+   `AZURE_BUDGET_EMAILS` to the addresses for budget alerts, comma-separated or as a JSON array.
 4. After the first deploy, give the managed identity `mdesk-demo-id` the **Azure AI User** role on the Foundry
    project. The workflow summary prints its principal ID. Until then the planner answers "unknown", and the studio
    falls back to its built-in parser.

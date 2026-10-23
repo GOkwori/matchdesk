@@ -38,6 +38,7 @@ jobs:
     env:
       AZURE_CORE_OUTPUT: none
       RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+      BUDGET_EMAILS: ${{ vars.AZURE_BUDGET_EMAILS }}
       TEMPLATE: infra/azure/demo.bicep
     steps:
       - name: Require explicit owner authorisation to deploy
@@ -74,6 +75,19 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Read the budget alert addresses
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Accept a JSON array or a comma-separated list; Azure gets a parameters file either way.
+          if jq -e 'type == "array" and all(type == "string")' <<<"${BUDGET_EMAILS:-[]}" >/dev/null 2>&1; then
+            emails="$(jq -c . <<<"${BUDGET_EMAILS:-[]}")"
+          else
+            emails="$(jq -cn --arg s "$BUDGET_EMAILS" '$s | split(",") | map(gsub("^\\s+|\\s+$"; "")) | map(select(length > 0))')"
+          fi
+          jq -n --argjson e "$emails" '{"$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#", contentVersion: "1.0.0.0", parameters: {budgetContactEmails: {value: $e}}}' > "$RUNNER_TEMP/budget.parameters.json"
+          echo "Budget alerts: $(jq 'length' <<<"$emails") address(es)"
+
       - name: Authenticate to Azure with GitHub OIDC
         uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906
         with:
@@ -98,7 +112,7 @@ jobs:
           set -euo pipefail
           if ! out="$(az deployment group what-if --resource-group "$RESOURCE_GROUP" \
             --template-file "$TEMPLATE" --parameters deployApps=false \
-            budgetContactEmails='${{ vars.AZURE_BUDGET_EMAILS || '[]' }}' 2>"$RUNNER_TEMP/az.err")"; then
+            @"$RUNNER_TEMP/budget.parameters.json" 2>"$RUNNER_TEMP/az.err")"; then
             # Job logs are not always readable; put Azure's reason where the run summary shows it.
             echo "::error title=What-if failed::$(grep -iE 'error|code|message' "$RUNNER_TEMP/az.err" | tail -n 6 | tr '\n' ' ' | cut -c1-1500)"
             exit 1
@@ -113,7 +127,7 @@ jobs:
           set -euo pipefail
           if ! out="$(az deployment group create --resource-group "$RESOURCE_GROUP" --name matchdesk-demo-base \
             --template-file "$TEMPLATE" --parameters deployApps=false \
-            budgetContactEmails='${{ vars.AZURE_BUDGET_EMAILS || '[]' }}' \
+            @"$RUNNER_TEMP/budget.parameters.json" \
             --query properties.outputs -o json 2>"$RUNNER_TEMP/az.err")"; then
             echo "::error title=Base deployment failed::$(grep -iE 'error|code|message' "$RUNNER_TEMP/az.err" | tail -n 6 | tr '\n' ' ' | cut -c1-1500)"
             exit 1
@@ -160,7 +174,7 @@ jobs:
               webImage="$REGISTRY/matchdesk-web:$tag" apiImage="$REGISTRY/matchdesk-api:$tag" \
               assistantEnabled=${{ inputs.assistant }} \
               foundryProjectEndpoint="$FOUNDRY_PROJECT_ENDPOINT" foundryModel="$FOUNDRY_MODEL" \
-              budgetContactEmails='${{ vars.AZURE_BUDGET_EMAILS || '[]' }}'; then
+              @"$RUNNER_TEMP/budget.parameters.json"; then
               exit 0
             fi
             echo "::warning::App deployment attempt $attempt failed; retrying in 60 s"
