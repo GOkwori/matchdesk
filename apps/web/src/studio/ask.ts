@@ -366,7 +366,8 @@ export function parseQuestion(question: string, ctx: Pick<MatchContext, "names" 
 const PLAN_KEYS: Readonly<Record<string, readonly string[]>> = {
   metric: ["intent", "metric", "subjects", "window"],
   score: ["intent", "window"],
-  scorers: ["intent", "subjects", "window"],
+  scorers: ["intent", "subjects", "window", "nth"],
+  leaders: ["intent", "metric", "subjects", "window"],
   summary: ["intent", "subject", "window"],
   help: ["intent", "topic"],
   out_of_scope: ["intent", "reason"],
@@ -418,7 +419,17 @@ export function validatePlan(value: unknown, ctx: Pick<MatchContext, "names" | "
       return validWindow(plan.window) ? { intent: "score", window: window() } : null;
     case "scorers": {
       const subjects = plan.subjects ?? [];
-      return validSubjects(subjects, ctx) && validWindow(plan.window) ? { intent: "scorers", subjects: [...subjects], window: window() } : null;
+      if (!validSubjects(subjects, ctx) || !validWindow(plan.window)) return null;
+      if (plan.nth === undefined || plan.nth === null) return { intent: "scorers", subjects: [...subjects], window: window() };
+      return Number.isInteger(plan.nth) && (plan.nth as number) >= 1 && (plan.nth as number) <= 4
+        ? { intent: "scorers", subjects: [...subjects], window: window(), nth: plan.nth as number } : null;
+    }
+    case "leaders": {
+      // Players are ranked; subjects may only narrow the ranking to one team.
+      if (typeof plan.metric !== "string" || !Object.hasOwn(METRICS, plan.metric) || !validWindow(plan.window)) return null;
+      const subjects = plan.subjects ?? [];
+      if (!validSubjects(subjects, ctx) || subjects.length > 1 || subjects.some((s) => !Object.hasOwn(ctx.teams, s))) return null;
+      return { intent: "leaders", metric: plan.metric as Metric, subjects: [...subjects], window: window() };
     }
     case "summary":
       return knownSubject(plan.subject, ctx) && validWindow(plan.window) ? { intent: "summary", subject: plan.subject, window: window() } : null;

@@ -145,6 +145,13 @@ test('plans from a model are accepted only in the exact schema', () => {
   ];
   for (const plan of bad) assert.equal(validatePlan(plan, ctx), null, JSON.stringify(plan));
   assert.deepEqual(validatePlan({ intent: 'scorers' }, ctx), { intent: 'scorers', subjects: [], window: {} });
+  assert.deepEqual(validatePlan({ intent: 'scorers', subjects: [], window: {}, nth: 2 }, ctx), { intent: 'scorers', subjects: [], window: {}, nth: 2 });
+  for (const nth of [0, 5, 1.5, '2']) assert.equal(validatePlan({ intent: 'scorers', subjects: [], window: {}, nth }, ctx), null, String(nth));
+  const leaders = { intent: 'leaders', metric: 'recoveries.v1', subjects: ['riv'], window: { period: 2 } };
+  assert.deepEqual(validatePlan(leaders, ctx), leaders);
+  for (const plan of [{ ...leaders, metric: 'dribbles.v1' }, { ...leaders, subjects: ['riv-11'] }, { ...leaders, subjects: ['nbr', 'riv'] }]) {
+    assert.equal(validatePlan(plan, ctx), null, JSON.stringify(plan));
+  }
 });
 
 test('help and declines work before the event log has loaded', () => {
