@@ -188,15 +188,17 @@ test('moment deep links select the moment and link to its evidence', async ({ pa
 
 test('the fan story switches language without changing the verified facts', async ({ page }) => {
   await open(page, STORY);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('59′ · Okafor restores the Northbridge lead');
+  await expect(page.getByText('Checked again in your browser')).toBeVisible();
   await page.getByRole('button', { name: 'Español' }).click();
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('Gol de');
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('devuelve la ventaja');
   await expect(page.locator('main')).toHaveAttribute('lang', 'es');
   await expect(page.getByText('58:17').first()).toBeVisible();
   await expect(page.getByText('Momento verificado')).toBeVisible();
-  await expect(page.getByRole('img', { name: /^Diagrama: córner/ })).toBeVisible();
+  await expect(page.getByRole('img', { name: /^Diagrama de la jugada: ① Córner 58:03/ })).toBeVisible();
   await expect(page.getByText(/Traducción asistida por IA/)).toBeVisible();
   await page.getByRole('button', { name: 'Français' }).click();
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('But de');
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('redonne');
   await expect(page.getByText('Moment vérifié')).toBeVisible();
   await expect(page.getByText(/Traduction assistée par IA/)).toBeVisible();
   await page.getByRole('button', { name: 'English' }).click();

@@ -29,6 +29,7 @@ from matchdesk.domain import canonical_match as canonical
 from matchdesk.domain.agent_demo import rehearsal_trace
 from matchdesk.domain.demo_export import build_demo_export
 from matchdesk.domain.overlay_feed import build_overlay_feed
+from matchdesk.domain.story_feed import build_story_feed
 from matchdesk.domain.verifier_parity import compact_events, parity_fixture
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -38,6 +39,7 @@ PARITY = ROOT / "apps/web/tests/verifier-parity.json"
 TRACE = ROOT / "apps/web/src/studio/generated/agent-trace.json"
 REHEARSAL = ROOT / "apps/web/src/studio/generated/agent-trace-rehearsal.json"
 OVERLAYS = ROOT / "apps/web/src/studio/generated/nbr-riv-overlays.json"
+STORIES = ROOT / "apps/web/src/studio/generated/nbr-riv-stories.json"
 VIEWS = {
     TRACE: ROOT / "apps/web/src/studio/generated/agent-trace.view.json",
     REHEARSAL: ROOT / "apps/web/src/studio/generated/agent-trace-rehearsal.view.json",
@@ -81,6 +83,11 @@ def render_parity() -> str:
     return json.dumps(parity_fixture(), indent=1, sort_keys=True, ensure_ascii=False) + "\n"
 
 
+def render_stories() -> str:
+    """The fan stories, one per goal, with the claims behind them."""
+    return json.dumps(build_story_feed(), indent=1, sort_keys=True, ensure_ascii=False) + "\n"
+
+
 def render_overlays() -> str:
     """Return the timed overlay feed, published as a downloadable file."""
     return json.dumps(build_overlay_feed(), indent=1, sort_keys=True, ensure_ascii=False) + "\n"
@@ -106,6 +113,7 @@ def outputs() -> dict[Path, str]:
         PARITY: render_parity(),
         REHEARSAL: render_trace(),
         OVERLAYS: render_overlays(),
+        STORIES: render_stories(),
     }
     # agent-trace.json holds the recorded live run once there is one; until then it is
     # the rehearsal too. AI insights shows both when they differ.

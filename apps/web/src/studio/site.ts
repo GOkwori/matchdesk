@@ -1,5 +1,6 @@
 /** Single route registry for the studio: sitemap, robots, offline precache and route tests read it. */
-import { claims, STORY_SLUG } from "./data";
+import { claims } from "./data";
+import { stories } from "./stories";
 
 /**
  * Public origin used for canonical URLs, the sitemap and social cards. Operators set
@@ -17,11 +18,13 @@ export type SiteRoute = {
 export const siteRoutes: readonly SiteRoute[] = [
   { path: "/", indexable: true },
   { path: "/about", indexable: true },
-  { path: `/story/${STORY_SLUG}`, indexable: true },
+  { path: "/story", indexable: true },
+  ...stories.map((s) => ({ path: `/story/${s.slug}`, indexable: true })),
   { path: "/match/nbr-riv", indexable: true },
   { path: "/match/nbr-riv/live", indexable: false },
   { path: "/match/nbr-riv/moments", indexable: false },
   { path: "/match/nbr-riv/tactical", indexable: false },
+  { path: "/match/nbr-riv/players", indexable: false },
   { path: "/match/nbr-riv/insights", indexable: false },
   ...claims.map((c) => ({ path: `/match/nbr-riv/evidence/${c.id}`, indexable: false })),
   { path: "/producer/queue", indexable: false },
