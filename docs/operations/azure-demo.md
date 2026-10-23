@@ -11,6 +11,7 @@ Everything is in one resource group, in UK South:
 | Resource | Purpose |
 | --- | --- |
 | Log Analytics workspace | Container logs, capped at 0.1 GB a day |
+| Application Insights | Traces and metrics from the API on the same workspace: one span per planner question, live agent run and live replay stream, plus Agent Framework's generative-AI spans for every model call. Counts and timings only, never prompts or replies |
 | User-assigned managed identity | Pulls images and, for the planner, calls Microsoft Foundry. No keys or passwords |
 | Container Registry (Basic) | Holds the studio and API images, tagged with the git commit |
 | Container Apps environment (Consumption) | Runs both apps |
@@ -22,6 +23,12 @@ With the planner switched on (`assistant: true`), the API mounts `POST /api/assi
 Ask MatchDesk question into a query plan on Foundry and never writes an answer: the studio computes and verifies
 every figure itself. Each call is capped at 200 output tokens and 10 seconds, with at most 20 calls a minute and
 400 a day. One replica means those caps are also the totals.
+
+## Watching it
+
+In the portal, open `mdesk-demo-insights` › *Transaction search* and filter on `matchdesk.agents.live_run`,
+`matchdesk.assistant.plan` or `matchdesk.live.stream`. A live run's span holds its status, turns, tool calls,
+verification rounds and tokens, with each model call nested under it.
 
 ## Cost
 

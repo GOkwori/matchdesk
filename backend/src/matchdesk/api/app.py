@@ -17,6 +17,7 @@ from matchdesk.api.agent_routes import agent_router_from_env
 from matchdesk.api.assistant_routes import assistant_router_from_env
 from matchdesk.api.limits import BodyLimitMiddleware
 from matchdesk.api.live_routes import live_router_from_env
+from matchdesk.api.telemetry import configure_telemetry
 from matchdesk.domain.hashing import content_digest
 from matchdesk.domain.models import MatchEvent
 from matchdesk.domain.producer_preview import ProducerDeskPreview, build_producer_desk_preview
@@ -142,6 +143,8 @@ def create_app(
     return app
 
 
+# Traces and metrics go to Application Insights when the host provides a connection string.
+configure_telemetry()
 app = create_app()
 # Customer and producer routers stay unmounted. The Ask MatchDesk planner, which only reads
 # questions into plans, is added when the host switches it on.
