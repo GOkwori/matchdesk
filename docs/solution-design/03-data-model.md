@@ -30,6 +30,11 @@ Goal markers reference shot events. The reducer must enforce exactly-once scorin
 reference existence, current rosters and possession ownership. Phase 0 checks only
 that a reference is present and that event-type fields are structurally coherent.
 
+![Data model: session, replay, event, evidence, content version, verification, approval, publication](../diagrams/data-model.png)
+
+<details>
+<summary>Diagram source (Mermaid)</summary>
+
 ```mermaid
 erDiagram
     SESSION ||--o{ REPLAY : owns
@@ -40,5 +45,7 @@ erDiagram
     CONTENT_VERSION ||--o{ APPROVAL : binds
     APPROVAL ||--o{ PUBLICATION : authorises
 ```
+
+</details>
 
 The ER diagram is planned, not an executed database migration.

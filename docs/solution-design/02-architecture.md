@@ -2,6 +2,11 @@
 
 Status: proposed whole-system design; Phase 0/1/2 VERIFIED / COMPLETED, Phase 3 P3-01/02/03 domain contracts TESTED and P3-04/05 IN PROGRESS.
 
+![Target architecture: producer desk, API, replay worker, engine, agents, verification and publication gate](../diagrams/architecture-target.png)
+
+<details>
+<summary>Diagram source (Mermaid)</summary>
+
 ```mermaid
 flowchart TB
     Producer[Producer or isolated judge session] --> Web[Next.js producer desk]
@@ -16,6 +21,8 @@ flowchart TB
     API --> Publish[Version-bound publication gate]
     Publish --> Outputs[Overlay and audience feeds]
 ```
+
+</details>
 
 The modular backend separates simulation, ingestion, state, intelligence, verification,
 agents, API and infrastructure. Phase 1 implements the deterministic simulator, ingestion,
@@ -37,6 +44,11 @@ Producers/admins will use a workforce Entra tenant. Both issuers, API audiences,
 tenant IDs, sessions and entitlements remain isolated; all users are mapped by
 trusted issuer+tenant+immutable subject, never by email matching.
 
+![Identity: customer and workforce sign-in paths to the review and publication gate](../diagrams/architecture-identity.png)
+
+<details>
+<summary>Diagram source (Mermaid)</summary>
+
 ```mermaid
 flowchart TB
     Users[Fans and customers] --> BFF[Browser-delegated BFF login]
@@ -50,6 +62,8 @@ flowchart TB
     ProducerAPI --> Review[Version-bound human review]
     Review --> Publish[Governed publication gate]
 ```
+
+</details>
 
 The customer broker and protected BFF sessions are **PLANNED, not live**.
 An offline workforce JWT verifier is implemented, but trusted production

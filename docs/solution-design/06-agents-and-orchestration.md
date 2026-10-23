@@ -9,6 +9,11 @@ Status: design only. No Microsoft Agent Framework package or Foundry endpoint is
 | Editorial Reviewer | Review wording and use deterministic verifier outcomes | Request revisions, never override numerical checks |
 | Audience Adapter | Adapt tone and language while preserving facts | New draft versions requiring fresh verification |
 
+![Agent sequence: detector, analyst, composer, verifier, reviewer and producer](../diagrams/agent-sequence.png)
+
+<details>
+<summary>Diagram source (Mermaid)</summary>
+
 ```mermaid
 sequenceDiagram
     participant D as Detector
@@ -27,6 +32,8 @@ sequenceDiagram
         R->>P: Reviewable exact version
     end
 ```
+
+</details>
 
 The orchestrator is code. Workflow state, retries, idempotency keys and failure reasons
 must persist outside a process before crash recovery is claimed. Specialist requests
