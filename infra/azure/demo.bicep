@@ -58,6 +58,7 @@ var names = {
   environment: '${namePrefix}-demo-env'
   api: '${namePrefix}-api'
   web: '${namePrefix}-web'
+  insights: '${namePrefix}-demo-insights'
 }
 
 // ---------- Logs, capped so a noisy app cannot run up cost ----------
@@ -72,6 +73,20 @@ resource logs 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
 }
 
 // ---------- One identity: pulls images, and (tier 2) calls Foundry. No keys anywhere ----------
+// Application Insights on the same workspace: traces and metrics from the API's planner,
+// live agent runs (Agent Framework's generative-AI spans included) and live replay streams.
+resource insights 'Microsoft.Insights/components@2020-02-02' = {
+  name: names.insights
+  location: location
+  kind: 'web'
+  properties: {
+    Application_Type: 'web'
+    WorkspaceResourceId: logs.id
+    IngestionMode: 'LogAnalytics'
+    RetentionInDays: 30
+  }
+}
+
 resource identity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
   name: names.identity
   location: location
@@ -122,6 +137,7 @@ resource api 'Microsoft.App/containerApps@2024-03-01' = if (deployApps) {
     configuration: {
       ingress: { external: false, targetPort: 8000, transport: 'http', allowInsecure: true }
       registries: [ { server: registry.properties.loginServer, identity: identity.id } ]
+      secrets: [ { name: 'appinsights-connection', value: insights.properties.ConnectionString } ]
     }
     template: {
       containers: [
@@ -136,6 +152,7 @@ resource api 'Microsoft.App/containerApps@2024-03-01' = if (deployApps) {
             { name: 'MATCHDESK_LIVE_AGENTS_ENABLED', value: assistantEnabled ? 'true' : 'false' }
             { name: 'MATCHDESK_ASSISTANT_FOUNDRY_ENABLED', value: assistantEnabled ? 'true' : 'false' }
             { name: 'MATCHDESK_LIVE_REPLAY_ENABLED', value: 'true' }
+            { name: 'APPLICATIONINSIGHTS_CONNECTION_STRING', secretRef: 'appinsights-connection' }
             { name: 'FOUNDRY_PROJECT_ENDPOINT', value: foundryProjectEndpoint }
             { name: 'FOUNDRY_MODEL', value: foundryModel }
           ]
@@ -205,3 +222,4 @@ output apiAppName string = names.api
 output webUrl string = 'https://${names.web}.${environment.properties.defaultDomain}'
 output identityPrincipalId string = identity.properties.principalId
 output identityClientId string = identity.properties.clientId
+output insightsName string = insights.name

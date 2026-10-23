@@ -14,6 +14,7 @@ from collections.abc import AsyncIterator
 from fastapi import APIRouter, Query
 from fastapi.responses import JSONResponse, StreamingResponse
 
+from matchdesk.api.telemetry import tracer
 from matchdesk.domain.demo_claims import REPLAY_END_MS
 from matchdesk.domain.live_replay import SPEEDS, live_replay
 
@@ -41,6 +42,16 @@ class _Listeners:
         self.open = max(0, self.open - 1)
 
 
+def _count(frame: str, counts: dict[str, int]) -> None:
+    """Tally events and cue verdicts for telemetry."""
+    if frame.startswith("event: event"):
+        counts["event"] += 1
+    elif frame.startswith("event: cue"):
+        for status in ("verified", "logged", "failed"):
+            if f'"status":"{status}","claims"' in frame:
+                counts[status] += 1
+
+
 def create_live_router(limit: int = MAX_LISTENERS) -> APIRouter:
     """The stream route, with its own listener cap."""
     router = APIRouter()
@@ -63,14 +74,24 @@ def create_live_router(limit: int = MAX_LISTENERS) -> APIRouter:
         started = time.monotonic()
 
         async def frames() -> AsyncIterator[str]:
-            """The replay's frames; the listener's place is freed however it ends."""
-            try:
-                async for frame in live_replay(
-                    speed, from_ms, sleep=asyncio.sleep, elapsed=lambda: time.monotonic() - started
-                ):
-                    yield frame
-            finally:
-                listeners.leave()
+            """The replay's frames, counted for telemetry; the listener's place is freed however it ends."""
+            counts = {"event": 0, "verified": 0, "logged": 0, "failed": 0}
+            with tracer.start_as_current_span("matchdesk.live.stream") as span:
+                span.set_attribute("matchdesk.stream.speed", speed)
+                span.set_attribute("matchdesk.stream.from_ms", from_ms)
+                try:
+                    async for frame in live_replay(
+                        speed,
+                        from_ms,
+                        sleep=asyncio.sleep,
+                        elapsed=lambda: time.monotonic() - started,
+                    ):
+                        _count(frame, counts)
+                        yield frame
+                finally:
+                    listeners.leave()
+                    for key, value in counts.items():
+                        span.set_attribute(f"matchdesk.stream.{key}s", value)
 
         return StreamingResponse(
             frames(),

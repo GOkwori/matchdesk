@@ -6,6 +6,7 @@ answer; the browser computes and verifies every figure itself.
 
 from __future__ import annotations
 
+import json
 import logging
 from typing import Any
 
@@ -13,6 +14,7 @@ from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field
 
+from matchdesk.api.telemetry import tracer
 from matchdesk.domain.assistant_planner import (
     MAX_QUESTION_CHARS,
     AssistantPlanner,
@@ -49,6 +51,16 @@ def _service_detail(error: BaseException) -> str:
     return type(error).__name__
 
 
+def _intent(response: JSONResponse) -> str:
+    """The plan's intent, for telemetry; never the question."""
+    try:
+        body = json.loads(bytes(response.body))
+    except ValueError:
+        return "none"
+    plan = body.get("plan") if isinstance(body, dict) else None
+    return str(plan.get("intent", "none")) if isinstance(plan, dict) else "none"
+
+
 def create_assistant_router(planner: AssistantPlanner) -> APIRouter:
     """Expose the planner; failures degrade to the unknown plan, never to a guess."""
     router = APIRouter()
@@ -56,6 +68,14 @@ def create_assistant_router(planner: AssistantPlanner) -> APIRouter:
     @router.post("/api/assistant/plan")
     async def plan(request: PlanRequest) -> JSONResponse:
         """Read one question into a plan."""
+        with tracer.start_as_current_span("matchdesk.assistant.plan") as span:
+            response = await _plan(request)
+            span.set_attribute("matchdesk.http.status", response.status_code)
+            span.set_attribute("matchdesk.plan.intent", _intent(response))
+            return response
+
+    async def _plan(request: PlanRequest) -> JSONResponse:
+        """The planner call and its failure handling."""
         try:
             result: dict[str, Any] = await planner.plan(request.question)
         except PlannerBusy:

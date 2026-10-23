@@ -100,7 +100,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for ns in Microsoft.App Microsoft.ContainerRegistry Microsoft.OperationalInsights Microsoft.ManagedIdentity; do
+          for ns in Microsoft.App Microsoft.ContainerRegistry Microsoft.OperationalInsights Microsoft.ManagedIdentity Microsoft.Insights; do
             state="$(az provider show --namespace "$ns" --query registrationState -o tsv 2>/dev/null || echo unknown)"
             if [ "$state" != "Registered" ]; then
               az provider register --namespace "$ns" --wait || echo "::warning::Could not register $ns ($state). A subscription owner must register it: Subscriptions > Resource providers > $ns > Register"

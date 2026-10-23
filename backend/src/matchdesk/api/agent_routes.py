@@ -21,6 +21,7 @@ from typing import Any, cast
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
+from matchdesk.api.telemetry import tracer
 from matchdesk.domain.agent_demo import record_agent_run, trace_view
 from matchdesk.domain.agent_workflow import WorkflowExecutor, describe_error
 
@@ -85,6 +86,18 @@ class LiveRuns:
 
     async def _run(self) -> None:
         """Run to the end or the time limit; keep the outcome, never raise."""
+        with tracer.start_as_current_span("matchdesk.agents.live_run") as span:
+            await self._run_once()
+            span.set_attribute("matchdesk.run.status", self.status)
+            span.set_attribute("matchdesk.run.steps", len(self.progress))
+            if self.trace is not None:
+                totals = self.trace.get("totals", {})
+                for key in ("specialist_turns", "tool_calls", "verification_rounds", "tokens"):
+                    if isinstance(totals.get(key), int):
+                        span.set_attribute(f"matchdesk.run.{key}", totals[key])
+
+    async def _run_once(self) -> None:
+        """The run itself."""
         try:
             trace = await asyncio.wait_for(
                 self.runner(self.executor_factory(), self.progress), timeout=self.timeout
