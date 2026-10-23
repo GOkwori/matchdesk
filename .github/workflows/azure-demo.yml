@@ -188,6 +188,7 @@ jobs:
           docker build --file apps/web/Dockerfile \
             --build-arg MATCHDESK_API_ORIGIN=http://mdesk-api \
             --build-arg MATCHDESK_SITE_URL="$WEB_URL" \
+            --build-arg NEXT_PUBLIC_MATCHDESK_LIVE_STREAM=true \
             --tag "$REGISTRY/matchdesk-web:$tag" .
           docker build --file backend/Dockerfile --tag "$REGISTRY/matchdesk-api:$tag" .
           docker push "$REGISTRY/matchdesk-web:$tag"

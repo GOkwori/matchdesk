@@ -7,6 +7,9 @@ ENV MATCHDESK_API_ORIGIN=$MATCHDESK_API_ORIGIN
 # Public origin baked into canonical URLs, the sitemap and social cards at build time.
 ARG MATCHDESK_SITE_URL=http://localhost:3000
 ENV MATCHDESK_SITE_URL=$MATCHDESK_SITE_URL
+# "true" only where an API with the live replay sits behind /api (the Azure demo).
+ARG NEXT_PUBLIC_MATCHDESK_LIVE_STREAM=false
+ENV NEXT_PUBLIC_MATCHDESK_LIVE_STREAM=$NEXT_PUBLIC_MATCHDESK_LIVE_STREAM
 RUN apk add --no-cache --upgrade 'zlib>=1.3.2-r1' 'musl>=1.2.6-r3' 'musl-utils>=1.2.6-r3'
 COPY apps/web/package.json apps/web/package-lock.json ./
 RUN npm ci --ignore-scripts --no-audit --no-fund

@@ -859,3 +859,6 @@ html[data-md-motion="reduce"] .md-lt { animation: none; }
 .md-story-more a:hover { border-color: var(--md-accent-soft); }
 .md-story-more a .md-mono { color: var(--md-accent-soft); flex: none; }
 .md-story-more a .md-chip { margin-left: auto; }
+.md-lr-source { margin-left: auto; }
+.md-lr-source-live { color: var(--md-success); border-color: rgba(112, 216, 169, 0.6); }
+.md-lt-server { flex-basis: 100%; font-size: 11px; }

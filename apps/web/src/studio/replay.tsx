@@ -23,8 +23,13 @@ type FeedClaim = { claim_id: string; text: string; status: string; claim: Claim 
 type Feed = { schema: string; replay_end_ms: number; cues: Cue[]; claims: FeedClaim[] };
 type Verifier = typeof import("./verifier");
 type Loaded = { events: VEvent[]; feed: Feed; verifier: Verifier; recheck: Record<string, boolean> };
+type Score = { nbr: number; riv: number };
+type ServerVerdict = { cue_id: string; t_ms: number; checked_at_ms: number; events_received: number; status: "verified" | "logged" | "failed" };
+type ServerState = { connected: boolean; received: number; score: Score | null; verdicts: Record<string, ServerVerdict> };
 
 const SPEEDS = [1, 10, 30, 60] as const;
+/** Set at build time where an API with the live replay sits behind /api (the Azure demo). */
+const STREAM_AVAILABLE = process.env.NEXT_PUBLIC_MATCHDESK_LIVE_STREAM === "true";
 const TICK_MS = 100;
 const END = matchExport.replay_end_ms;
 const NAMES = matchExport.display_names;
@@ -34,6 +39,11 @@ const PROOF: Record<ViewerLanguage, { verified: string; logged: string; failed: 
   en: { verified: "Verified in this browser", logged: "Logged event", failed: "Not verified" },
   es: { verified: "Verificado en este navegador", logged: "Evento registrado", failed: "No verificado" },
   fr: { verified: "Vérifié dans ce navigateur", logged: "Événement enregistré", failed: "Non vérifié" },
+};
+const SERVER_NOTE: Record<ViewerLanguage, (at: string, n: number) => string> = {
+  en: (at, n) => `Checked on the server at ${at}, on the ${n.toLocaleString("en-GB")} events received`,
+  es: (at, n) => `Comprobado en el servidor en el ${at}, con los ${n.toLocaleString("es-ES")} eventos recibidos`,
+  fr: (at, n) => `Vérifié sur le serveur à ${at}, sur les ${n.toLocaleString("fr-FR")} événements reçus`,
 };
 const TYPE_LABEL: Record<string, string> = {
   pass: "Pass", carry: "Carry", recovery: "Recovery", clearance: "Clearance", shot: "Shot", goal: "Goal", foul: "Foul",
@@ -87,9 +97,52 @@ export default function ReplayPlayer() {
   const [speed, setSpeed] = useState<(typeof SPEEDS)[number]>(30);
   const [onlyMine, setOnlyMine] = useState(false);
   const timer = useRef<number | null>(null);
+  // The API streams the replay through the ingestor, reducer and verifier when it is there
+  // (the Azure deployment); otherwise the page plays its own copy of the log.
+  const [source, setSource] = useState<"server" | "page">(STREAM_AVAILABLE ? "server" : "page");
+  const [server, setServer] = useState<ServerState>({ connected: false, received: 0, score: null, verdicts: {} });
+  const [restart, setRestart] = useState(0);
+  const tRef = useRef(0);
+  tRef.current = t;
+  const seek = (ms: number) => { setT(ms); setRestart((n) => n + 1); };
 
   useEffect(() => {
-    if (!playing) return;
+    if (!playing || source !== "server") return;
+    let opened = false;
+    const stream = new EventSource(`/api/live/stream?speed=${speed}&from_ms=${Math.min(Math.floor(tRef.current), END - 1)}`);
+    const read = (e: Event) => JSON.parse((e as MessageEvent<string>).data) as Record<string, unknown>;
+    stream.addEventListener("hello", (e) => {
+      opened = true;
+      const d = read(e);
+      setServer((s) => ({ ...s, connected: true, received: d.events_received as number, score: d.score as Score }));
+    });
+    stream.addEventListener("event", (e) => {
+      const d = read(e);
+      setT(d.ms as number);
+      setServer((s) => ({ ...s, received: s.received + 1, score: d.score as Score }));
+    });
+    stream.addEventListener("cue", (e) => {
+      const d = read(e) as unknown as ServerVerdict;
+      setServer((s) => ({ ...s, verdicts: { ...s.verdicts, [d.cue_id]: d } }));
+    });
+    stream.addEventListener("end", (e) => {
+      const d = read(e);
+      stream.close();
+      if (d.reason === "time_limit") setRestart((n) => n + 1);
+      else { setT(END); setPlaying(false); }
+    });
+    stream.onerror = () => {
+      stream.close();
+      setServer((s) => ({ ...s, connected: false }));
+      // Not reachable here (no API behind this host): play the page's own copy instead.
+      if (!opened) setSource("page");
+      else setPlaying(false);
+    };
+    return () => stream.close();
+  }, [playing, speed, source, restart]);
+
+  useEffect(() => {
+    if (!playing || source !== "page") return;
     timer.current = window.setInterval(() => {
       setT((now) => {
         const next = Math.min(END, now + TICK_MS * speed);
@@ -98,7 +151,7 @@ export default function ReplayPlayer() {
       });
     }, TICK_MS);
     return () => { if (timer.current != null) window.clearInterval(timer.current); };
-  }, [playing, speed]);
+  }, [playing, speed, source]);
 
   const second = Math.floor(t / 1000);
   const loaded = typeof data === "object" ? data : null;
@@ -126,8 +179,12 @@ export default function ReplayPlayer() {
   const active = [...cues].reverse().find((c) => c.t_ms <= t && t - c.t_ms < hold) ?? null;
   const proof = (cue: Cue): "verified" | "logged" | "failed" => {
     if (!loaded || cue.status === "logged") return cue.status === "logged" ? "logged" : "failed";
+    const onServer = server.verdicts[cue.cue_id];
+    if (onServer && onServer.status !== "verified") return "failed";
     return cue.claim_ids.length > 0 && cue.claim_ids.every((id) => loaded.recheck[id]) ? "verified" : "failed";
   };
+  const streaming = source === "server" && server.connected;
+  const bug = streaming && server.score ? server.score : live?.score;
   const verifiedCount = loaded ? loaded.feed.claims.filter((c) => loaded.recheck[c.claim_id]).length : 0;
   const unit = (id: string) => loaded?.verifier.METRIC_UNITS[id] ?? "count";
   const focusLabel = FOCUS_METRICS.find((m) => m.id === viewer.focus)?.label ?? viewer.focus;
@@ -141,6 +198,9 @@ export default function ReplayPlayer() {
       <div className="md-panel-head">
         <h2 id="md-lr-title">Replay the match</h2>
         <span className="md-muted md-small">{loaded ? `${loaded.feed.cues.length} timed overlays · ${verifiedCount} of ${loaded.feed.claims.length} claims re-verified here` : "Loading the event log…"}</span>
+        <span className={`md-chip md-chip-pill md-lr-source${streaming ? " md-lr-source-live" : ""}`} role="status">
+          {streaming ? `● Live stream from the API · ${server.received.toLocaleString("en-GB")} events received` : source === "page" ? "In-page replay" : "Press play to stream from the API"}
+        </span>
       </div>
 
       <div className={`md-bcast${viewer.club ? ` md-bcast-fan-${viewer.club}` : ""}`}>
@@ -160,7 +220,7 @@ export default function ReplayPlayer() {
         </svg>
         <div className="md-bcast-bug" aria-label={`Score at ${clock(second)}`}>
           <span className={viewer.club === "nbr" ? "md-bug-mine" : undefined}>NBR</span>
-          <strong className="md-mono">{live ? `${live.score.nbr}–${live.score.riv}` : "0–0"}</strong>
+          <strong className="md-mono">{bug ? `${bug.nbr}–${bug.riv}` : "0–0"}</strong>
           <span className={viewer.club === "riv" ? "md-bug-mine" : undefined}>RIV</span>
           <span className="md-mono md-bug-clock">{clock(second)}</span>
         </div>
@@ -176,6 +236,9 @@ export default function ReplayPlayer() {
                   <span className="md-chip md-chip-pill">{viewer.player && active.players.includes(viewer.player) ? "Your player" : "Your club"}</span>
                 ) : null}
                 <span className="md-mono md-subtle">{active.cue_id}</span>
+                {server.verdicts[active.cue_id] && server.verdicts[active.cue_id].status !== "logged" && (
+                  <span className="md-subtle md-lt-server">{SERVER_NOTE[lang](clock(Math.floor(server.verdicts[active.cue_id].checked_at_ms / 1000)), server.verdicts[active.cue_id].events_received)}</span>
+                )}
               </span>
             </div>
           )}
@@ -183,20 +246,20 @@ export default function ReplayPlayer() {
       </div>
 
       <div className="md-lr-controls">
-        <button type="button" className="md-btn md-btn-primary md-lr-play" onClick={() => { if (t >= END) setT(0); setPlaying((p) => !p); }} disabled={!loaded} aria-label={playing ? "Pause replay" : "Play replay"}>
+        <button type="button" className="md-btn md-btn-primary md-lr-play" onClick={() => { if (t >= END) seek(0); setPlaying((p) => !p); }} disabled={!loaded} aria-label={playing ? "Pause replay" : "Play replay"}>
           <Icon name={playing ? "pause" : "play"} size={16} /> {playing ? "Pause" : t >= END ? "Replay again" : "Play"}
         </button>
         <label className="md-lr-scrub">
           <span className="md-visually-hidden">Match clock</span>
           <input type="range" min={0} max={END} step={1000} value={second * 1000} disabled={!loaded}
-            aria-valuetext={`${clock(second)} of ${clock(END / 1000)}`} onChange={(e) => setT(Number(e.target.value))} />
+            aria-valuetext={`${clock(second)} of ${clock(END / 1000)}`} onChange={(e) => seek(Number(e.target.value))} />
         </label>
         <div role="group" aria-label="Replay speed" className="md-seg">
           {SPEEDS.map((s) => <button key={s} type="button" aria-pressed={speed === s} onClick={() => setSpeed(s)}>{s}×</button>)}
         </div>
       </div>
       <div className="md-lr-jumps" role="group" aria-label="Jump to">
-        {jumps.map((j) => <button key={j.label} type="button" className="md-btn md-btn-secondary md-btn-sm" disabled={!loaded} onClick={() => { setT(Math.max(0, j.ms)); }}>{j.label}</button>)}
+        {jumps.map((j) => <button key={j.label} type="button" className="md-btn md-btn-secondary md-btn-sm" disabled={!loaded} onClick={() => seek(Math.max(0, j.ms))}>{j.label}</button>)}
       </div>
 
       <div className="md-lr-prefs">

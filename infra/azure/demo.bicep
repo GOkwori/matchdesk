@@ -134,6 +134,7 @@ resource api 'Microsoft.App/containerApps@2024-03-01' = if (deployApps) {
             { name: 'AZURE_CLIENT_ID', value: identity.properties.clientId }
             { name: 'MATCHDESK_FOUNDRY_ENABLED', value: 'false' }
             { name: 'MATCHDESK_ASSISTANT_FOUNDRY_ENABLED', value: assistantEnabled ? 'true' : 'false' }
+            { name: 'MATCHDESK_LIVE_REPLAY_ENABLED', value: 'true' }
             { name: 'FOUNDRY_PROJECT_ENDPOINT', value: foundryProjectEndpoint }
             { name: 'FOUNDRY_MODEL', value: foundryModel }
           ]

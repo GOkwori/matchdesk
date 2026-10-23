@@ -15,6 +15,7 @@ from pydantic import BaseModel
 
 from matchdesk.api.assistant_routes import assistant_router_from_env
 from matchdesk.api.limits import BodyLimitMiddleware
+from matchdesk.api.live_routes import live_router_from_env
 from matchdesk.domain.hashing import content_digest
 from matchdesk.domain.models import MatchEvent
 from matchdesk.domain.producer_preview import ProducerDeskPreview, build_producer_desk_preview
@@ -146,3 +147,7 @@ app = create_app()
 _assistant_router = assistant_router_from_env()
 if _assistant_router is not None:
     app.include_router(_assistant_router)
+# The live replay streams the recorded synthetic match; it is added when the host switches it on.
+_live_router = live_router_from_env()
+if _live_router is not None:
+    app.include_router(_live_router)
