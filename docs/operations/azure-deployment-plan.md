@@ -2,8 +2,8 @@
 
 Status: **PLAN FOR OWNER APPROVAL. Nothing has been provisioned.** Date: 22 October 2026.
 
-The competition demo stays where it is: https://matchdesk-seven.vercel.app, built from
-`release/submission-2026-10`. This plan adds a second, Azure-hosted MatchDesk with real producer
+The competition demo runs on Azure Container Apps as described in [azure-demo.md](azure-demo.md), with a studio-only
+copy at https://matchdesk-seven.vercel.app. This plan adds a second, Azure-hosted MatchDesk with real producer
 sign-in and a database, without touching the demo.
 
 ## What would be created
