@@ -24,12 +24,13 @@ MatchDesk separates writing from truth:
 What you can try in three minutes, on an invented match (Northbridge FC 2–1 Riverside
 United, 1,421 events):
 
-- Replay a live run of the agents on Microsoft Foundry for the 58th-minute goal, and a
-  rehearsal in which the composer claims 60% possession and the verifier recomputes
-  57.96% from the log and sends the draft back.
+- Start a live run of the four agents on Microsoft Foundry for the 58th-minute goal and
+  watch code send a claim back; or replay the recorded run, and a rehearsal in which the
+  composer claims 60% possession and the verifier recomputes 57.96% and sends it back.
 - Claim 59% yourself and watch it rejected, in the browser, from the raw events.
 - Edit a sentence in the composer and see it re-verified as you type.
-- Play the match back at up to 60× with timed broadcast overlays (goals, stats cards, a
+- Stream the match from the API on Azure at up to 60×, each event ingested and reduced as
+  it arrives, with timed broadcast overlays (goals, stats cards, a
   spell of control, a tackles leader) in fan, analyst or caption style, in English,
   Spanish or French. Every number on screen is re-verified in your browser first, and the
   same cues are a downloadable, machine-readable feed for a graphics engine.
