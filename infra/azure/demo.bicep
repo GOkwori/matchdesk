@@ -152,6 +152,7 @@ resource api 'Microsoft.App/containerApps@2024-03-01' = if (deployApps) {
             { name: 'MATCHDESK_LIVE_AGENTS_ENABLED', value: assistantEnabled ? 'true' : 'false' }
             { name: 'MATCHDESK_ASSISTANT_FOUNDRY_ENABLED', value: assistantEnabled ? 'true' : 'false' }
             { name: 'MATCHDESK_LIVE_REPLAY_ENABLED', value: 'true' }
+            { name: 'MATCHDESK_MCP_ENABLED', value: 'true' }
             { name: 'APPLICATIONINSIGHTS_CONNECTION_STRING', secretRef: 'appinsights-connection' }
             { name: 'FOUNDRY_PROJECT_ENDPOINT', value: foundryProjectEndpoint }
             { name: 'FOUNDRY_MODEL', value: foundryModel }

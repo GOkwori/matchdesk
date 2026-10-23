@@ -1,0 +1,1641 @@
+{
+ "claims": [
+  {
+   "claim": {
+    "claim_id": "RC-E-0688-SCORER",
+    "evidence_event_ids": [
+     "E-0688"
+    ],
+    "fact": {
+     "event_id": "E-0688",
+     "player_id": "nbr-09",
+     "query": "goal_scorer.v1",
+     "schema_version": "1.0"
+    },
+    "kind": "event_fact",
+    "schema_version": "1.0",
+    "text": "Okafor scored for Northbridge at 34:18."
+   },
+   "claim_id": "RC-E-0688-SCORER",
+   "evidence_event_ids": [
+    "E-0688"
+   ],
+   "observed": null,
+   "query_id": "event-goal-scorer-v1",
+   "reason": "The cited goal event records the stated scorer",
+   "status": "verified",
+   "text": "Okafor scored for Northbridge at 34:18."
+  },
+  {
+   "claim": {
+    "claim_id": "RC-E-0790-SCORER",
+    "evidence_event_ids": [
+     "E-0790"
+    ],
+    "fact": {
+     "event_id": "E-0790",
+     "player_id": "riv-11",
+     "query": "goal_scorer.v1",
+     "schema_version": "1.0"
+    },
+    "kind": "event_fact",
+    "schema_version": "1.0",
+    "text": "Lindqvist scored for Riverside at 41:03."
+   },
+   "claim_id": "RC-E-0790-SCORER",
+   "evidence_event_ids": [
+    "E-0790"
+   ],
+   "observed": null,
+   "query_id": "event-goal-scorer-v1",
+   "reason": "The cited goal event records the stated scorer",
+   "status": "verified",
+   "text": "Lindqvist scored for Riverside at 41:03."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "metric": "goals.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "player_id": "nbr-09",
+      "schema_version": "1.0"
+     },
+     "unit": "count",
+     "value": 2.0,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 3498000
+     }
+    },
+    "claim_id": "RC-E-1366-BRACE",
+    "evidence_event_ids": [
+     "E-0688",
+     "E-1366"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Okafor scored 2 goals up to 58:18."
+   },
+   "claim_id": "RC-E-1366-BRACE",
+   "evidence_event_ids": [
+    "E-0688",
+    "E-1366"
+   ],
+   "observed": 2.0,
+   "query_id": "metric-goals-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Okafor scored 2 goals up to 58:18."
+  },
+  {
+   "claim": {
+    "claim_id": "RC-E-1366-SCORER",
+    "evidence_event_ids": [
+     "E-1366"
+    ],
+    "fact": {
+     "event_id": "E-1366",
+     "player_id": "nbr-09",
+     "query": "goal_scorer.v1",
+     "schema_version": "1.0"
+    },
+    "kind": "event_fact",
+    "schema_version": "1.0",
+    "text": "Okafor scored for Northbridge at 58:17."
+   },
+   "claim_id": "RC-E-1366-SCORER",
+   "evidence_event_ids": [
+    "E-1366"
+   ],
+   "observed": null,
+   "query_id": "event-goal-scorer-v1",
+   "reason": "The cited goal event records the stated scorer",
+   "status": "verified",
+   "text": "Okafor scored for Northbridge at 58:17."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "metric": "goals.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "nbr"
+     },
+     "unit": "count",
+     "value": 1.0,
+     "window": {
+      "from_ms": 0,
+      "period": 1,
+      "schema_version": "1.0",
+      "to_ms": 2701000
+     }
+    },
+    "claim_id": "RC-HALF-TIME-GOALS-NBR",
+    "evidence_event_ids": [
+     "E-0688"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Northbridge scored 1 goal in the first half."
+   },
+   "claim_id": "RC-HALF-TIME-GOALS-NBR",
+   "evidence_event_ids": [
+    "E-0688"
+   ],
+   "observed": 1.0,
+   "query_id": "metric-goals-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Northbridge scored 1 goal in the first half."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "metric": "goals.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "riv"
+     },
+     "unit": "count",
+     "value": 1.0,
+     "window": {
+      "from_ms": 0,
+      "period": 1,
+      "schema_version": "1.0",
+      "to_ms": 2701000
+     }
+    },
+    "claim_id": "RC-HALF-TIME-GOALS-RIV",
+    "evidence_event_ids": [
+     "E-0790"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Riverside scored 1 goal in the first half."
+   },
+   "claim_id": "RC-HALF-TIME-GOALS-RIV",
+   "evidence_event_ids": [
+    "E-0790"
+   ],
+   "observed": 1.0,
+   "query_id": "metric-goals-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Riverside scored 1 goal in the first half."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "decimals": 2,
+     "metric": "pass_accuracy.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "nbr"
+     },
+     "unit": "ratio",
+     "value": 0.89,
+     "window": {
+      "from_ms": 0,
+      "period": 1,
+      "schema_version": "1.0",
+      "to_ms": 2701000
+     }
+    },
+    "claim_id": "RC-HALF-TIME-PASS-NBR",
+    "evidence_event_ids": [
+     "E-0001"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Northbridge completed 89% of their passes in the first half."
+   },
+   "claim_id": "RC-HALF-TIME-PASS-NBR",
+   "evidence_event_ids": [
+    "E-0001"
+   ],
+   "observed": 0.888235294117647,
+   "query_id": "metric-pass_accuracy-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Northbridge completed 89% of their passes in the first half."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "decimals": 2,
+     "metric": "pass_accuracy.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "riv"
+     },
+     "unit": "ratio",
+     "value": 0.86,
+     "window": {
+      "from_ms": 0,
+      "period": 1,
+      "schema_version": "1.0",
+      "to_ms": 2701000
+     }
+    },
+    "claim_id": "RC-HALF-TIME-PASS-RIV",
+    "evidence_event_ids": [
+     "E-0001"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Riverside completed 86% of their passes in the first half."
+   },
+   "claim_id": "RC-HALF-TIME-PASS-RIV",
+   "evidence_event_ids": [
+    "E-0001"
+   ],
+   "observed": 0.8611111111111112,
+   "query_id": "metric-pass_accuracy-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Riverside completed 86% of their passes in the first half."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "decimals": 2,
+     "metric": "possession_time.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "nbr"
+     },
+     "unit": "ratio",
+     "value": 0.56,
+     "window": {
+      "from_ms": 0,
+      "period": 1,
+      "schema_version": "1.0",
+      "to_ms": 2701000
+     }
+    },
+    "claim_id": "RC-HALF-TIME-POSS",
+    "evidence_event_ids": [
+     "E-0001"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Northbridge had 56% possession in the first half."
+   },
+   "claim_id": "RC-HALF-TIME-POSS",
+   "evidence_event_ids": [
+    "E-0001"
+   ],
+   "observed": 0.5560955555555556,
+   "query_id": "metric-possession_time-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Northbridge had 56% possession in the first half."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "metric": "shots.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "nbr"
+     },
+     "unit": "count",
+     "value": 5.0,
+     "window": {
+      "from_ms": 0,
+      "period": 1,
+      "schema_version": "1.0",
+      "to_ms": 2701000
+     }
+    },
+    "claim_id": "RC-HALF-TIME-SHOTS-NBR",
+    "evidence_event_ids": [
+     "E-0060",
+     "E-0227",
+     "E-0358",
+     "E-0422",
+     "E-0687"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Northbridge had 5 shots in the first half."
+   },
+   "claim_id": "RC-HALF-TIME-SHOTS-NBR",
+   "evidence_event_ids": [
+    "E-0060",
+    "E-0227",
+    "E-0358",
+    "E-0422",
+    "E-0687"
+   ],
+   "observed": 5.0,
+   "query_id": "metric-shots-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Northbridge had 5 shots in the first half."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "metric": "shots.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "riv"
+     },
+     "unit": "count",
+     "value": 6.0,
+     "window": {
+      "from_ms": 0,
+      "period": 1,
+      "schema_version": "1.0",
+      "to_ms": 2701000
+     }
+    },
+    "claim_id": "RC-HALF-TIME-SHOTS-RIV",
+    "evidence_event_ids": [
+     "E-0084",
+     "E-0252",
+     "E-0326",
+     "E-0588",
+     "E-0789",
+     "E-0825"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Riverside had 6 shots in the first half."
+   },
+   "claim_id": "RC-HALF-TIME-SHOTS-RIV",
+   "evidence_event_ids": [
+    "E-0084",
+    "E-0252",
+    "E-0326",
+    "E-0588",
+    "E-0789",
+    "E-0825"
+   ],
+   "observed": 6.0,
+   "query_id": "metric-shots-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Riverside had 6 shots in the first half."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "metric": "tackles.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "player_id": "riv-03",
+      "schema_version": "1.0"
+     },
+     "unit": "count",
+     "value": 6.0,
+     "window": {
+      "from_ms": 0,
+      "period": 1,
+      "schema_version": "1.0",
+      "to_ms": 2701000
+     }
+    },
+    "claim_id": "RC-HALF-TIME-TACKLES",
+    "evidence_event_ids": [
+     "E-0001"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Sorensen made 6 tackles in the first half."
+   },
+   "claim_id": "RC-HALF-TIME-TACKLES",
+   "evidence_event_ids": [
+    "E-0001"
+   ],
+   "observed": 6.0,
+   "query_id": "metric-tackles-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Sorensen made 6 tackles in the first half."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "decimals": 1,
+     "metric": "synthetic_xg.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "nbr"
+     },
+     "unit": "synthetic_xg",
+     "value": 1.0,
+     "window": {
+      "from_ms": 0,
+      "period": 1,
+      "schema_version": "1.0",
+      "to_ms": 2701000
+     }
+    },
+    "claim_id": "RC-HALF-TIME-XG-NBR",
+    "evidence_event_ids": [
+     "E-0001"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Northbridge had 1.0 expected goals in the first half."
+   },
+   "claim_id": "RC-HALF-TIME-XG-NBR",
+   "evidence_event_ids": [
+    "E-0001"
+   ],
+   "observed": 1.003,
+   "query_id": "metric-synthetic_xg-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Northbridge had 1.0 expected goals in the first half."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "decimals": 1,
+     "metric": "synthetic_xg.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "riv"
+     },
+     "unit": "synthetic_xg",
+     "value": 0.8,
+     "window": {
+      "from_ms": 0,
+      "period": 1,
+      "schema_version": "1.0",
+      "to_ms": 2701000
+     }
+    },
+    "claim_id": "RC-HALF-TIME-XG-RIV",
+    "evidence_event_ids": [
+     "E-0001"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Riverside had 0.8 expected goals in the first half."
+   },
+   "claim_id": "RC-HALF-TIME-XG-RIV",
+   "evidence_event_ids": [
+    "E-0001"
+   ],
+   "observed": 0.849,
+   "query_id": "metric-synthetic_xg-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Riverside had 0.8 expected goals in the first half."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "metric": "goals.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "nbr"
+     },
+     "unit": "count",
+     "value": 2.0,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 4032000
+     }
+    },
+    "claim_id": "RC-LATEST-GOALS-NBR",
+    "evidence_event_ids": [
+     "E-0688",
+     "E-1366"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Northbridge scored 2 goals up to 67:12."
+   },
+   "claim_id": "RC-LATEST-GOALS-NBR",
+   "evidence_event_ids": [
+    "E-0688",
+    "E-1366"
+   ],
+   "observed": 2.0,
+   "query_id": "metric-goals-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Northbridge scored 2 goals up to 67:12."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "metric": "goals.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "riv"
+     },
+     "unit": "count",
+     "value": 1.0,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 4032000
+     }
+    },
+    "claim_id": "RC-LATEST-GOALS-RIV",
+    "evidence_event_ids": [
+     "E-0790"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Riverside scored 1 goal up to 67:12."
+   },
+   "claim_id": "RC-LATEST-GOALS-RIV",
+   "evidence_event_ids": [
+    "E-0790"
+   ],
+   "observed": 1.0,
+   "query_id": "metric-goals-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Riverside scored 1 goal up to 67:12."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "decimals": 2,
+     "metric": "pass_accuracy.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "nbr"
+     },
+     "unit": "ratio",
+     "value": 0.9,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 4032000
+     }
+    },
+    "claim_id": "RC-LATEST-PASS-NBR",
+    "evidence_event_ids": [
+     "E-0001"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Northbridge completed 90% of their passes up to 67:12."
+   },
+   "claim_id": "RC-LATEST-PASS-NBR",
+   "evidence_event_ids": [
+    "E-0001"
+   ],
+   "observed": 0.8957264957264958,
+   "query_id": "metric-pass_accuracy-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Northbridge completed 90% of their passes up to 67:12."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "decimals": 2,
+     "metric": "pass_accuracy.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "riv"
+     },
+     "unit": "ratio",
+     "value": 0.85,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 4032000
+     }
+    },
+    "claim_id": "RC-LATEST-PASS-RIV",
+    "evidence_event_ids": [
+     "E-0001"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Riverside completed 85% of their passes up to 67:12."
+   },
+   "claim_id": "RC-LATEST-PASS-RIV",
+   "evidence_event_ids": [
+    "E-0001"
+   ],
+   "observed": 0.8453865336658354,
+   "query_id": "metric-pass_accuracy-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Riverside completed 85% of their passes up to 67:12."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "decimals": 2,
+     "metric": "possession_time.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "nbr"
+     },
+     "unit": "ratio",
+     "value": 0.58,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 4032000
+     }
+    },
+    "claim_id": "RC-LATEST-POSS",
+    "evidence_event_ids": [
+     "E-0001"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Northbridge had 58% possession up to 67:12."
+   },
+   "claim_id": "RC-LATEST-POSS",
+   "evidence_event_ids": [
+    "E-0001"
+   ],
+   "observed": 0.5795628103277061,
+   "query_id": "metric-possession_time-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Northbridge had 58% possession up to 67:12."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "metric": "shots.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "nbr"
+     },
+     "unit": "count",
+     "value": 14.0,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 4032000
+     }
+    },
+    "claim_id": "RC-LATEST-SHOTS-NBR",
+    "evidence_event_ids": [
+     "E-0060",
+     "E-0227",
+     "E-0358",
+     "E-0422",
+     "E-0687",
+     "E-0940",
+     "E-0957",
+     "E-1109",
+     "E-1163",
+     "E-1181",
+     "E-1215",
+     "E-1252",
+     "E-1319",
+     "E-1365"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Northbridge had 14 shots up to 67:12."
+   },
+   "claim_id": "RC-LATEST-SHOTS-NBR",
+   "evidence_event_ids": [
+    "E-0060",
+    "E-0227",
+    "E-0358",
+    "E-0422",
+    "E-0687",
+    "E-0940",
+    "E-0957",
+    "E-1109",
+    "E-1163",
+    "E-1181",
+    "E-1215",
+    "E-1252",
+    "E-1319",
+    "E-1365"
+   ],
+   "observed": 14.0,
+   "query_id": "metric-shots-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Northbridge had 14 shots up to 67:12."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "metric": "shots.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "riv"
+     },
+     "unit": "count",
+     "value": 9.0,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 4032000
+     }
+    },
+    "claim_id": "RC-LATEST-SHOTS-RIV",
+    "evidence_event_ids": [
+     "E-0084",
+     "E-0252",
+     "E-0326",
+     "E-0588",
+     "E-0789",
+     "E-0825",
+     "E-1084",
+     "E-1190",
+     "E-1390"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Riverside had 9 shots up to 67:12."
+   },
+   "claim_id": "RC-LATEST-SHOTS-RIV",
+   "evidence_event_ids": [
+    "E-0084",
+    "E-0252",
+    "E-0326",
+    "E-0588",
+    "E-0789",
+    "E-0825",
+    "E-1084",
+    "E-1190",
+    "E-1390"
+   ],
+   "observed": 9.0,
+   "query_id": "metric-shots-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Riverside had 9 shots up to 67:12."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "metric": "tackles.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "player_id": "riv-03",
+      "schema_version": "1.0"
+     },
+     "unit": "count",
+     "value": 8.0,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 4032000
+     }
+    },
+    "claim_id": "RC-LATEST-TACKLES",
+    "evidence_event_ids": [
+     "E-0001"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Sorensen made 8 tackles up to 67:12."
+   },
+   "claim_id": "RC-LATEST-TACKLES",
+   "evidence_event_ids": [
+    "E-0001"
+   ],
+   "observed": 8.0,
+   "query_id": "metric-tackles-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Sorensen made 8 tackles up to 67:12."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "decimals": 1,
+     "metric": "synthetic_xg.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "nbr"
+     },
+     "unit": "synthetic_xg",
+     "value": 2.5,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 4032000
+     }
+    },
+    "claim_id": "RC-LATEST-XG-NBR",
+    "evidence_event_ids": [
+     "E-0001"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Northbridge had 2.5 expected goals up to 67:12."
+   },
+   "claim_id": "RC-LATEST-XG-NBR",
+   "evidence_event_ids": [
+    "E-0001"
+   ],
+   "observed": 2.5399999999999996,
+   "query_id": "metric-synthetic_xg-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Northbridge had 2.5 expected goals up to 67:12."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "decimals": 1,
+     "metric": "synthetic_xg.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "riv"
+     },
+     "unit": "synthetic_xg",
+     "value": 1.5,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 4032000
+     }
+    },
+    "claim_id": "RC-LATEST-XG-RIV",
+    "evidence_event_ids": [
+     "E-0001"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Riverside had 1.5 expected goals up to 67:12."
+   },
+   "claim_id": "RC-LATEST-XG-RIV",
+   "evidence_event_ids": [
+    "E-0001"
+   ],
+   "observed": 1.474,
+   "query_id": "metric-synthetic_xg-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Riverside had 1.5 expected goals up to 67:12."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "metric": "shots.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "nbr"
+     },
+     "unit": "count",
+     "value": 5.0,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 2058000
+     }
+    },
+    "claim_id": "RC-NBR-SHOT-05",
+    "evidence_event_ids": [
+     "E-0060",
+     "E-0227",
+     "E-0358",
+     "E-0422",
+     "E-0687"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Northbridge had 5 shots up to 34:18."
+   },
+   "claim_id": "RC-NBR-SHOT-05",
+   "evidence_event_ids": [
+    "E-0060",
+    "E-0227",
+    "E-0358",
+    "E-0422",
+    "E-0687"
+   ],
+   "observed": 5.0,
+   "query_id": "metric-shots-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Northbridge had 5 shots up to 34:18."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "metric": "shots.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "nbr"
+     },
+     "unit": "count",
+     "value": 10.0,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 3213000
+     }
+    },
+    "claim_id": "RC-NBR-SHOT-10",
+    "evidence_event_ids": [
+     "E-0060",
+     "E-0227",
+     "E-0358",
+     "E-0422",
+     "E-0687",
+     "E-0940",
+     "E-0957",
+     "E-1109",
+     "E-1163",
+     "E-1181"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Northbridge had 10 shots up to 53:33."
+   },
+   "claim_id": "RC-NBR-SHOT-10",
+   "evidence_event_ids": [
+    "E-0060",
+    "E-0227",
+    "E-0358",
+    "E-0422",
+    "E-0687",
+    "E-0940",
+    "E-0957",
+    "E-1109",
+    "E-1163",
+    "E-1181"
+   ],
+   "observed": 10.0,
+   "query_id": "metric-shots-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Northbridge had 10 shots up to 53:33."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "metric": "shots.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "riv"
+     },
+     "unit": "count",
+     "value": 5.0,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 2463000
+     }
+    },
+    "claim_id": "RC-RIV-SHOT-05",
+    "evidence_event_ids": [
+     "E-0084",
+     "E-0252",
+     "E-0326",
+     "E-0588",
+     "E-0789"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Riverside had 5 shots up to 41:03."
+   },
+   "claim_id": "RC-RIV-SHOT-05",
+   "evidence_event_ids": [
+    "E-0084",
+    "E-0252",
+    "E-0326",
+    "E-0588",
+    "E-0789"
+   ],
+   "observed": 5.0,
+   "query_id": "metric-shots-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Riverside had 5 shots up to 41:03."
+  }
+ ],
+ "languages": [
+  "en",
+  "es",
+  "fr"
+ ],
+ "match_id": "nbr-riv-canonical",
+ "note": "Automated recaps at half-time and at the replay point. Every figure comes from a claim the verifier checked against the event log; the wording around the figures is a template, and what the log cannot show is listed as not checked. Spanish and French are AI-assisted templates awaiting native review. Nothing here is published: a producer decides.",
+ "personas": [
+  "analyst",
+  "fan",
+  "caption"
+ ],
+ "recaps": [
+  {
+   "checks": [
+    {
+     "claim_ids": [
+      "RC-HALF-TIME-GOALS-NBR",
+      "RC-HALF-TIME-GOALS-RIV"
+     ],
+     "label": {
+      "en": "Score, 1–1",
+      "es": "Marcador, 1–1",
+      "fr": "Score, 1–1"
+     }
+    },
+    {
+     "claim_ids": [
+      "RC-E-0688-SCORER",
+      "RC-E-0790-SCORER"
+     ],
+     "label": {
+      "en": "Goal scorers and times",
+      "es": "Goleadores y minutos",
+      "fr": "Buteurs et minutes"
+     }
+    },
+    {
+     "claim_ids": [
+      "RC-HALF-TIME-POSS"
+     ],
+     "label": {
+      "en": "Possession, 56–44",
+      "es": "Posesión, 56–44",
+      "fr": "Possession, 56–44"
+     }
+    },
+    {
+     "claim_ids": [
+      "RC-HALF-TIME-SHOTS-NBR",
+      "RC-HALF-TIME-SHOTS-RIV"
+     ],
+     "label": {
+      "en": "Shots, 5–6",
+      "es": "Tiros, 5–6",
+      "fr": "Tirs, 5–6"
+     }
+    },
+    {
+     "claim_ids": [
+      "RC-HALF-TIME-PASS-NBR",
+      "RC-HALF-TIME-PASS-RIV"
+     ],
+     "label": {
+      "en": "Pass completion",
+      "es": "Acierto en el pase",
+      "fr": "Réussite des passes"
+     }
+    },
+    {
+     "claim_ids": [
+      "RC-HALF-TIME-XG-NBR",
+      "RC-HALF-TIME-XG-RIV"
+     ],
+     "label": {
+      "en": "Expected goals (synthetic model)",
+      "es": "Goles esperados (modelo sintético)",
+      "fr": "Buts attendus (modèle synthétique)"
+     }
+    },
+    {
+     "claim_ids": [
+      "RC-HALF-TIME-TACKLES"
+     ],
+     "label": {
+      "en": "Tackles leader, Sorensen",
+      "es": "Líder en entradas, Sorensen",
+      "fr": "Meilleur tacleur, Sorensen"
+     }
+    }
+   ],
+   "clock": "45:00",
+   "figures": {
+    "pass_accuracy": {
+     "nbr": 89,
+     "riv": 86
+    },
+    "possession": {
+     "nbr": 56,
+     "riv": 44
+    },
+    "shots": {
+     "nbr": 5,
+     "riv": 6
+    },
+    "synthetic_xg": {
+     "nbr": 1.0,
+     "riv": 0.8
+    },
+    "tackles_leader": {
+     "player": "riv-03",
+     "tackles": 6,
+     "team": "riv"
+    }
+   },
+   "goals": [
+    {
+     "clock": "34:18",
+     "event_id": "E-0688",
+     "scorer": "nbr-09",
+     "story": "okafor-opens-the-scoring",
+     "t_ms": 2058000,
+     "team": "nbr"
+    },
+    {
+     "clock": "41:03",
+     "event_id": "E-0790",
+     "scorer": "riv-11",
+     "story": "lindqvist-equalises-for-riverside",
+     "t_ms": 2463000,
+     "team": "riv"
+    }
+   ],
+   "half": true,
+   "id": "half-time",
+   "milestones": [
+    {
+     "claim_ids": [
+      "RC-NBR-SHOT-05"
+     ],
+     "event_id": "E-0687",
+     "kind": "shots",
+     "label": {
+      "en": "Northbridge's 5th shot",
+      "es": "5.º tiro del Northbridge",
+      "fr": "5e tir de Northbridge"
+     },
+     "t_ms": 2057600,
+     "team": "nbr"
+    },
+    {
+     "claim_ids": [
+      "RC-E-0688-SCORER"
+     ],
+     "event_id": "E-0688",
+     "kind": "goal",
+     "label": {
+      "en": "Opening goal · Okafor",
+      "es": "Primer gol · Okafor",
+      "fr": "Premier but · Okafor"
+     },
+     "t_ms": 2058000,
+     "team": "nbr"
+    },
+    {
+     "claim_ids": [
+      "RC-RIV-SHOT-05"
+     ],
+     "event_id": "E-0789",
+     "kind": "shots",
+     "label": {
+      "en": "Riverside's 5th shot",
+      "es": "5.º tiro del Riverside",
+      "fr": "5e tir de Riverside"
+     },
+     "t_ms": 2462600,
+     "team": "riv"
+    },
+    {
+     "claim_ids": [
+      "RC-E-0790-SCORER"
+     ],
+     "event_id": "E-0790",
+     "kind": "goal",
+     "label": {
+      "en": "Equaliser · Lindqvist",
+      "es": "Empate · Lindqvist",
+      "fr": "Égalisation · Lindqvist"
+     },
+     "t_ms": 2463000,
+     "team": "riv"
+    }
+   ],
+   "score": {
+    "nbr": 1,
+    "riv": 1
+   },
+   "t_ms": 2700000,
+   "text": {
+    "analyst": {
+     "en": {
+      "body": "Poss 56–44 · Shots 5–6 · Passing 89%–86% · xG 1.0–0.8 · Tackles: Sorensen (Riverside) 6 · Okafor 34:18, Lindqvist 41:03",
+      "headline": "HT · NBR 1–1 RIV"
+     },
+     "es": {
+      "body": "Posesión 56–44 · Tiros 5–6 · Pases 89 %–86 % · xG 1,0–0,8 · Entradas: Sorensen (Riverside) 6 · Okafor 34:18, Lindqvist 41:03",
+      "headline": "HT · NBR 1–1 RIV"
+     },
+     "fr": {
+      "body": "Possession 56–44 · Tirs 5–6 · Passes 89 %–86 % · xG 1,0–0,8 · Tacles: Sorensen (Riverside) 6 · Okafor 34:18, Lindqvist 41:03",
+      "headline": "HT · NBR 1–1 RIV"
+     }
+    },
+    "caption": {
+     "en": {
+      "body": "Okafor 35′, Lindqvist 42′",
+      "headline": "HT · NBR 1–1 RIV"
+     },
+     "es": {
+      "body": "Okafor 35′, Lindqvist 42′",
+      "headline": "HT · NBR 1–1 RIV"
+     },
+     "fr": {
+      "body": "Okafor 35′, Lindqvist 42′",
+      "headline": "HT · NBR 1–1 RIV"
+     }
+    },
+    "fan": {
+     "en": {
+      "body": "Half-time: Northbridge 1–1 Riverside. Goals: Okafor 34:18, Lindqvist 41:03. Northbridge had 56% of the ball and 5 shots to Riverside's 6; expected goals 1.0–0.8. Sorensen led the tackles with 6.",
+      "headline": "Half-time · Northbridge 1–1 Riverside"
+     },
+     "es": {
+      "body": "Descanso: Northbridge 1–1 Riverside. Goles: Okafor 34:18, Lindqvist 41:03. El Northbridge tuvo el 56 % del balón y 5 tiros por 6 del Riverside; goles esperados 1,0–0,8. Sorensen lidera las entradas con 6.",
+      "headline": "Descanso · Northbridge 1–1 Riverside"
+     },
+     "fr": {
+      "body": "Mi-temps : Northbridge 1–1 Riverside. Buts : Okafor 34:18, Lindqvist 41:03. Northbridge a eu 56 % du ballon et 5 tirs contre 6 pour Riverside ; buts attendus 1,0–0,8. Sorensen mène aux tacles avec 6.",
+      "headline": "Mi-temps · Northbridge 1–1 Riverside"
+     }
+    }
+   },
+   "title": {
+    "en": "Half-time recap",
+    "es": "Resumen al descanso",
+    "fr": "Résumé à la mi-temps"
+   },
+   "unchecked": [
+    {
+     "en": "Why the score changed: tactics and individual errors",
+     "es": "Por qué cambió el marcador: táctica y errores individuales",
+     "fr": "Pourquoi le score a changé : tactique et erreurs individuelles"
+    },
+    {
+     "en": "Cards and substitutions (logged, no registered check yet)",
+     "es": "Tarjetas y cambios (registrados, sin comprobación todavía)",
+     "fr": "Cartons et remplacements (enregistrés, pas encore de vérification)"
+    }
+   ],
+   "window": {
+    "from_ms": 0,
+    "period": 1,
+    "schema_version": "1.0",
+    "to_ms": 2701000
+   }
+  },
+  {
+   "checks": [
+    {
+     "claim_ids": [
+      "RC-LATEST-GOALS-NBR",
+      "RC-LATEST-GOALS-RIV"
+     ],
+     "label": {
+      "en": "Score, 2–1",
+      "es": "Marcador, 2–1",
+      "fr": "Score, 2–1"
+     }
+    },
+    {
+     "claim_ids": [
+      "RC-E-0688-SCORER",
+      "RC-E-0790-SCORER",
+      "RC-E-1366-SCORER"
+     ],
+     "label": {
+      "en": "Goal scorers and times",
+      "es": "Goleadores y minutos",
+      "fr": "Buteurs et minutes"
+     }
+    },
+    {
+     "claim_ids": [
+      "RC-LATEST-POSS"
+     ],
+     "label": {
+      "en": "Possession, 58–42",
+      "es": "Posesión, 58–42",
+      "fr": "Possession, 58–42"
+     }
+    },
+    {
+     "claim_ids": [
+      "RC-LATEST-SHOTS-NBR",
+      "RC-LATEST-SHOTS-RIV"
+     ],
+     "label": {
+      "en": "Shots, 14–9",
+      "es": "Tiros, 14–9",
+      "fr": "Tirs, 14–9"
+     }
+    },
+    {
+     "claim_ids": [
+      "RC-LATEST-PASS-NBR",
+      "RC-LATEST-PASS-RIV"
+     ],
+     "label": {
+      "en": "Pass completion",
+      "es": "Acierto en el pase",
+      "fr": "Réussite des passes"
+     }
+    },
+    {
+     "claim_ids": [
+      "RC-LATEST-XG-NBR",
+      "RC-LATEST-XG-RIV"
+     ],
+     "label": {
+      "en": "Expected goals (synthetic model)",
+      "es": "Goles esperados (modelo sintético)",
+      "fr": "Buts attendus (modèle synthétique)"
+     }
+    },
+    {
+     "claim_ids": [
+      "RC-LATEST-TACKLES"
+     ],
+     "label": {
+      "en": "Tackles leader, Sorensen",
+      "es": "Líder en entradas, Sorensen",
+      "fr": "Meilleur tacleur, Sorensen"
+     }
+    }
+   ],
+   "clock": "67:12",
+   "figures": {
+    "pass_accuracy": {
+     "nbr": 90,
+     "riv": 85
+    },
+    "possession": {
+     "nbr": 58,
+     "riv": 42
+    },
+    "shots": {
+     "nbr": 14,
+     "riv": 9
+    },
+    "synthetic_xg": {
+     "nbr": 2.5,
+     "riv": 1.5
+    },
+    "tackles_leader": {
+     "player": "riv-03",
+     "tackles": 8,
+     "team": "riv"
+    }
+   },
+   "goals": [
+    {
+     "clock": "34:18",
+     "event_id": "E-0688",
+     "scorer": "nbr-09",
+     "story": "okafor-opens-the-scoring",
+     "t_ms": 2058000,
+     "team": "nbr"
+    },
+    {
+     "clock": "41:03",
+     "event_id": "E-0790",
+     "scorer": "riv-11",
+     "story": "lindqvist-equalises-for-riverside",
+     "t_ms": 2463000,
+     "team": "riv"
+    },
+    {
+     "clock": "58:17",
+     "event_id": "E-1366",
+     "scorer": "nbr-09",
+     "story": "okafor-header-restores-northbridge-lead",
+     "t_ms": 3497000,
+     "team": "nbr"
+    }
+   ],
+   "half": false,
+   "id": "latest",
+   "milestones": [
+    {
+     "claim_ids": [
+      "RC-NBR-SHOT-05"
+     ],
+     "event_id": "E-0687",
+     "kind": "shots",
+     "label": {
+      "en": "Northbridge's 5th shot",
+      "es": "5.º tiro del Northbridge",
+      "fr": "5e tir de Northbridge"
+     },
+     "t_ms": 2057600,
+     "team": "nbr"
+    },
+    {
+     "claim_ids": [
+      "RC-E-0688-SCORER"
+     ],
+     "event_id": "E-0688",
+     "kind": "goal",
+     "label": {
+      "en": "Opening goal · Okafor",
+      "es": "Primer gol · Okafor",
+      "fr": "Premier but · Okafor"
+     },
+     "t_ms": 2058000,
+     "team": "nbr"
+    },
+    {
+     "claim_ids": [
+      "RC-RIV-SHOT-05"
+     ],
+     "event_id": "E-0789",
+     "kind": "shots",
+     "label": {
+      "en": "Riverside's 5th shot",
+      "es": "5.º tiro del Riverside",
+      "fr": "5e tir de Riverside"
+     },
+     "t_ms": 2462600,
+     "team": "riv"
+    },
+    {
+     "claim_ids": [
+      "RC-E-0790-SCORER"
+     ],
+     "event_id": "E-0790",
+     "kind": "goal",
+     "label": {
+      "en": "Equaliser · Lindqvist",
+      "es": "Empate · Lindqvist",
+      "fr": "Égalisation · Lindqvist"
+     },
+     "t_ms": 2463000,
+     "team": "riv"
+    },
+    {
+     "claim_ids": [
+      "RC-NBR-SHOT-10"
+     ],
+     "event_id": "E-1181",
+     "kind": "shots",
+     "label": {
+      "en": "Northbridge's 10th shot",
+      "es": "10.º tiro del Northbridge",
+      "fr": "10e tir de Northbridge"
+     },
+     "t_ms": 3212895,
+     "team": "nbr"
+    },
+    {
+     "claim_ids": [
+      "RC-E-1366-SCORER"
+     ],
+     "event_id": "E-1366",
+     "kind": "goal",
+     "label": {
+      "en": "Lead restored · Okafor",
+      "es": "Vuelve a ponerse por delante · Okafor",
+      "fr": "Avantage repris · Okafor"
+     },
+     "t_ms": 3497000,
+     "team": "nbr"
+    },
+    {
+     "claim_ids": [
+      "RC-E-1366-BRACE"
+     ],
+     "event_id": "E-1366",
+     "kind": "brace",
+     "label": {
+      "en": "Okafor's brace",
+      "es": "Doblete de Okafor",
+      "fr": "Doublé de Okafor"
+     },
+     "t_ms": 3497000,
+     "team": "nbr"
+    }
+   ],
+   "score": {
+    "nbr": 2,
+    "riv": 1
+   },
+   "t_ms": 4032000,
+   "text": {
+    "analyst": {
+     "en": {
+      "body": "Poss 58–42 · Shots 14–9 · Passing 90%–85% · xG 2.5–1.5 · Tackles: Sorensen (Riverside) 8 · Okafor 34:18, Lindqvist 41:03, Okafor 58:17",
+      "headline": "67:12 · NBR 2–1 RIV"
+     },
+     "es": {
+      "body": "Posesión 58–42 · Tiros 14–9 · Pases 90 %–85 % · xG 2,5–1,5 · Entradas: Sorensen (Riverside) 8 · Okafor 34:18, Lindqvist 41:03, Okafor 58:17",
+      "headline": "67:12 · NBR 2–1 RIV"
+     },
+     "fr": {
+      "body": "Possession 58–42 · Tirs 14–9 · Passes 90 %–85 % · xG 2,5–1,5 · Tacles: Sorensen (Riverside) 8 · Okafor 34:18, Lindqvist 41:03, Okafor 58:17",
+      "headline": "67:12 · NBR 2–1 RIV"
+     }
+    },
+    "caption": {
+     "en": {
+      "body": "Okafor 35′, Lindqvist 42′, Okafor 59′",
+      "headline": "67:12 · NBR 2–1 RIV"
+     },
+     "es": {
+      "body": "Okafor 35′, Lindqvist 42′, Okafor 59′",
+      "headline": "67:12 · NBR 2–1 RIV"
+     },
+     "fr": {
+      "body": "Okafor 35′, Lindqvist 42′, Okafor 59′",
+      "headline": "67:12 · NBR 2–1 RIV"
+     }
+    },
+    "fan": {
+     "en": {
+      "body": "At 67:12: Northbridge 2–1 Riverside. Goals: Okafor 34:18, Lindqvist 41:03, Okafor 58:17. Northbridge had 58% of the ball and 14 shots to Riverside's 9; expected goals 2.5–1.5. Sorensen led the tackles with 8.",
+      "headline": "At 67:12 · Northbridge 2–1 Riverside"
+     },
+     "es": {
+      "body": "En el 67:12: Northbridge 2–1 Riverside. Goles: Okafor 34:18, Lindqvist 41:03, Okafor 58:17. El Northbridge tuvo el 58 % del balón y 14 tiros por 9 del Riverside; goles esperados 2,5–1,5. Sorensen lidera las entradas con 8.",
+      "headline": "En el 67:12 · Northbridge 2–1 Riverside"
+     },
+     "fr": {
+      "body": "À 67:12 : Northbridge 2–1 Riverside. Buts : Okafor 34:18, Lindqvist 41:03, Okafor 58:17. Northbridge a eu 58 % du ballon et 14 tirs contre 9 pour Riverside ; buts attendus 2,5–1,5. Sorensen mène aux tacles avec 8.",
+      "headline": "À 67:12 · Northbridge 2–1 Riverside"
+     }
+    }
+   },
+   "title": {
+    "en": "Recap at 67:12",
+    "es": "Resumen en el 67:12",
+    "fr": "Résumé à 67:12"
+   },
+   "unchecked": [
+    {
+     "en": "Why the score changed: tactics and individual errors",
+     "es": "Por qué cambió el marcador: táctica y errores individuales",
+     "fr": "Pourquoi le score a changé : tactique et erreurs individuelles"
+    },
+    {
+     "en": "Cards and substitutions (logged, no registered check yet)",
+     "es": "Tarjetas y cambios (registrados, sin comprobación todavía)",
+     "fr": "Cartons et remplacements (enregistrés, pas encore de vérification)"
+    }
+   ],
+   "window": {
+    "from_ms": 0,
+    "schema_version": "1.0",
+    "to_ms": 4032000
+   }
+  }
+ ],
+ "replay_end_ms": 4032000,
+ "schema": "matchdesk-recap-feed/1",
+ "synthetic": true,
+ "teams": {
+  "nbr": "Northbridge",
+  "riv": "Riverside"
+ }
+}

@@ -5,7 +5,10 @@
  * fixed, published rule over recomputed figures (possession, pass accuracy, ball recoveries).
  * Adjacent windows with the same label become a phase, and each phase carries the verified
  * sentences that justify it. Player focus: one player's figures, each stated as a claim and
- * checked by the parity-tested verifier. No model writes any of this; nothing here is opinion.
+ * checked by the parity-tested verifier. Pressure changes: from one window to the next, the side
+ * pressing harder (its opponents played more passes under pressure) changes, or the pressure
+ * in the match rises or falls sharply; each change carries the verified counts on both sides of
+ * it. No model writes any of this; nothing here is opinion.
  */
 import { measuredLine, resolveWindow, type CheckedLine, type MatchContext, type Metric } from "./ask.ts";
 import { computeMetric, type Evidence, type VEvent, type Window } from "./verifier.ts";
@@ -139,6 +142,71 @@ export function controlPhases(ctx: MatchContext): Phase[] {
     }
     return { fromMs, toMs, kind, team, scope: resolved.scope, reason, lines, windows: group };
   });
+}
+
+/** A side is pressing harder when its opponents played at least this many more passes under pressure. */
+export const PRESSING_MARGIN = 3;
+/** Pressure in the match has changed sharply when passes under pressure, both sides together, move by this many. */
+export const PRESSURE_SWING = 8;
+
+export type PressureChange = {
+  fromMs: number;
+  toMs: number;
+  /** The side pressing harder in this window, or null when neither leads by the margin. */
+  presser: string | null;
+  previousPresser: string | null;
+  total: number;
+  previousTotal: number;
+  kinds: ("side" | "up" | "down")[];
+  scope: string;
+  reason: string;
+  lines: CheckedLine[];
+};
+
+/** Who pressed harder in a window: the side whose opponents played clearly more passes under pressure. */
+export function presserOf(w: WindowReading, teams: readonly string[]): string | null {
+  const [a, b] = teams;
+  const onA = w.pressured[a];
+  const onB = w.pressured[b];
+  if (onA - onB >= PRESSING_MARGIN) return b;
+  if (onB - onA >= PRESSING_MARGIN) return a;
+  return null;
+}
+
+/** Each window where the pressing side changed, or the pressure rose or fell sharply, with its proof. */
+export function pressureChanges(ctx: MatchContext): PressureChange[] {
+  const windows = readWindows(ctx);
+  const teams = Object.keys(ctx.teams);
+  const evidence = evidenceFor(ctx);
+  const total = (w: WindowReading) => teams.reduce((sum, t) => sum + w.pressured[t], 0);
+  const out: PressureChange[] = [];
+  for (let i = 1; i < windows.length; i += 1) {
+    const before = windows[i - 1];
+    const now = windows[i];
+    const presser = presserOf(now, teams);
+    const previousPresser = presserOf(before, teams);
+    const kinds: PressureChange["kinds"] = [];
+    if (presser !== previousPresser && presser != null) kinds.push("side");
+    if (total(now) - total(before) >= PRESSURE_SWING) kinds.push("up");
+    if (total(before) - total(now) >= PRESSURE_SWING) kinds.push("down");
+    if (!kinds.length) continue;
+    const resolvedNow = phaseWindow(ctx, now.fromMs, now.toMs);
+    const resolvedBefore = phaseWindow(ctx, before.fromMs, before.toMs);
+    const lines = [
+      ...teams.map((t) => measuredLine("pressured_passes.v1", t, resolvedBefore, ctx, evidence)),
+      ...teams.map((t) => measuredLine("pressured_passes.v1", t, resolvedNow, ctx, evidence)),
+    ];
+    const parts: string[] = [];
+    if (kinds.includes("side") && presser) {
+      const victim = teams.find((t) => t !== presser)!;
+      parts.push(`${ctx.teams[presser]} pressed harder: ${ctx.teams[victim]} played ${now.pressured[victim]} passes under pressure, ${ctx.teams[presser]} ${now.pressured[presser]}`);
+    }
+    if (kinds.includes("up")) parts.push(`pressure rose from ${total(before)} to ${total(now)} passes under pressure`);
+    if (kinds.includes("down")) parts.push(`pressure fell from ${total(before)} to ${total(now)} passes under pressure`);
+    const reason = parts.join("; ").replace(/^./, (c) => c.toUpperCase()) + ".";
+    out.push({ fromMs: now.fromMs, toMs: now.toMs, presser, previousPresser, total: total(now), previousTotal: total(before), kinds, scope: resolvedNow.scope, reason, lines });
+  }
+  return out;
 }
 
 /** Player focus: the registered metrics for one player to the replay point, each one verified. */

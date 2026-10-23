@@ -6,7 +6,8 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { expandLog } from '../src/studio/verifier.ts';
 import {
-  CHAOS_RECOVERIES_PER_MINUTE, CONTROL_ACCURACY, CONTROL_POSSESSION, controlPhases, playerFocus, readWindows,
+  CHAOS_RECOVERIES_PER_MINUTE, CONTROL_ACCURACY, CONTROL_POSSESSION, PRESSING_MARGIN, PRESSURE_SWING, controlPhases, playerFocus,
+  presserOf, pressureChanges, readWindows,
 } from '../src/studio/insight-engine.ts';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -65,4 +66,28 @@ test('player focus states every registered figure as a verified sentence', () =>
       if (focus.passes === 0) assert.ok(focus.skipped.includes('pass_accuracy.v1'));
     }
   }
+});
+
+test('pressure changes follow the published rule and every count behind them verifies', () => {
+  const windows = readWindows(ctx);
+  const changes = pressureChanges(ctx);
+  assert.ok(changes.length > 0);
+  const total = (w) => w.pressured.nbr + w.pressured.riv;
+  for (const change of changes) {
+    const i = windows.findIndex((w) => w.fromMs === change.fromMs);
+    const [before, now] = [windows[i - 1], windows[i]];
+    assert.equal(change.presser, presserOf(now, ['nbr', 'riv']));
+    assert.equal(change.kinds.includes('side'), change.presser != null && change.presser !== presserOf(before, ['nbr', 'riv']));
+    assert.equal(change.kinds.includes('up'), total(now) - total(before) >= PRESSURE_SWING);
+    assert.equal(change.kinds.includes('down'), total(before) - total(now) >= PRESSURE_SWING);
+    if (change.presser) {
+      const other = change.presser === 'nbr' ? 'riv' : 'nbr';
+      assert.ok(now.pressured[other] - now.pressured[change.presser] >= PRESSING_MARGIN);
+    }
+    assert.equal(change.lines.length, 4);
+    for (const line of change.lines) assert.equal(line.result.status, 'verified', line.claim.text);
+  }
+  // The second half opens with the pressure doubling: 12 to 26 passes under pressure.
+  const restart = changes.find((c) => c.fromMs === 2_700_000);
+  assert.deepEqual([restart.previousTotal, restart.total, restart.kinds], [12, 26, ['up']]);
 });

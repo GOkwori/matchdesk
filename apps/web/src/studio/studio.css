@@ -863,3 +863,15 @@ html[data-md-motion="reduce"] .md-lt { animation: none; }
 .md-lr-source-live { color: var(--md-success); border-color: rgba(112, 216, 169, 0.6); }
 .md-lt-server { flex-basis: 100%; font-size: 11px; }
 .md-live-run { margin: 12px 0; display: flex; flex-direction: column; gap: 10px; }
+
+/* Match recaps */
+.md-recap-tabs { align-self: flex-start; }
+.md-recap-tabs a { display: inline-flex; align-items: center; min-height: var(--md-touch); padding: 0 12px; border-radius: 8px; color: var(--md-text-body); font-weight: 700; font-size: 13px; text-decoration: none; }
+.md-recap-tabs a[aria-current="page"] { background: var(--md-accent); color: var(--md-on-accent); }
+.md-recap-figs h2 { font-size: 15px; margin: 0 0 8px; }
+.md-recap-figs .md-table th[scope="row"] { text-align: left; font-weight: 600; }
+.md-recap-milestones { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.md-recap-milestones a, .md-recap-row { display: grid; grid-template-columns: 3.2em 1fr auto; align-items: center; gap: 10px; min-height: var(--md-touch); padding: 8px 12px; border-radius: 10px; border: 1px solid var(--md-line); background: var(--md-panel); color: var(--md-text); text-decoration: none; font-weight: 600; }
+.md-recap-mine a, .md-recap-mine .md-recap-row { border-color: var(--md-accent-soft); }
+.md-lr-recap { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 10px 0 0; }
+.md-about code { overflow-wrap: anywhere; word-break: break-word; }

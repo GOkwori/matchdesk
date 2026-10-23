@@ -5,6 +5,9 @@ import { Icon } from "../../../studio/icons";
 import { Logo } from "../../../studio/ui";
 import { eventCountText, possessionShare } from "../../../studio/data";
 
+/** The public MCP endpoint, on the Azure deployment where the API sits behind /api. */
+const MCP_URL = "https://mdesk-web.icybeach-62467e8a.uksouth.azurecontainerapps.io/api/mcp";
+
 export const metadata: Metadata = {
   title: "How verification works",
   description: "How MatchDesk detects football moments, recalculates every claim from the event log, and keeps a human producer in charge of publishing.",
@@ -28,10 +31,21 @@ export default function AboutPage() {
           <h2>What this demo is, and isn’t</h2>
           <ul>
             <li>Northbridge FC v Riverside United is an invented match, replayed from a synthetic event log.</li>
-            <li>The AI proposals are scripted for the demo; no live model runs here.</li>
+            <li>The four AI specialists run on Microsoft Foundry. AI insights opens on a recorded live run; on the Azure deployment you can start a fresh one, spaced out and capped to bound cost. Every figure they propose is checked by the verifier, never taken on trust.</li>
             <li>There is no player tracking, so the app never shows formations or defender positions.</li>
             <li>Approving and publishing are planned features; nothing is published.</li>
           </ul>
+        </section>
+        <section className="md-panel md-about-trust" aria-labelledby="md-mcp">
+          <h2 id="md-mcp">Connect your own agent</h2>
+          <p>The Azure deployment offers MatchDesk’s tools over the Model Context Protocol, so a broadcaster’s graphics assistant, an IDE agent or a Foundry agent can use the same evidence and the same verifier. It is read-only and needs no key.</p>
+          <p><code className="md-mono">{MCP_URL}</code></p>
+          <ul>
+            <li><strong>check_sentence</strong> and <strong>verify_claim</strong>: have a sentence or a claim checked before it is shown.</li>
+            <li><strong>compute_metric</strong>, <strong>list_metrics</strong>, <strong>list_players</strong>: the fourteen registered statistics for any team, player and window.</li>
+            <li><strong>get_events</strong>, <strong>get_overlays</strong>, <strong>get_story</strong>, <strong>get_recap</strong>: the log, the timed overlay cues, the goal stories and the recaps, in any persona and language.</li>
+          </ul>
+          <p className="md-small md-muted">Add it to an MCP client as a Streamable HTTP server, for example <code className="md-mono">{`{"servers": {"matchdesk": {"type": "http", "url": "${MCP_URL}"}}}`}</code> in VS Code.</p>
         </section>
       </main>
       <footer className="md-welcome-foot"><span>AI-assisted. Verified. Human-led.</span><Link href="/" className="md-link">Back to the start</Link></footer>

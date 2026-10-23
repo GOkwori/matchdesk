@@ -139,3 +139,23 @@ def test_the_route_streams_and_caps_listeners(monkeypatch: pytest.MonkeyPatch) -
     assert client.get("/api/live/stream?from_ms=-1").status_code == 422
     full = TestClient(create_app(assistant_router=create_live_router(limit=0)))
     assert full.get("/api/live/stream").status_code == 429
+
+
+def test_recaps_go_out_once_their_part_of_the_match_has_arrived() -> None:
+    """The half-time recap after the first half, the latest at the end, both verified."""
+    frames = _frames()
+    received = 0
+    recaps = []
+    for kind, data in frames:
+        if kind == "event":
+            received += 1
+        if kind == "recap":
+            assert data["events_received"] == received
+            recaps.append(data)
+    assert [r["recap_id"] for r in recaps] == ["half-time", "latest"]
+    half, latest = recaps
+    assert half["checked_at_ms"] > 2_700_000 and half["events_received"] < 900
+    assert latest["events_received"] == 1421
+    for recap in recaps:
+        assert recap["status"] == "verified"
+        assert {c["status"] for c in recap["claims"]} == {"verified"}

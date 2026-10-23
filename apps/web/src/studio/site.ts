@@ -19,6 +19,7 @@ export const siteRoutes: readonly SiteRoute[] = [
   { path: "/", indexable: true },
   { path: "/about", indexable: true },
   { path: "/story", indexable: true },
+  { path: "/story/recap", indexable: true },
   ...stories.map((s) => ({ path: `/story/${s.slug}`, indexable: true })),
   { path: "/match/nbr-riv", indexable: true },
   { path: "/match/nbr-riv/live", indexable: false },

@@ -60,7 +60,7 @@ test('round half up matches Python decimal rounding of the shortest form', () =>
   for (const [value, decimals, expected] of cases) assert.equal(roundHalfUp(value, decimals), expected, `${value} @ ${decimals}`);
 });
 
-for (const [label, file] of [['overlay cue', 'nbr-riv-overlays.json'], ['fan story', 'nbr-riv-stories.json']]) test(`every ${label} claim re-verifies in the browser with the same verdict`, () => {
+for (const [label, file] of [['overlay cue', 'nbr-riv-overlays.json'], ['fan story', 'nbr-riv-stories.json'], ['match recap', 'nbr-riv-recaps.json']]) test(`every ${label} claim re-verifies in the browser with the same verdict`, () => {
   const feed = read(`../src/studio/generated/${file}`);
   const events = sources.canonical;
   const evidence = { match_id: feed.match_id, event_ids: events.map((e) => e.event_id), window: { from_ms: 0, to_ms: feed.replay_end_ms } };
@@ -75,4 +75,5 @@ for (const [label, file] of [['overlay cue', 'nbr-riv-overlays.json'], ['fan sto
   }
   for (const cue of feed.cues ?? []) for (const id of cue.claim_ids) assert.ok(byId.has(id), `${cue.cue_id} cites ${id}`);
   for (const story of feed.stories ?? []) for (const check of story.checks) for (const id of check.claim_ids) assert.ok(byId.has(id), `${story.slug} cites ${id}`);
+  for (const recap of feed.recaps ?? []) for (const id of [...recap.checks.flatMap((c) => c.claim_ids), ...recap.milestones.flatMap((m) => m.claim_ids)]) assert.ok(byId.has(id), `${recap.id} cites ${id}`);
 });

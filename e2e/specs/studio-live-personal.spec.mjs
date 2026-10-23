@@ -126,3 +126,46 @@ test('every goal has a verified fan story that follows My match', async ({ page 
   await expect(page.locator('.md-checks').getByText('Interception, puis but 28\u00a0s plus tard')).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+test('the match recaps state only verified figures, re-checked here, and follow My match', async ({ page }) => {
+  const errors = watchErrors(page);
+  await open(page, '/story');
+  await page.getByRole('link', { name: /Half-time · Northbridge 1–1 Riverside/ }).click();
+  await expect(page).toHaveURL(/\/story\/recap\?at=half-time$/);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Half-time · Northbridge 1–1 Riverside');
+  await expect(page.getByText('Checked again in your browser')).toBeVisible();
+  await expect(page.locator('.md-checks .md-bad, .md-recap-milestones .md-bad')).toHaveCount(0);
+  await expect(page.getByRole('link', { name: /Equaliser · Lindqvist/ })).toHaveAttribute('href', '/story/lindqvist-equalises-for-riverside');
+  await page.getByRole('link', { name: 'Recap at 67:12' }).click();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('At 67:12 · Northbridge 2–1 Riverside');
+  await expect(page.getByText("Okafor's brace")).toBeVisible();
+  await page.evaluate(() => window.localStorage.setItem('md.viewer', JSON.stringify({ club: 'riv', player: null, persona: 'analyst', language: 'fr', focus: 'shots.v1' })));
+  await open(page, '/story/recap');
+  await expect(page.locator('main')).toHaveAttribute('lang', 'fr');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('67:12 · NBR 2–1 RIV');
+  await expect(page.getByText('Votre club, Riverside, est mené.')).toBeVisible();
+  await expect(page.getByText('Vérifié à nouveau dans votre navigateur')).toBeVisible();
+  const feed = await (await page.request.get('/recaps/nbr-riv.json')).json();
+  expect(feed.schema).toBe('matchdesk-recap-feed/1');
+  expect(feed.claims.every((c) => c.status === 'verified')).toBe(true);
+  expect(errors).toEqual([]);
+});
+
+test('the replay offers the half-time recap once the first half has been played', async ({ page }) => {
+  await open(page, '/match/nbr-riv/live');
+  const replay = page.locator('.md-lr');
+  await expect(replay.getByText(/claims re-verified here/)).toBeVisible();
+  await expect(replay.locator('.md-lr-recap')).toHaveCount(0);
+  await replay.getByRole('button', { name: 'Half-time' }).click();
+  await expect(replay.locator('.md-lr-recap')).toContainText('Half-time recap · ready');
+  await expect(replay.getByRole('link', { name: 'Open the recap' })).toHaveAttribute('href', '/story/recap?at=half-time');
+});
+
+test('pressure changes come with the verified counts on both sides', async ({ page }) => {
+  await open(page, '/match/nbr-riv/tactical');
+  const panel = page.locator('.md-pressure');
+  await expect(panel.getByRole('heading', { name: 'Pressure changes' })).toBeVisible();
+  await expect(panel.getByText('Pressure rose from 12 to 26 passes under pressure.')).toBeVisible();
+  await expect(panel.locator('.md-chip-failed')).toHaveCount(0);
+  await expect(panel.getByText('Northbridge played 15 passes under pressure between 45′ and 50′.').first()).toBeVisible();
+});

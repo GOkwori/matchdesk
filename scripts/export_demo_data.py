@@ -28,6 +28,7 @@ from matchdesk.domain import canonical_match as canonical
 from matchdesk.domain.agent_demo import rehearsal_trace, trace_view
 from matchdesk.domain.demo_export import build_demo_export
 from matchdesk.domain.overlay_feed import build_overlay_feed
+from matchdesk.domain.recap_feed import build_recap_feed
 from matchdesk.domain.story_feed import build_story_feed
 from matchdesk.domain.verifier_parity import compact_events, parity_fixture
 
@@ -39,6 +40,7 @@ TRACE = ROOT / "apps/web/src/studio/generated/agent-trace.json"
 REHEARSAL = ROOT / "apps/web/src/studio/generated/agent-trace-rehearsal.json"
 OVERLAYS = ROOT / "apps/web/src/studio/generated/nbr-riv-overlays.json"
 STORIES = ROOT / "apps/web/src/studio/generated/nbr-riv-stories.json"
+RECAPS = ROOT / "apps/web/src/studio/generated/nbr-riv-recaps.json"
 VIEWS = {
     TRACE: ROOT / "apps/web/src/studio/generated/agent-trace.view.json",
     REHEARSAL: ROOT / "apps/web/src/studio/generated/agent-trace-rehearsal.view.json",
@@ -64,6 +66,11 @@ def render_parity() -> str:
 def render_stories() -> str:
     """The fan stories, one per goal, with the claims behind them."""
     return json.dumps(build_story_feed(), indent=1, sort_keys=True, ensure_ascii=False) + "\n"
+
+
+def render_recaps() -> str:
+    """The half-time recap and the recap at the replay point, with the claims behind them."""
+    return json.dumps(build_recap_feed(), indent=1, sort_keys=True, ensure_ascii=False) + "\n"
 
 
 def render_overlays() -> str:
@@ -92,6 +99,7 @@ def outputs() -> dict[Path, str]:
         REHEARSAL: render_trace(),
         OVERLAYS: render_overlays(),
         STORIES: render_stories(),
+        RECAPS: render_recaps(),
     }
     # agent-trace.json holds the recorded live run once there is one; until then it is
     # the rehearsal too. AI insights shows both when they differ.

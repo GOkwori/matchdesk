@@ -7,30 +7,11 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
 import { Crest, Logo } from "./ui";
 import { TourStep } from "./shell";
 import { LANGUAGES, PERSONAS, useViewer, type ViewerLanguage } from "./viewer";
 import { storyChrome, type Story, type StoryClaim, type StoryEvent, type StorySummary } from "./story-chrome";
-import type { CompactLog } from "./verifier";
-
-type Recheck = "pending" | "agrees" | "disagrees";
-
-/** Re-run every claim behind the story with the browser's copy of the verifier. */
-function useRecheck(claims: readonly StoryClaim[], matchId: string, replayEndMs: number, names: Record<string, string>): Recheck {
-  const [state, setState] = useState<Recheck>("pending");
-  useEffect(() => {
-    let live = true;
-    Promise.all([import("./generated/nbr-riv-events.json"), import("./verifier")]).then(([log, verifier]) => {
-      const events = verifier.expandLog(log.default as unknown as CompactLog);
-      const evidence = { match_id: matchId, event_ids: events.map((e) => e.event_id), window: { from_ms: 0, to_ms: replayEndMs } };
-      const agrees = claims.every((c) => verifier.verifyClaim(c.claim, evidence, events, names).status === c.status && c.status === "verified");
-      if (live) setState(agrees ? "agrees" : "disagrees");
-    }, () => undefined);
-    return () => { live = false; };
-  }, [claims, matchId, replayEndMs, names]);
-  return state;
-}
+import { useRecheck } from "./recheck";
 
 /** Display position on a full pitch: the scoring side attacks right. */
 function at(x: number, y: number): [number, number] {
