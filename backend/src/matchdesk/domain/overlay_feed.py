@@ -648,8 +648,8 @@ def build_overlay_feed(log: tuple[MatchEvent, ...] | None = None) -> dict[str, A
         "note": (
             "Timed cues for on-screen graphics. Numbers come only from claims the verifier "
             "checked against the event log, cards and substitutions by their registered "
-            "event-fact queries; speeds and distances come from the log's synthetic tracking. Spanish and French are AI-assisted templates awaiting native "
-            "review. Nothing here is published: a producer decides."
+            "event-fact queries; speeds and distances come from the log's synthetic tracking. Spanish and French are AI-assisted templates, reviewed and "
+            "corrected on 23 October 2026; no native speaker has signed them off. Nothing here is published: a producer decides."
         ),
         "cues": ordered,
         "claims": [builder.claims[key] for key in sorted(builder.claims)],

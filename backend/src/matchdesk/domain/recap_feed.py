@@ -450,7 +450,8 @@ def build_recap_feed(log: tuple[MatchEvent, ...] | None = None) -> dict[str, Any
             "Automated recaps at half-time and at the replay point. Every figure comes from a "
             "claim the verifier checked against the event log; the wording around the figures "
             "is a template, and what the log cannot show is listed as not checked. Spanish and "
-            "French are AI-assisted templates awaiting native review. Nothing here is "
+            "French are AI-assisted templates, reviewed and corrected on 23 October 2026; no "
+            "native speaker has signed them off. Nothing here is "
             "published: a producer decides."
         ),
         "recaps": recaps,
