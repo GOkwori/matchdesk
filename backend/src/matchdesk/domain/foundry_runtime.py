@@ -466,6 +466,17 @@ class FoundryWorkflowExecutor:
         )
 
 
+def host_credential(identity_module: Any, environ: Mapping[str, str] | None = None) -> Any:
+    """The host's own identity: the app's managed identity on Azure Container Apps (which
+    sets CONTAINER_APP_NAME), otherwise the signed-in Azure CLI, as in the CI live runs.
+    Never a key, and never an interactive sign-in."""
+    env = os.environ if environ is None else environ
+    client_id = (env.get("AZURE_CLIENT_ID") or "").strip()
+    if env.get("CONTAINER_APP_NAME") and client_id:
+        return identity_module.ManagedIdentityCredential(client_id=client_id)
+    return identity_module.AzureCliCredential()
+
+
 class _DefaultToolAgentFactory:
     """Lazy Agent Framework factory for tool-using specialists."""
 
@@ -489,7 +500,7 @@ class _DefaultToolAgentFactory:
         client = foundry_module.FoundryChatClient(
             project_endpoint=cast(str, config.project_endpoint),
             model=cast(str, config.model),
-            credential=identity_module.AzureCliCredential(),
+            credential=host_credential(identity_module),
             function_invocation_configuration=dict(TOOL_LOOP),
         )
         wrapped = [

@@ -23,10 +23,9 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
-from typing import Any
 
 from matchdesk.domain import canonical_match as canonical
-from matchdesk.domain.agent_demo import rehearsal_trace
+from matchdesk.domain.agent_demo import rehearsal_trace, trace_view
 from matchdesk.domain.demo_export import build_demo_export
 from matchdesk.domain.overlay_feed import build_overlay_feed
 from matchdesk.domain.story_feed import build_story_feed
@@ -44,27 +43,6 @@ VIEWS = {
     TRACE: ROOT / "apps/web/src/studio/generated/agent-trace.view.json",
     REHEARSAL: ROOT / "apps/web/src/studio/generated/agent-trace-rehearsal.view.json",
 }
-_VIEW_FIELDS = ("event_id", "claim_id", "type", "status", "clock")
-
-
-def trace_view(trace: dict[str, Any]) -> dict[str, Any]:
-    """The part of a recorded trace AI insights draws, derived and never edited.
-
-    Tool results shrink to what the screen prints (an event count, or an event's id,
-    type and clock), and the adapter's content, which repeats the variants, is dropped.
-    The full trace stays the verified record; this keeps the page inside its budget.
-    """
-    view = json.loads(json.dumps(trace))
-    for step in view["steps"]:
-        if step.get("role") == "audience_adapter":
-            step["content"] = ""
-        for call in step.get("tool_calls", []):
-            result = call["result"]
-            if isinstance(result, list):
-                call["result"] = {"events": len(result)}
-            elif isinstance(result, dict):
-                call["result"] = {k: result[k] for k in _VIEW_FIELDS if k in result}
-    return view
 
 
 def render() -> str:

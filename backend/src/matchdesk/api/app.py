@@ -13,6 +13,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
+from matchdesk.api.agent_routes import agent_router_from_env
 from matchdesk.api.assistant_routes import assistant_router_from_env
 from matchdesk.api.limits import BodyLimitMiddleware
 from matchdesk.api.live_routes import live_router_from_env
@@ -151,3 +152,7 @@ if _assistant_router is not None:
 _live_router = live_router_from_env()
 if _live_router is not None:
     app.include_router(_live_router)
+# Live runs of the four specialists on Foundry: billable, spaced out, switched on by the host.
+_agent_router = agent_router_from_env()
+if _agent_router is not None:
+    app.include_router(_agent_router)

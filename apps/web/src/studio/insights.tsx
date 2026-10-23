@@ -11,7 +11,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, type ComponentType } from "react";
 import traceData from "./generated/agent-trace.view.json";
 import { Icon } from "./icons";
 import { VerdictChip } from "./ui";
@@ -31,7 +31,7 @@ type Withheld = { type: "withheld"; round: number; claim_ids: string[]; reason: 
 type Step = Specialist | Verification | Rejected | Withheld;
 type Role = "tactical_analyst" | "narrative_composer" | "editorial_reviewer" | "audience_adapter";
 type Trace = {
-  provider: { kind: "rehearsal" | "foundry"; label: string }; recorded_on?: string; status: string;
+  provider: { kind: "rehearsal" | "foundry"; label: string }; recorded_on?: string; status: string; live_run_id?: string;
   steps: Step[]; verified_claims: Claim[];
   variants: { language: string; persona: string; text: string; claim_ids: string[] }[];
   totals: { specialist_turns: number; tool_calls: number; verification_rounds: number; tokens: number | null };
@@ -146,27 +146,43 @@ function VerificationCard({ step, last }: { step: Verification; last: boolean })
   );
 }
 
+/** Set at build time where an API with live runs sits behind /api (the Azure deployment). */
+const LIVE_AVAILABLE = process.env.NEXT_PUBLIC_MATCHDESK_LIVE_STREAM === "true";
+type LivePanel = ComponentType<{ onTrace: (trace: unknown) => void }>;
+
 export function InsightsBody() {
   const [rehearsal, setRehearsal] = useState<Trace | null>(null);
-  const [showRehearsal, setShowRehearsal] = useState(false);
+  const [which, setWhich] = useState<"recorded" | "rehearsal" | "live">("recorded");
+  const [Panel, setPanel] = useState<LivePanel | null>(null);
+  const [liveTrace, setLiveTrace] = useState<Trace | null>(null);
   const pickRehearsal = async () => {
     if (!rehearsal) {
       const loaded = await import("./generated/agent-trace-rehearsal.view.json");
       setRehearsal(loaded.default as unknown as Trace);
     }
-    setShowRehearsal(true);
+    setWhich("rehearsal");
   };
-  const current = showRehearsal && rehearsal ? rehearsal : shownTrace;
+  const pickLive = async () => {
+    if (!Panel) {
+      const loaded = await import("./live-run");
+      setPanel(() => loaded.default);
+    }
+    setWhich("live");
+  };
+  const current = which === "rehearsal" && rehearsal ? rehearsal : which === "live" && liveTrace ? liveTrace : shownTrace;
+  const key = current === shownTrace ? "shown" : current === rehearsal ? "rehearsal" : `live-${(liveTrace as { live_run_id?: string } | null)?.live_run_id ?? ""}`;
   return (
     <>
-      {hasLiveRun && (
+      {(hasLiveRun || LIVE_AVAILABLE) && (
         <div role="group" aria-label="Which run" className="md-seg">
           <span className="md-seg-label">Which run</span>
-          <button type="button" aria-pressed={!showRehearsal} onClick={() => setShowRehearsal(false)}>Recorded live run</button>
-          <button type="button" aria-pressed={showRehearsal} onClick={pickRehearsal}>Rehearsal</button>
+          <button type="button" aria-pressed={which === "recorded"} onClick={() => setWhich("recorded")}>Recorded live run</button>
+          <button type="button" aria-pressed={which === "rehearsal"} onClick={pickRehearsal}>Rehearsal</button>
+          {LIVE_AVAILABLE && <button type="button" aria-pressed={which === "live"} onClick={pickLive}>Run it live now</button>}
         </div>
       )}
-      <RunView key={current === shownTrace ? "shown" : "rehearsal"} trace={current} />
+      {which === "live" && Panel && <Panel onTrace={(trace) => setLiveTrace({ ...(trace as Trace), provider: { ...(trace as Trace).provider, label: `${(trace as Trace).provider.label} · just now` } })} />}
+      {(which !== "live" || liveTrace) && <RunView key={key} trace={current} />}
     </>
   );
 }
@@ -193,7 +209,7 @@ function RunView({ trace }: { trace: Trace }) {
     <>
       <div className={`md-banner ${live ? "md-banner-success" : "md-banner-info"}`} role="note">
         <span className="md-banner-icon" aria-hidden="true">{live ? "✓" : "i"}</span>
-        <strong>{live ? "Recorded live run" : "Rehearsal run"}</strong>
+        <strong>{trace.live_run_id ? "Live run" : live ? "Recorded live run" : "Rehearsal run"}</strong>
         <span>{trace.provider.label}{trace.recorded_on ? ` · ${trace.recorded_on}` : ""}. {plural(trace.totals.specialist_turns, "specialist turn")}, {plural(trace.totals.tool_calls, "tool call")}, {plural(trace.totals.verification_rounds, "verification round")}{trace.totals.tokens != null ? `, ${trace.totals.tokens.toLocaleString("en-GB")} tokens` : ""}.</span>
       </div>
       <ol className="md-roles" aria-label="Workflow">

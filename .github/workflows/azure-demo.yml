@@ -15,7 +15,7 @@ on:
         options: [what-if, deploy, diagnose]
         default: what-if
       assistant:
-        description: "Switch on the Ask MatchDesk planner on Microsoft Foundry"
+        description: "Switch on Microsoft Foundry: the Ask MatchDesk planner and live agent runs"
         required: true
         type: boolean
         default: true

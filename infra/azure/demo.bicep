@@ -29,7 +29,7 @@ param webImage string = ''
 @description('API image in this registry, e.g. <registry>.azurecr.io/matchdesk-api:<git-sha>.')
 param apiImage string = ''
 
-@description('Switch on the Ask MatchDesk planner on Microsoft Foundry (tier 2).')
+@description('Switch on Microsoft Foundry (tier 2): the Ask MatchDesk planner and live, rate-limited agent runs.')
 param assistantEnabled bool = false
 
 @description('Microsoft Foundry project endpoint used by the planner. Not a secret.')
@@ -132,7 +132,8 @@ resource api 'Microsoft.App/containerApps@2024-03-01' = if (deployApps) {
           env: [
             // DefaultAzureCredential picks this identity for Foundry.
             { name: 'AZURE_CLIENT_ID', value: identity.properties.clientId }
-            { name: 'MATCHDESK_FOUNDRY_ENABLED', value: 'false' }
+            { name: 'MATCHDESK_FOUNDRY_ENABLED', value: assistantEnabled ? 'true' : 'false' }
+            { name: 'MATCHDESK_LIVE_AGENTS_ENABLED', value: assistantEnabled ? 'true' : 'false' }
             { name: 'MATCHDESK_ASSISTANT_FOUNDRY_ENABLED', value: assistantEnabled ? 'true' : 'false' }
             { name: 'MATCHDESK_LIVE_REPLAY_ENABLED', value: 'true' }
             { name: 'FOUNDRY_PROJECT_ENDPOINT', value: foundryProjectEndpoint }
