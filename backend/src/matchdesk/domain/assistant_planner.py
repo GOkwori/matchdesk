@@ -78,6 +78,7 @@ SUBJECTS: Mapping[str, str] = {
     canonical.AWAY: "Riverside United (away)",
     **canonical.PLAYER_NAMES,
 }
+TEAM_IDS = frozenset({canonical.HOME, canonical.AWAY})
 
 MetricId = Literal[
     "goals.v1",
@@ -95,7 +96,9 @@ MetricId = Literal[
     "interceptions.v1",
     "recoveries.v1",
 ]
-Intent = Literal["metric", "score", "scorers", "summary", "help", "out_of_scope", "unknown"]
+Intent = Literal[
+    "metric", "score", "scorers", "leaders", "summary", "help", "out_of_scope", "unknown"
+]
 Reason = Literal["prediction", "other_match", "personal", "unsupported"]
 
 _log = logging.getLogger("matchdesk.assistant")
@@ -115,6 +118,7 @@ class PlannedQuestion(BaseModel):
     last_minutes: int | None = Field(default=None, ge=1, le=130)
     topic: str | None = None
     reason: Reason | None = None
+    nth: int | None = Field(default=None, ge=1, le=4)
 
     def to_plan(self) -> dict[str, Any]:
         """Return the browser's plan shape, or the unknown plan if the fields don't fit."""
@@ -152,7 +156,26 @@ class PlannedQuestion(BaseModel):
         if self.intent == "score":
             return {"intent": "score", "window": window}
         if self.intent == "scorers":
-            return {"intent": "scorers", "subjects": list(self.subjects), "window": window}
+            scorers: dict[str, Any] = {
+                "intent": "scorers",
+                "subjects": list(self.subjects),
+                "window": window,
+            }
+            if self.nth is not None:
+                scorers["nth"] = self.nth
+            return scorers
+        if self.intent == "leaders":
+            # Players are ranked; a subject may only narrow the ranking to one team.
+            if self.metric is None or len(self.subjects) > 1:
+                return unknown
+            if any(subject not in TEAM_IDS for subject in self.subjects):
+                return unknown
+            return {
+                "intent": "leaders",
+                "metric": self.metric,
+                "subjects": list(self.subjects),
+                "window": window,
+            }
         if self.intent == "summary":
             if len(self.subjects) != 1:
                 return unknown
@@ -171,7 +194,9 @@ def planner_instructions() -> str:
         "You turn one question about a synthetic football match (Northbridge FC v Riverside "
         "United, replayed to 67:12) or about the MatchDesk app into a query plan. Return only "
         "the plan. Never answer the question, never state a statistic, never add text.\n"
-        "intent: metric (one statistic), score, scorers, summary (one team or player), help "
+        "intent: metric (one statistic), score, scorers (nth 1-4 for 'the second goal' and "
+        "the like), leaders (which player led a statistic; subjects may hold one team to "
+        "rank only its players), summary (one team or player), help "
         "(how the app works), out_of_scope (predictions, other matches or clubs, personal "
         "matters, anything else not in the event log), unknown.\n"
         "metric: goals.v1, shots.v1, pass_accuracy.v1, synthetic_xg.v1 (expected goals), "

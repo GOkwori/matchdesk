@@ -134,6 +134,19 @@ def test_a_structured_plan_becomes_the_browser_plan() -> None:
             PlannedQuestion(intent="scorers", from_minute=30, to_minute=60),
             {"intent": "scorers", "subjects": [], "window": {"from_minute": 30, "to_minute": 60}},
         ),
+        (
+            PlannedQuestion(intent="scorers", nth=2),
+            {"intent": "scorers", "subjects": [], "window": {}, "nth": 2},
+        ),
+        (
+            PlannedQuestion(intent="leaders", metric="recoveries.v1", subjects=["riv"], period=2),
+            {
+                "intent": "leaders",
+                "metric": "recoveries.v1",
+                "subjects": ["riv"],
+                "window": {"period": 2},
+            },
+        ),
         (PlannedQuestion(intent="help", topic="eligible"), {"intent": "help", "topic": "eligible"}),
         (
             PlannedQuestion(intent="out_of_scope", reason="prediction"),
@@ -163,6 +176,9 @@ def test_plans_outside_the_vocabulary_become_unknown() -> None:
         PlannedQuestion(intent="metric", metric="shots.v1", subjects=["nbr", "nbr"]),
         PlannedQuestion(intent="metric", metric="shots.v1", period=2, from_minute=60),
         PlannedQuestion(intent="unknown"),
+        PlannedQuestion(intent="leaders"),
+        PlannedQuestion(intent="leaders", metric="tackles.v1", subjects=["nbr-09"]),
+        PlannedQuestion(intent="leaders", metric="tackles.v1", subjects=["nbr", "riv"]),
     ):
         planner, _ = _planner(_Result(planned))
         assert asyncio.run(planner.plan("q")) == {"intent": "unknown"}
@@ -176,6 +192,7 @@ def test_the_schema_is_closed() -> None:
         {"intent": "metric", "metric": "shots.v1", "subjects": ["nbr", "riv", "nbr-09"]},
         {"intent": "metric", "metric": "shots.v1", "from_minute": -1},
         {"intent": "metric", "metric": "shots.v1", "period": 3},
+        {"intent": "scorers", "nth": 5},
         {"intent": "approve", "draft": "D-031"},
     ):
         with pytest.raises(ValueError):
