@@ -37,7 +37,8 @@ United, 1,421 events):
   player-focus page for each of the 32 players where every figure is a verified sentence.
 - See who controlled each spell, and where it turned to chaos, labelled by a published
   rule over recomputed figures rather than by a model.
-- Read the fan story with its "How we checked this" panel, every row a computed check.
+- Read a fan story for any goal, in your language and style, with its "How we checked this"
+  panel: every row a check the verifier passed, run again in your browser.
 - Ask MatchDesk a question ("Who scored the second goal?", "Possession after 60 minutes")
   and get an answer whose every figure was computed and verified, or an honest "I can't
   check that".

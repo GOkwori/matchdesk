@@ -846,3 +846,16 @@ html[data-md-motion="reduce"] .md-lt { animation: none; }
 .md-form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 12px; margin: 12px 0; }
 .md-form-grid select { min-height: 40px; border-radius: 8px; border: 1px solid var(--md-control-line); background: var(--md-canvas); color: var(--md-text); padding: 0 10px; font: inherit; font-weight: 500; }
 .md-page > .md-lr { animation: none; }
+
+/* ---------- Fan stories ---------- */
+.md-story-personas { align-self: flex-start; }
+.md-story-h1-analyst, .md-story-h1-caption { font-size: clamp(22px, 5.5vw, 28px); letter-spacing: -0.01em; }
+.md-story-h1-caption { font-family: var(--md-font-mono); text-transform: uppercase; }
+.md-story-yours { margin: 0; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--md-line); color: var(--md-text-body); font-weight: 600; }
+.md-story-yours-mine { border-color: var(--md-accent-soft); color: var(--md-accent-soft); }
+.md-story-more h2 { font-size: 15px; margin: 4px 0 8px; }
+.md-story-more ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.md-story-more a { display: flex; align-items: center; gap: 10px; min-height: var(--md-touch); padding: 8px 12px; border-radius: 10px; border: 1px solid var(--md-line); background: var(--md-panel); color: var(--md-text); text-decoration: none; font-weight: 600; }
+.md-story-more a:hover { border-color: var(--md-accent-soft); }
+.md-story-more a .md-mono { color: var(--md-accent-soft); flex: none; }
+.md-story-more a .md-chip { margin-left: auto; }

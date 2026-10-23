@@ -7,7 +7,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Icon, type IconName } from "./icons";
 import { Logo } from "./ui";
 import { openAssistant } from "./assistant-host";
-import { claims, drafts, eventCountText, moments, squads, STORY_SLUG, tourSteps } from "./data";
+import { claims, drafts, eventCountText, moments, squads, tourSteps } from "./data";
 
 type NavItem = { href: string; label: string; icon: IconName; match: (path: string) => boolean; badge?: string };
 
@@ -20,7 +20,7 @@ const NAV: NavItem[] = [
   { href: "/match/nbr-riv/insights", label: "AI Insights", icon: "sparkle", match: (p) => p.startsWith("/match/nbr-riv/insights") },
   { href: "/match/nbr-riv/evidence/CL-0213", label: "Evidence & Verification", icon: "shield", match: (p) => p.startsWith("/match/nbr-riv/evidence") },
   { href: "/producer/queue", label: "Producer Tools", icon: "monitor", match: (p) => p.startsWith("/producer"), badge: "2" },
-  { href: `/story/${STORY_SLUG}`, label: "Audience Story", icon: "phone", match: (p) => p.startsWith("/story") },
+  { href: "/story", label: "Audience Stories", icon: "phone", match: (p) => p.startsWith("/story") },
   { href: "/workspace/activity", label: "Activity & Audit", icon: "pulse", match: (p) => p.startsWith("/workspace/activity") },
   { href: "/workspace/settings", label: "Settings & Help", icon: "grid", match: (p) => p.startsWith("/workspace/settings") },
 ];
@@ -29,7 +29,7 @@ const TABS: { href: string; label: string; icon: IconName; match: (p: string) =>
   { href: "/match/nbr-riv", label: "Match", icon: "pulse", match: (p) => p.startsWith("/match/nbr-riv") && !p.startsWith("/match/nbr-riv/evidence") },
   { href: "/match/nbr-riv/evidence/CL-0213", label: "Verify", icon: "shield", match: (p) => p.startsWith("/match/nbr-riv/evidence") },
   { href: "/producer/queue", label: "Produce", icon: "pen", match: (p) => p.startsWith("/producer") },
-  { href: `/story/${STORY_SLUG}`, label: "Story", icon: "phone", match: (p) => p.startsWith("/story") },
+  { href: "/story", label: "Stories", icon: "phone", match: (p) => p.startsWith("/story") },
   { href: "/workspace/settings", label: "Settings", icon: "sliders", match: (p) => p.startsWith("/workspace") || p.startsWith("/design-system") },
 ];
 
@@ -141,7 +141,7 @@ function CommandPalette() {
     { label: "How verification works", hint: "Page", href: "/about" },
     { label: "Moments & Timeline", hint: "Screen", href: "/match/nbr-riv/moments" },
     { label: "Review queue", hint: "Screen", href: "/producer/queue" },
-    { label: "Fan story", hint: "Screen", href: `/story/${STORY_SLUG}` },
+    { label: "Fan stories", hint: "Screen", href: "/story" },
     { label: "Design system", hint: "Screen", href: "/design-system" },
     ...moments.map((m) => ({ label: `${m.title}`, hint: `${m.id} · moment`, href: `/match/nbr-riv/moments?moment=${m.id}` })),
     ...claims.map((c) => ({ label: c.text, hint: `${c.id} · claim`, href: `/match/nbr-riv/evidence/${c.id}` })),

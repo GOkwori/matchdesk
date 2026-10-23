@@ -52,6 +52,13 @@ season, "after the equaliser") are declined rather than answered with a nearby f
   shots, synthetic xG, pass accuracy, length, progressive passes, difficulty, passes under
   pressure, tackles, interceptions, recoveries), each stated as a sentence and verified,
   plus an action map of their passes, shots and recoveries.
+- **Fan stories** (Audience Stories). One story for every goal, generated from the log:
+  headline, body, score and a diagram of the move. Each fact in the text (scorer, score,
+  the scorer's tally, and how the move began: a corner, an interception or the start of the
+  move, with the seconds to the goal) is a claim the verifier passed, and the page re-runs
+  those checks in your browser. What the log cannot show (who made the final pass, defender
+  positions) is listed as not checked. The page follows My match: language, fan / analyst /
+  caption style, and a line when your club or player is involved.
 - **Control and chaos** (Tactical Analysis). Every five minutes is labelled by a published
   rule, not a model: control (a side has 60% of the ball and completes 85% of its passes),
   chaos (the ball is won back at least 3.2 times a minute) or contested. Each phase lists
