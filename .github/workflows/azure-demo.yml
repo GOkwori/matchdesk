@@ -137,6 +137,24 @@ jobs:
           az containerapp show --resource-group "$RESOURCE_GROUP" --name mdesk-api \
             --query "{revision: properties.latestRevisionName, running: properties.runningStatus, identity: identity.type}" -o json
 
+      - name: Report how the Foundry resource admits the demo identity (diagnose, read-only)
+        if: ${{ inputs.mode == 'diagnose' }}
+        shell: bash
+        env:
+          FOUNDRY_PROJECT_ENDPOINT: ${{ secrets.FOUNDRY_PROJECT_ENDPOINT }}
+        run: |
+          set -uo pipefail
+          note() { echo "::notice title=Foundry access::$1"; }
+          host="${FOUNDRY_PROJECT_ENDPOINT#https://}"; account="${host%%.*}"
+          principal="$(az identity show --resource-group "$RESOURCE_GROUP" --name mdesk-demo-id --query principalId -o tsv)"
+          id="$(az resource list --name "$account" --resource-type Microsoft.CognitiveServices/accounts --query '[0].id' -o tsv 2>/dev/null)"
+          if [ -z "$id" ]; then note "The Foundry account is not visible to the deploy identity, so its network and roles cannot be read from here"; exit 0; fi
+          note "Network: $(az resource show --ids "$id" --query '{publicNetworkAccess: properties.publicNetworkAccess, defaultAction: properties.networkAcls.defaultAction, ipRules: length(properties.networkAcls.ipRules || `[]`), vnetRules: length(properties.networkAcls.virtualNetworkRules || `[]`), localAuthDisabled: properties.disableLocalAuth}' -o json | tr -d '\n ')"
+          roles="$(az role assignment list --assignee "$principal" --all --query "[].{role: roleDefinitionName, scope: scope}" -o tsv 2>/dev/null | sed -E 's#/subscriptions/[^/]+#/subscriptions/…#' | tr '\t' ' ' | paste -sd ';' -)"
+          note "Roles held by mdesk-demo-id: ${roles:-none visible}"
+          projects="$(az resource list --resource-type Microsoft.CognitiveServices/accounts/projects --query "[?starts_with(name, '$account/')].name" -o tsv 2>/dev/null | paste -sd ',' -)"
+          note "Projects on the account: ${projects:-none visible}"
+
       - name: Create or update the base resources
         if: ${{ inputs.mode == 'deploy' }}
         id: base
