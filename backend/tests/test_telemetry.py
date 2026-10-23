@@ -43,6 +43,7 @@ def test_a_connection_string_configures_both_exporters_without_sensitive_data(
     fake = types.ModuleType("agent_framework.observability")
 
     def configure(**kwargs: Any) -> None:
+        """Record what the API asks for."""
         seen.update(kwargs)
 
     fake.configure_otel_providers = configure  # type: ignore[attr-defined]
@@ -61,6 +62,7 @@ def test_a_failing_setup_never_stops_the_api(monkeypatch: pytest.MonkeyPatch) ->
     fake = types.ModuleType("agent_framework.observability")
 
     def configure(**kwargs: Any) -> None:
+        """Record what the API asks for."""
         raise RuntimeError("no network")
 
     fake.configure_otel_providers = configure  # type: ignore[attr-defined]
@@ -75,11 +77,17 @@ def test_the_planner_span_carries_the_intent_not_the_question() -> None:
     """One span per question, with its intent and status."""
 
     class _Agent:
+        """A planner agent that always reads the question as the score."""
+
         async def run(self, prompt: str, **kwargs: Any) -> Any:
+            """Return the plan."""
             return types.SimpleNamespace(value=PlannedQuestion(intent="score"))
 
     class _Factory:
+        """Hands out that agent."""
+
         def create(self, config: AssistantPlannerConfig) -> _Agent:
+            """Return the agent."""
             return _Agent()
 
     planner = AssistantPlanner(
@@ -120,9 +128,11 @@ def test_the_live_run_span_records_totals() -> None:
     from matchdesk.domain.agent_rehearsal import RehearsalExecutor
 
     async def rehearsal(executor: Any, progress: list[dict[str, Any]]) -> dict[str, Any]:
+        """Run the deterministic rehearsal with the shared progress list."""
         return await record_agent_run(executor, clock=lambda: None, progress=progress)
 
     async def scenario() -> None:
+        """Start a run and wait for it."""
         runs = LiveRuns(executor_factory=RehearsalExecutor, runner=rehearsal)  # type: ignore[arg-type]
         runs.start()
         assert runs._task is not None
