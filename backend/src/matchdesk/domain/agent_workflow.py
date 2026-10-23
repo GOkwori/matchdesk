@@ -425,11 +425,14 @@ async def run_agent_workflow(
     digest: Mapping[str, Any],
     focus: Mapping[str, Any],
     clock: Callable[[], int | None] | None = None,
+    progress: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Run tactical analysis, composition, review, verification and adaptation once.
 
     ``focus`` names the moment the story is about. ``clock`` returns milliseconds; the
     rehearsal passes one that returns None so its trace is byte-for-byte reproducible.
+    ``progress``, if given, receives each step as it happens, so a host can show a run
+    while it is still going.
     """
     tick = clock if clock is not None else (lambda: time.monotonic_ns() // 1_000_000)
     digest_text = digest_json(digest)
@@ -440,7 +443,7 @@ async def run_agent_workflow(
         evidence.revision,
         str(focus["moment_id"]),
     )
-    steps: list[dict[str, Any]] = []
+    steps: list[dict[str, Any]] = progress if progress is not None else []
     common = {
         "events": events,
         "evidence": evidence,
