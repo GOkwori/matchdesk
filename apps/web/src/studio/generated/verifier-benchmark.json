@@ -1,0 +1,311 @@
+{
+ "base_claims": 79,
+ "categories": [
+  {
+   "correct": 190,
+   "id": "wrong_number",
+   "label": "A wrong number, stated consistently in the sentence and its assertion",
+   "missed": [],
+   "statuses": {
+    "needs_revision": 190
+   },
+   "total": 190,
+   "truthful": false
+  },
+  {
+   "correct": 190,
+   "id": "number_mismatch",
+   "label": "The sentence states a different number from the one it asserts",
+   "missed": [],
+   "statuses": {
+    "needs_revision": 190
+   },
+   "total": 190,
+   "truthful": false
+  },
+  {
+   "correct": 64,
+   "id": "wrong_subject_named",
+   "label": "The sentence names the wrong player or team",
+   "missed": [],
+   "statuses": {
+    "needs_revision": 64
+   },
+   "total": 64,
+   "truthful": false
+  },
+  {
+   "correct": 15,
+   "id": "wrong_subject_asserted",
+   "label": "The claim is about a different player than the sentence names",
+   "missed": [],
+   "statuses": {
+    "needs_revision": 15
+   },
+   "total": 15,
+   "truthful": false
+  },
+  {
+   "correct": 64,
+   "id": "wrong_window",
+   "label": "The sentence states the wrong half, minute range or time",
+   "missed": [],
+   "statuses": {
+    "needs_revision": 64
+   },
+   "total": 64,
+   "truthful": false
+  },
+  {
+   "correct": 64,
+   "id": "wrong_statistic",
+   "label": "The sentence names a different statistic",
+   "missed": [],
+   "statuses": {
+    "needs_revision": 64
+   },
+   "total": 64,
+   "truthful": false
+  },
+  {
+   "correct": 114,
+   "id": "unsupported_evidence",
+   "label": "The claim cites events that do not support it, or do not exist",
+   "missed": [],
+   "statuses": {
+    "blocked": 79,
+    "needs_revision": 35
+   },
+   "total": 114,
+   "truthful": false
+  },
+  {
+   "correct": 64,
+   "id": "past_replay_point",
+   "label": "The claim speaks about time the evidence does not cover",
+   "missed": [],
+   "statuses": {
+    "blocked": 64
+   },
+   "total": 64,
+   "truthful": false
+  },
+  {
+   "correct": 18,
+   "id": "wrong_scorer",
+   "label": "A goal credited to the wrong player",
+   "missed": [],
+   "statuses": {
+    "needs_revision": 18
+   },
+   "total": 18,
+   "truthful": false
+  },
+  {
+   "correct": 4,
+   "id": "wrong_card",
+   "label": "A card with the wrong colour, or the wrong player booked",
+   "missed": [],
+   "statuses": {
+    "needs_revision": 4
+   },
+   "total": 4,
+   "truthful": false
+  },
+  {
+   "correct": 2,
+   "id": "wrong_substitute",
+   "label": "A substitution with the players swapped or wrong",
+   "missed": [],
+   "statuses": {
+    "needs_revision": 2
+   },
+   "total": 2,
+   "truthful": false
+  },
+  {
+   "correct": 9,
+   "id": "wrong_gap",
+   "label": "A goal's build-up timed wrongly",
+   "missed": [],
+   "statuses": {
+    "needs_revision": 9
+   },
+   "total": 9,
+   "truthful": false
+  },
+  {
+   "correct": 12,
+   "id": "wrong_clock",
+   "label": "An event placed at the wrong time",
+   "missed": [],
+   "statuses": {
+    "needs_revision": 12
+   },
+   "total": 12,
+   "truthful": false
+  },
+  {
+   "correct": 79,
+   "id": "original",
+   "label": "The claim as the demo shows it",
+   "missed": [],
+   "statuses": {
+    "verified": 79
+   },
+   "total": 79,
+   "truthful": true
+  },
+  {
+   "correct": 64,
+   "id": "window_first",
+   "label": "Reworded with the time phrase first",
+   "missed": [],
+   "statuses": {
+    "verified": 64
+   },
+   "total": 64,
+   "truthful": true
+  },
+  {
+   "correct": 40,
+   "id": "total_of",
+   "label": "Reworded with 'a total of'",
+   "missed": [],
+   "statuses": {
+    "verified": 40
+   },
+   "total": 40,
+   "truthful": true
+  },
+  {
+   "correct": 112,
+   "id": "synonyms",
+   "label": "Reworded with number words and synonyms a reader would accept",
+   "missed": [],
+   "statuses": {
+    "verified": 112
+   },
+   "total": 112,
+   "truthful": true
+  }
+ ],
+ "examples": [
+  {
+   "category": "wrong_number",
+   "note": "",
+   "original": "Quinlan reached a top speed of 33.8 km/h between 21′ and 22′.",
+   "reason": "Registered metric recomputation does not satisfy the claim comparator",
+   "status": "needs_revision",
+   "text": "Quinlan reached a top speed of 33.9 km/h between 21′ and 22′."
+  },
+  {
+   "category": "number_mismatch",
+   "note": "",
+   "original": "Quinlan covered 5.1 km up to 41:46.",
+   "reason": "Claim text states a quantity that differs from its assertion",
+   "status": "needs_revision",
+   "text": "Quinlan covered 5.6 km up to 41:46."
+  },
+  {
+   "category": "wrong_subject_named",
+   "note": "",
+   "original": "Riverside scored 1 goal up to 58:18.",
+   "reason": "Claim text does not name the asserted subject",
+   "status": "needs_revision",
+   "text": "Northbridge scored 1 goal up to 58:18."
+  },
+  {
+   "category": "wrong_subject_asserted",
+   "note": "The claim is about Ferreira",
+   "original": "Quinlan covered 5.1 km up to 41:46.",
+   "reason": "Registered metric recomputation does not satisfy the claim comparator",
+   "status": "needs_revision",
+   "text": "Quinlan covered 5.1 km up to 41:46."
+  },
+  {
+   "category": "wrong_window",
+   "note": "",
+   "original": "Northbridge had 4 shots up to 30:00.",
+   "reason": "Claim text states a time window that differs from its assertion",
+   "status": "needs_revision",
+   "text": "Northbridge had 4 shots up to 25:00."
+  },
+  {
+   "category": "wrong_statistic",
+   "note": "",
+   "original": "Okafor scored 1 goal up to 34:19.",
+   "reason": "Claim text names a statistic other than the asserted one",
+   "status": "needs_revision",
+   "text": "Okafor scored 1 shot up to 34:19."
+  },
+  {
+   "category": "unsupported_evidence",
+   "note": "It cites E-0004, a pass, as its evidence",
+   "original": "Northbridge scored 2 goals up to 58:18.",
+   "reason": "Claim cites events the registered metric does not count",
+   "status": "needs_revision",
+   "text": "Northbridge scored 2 goals up to 58:18."
+  },
+  {
+   "category": "past_replay_point",
+   "note": "Its window runs a minute past the replay point, 67:12",
+   "original": "Riverside scored 0 goals up to 34:19.",
+   "reason": "Claim window extends past the evidence window",
+   "status": "blocked",
+   "text": "Riverside scored 0 goals up to 34:19."
+  },
+  {
+   "category": "wrong_scorer",
+   "note": "",
+   "original": "Lindqvist scored for Riverside at 41:03.",
+   "reason": "The cited event is not a goal by the stated player",
+   "status": "needs_revision",
+   "text": "Barros scored for Riverside at 41:03."
+  },
+  {
+   "category": "wrong_card",
+   "note": "",
+   "original": "Haddad was shown a yellow card for Riverside at 27:40.",
+   "reason": "The cited event is not a card for the stated player",
+   "status": "needs_revision",
+   "text": "Castell was shown a yellow card for Riverside at 27:40."
+  },
+  {
+   "category": "wrong_substitute",
+   "note": "",
+   "original": "Kovac replaced Barros for Riverside at 67:08.",
+   "reason": "Claim text has the substitution the wrong way round",
+   "status": "needs_revision",
+   "text": "Barros replaced Kovac for Riverside at 67:08."
+  },
+  {
+   "category": "wrong_gap",
+   "note": "",
+   "original": "The goal came 28 seconds after an interception.",
+   "reason": "The recorded gap differs from the stated seconds",
+   "status": "needs_revision",
+   "text": "The goal came 38 seconds after an interception."
+  },
+  {
+   "category": "wrong_clock",
+   "note": "",
+   "original": "Haddad was shown a yellow card for Riverside at 27:40.",
+   "reason": "Claim text states a time that differs from its cited events",
+   "status": "needs_revision",
+   "text": "Haddad was shown a yellow card for Riverside at 26:40."
+  }
+ ],
+ "false": {
+  "caught": 810,
+  "rate": 1.0,
+  "total": 810
+ },
+ "schema": "matchdesk-verifier-benchmark/1",
+ "synthetic": true,
+ "true": {
+  "rate": 0.0,
+  "total": 295,
+  "wrongly_rejected": 0
+ }
+}

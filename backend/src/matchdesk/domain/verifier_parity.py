@@ -712,6 +712,22 @@ def parity_fixture() -> dict[str, Any]:
             ),
         ),
         (
+            "fact: a substitution the wrong way round is sent back",
+            fact(
+                "Barros replaced Kovac for Riverside at 67:08.",
+                EventFact(query="substitution.v1", event_id="E-1421", player_id="riv-07"),
+                ("E-1421",),
+            ),
+        ),
+        (
+            "fact: a passive substitution names the outgoing player first",
+            fact(
+                "Barros was replaced by Kovac for Riverside at 67:08.",
+                EventFact(query="substitution.v1", event_id="E-1421", player_id="riv-07"),
+                ("E-1421",),
+            ),
+        ),
+        (
             "fact: a substitution without the incoming player is sent back",
             fact(
                 "Barros was substituted for Riverside at 67:08.",

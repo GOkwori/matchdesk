@@ -10,7 +10,7 @@ const STORY = '/story/okafor-header-restores-northbridge-lead';
 const INDEXABLE = ['/', '/about', '/story', '/story/recap', STORY, '/story/okafor-opens-the-scoring', '/story/lindqvist-equalises-for-riverside', '/match/nbr-riv'];
 const WORKSPACE = [
   '/match/nbr-riv/live', '/match/nbr-riv/auto-eventing', '/match/nbr-riv/moments?moment=M-05', '/match/nbr-riv/tactical', '/match/nbr-riv/players', '/match/nbr-riv/player/nbr-09', '/match/nbr-riv/insights',
-  '/match/nbr-riv/evidence/CL-0213', '/match/nbr-riv/evidence/CL-0214', '/match/nbr-riv/evidence/CL-0215', '/match/nbr-riv/evidence/CL-0216',
+  '/match/nbr-riv/evidence/CL-0213', '/match/nbr-riv/evidence/CL-0214', '/match/nbr-riv/evidence/CL-0215', '/match/nbr-riv/evidence/CL-0216', '/match/nbr-riv/evidence/benchmark',
   '/producer/queue', '/producer/compose/D-031', '/producer/publish/D-031', '/workspace/activity', '/workspace/settings', '/design-system',
 ];
 const ALL = [...INDEXABLE, ...WORKSPACE];

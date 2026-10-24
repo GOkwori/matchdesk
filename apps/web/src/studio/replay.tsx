@@ -346,8 +346,12 @@ export default function ReplayPlayer() {
 
       <div className="md-lr-feed">
         <a className="md-btn md-btn-secondary" href="/overlays/nbr-riv.json" download>Download the overlay feed (JSON)</a>
+        <a className="md-btn md-btn-secondary" href={`/broadcast/nbr-riv?style=${viewer.persona}&lang=${viewer.language}&speed=10&bg=dark`} target="_blank" rel="noopener">Open the broadcast overlay</a>
         <p className="md-muted md-small">
-          The same cues any graphics engine can read: time, kind, team, players, event ids, the claims behind every number, and text for each persona in English, Spanish and French. Cards and substitutions are checked by registered event facts. Spanish and French are AI-assisted templates awaiting native review.
+          The same cues any graphics engine can read: time, kind, team, players, event ids, the claims behind every number, and text for each persona in English, Spanish and French. Cards and substitutions are checked by registered event facts. Spanish and French are AI-assisted templates, reviewed and corrected on 23 October 2026, without a native-speaker sign-off.
+        </p>
+        <p className="md-muted md-small">
+          The broadcast overlay draws the same cues as lower-thirds with a score bug on a transparent page: in OBS or vMix, add a Browser Source at 1920×1080 with <code className="md-mono">/broadcast/nbr-riv?style=caption&amp;lang=es&amp;speed=1</code>. Each graphic is re-verified in that browser before it is drawn. Options: <code className="md-mono">style</code> fan, analyst or caption; <code className="md-mono">lang</code> en, es or fr; <code className="md-mono">speed</code> 1 to 60; <code className="md-mono">from</code> a match time such as 34:00; <code className="md-mono">bg</code> transparent, dark or green; <code className="md-mono">bug=0</code> hides the score.
         </p>
       </div>
     </section>

@@ -108,6 +108,13 @@ def _names_subject(text: str, name: str) -> bool:
     return re.search(_B + re.escape(name.lower()) + _E, text.lower()) is not None
 
 
+def _position(text: str, name: str) -> int:
+    """Where a display name first appears, as a whole word (the name must appear)."""
+    match = re.search(_B + re.escape(name.lower()) + _E, text.lower())
+    assert match is not None
+    return match.start()
+
+
 def _expected_quantity(claim: Claim) -> tuple[str, Decimal] | None:
     """The quantity the sentence must state, as ("count" | "percent", value), if any."""
     if claim.assertion is not None:
@@ -209,6 +216,7 @@ _YELLOW_WORDS = re.compile(_B + r"(?:yellow|booked|booking|cautioned)" + _E)
 _SUB_WORDS = re.compile(
     _B + r"(?:replaced|replaces|substitut(?:ed|es|ion)|comes on|came on|on for|off for)" + _E
 )
+_SUB_PASSIVE = re.compile(_B + r"(?:replaced by|substituted by|off for)" + _E)
 _GOAL_WORDS = re.compile(
     _B
     + r"(?:goals?|scor(?:ed|es|ing)|netted|(?:headed|nodded|fired|slotted|tapped|poked|"
@@ -371,6 +379,13 @@ def _fact_problem(
         incoming = names.get(target.related_player_id or "") if names else None
         if incoming is None or not _names_subject(lowered, incoming):
             return "Claim text does not name the incoming player"
+        outgoing = names.get(target.player_id or "") if names else None
+        if outgoing is not None and _names_subject(lowered, outgoing):
+            # "A replaced B" and "A came on for B" put the incoming player first;
+            # "B was replaced by A" and "B off for A" put them second.
+            first = _position(lowered, incoming) < _position(lowered, outgoing)
+            if first == (_SUB_PASSIVE.search(lowered) is not None):
+                return "Claim text has the substitution the wrong way round"
     return None
 
 

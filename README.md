@@ -1,17 +1,66 @@
 # MatchDesk
-## Explainable football intelligence, with the producer in control
+## AI agents draft the football story, code checks every claim, a producer decides
 
-MatchDesk is my project for the Inside the Game hackathon. I am building it around a
-simple question: **how can a producer turn football events into a story they can actually check?**
+**Inside the Game hackathon entry · category: Best Multi-Agent System · owner: George Okwori**
 
-My priority is the path from a synthetic match event to a publishable explanation.
-The design keeps statistics in deterministic code, uses specialist AI agents to
-interpret and present evidence, and gives the producer control over publication.
+| | |
+| --- | --- |
+| **Live demo** | https://mdesk-web.icybeach-62467e8a.uksouth.azurecontainerapps.io (Azure Container Apps: studio, API, live stream, live agent runs, MCP) |
+| **Video** | _added with the submission_ |
+| **Start here** | [Judging guide](docs/competition/judging-guide.md) · [Pitch](docs/competition/pitch.md) · [Architecture](#architecture) |
 
-**Owner: George Okwori. Current stage: competition build, running on Azure Container Apps at https://mdesk-web.icybeach-62467e8a.uksouth.azurecontainerapps.io (studio and API; see [the Azure demo](docs/operations/azure-demo.md)), with a studio-only copy at https://matchdesk-seven.vercel.app. The submission build is `release/submission-2026-10`; see the [competition build record](docs/evidence/competition-build-20261021.md).**
+Broadcast and digital teams publish match statistics under time pressure, and a wrong number
+goes out in seconds. A general-purpose AI makes that worse: it writes fluent sentences that
+sound checked and are not. MatchDesk separates writing from truth. Four specialist agents on
+Microsoft Foundry draft overlays, recaps and fan stories; a deterministic verifier recomputes
+every number, and checks every sentence, against the event log before anything is shown; and
+only a human producer can approve and publish. Everything runs on one invented match.
 
-What runs today, on one invented match (Northbridge FC 2–1 Riverside United, 1,421
-synthetic events):
+![Intelligence overview: the score, verified moments and the next step for the producer](docs/images/overview.jpg)
+
+### Try it in three minutes
+
+1. **Overview › Try to fool the verifier.** Claim 59% possession; the log says 57.96%, and the
+   claim is rejected. Then see [hundreds more false claims it caught](#by-the-numbers).
+2. **Live Intelligence.** Stream the match from the API at up to 60×; each overlay is verified on
+   the server on the events received so far, and again in your browser. Switch to Español or
+   the caption style, or open the **broadcast overlay** that OBS or vMix can load.
+3. **AI Insights › Run it live now.** Four agents on Microsoft Foundry; watch the verifier send a
+   claim back and the composer revise it (one live run every 5 minutes; a recorded run is always there).
+4. **Audience Stories › Match recaps.** The half-time recap writes itself, every figure verified.
+5. **Producer Tools.** Approve D-031's exact version, publish to a demo channel, retry the
+   destination that times out; edit the draft and the approval is withdrawn.
+6. **Connect an agent.** Point an MCP client (for example GitHub Copilot) at `/api/mcp` and ask
+   it to check "Okafor scored 3 goals."
+
+![The broadcast overlay: a verified Spanish goal graphic with a score bug, for OBS or vMix](docs/images/broadcast-overlay.jpg)
+
+### By the numbers
+
+| | |
+| --- | --- |
+| False claims caught | **810 of 810**, built from the 79 claims the demo shows, made wrong one way at a time: wrong number, player, team, half, statistic, evidence, scorer, card, substitute, gap or time ([results](docs/evidence/verifier-benchmark-20261024.md)) |
+| True claims wrongly rejected | **0 of 295**, the originals and rewordings a reader would accept |
+| Server and browser verifiers | Agree on every one of the 1,105 benchmark cases and 108 parity cases |
+| Speed (one CPU in a cloud build container) | The whole replay ingested, reduced and verified in 0.4 s (about 3,500 events a second); each overlay or recap verified in about 1 ms (15 ms at most) when its window closes; all 79 claims re-verified in a browser engine in about 22 ms |
+| Live agent runs on Foundry | 3 recorded evaluation runs: 6 claims passed first time, 2 were sent back (one wrong number, one sentence saying more than its claim), 3 malformed answers stopped before verification; no unverified claim reached an audience version |
+| Tests | 1,658 Python tests, 216 studio unit tests, 246 browser tests on three screen sizes with axe accessibility checks, security and dependency CI on every pull request |
+
+![Try to fool the verifier: false claims caught by kind of error](docs/images/verifier-benchmark.jpg)
+
+### What is real and what is synthetic
+
+| Part | Status |
+| --- | --- |
+| The match | Synthetic: one invented match, 1,421 events. No real teams, players or footage |
+| Metrics, verifier, overlays, recaps, stories | Real code, deterministic, run on that match |
+| The four agents and the Ask planner | Real, on Microsoft Foundry through Agent Framework (live runs are rate-limited) |
+| Tracking (shot speed, top speed, distance, sprints) | Modelled with the match, as a tracking provider would supply it; not measured from video |
+| Auto-eventing | A detector reads events from a synthetic top-down video and is scored against the log |
+| Spanish and French | AI-assisted templates, reviewed and corrected (77 corrections), certified by the owner; no native-speaker sign-off |
+| Producer approval and publishing | A demo in the browser: no sign-in, no real destination |
+
+What runs today, in more detail:
 
 - Four specialist agents (Tactical Analyst, Narrative Composer, Editorial Reviewer,
   Audience Adapter) run end to end through role-scoped, traced tools. AI insights
@@ -20,8 +69,6 @@ synthetic events):
 - Every claim is recomputed from the event log, and the sentence itself is checked: it
   must name its subject and state the number it asserts. A failed claim goes back to
   the composer. The same verifier runs, ported exactly, in the browser.
-- The studio has a seven-stop guided tour, a "try to fool the verifier" panel, and a
-  composer that re-verifies a sentence as you edit it.
 - The match streams from the API on Azure, through the ingestor, reducer and verifier,
   with timed broadcast overlays, automated half-time and replay-point recaps, and fan
   stories for every goal, personalised by club, player, focus statistic, style and
@@ -30,10 +77,8 @@ synthetic events):
   pixels, scored against the log ([method](labs/auto_eventing/README.md)).
 - Other agents can use the same evidence and verifier through a read-only MCP endpoint
   (`/api/mcp`, [design](docs/design/mcp.md)).
-- A demo producer approves the exact version of an eligible draft (bound to SHA-256
-  digests of its text and checks, withdrawn by any edit) and publishes it to a demo channel
-  in the browser. There is no authenticated sign-in or real destination. Start with the
-  [judging guide](docs/competition/judging-guide.md).
+- The submission build is `release/submission-2026-10`; a studio-only copy (no API) runs at
+  https://matchdesk-seven.vercel.app. See the [release checks](docs/evidence/release-live-checks-20261023.md).
 
 ## What is implemented
 
@@ -51,8 +96,9 @@ hand-off. It does not call a model and it does not give an agent publishing auth
 Later Phase 2 slices add evidence verification, scoped specialists, one bounded
 live Foundry invocation and tested retry/recovery and model-evaluation controls.
 
-The submission build has 1,654 Python tests, a 101-case Python/TypeScript verifier
-parity fixture and 201 studio browser tests (three viewports, axe on every page).
+The submission build has 1,658 Python tests, a 108-case Python/TypeScript verifier
+parity fixture, a 1,105-case verifier benchmark run on both, and 246 studio browser tests
+(three viewports, axe on every page).
 Ruff, formatting, strict mypy, frontend build, dependency audit and source security
 run in hosted CI on every pull request.
 
