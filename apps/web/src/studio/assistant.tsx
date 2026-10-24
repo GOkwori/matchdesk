@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Icon } from "./icons";
 import { useViewer } from "./viewer";
+import { ListenButton } from "./voice";
 import { answerPlan, describePlan, needsEvents, parseQuestion, SUGGESTIONS, validatePlan, type Answer, type CheckedLine, type MatchContext, type Plan } from "./ask";
 import { expandLog, type CompactLog, type Status } from "./verifier";
 import exportData from "./generated/nbr-riv.json";
@@ -89,6 +90,9 @@ function Reply({ entry, onLink }: { entry: Entry; onLink: () => void }) {
         <ul className="md-ask-lines">{answer.lines.map((line) => <Line key={line.claim.claim_id} line={line} />)}</ul>
         {answer.derived && <p className="md-ask-derived"><span className="md-visually-hidden">Conclusion: </span>{answer.derived} <span className="md-ask-muted">(from the checked figures above)</span></p>}
         {answer.note && <p className="md-ask-muted">{answer.note}</p>}
+        {answer.lines.some((l) => l.result.status === "verified") && (
+          <ListenButton item={{ kind: "text", id: answer.lines.map((l) => l.claim.claim_id).join(","), lang: "en", text: [...answer.lines.filter((l) => l.result.status === "verified").map((l) => l.claim.text), answer.derived ?? ""].join(" ").trim() }} />
+        )}
       </div>
     );
   }

@@ -204,6 +204,14 @@ jobs:
         run: |
           set -euo pipefail
           tag="${GITHUB_SHA}"
+          # The voice-over uses Azure AI Speech on the Foundry account; its resource ID is looked up
+          # here (read-only). If the deploy identity cannot see the account, the voice stays off.
+          speech=""
+          if [ "${{ inputs.assistant }}" = "true" ]; then
+            host="${FOUNDRY_PROJECT_ENDPOINT#https://}"; account="${host%%.*}"
+            speech="$(az resource list --name "$account" --resource-type Microsoft.CognitiveServices/accounts --query '[0].id' -o tsv 2>/dev/null || true)"
+            [ -n "$speech" ] && echo "::notice title=Voice-over::Azure AI Speech on the Foundry account" || echo "::notice title=Voice-over::Foundry account not visible; the studio uses the device voice"
+          fi
           for attempt in 1 2 3; do
             # A new pull identity can take a minute to be honoured by the registry; retry.
             if az deployment group create --resource-group "$RESOURCE_GROUP" --name matchdesk-demo-apps \
@@ -211,6 +219,7 @@ jobs:
               webImage="$REGISTRY/matchdesk-web:$tag" apiImage="$REGISTRY/matchdesk-api:$tag" \
               assistantEnabled=${{ inputs.assistant }} \
               foundryProjectEndpoint="$FOUNDRY_PROJECT_ENDPOINT" foundryModel="$FOUNDRY_MODEL" \
+              speechResourceId="$speech" \
               @"$RUNNER_TEMP/budget.parameters.json"; then
               exit 0
             fi
@@ -252,6 +261,14 @@ jobs:
             if grep -q '"intent":"unknown"' <<<"$plan"; then
               echo "::warning title=Foundry access::The planner answered 'unknown' three times. Run mode diagnose; the identity ${{ steps.base.outputs.identityPrincipalId }} needs Cognitive Services User (or Azure AI User) on the Foundry account."
             fi
+            # The voice-over: one verified recap read by Azure AI Speech. A failure is a warning,
+            # not a failed deploy, because the studio falls back to the device's voice.
+            voice="$(curl -s -o /dev/null -w '%{http_code} %{content_type} %{size_download}' "$WEB_URL/api/voice/recap/half-time?lang=en")"
+            echo "voice-over: $voice"
+            case "$voice" in
+              "200 audio/mpeg"*) echo "::notice title=Voice-over::Azure AI Speech answered ($voice)" ;;
+              *) echo "::warning title=Voice-over::Azure AI Speech did not answer ($voice); the studio uses the device voice" ;;
+            esac
           fi
 
       - name: Summarise the deployment

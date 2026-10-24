@@ -38,6 +38,9 @@ param foundryProjectEndpoint string = ''
 @description('Microsoft Foundry model deployment name used by the planner.')
 param foundryModel string = ''
 
+@description('Resource ID of the Foundry account, for Azure AI Speech voice-over (tier 2). Empty switches the voice off.')
+param speechResourceId string = ''
+
 @description('Addresses for budget alerts. Empty skips the budget.')
 param budgetContactEmails array = []
 
@@ -156,6 +159,8 @@ resource api 'Microsoft.App/containerApps@2024-03-01' = if (deployApps) {
             { name: 'APPLICATIONINSIGHTS_CONNECTION_STRING', secretRef: 'appinsights-connection' }
             { name: 'FOUNDRY_PROJECT_ENDPOINT', value: foundryProjectEndpoint }
             { name: 'FOUNDRY_MODEL', value: foundryModel }
+            { name: 'MATCHDESK_VOICE_ENABLED', value: assistantEnabled && !empty(speechResourceId) ? 'true' : 'false' }
+            { name: 'SPEECH_RESOURCE_ID', value: speechResourceId }
           ]
           probes: [
             { type: 'Liveness', httpGet: { path: '/api/health', port: 8000 }, periodSeconds: 30 }

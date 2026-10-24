@@ -13,6 +13,7 @@ import { clock, matchExport, playerName } from "./data";
 import { roundHalfUp } from "./precision";
 import { FOCUS_METRICS, LANGUAGES, PERSONAS, useViewer, type Persona, type ViewerLanguage } from "./viewer";
 import type { Claim, CompactLog, VEvent } from "./verifier";
+import { speak, stopVoice } from "./voice";
 
 type Cue = {
   cue_id: string; t_ms: number; clock: string; duration_ms: number; kind: string; team: string | null;
@@ -108,6 +109,7 @@ export default function ReplayPlayer() {
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState<(typeof SPEEDS)[number]>(30);
   const [onlyMine, setOnlyMine] = useState(false);
+  const [voiced, setVoiced] = useState(false);
   const timer = useRef<number | null>(null);
   // The API streams the replay through the ingestor, reducer and verifier when it is there
   // (the Azure deployment); otherwise the page plays its own copy of the log.
@@ -199,6 +201,13 @@ export default function ReplayPlayer() {
     if (onServer && onServer.status !== "verified") return "failed";
     return cue.claim_ids.length > 0 && cue.claim_ids.every((id) => loaded.recheck[id]) ? "verified" : "failed";
   };
+  // Voice-over: each verified overlay is read aloud once, as it appears, in the viewer's language.
+  const activeId = active && proof(active) === "verified" ? active.cue_id : null;
+  useEffect(() => {
+    if (!voiced || !activeId || !active) return;
+    void speak({ kind: "cue", id: activeId, lang: viewer.language, text: active.text.fan[viewer.language] });
+  }, [voiced, activeId]);
+  useEffect(() => { if (!voiced) stopVoice(); }, [voiced]);
   const streaming = source === "server" && server.connected;
   const bug = streaming && server.score ? server.score : live?.score;
   const verifiedCount = loaded ? loaded.feed.claims.filter((c) => loaded.recheck[c.claim_id]).length : 0;
@@ -298,6 +307,9 @@ export default function ReplayPlayer() {
         <div role="group" aria-label="Overlay language" className="md-seg">
           {LANGUAGES.map((l) => <button key={l.id} type="button" aria-pressed={lang === l.id} onClick={() => update({ language: l.id })}>{l.label}</button>)}
         </div>
+        <button type="button" className="md-btn md-btn-secondary md-btn-sm" aria-pressed={voiced} onClick={() => setVoiced((v) => !v)}>
+          <span aria-hidden="true">{voiced ? "■" : "▶"}</span> {voiced ? "Voice-over on" : "Read overlays aloud"}
+        </button>
         {viewer.club && (
           <div role="group" aria-label="Which overlays" className="md-seg">
             <button type="button" aria-pressed={!onlyMine} onClick={() => setOnlyMine(false)}>All overlays</button>
@@ -351,7 +363,7 @@ export default function ReplayPlayer() {
           The same cues any graphics engine can read: time, kind, team, players, event ids, the claims behind every number, and text for each persona in English, Spanish and French. Cards and substitutions are checked by registered event facts. Spanish and French are AI-assisted templates, reviewed and corrected on 23 October 2026, without a native-speaker sign-off.
         </p>
         <p className="md-muted md-small">
-          The broadcast overlay draws the same cues as lower-thirds with a score bug on a transparent page: in OBS or vMix, add a Browser Source at 1920×1080 with <code className="md-mono">/broadcast/nbr-riv?style=caption&amp;lang=es&amp;speed=1</code>. Each graphic is re-verified in that browser before it is drawn. Options: <code className="md-mono">style</code> fan, analyst or caption; <code className="md-mono">lang</code> en, es or fr; <code className="md-mono">speed</code> 1 to 60; <code className="md-mono">from</code> a match time such as 34:00; <code className="md-mono">bg</code> transparent, dark or green; <code className="md-mono">bug=0</code> hides the score.
+          The broadcast overlay draws the same cues as lower-thirds with a score bug on a transparent page: in OBS or vMix, add a Browser Source at 1920×1080 with <code className="md-mono">/broadcast/nbr-riv?style=caption&amp;lang=es&amp;speed=1</code>. Each graphic is re-verified in that browser before it is drawn. Options: <code className="md-mono">style</code> fan, analyst or caption; <code className="md-mono">lang</code> en, es or fr; <code className="md-mono">speed</code> 1 to 60; <code className="md-mono">from</code> a match time such as 34:00; <code className="md-mono">bg</code> transparent, dark or green; <code className="md-mono">bug=0</code> hides the score; <code className="md-mono">voice=1</code> reads each graphic aloud.
         </p>
       </div>
     </section>
