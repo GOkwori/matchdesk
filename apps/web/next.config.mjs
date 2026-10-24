@@ -35,6 +35,8 @@ const securityHeaders = [
 const config = {
   output: "standalone",
   poweredByHeader: false,
+  // Vercel hosts a studio-only copy (no API behind it); it says so and links to the full demo.
+  env: { MATCHDESK_STUDIO_ONLY: process.env.VERCEL === "1" ? "1" : "" },
   async headers() {
     const production = process.env.NODE_ENV === "production";
     return [
