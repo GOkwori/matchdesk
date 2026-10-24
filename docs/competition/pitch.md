@@ -50,6 +50,7 @@ produce or prove on its own.
 - Azure Container Registry, pulled through a managed identity with no keys.
 - Azure Monitor: Application Insights through OpenTelemetry, plus Log Analytics.
 - GitHub Actions deploying with OIDC.
+- Azure AI Speech: neural voice-over in three languages, through the managed identity.
 - The Model Context Protocol, for the read-only tools endpoint.
 
 What you can try in three minutes, on an invented match (Northbridge FC 2–1 Riverside
@@ -72,6 +73,8 @@ United, 1,421 events):
 - **Automated recaps.** A half-time recap and a recap at the replay point, with milestones,
   every figure verified, in three styles and three languages. The live stream sends each
   one once its part of the match has arrived.
+- **Listen.** Stories, recaps and overlays are read aloud by Azure AI Speech in English, Spanish
+  or French, and Ask answers by your device's voice; only verified text is ever voiced.
 - **Make it your match.** Choose a favourite club and player, a focus statistic and a
   language. Each of the 32 players has a page where every figure, including top speed and
   distance, is a verified sentence.

@@ -1,5 +1,23 @@
 # Current progress
 
+## Submission build (23–24 October 2026)
+
+The demo runs on Azure Container Apps at https://mdesk-web.icybeach-62467e8a.uksouth.azurecontainerapps.io
+from `release/submission-2026-10`, with a studio-only copy on Vercel. Added since the competition build
+below, each through a reviewed pull request (#174–#188):
+
+- the live stream from the API, Application Insights, fan stories and automated recaps;
+- the read-only MCP endpoint, synthetic tracking metrics, verified cards and substitutions;
+- demo producer approval bound to the exact version, and the auto-eventing lab;
+- the reviewed and certified Spanish and French wording;
+- the verifier benchmark, the broadcast overlay for OBS or vMix, and voice-over with Azure AI Speech.
+
+Records: [Azure deployment](evidence/azure-deployment-20261023.md), [release checks](evidence/release-live-checks-20261023.md),
+[language review](evidence/language-review-es-fr-20261023.md) and [benchmark](evidence/verifier-benchmark-20261024.md).
+Still open: an authenticated producer sign-in and real publication destinations, native-speaker review,
+manual assistive-technology testing and a penetration test (issues #52, #60–#63 and #65). The
+[README](../README.md#10-from-demo-to-production) lists what production would need.
+
 ## Competition build (21–22 October 2026)
 
 The studio at https://matchdesk-seven.vercel.app runs `development` @ `ed9ff4d`, preserved as

@@ -1,13 +1,16 @@
-# MatchDesk — Implementation Prompt: Locked Sunset Studio Design
+# Implementation brief: locked Sunset Studio design
 
-> Paste everything below the line into your coding agent at the root of `GOkwori/matchdesk` (branch `development`). Before you do, copy this handoff's `docs/` folder into the repo so these paths exist:
-> `docs/design/locked/**`, `docs/IMPLEMENT-LOCKED-DESIGN.md`, `docs/matchdesk-ui-overhaul-assessment.md`. (`docs/design-brief.md` is already in the repo; keep it.)
+The owner's implementation brief for rebuilding the studio to the approved, locked design in
+[`docs/design/locked/`](../locked/README.md), written on 16 October 2026. It is kept as a record of the
+requirements the studio was built against; the [frontend hardening note](../../engineering/frontend-hardening.md)
+lists where the build deliberately departs from it. Related: the [UI overhaul assessment](ui-overhaul-assessment-20261016.md)
+and the [design brief](sunset-studio-design-brief.md).
 
 ---
 
 ```text
 ROLE
-You are a principal product designer-engineer. Rebuild the MatchDesk frontend so it matches the
+Principal product designer-engineer brief. Rebuild the MatchDesk frontend so it matches the
 APPROVED, LOCKED design in docs/design/locked/ and is intuitive and interactive for first-time
 and returning users. Visual fidelity to the locked screenshots is a hard requirement, not a
 suggestion. Keep or strengthen every existing accessibility and regression test.
@@ -17,8 +20,8 @@ READ FIRST, IN THIS ORDER
 2. docs/design/locked/screenshots/*.png - the visual targets (open every image)
 3. docs/design/locked/reference-html/*  - exact markup, spacing, sizes, copy for each target
 4. docs/design/locked/tokens.css        - locked tokens (tokens win over reference-html)
-5. docs/matchdesk-ui-overhaul-assessment.md - root causes R1-R8 you are fixing
-6. docs/design-brief.md                 - canonical match script and content for other screens
+5. docs/design/briefs/ui-overhaul-assessment-20261016.md - root causes R1-R8 you are fixing
+6. docs/design/briefs/sunset-studio-design-brief.md- canonical match script and content for other screens
 7. apps/web/src/app/sunset-v3/*, e2e/specs/*, backend/src/matchdesk/domain/*
 
 LOCKED DECISIONS (do not change without asking George)

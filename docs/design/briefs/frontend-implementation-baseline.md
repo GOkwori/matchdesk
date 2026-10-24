@@ -1,15 +1,15 @@
-# MatchDesk — Frontend Implementation Prompt
+# Frontend implementation baseline (brief, 11 October 2026)
 
-> Paste this whole document into your coding agent (Claude Code, GitHub Copilot agent, Cursor, etc.) at the root of the MatchDesk repository. Put `docs/design-brief.md` (the Sunset Studio design enhancement prompt) in the repo first; this prompt refers to it.
+The owner-approved brief for the first studio build, kept as the baseline the [Phase 1 decisions](../../engineering/frontend-phase1-decisions.md) adopted. It refers to the [design brief](sunset-studio-design-brief.md).
 
 ---
 
-## 0. Your role and how to work
+## 0. Role and way of working
 
-You are a principal frontend engineer and accessibility specialist building the MatchDesk demo for the Microsoft x Premier League "Inside the Game" Developer Hackathon. The result will be shown live to judges, so it must be fast, flawless on any screen, fully accessible, and tell a clear story in under three minutes.
+The build is led as a principal frontend engineer and accessibility specialist building the MatchDesk demo for the Microsoft x Premier League "Inside the Game" Developer Hackathon. The result will be shown live to judges, so it must be fast, flawless on any screen, fully accessible, and tell a clear story in under three minutes.
 
 Working rules:
-1. **Inspect before you build.** Read the existing repo, `README`, `docs/design-brief.md` and any Batch 1 baseline. Follow existing conventions. Do not overwrite approved Batch 1 work without listing the change and the reason.
+1. **Inspect before you build.** Read the existing repo, `README`, `docs/design/briefs/sunset-studio-design-brief.md` and any Batch 1 baseline. Follow existing conventions. Do not overwrite approved Batch 1 work without listing the change and the reason.
 2. **Work in phases (Section 13).** At the end of each phase, stop and report: what was built, test results, screenshots at 390px / 1024px / 1440px, and any deviations from this brief.
 3. **Never fake quality.** Don't skip, weaken or delete a failing test to get green. Fix the cause or report it.
 4. **Truth over polish.** This is a synthetic demo. Never imply live data, real publishing, real partners or real players.
@@ -67,7 +67,7 @@ Files in `/src/data/`:
 | M-07 | 67:08 | E-1421 | Substitution, Riverside | 2–1 |
 
   Background events (passes, shots, fouls, corners) must reconcile to these totals at 67:12: possession 58/42, shots 14/9, on target 6/3, corners 6/3, fouls 8/11, yellows 1/1, reds 0/0. The log contains **no tracking, xG, or computer-vision data**.
-- `claims.json` and `drafts.json`: D-031 v3 (CL-0213 Verified, CL-0214 Verified, CL-0215 Pending, CL-0216 Failed → Not eligible) and D-029 v2 (4/4 verified → Eligible, not approved, not published). Exact wording is in `docs/design-brief.md` §2.
+- `claims.json` and `drafts.json`: D-031 v3 (CL-0213 Verified, CL-0214 Verified, CL-0215 Pending, CL-0216 Failed → Not eligible) and D-029 v2 (4/4 verified → Eligible, not approved, not published). Exact wording is in `docs/design/briefs/sunset-studio-design-brief.md` §2.
 - Cast: Dana Price (Producer, signed-in), Sam Reed (Verification analyst), Priya Shah (Editor), "MatchDesk" (system). Timestamps are 11 Oct 2026, Europe/London.
 
 **Verification engine** (`/src/engine/`): pure, framework-free TypeScript functions.
@@ -120,7 +120,7 @@ Every screen is a real, deep-linkable URL. Static-generate all routes with `gene
 
 ## 5. Design system implementation
 
-Follow `docs/design-brief.md` §3 exactly. Tokens live in `/src/styles/tokens.css` as CSS custom properties and are mapped into Tailwind's theme.
+Follow `docs/design/briefs/sunset-studio-design-brief.md` §3 exactly. Tokens live in `/src/styles/tokens.css` as CSS custom properties and are mapped into Tailwind's theme.
 
 **Dark (default, "Sunset Studio"):**
 `--bg #10151C · --panel #19222D · --raised #23303C · --line #32404E · --text #F5F7FA · --muted #A7B4C2 · --subtle #768898 · --accent #FF9159 · --accent-soft #FFC084 · --on-accent #22140C · --success #70D8A9 · --info #7BC5FA · --warn #F6C46B · --error #FF858E · --pitch #0B4039`
@@ -288,7 +288,7 @@ All suites run in CI on every pull request; all must pass before merge.
 
 ## 14. Definition of done
 
-- [ ] All 14 screens plus About and 404 built, deep-linkable, and consistent with `docs/design-brief.md`.
+- [ ] All 14 screens plus About and 404 built, deep-linkable, and consistent with `docs/design/briefs/sunset-studio-design-brief.md`.
 - [ ] Every number on screen comes from the data and engine; canonical-facts tests pass.
 - [ ] Journeys J1–J7 pass on Chromium, Firefox, WebKit and mobile emulation, including keyboard-only.
 - [ ] 0 axe violations on all routes and themes; manual screen-reader checks recorded.

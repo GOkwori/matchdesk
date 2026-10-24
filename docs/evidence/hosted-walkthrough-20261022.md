@@ -4,9 +4,9 @@ A run of the judge path on the live site, in a real browser, rather than in CI.
 
 - **Site:** https://matchdesk-seven.vercel.app, Vercel deployment `dpl_9Y4CU7N1tp26A8u1Ygfb5RTcjtN8`, built from
   `release/submission-2026-10` @ `76de6c4`. The deployment ID was read from the page's own asset URLs.
-- **Browser:** Chromium 152 (the browser built into the Claude desktop app, Windows), signed out, with fresh demo
+- **Browser:** Chromium 152 in a desktop browser pane on Windows, signed out, with fresh demo
   data (**Reset demo data** in Settings first). Desktop at about 1024 × 768; phone at 375 × 812, emulated.
-- **Who:** Claude drove the browser for the project owner. This is an automated walkthrough on the real site, not the
+- **Who:** an automated browser walkthrough run on the project owner's instruction, on the real site. It is not the
   human rehearsal, which is still to do.
 
 Screenshots are in [`hosted-walkthrough-20261022/`](hosted-walkthrough-20261022/).
