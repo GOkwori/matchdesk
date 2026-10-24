@@ -1575,6 +1575,62 @@
     },
     "kind": "event_fact",
     "schema_version": "1.0",
+    "text": "Barros replaced Kovac for Riverside at 67:08."
+   },
+   "events": "canonical",
+   "evidence": "EV-D031",
+   "expected": {
+    "expected": null,
+    "observed": null,
+    "query_id": "claim-text-binding-v1",
+    "reason": "Claim text has the substitution the wrong way round",
+    "status": "needs_revision"
+   },
+   "name": "fact: a substitution the wrong way round is sent back",
+   "with_names": true
+  },
+  {
+   "claim": {
+    "claim_id": "F-01",
+    "evidence_event_ids": [
+     "E-1421"
+    ],
+    "fact": {
+     "event_id": "E-1421",
+     "player_id": "riv-07",
+     "query": "substitution.v1",
+     "schema_version": "1.0"
+    },
+    "kind": "event_fact",
+    "schema_version": "1.0",
+    "text": "Barros was replaced by Kovac for Riverside at 67:08."
+   },
+   "events": "canonical",
+   "evidence": "EV-D031",
+   "expected": {
+    "expected": null,
+    "observed": null,
+    "query_id": "event-substitution-v1",
+    "reason": "The cited substitution event records the stated player",
+    "status": "verified"
+   },
+   "name": "fact: a passive substitution names the outgoing player first",
+   "with_names": true
+  },
+  {
+   "claim": {
+    "claim_id": "F-01",
+    "evidence_event_ids": [
+     "E-1421"
+    ],
+    "fact": {
+     "event_id": "E-1421",
+     "player_id": "riv-07",
+     "query": "substitution.v1",
+     "schema_version": "1.0"
+    },
+    "kind": "event_fact",
+    "schema_version": "1.0",
     "text": "Barros was substituted for Riverside at 67:08."
    },
    "events": "canonical",

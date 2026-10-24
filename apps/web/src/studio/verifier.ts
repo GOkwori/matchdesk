@@ -451,12 +451,14 @@ const GOAL_WORDS = new RegExp(`${B}(?:goals?|scor(?:ed|es|ing)|netted|(?:headed|
 const CARD_WORDS = new RegExp(`${B}(?:cards?|booked|booking|cautioned|sent off|dismissed)${E}`);
 const RED_WORDS = new RegExp(`${B}(?:red|sent off|dismissed|second yellow)${E}`);
 const YELLOW_WORDS = new RegExp(`${B}(?:yellow|booked|booking|cautioned)${E}`);
+const SUB_PASSIVE = new RegExp(`${B}(?:replaced by|substituted by|off for)${E}`);
 const SUB_WORDS = new RegExp(`${B}(?:replaced|replaces|substitut(?:ed|es|ion)|comes on|came on|on for|off for)${E}`);
 const MINUTE_MS = 60_000;
 const word = (words: string) => new RegExp(`${B}(?:${words})${E}`);
 
 const lowerText = (text: string) => text.toLowerCase().replace(/’/g, "'").replace(IDENTIFIER, " ");
 const namesSubject = (text: string, name: string) => new RegExp(B + escapeRegExp(name.toLowerCase()) + E).test(text.toLowerCase());
+const namePosition = (text: string, name: string) => text.toLowerCase().search(new RegExp(B + escapeRegExp(name.toLowerCase()) + E));
 
 function metricsNamed(lowered: string): string[] {
   const found: string[] = [];
@@ -553,6 +555,12 @@ function factProblem(claim: Claim, lowered: string, events: readonly VEvent[], n
     if (!SUB_WORDS.test(lowered)) return "Claim text does not say this was a substitution";
     const incoming = names && target.related_player_id ? names[target.related_player_id] : undefined;
     if (incoming === undefined || !namesSubject(lowered, incoming)) return "Claim text does not name the incoming player";
+    const outgoing = names && target.player_id ? names[target.player_id] : undefined;
+    if (outgoing !== undefined && namesSubject(lowered, outgoing)) {
+      // "A replaced B" and "A came on for B" put the incoming player first; "B was replaced by A" and "B off for A" second.
+      const first = namePosition(lowered, incoming) < namePosition(lowered, outgoing);
+      if (first === SUB_PASSIVE.test(lowered)) return "Claim text has the substitution the wrong way round";
+    }
   }
   return null;
 }

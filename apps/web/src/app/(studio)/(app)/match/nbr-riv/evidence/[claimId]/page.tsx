@@ -8,6 +8,7 @@ import { Icon } from "../../../../../../../studio/icons";
 import { TopActions } from "../../../../../../../studio/shell";
 import { GoalPitch, NextStep, PageHead, ScoreStrip, VerdictChip } from "../../../../../../../studio/ui";
 import { claims, findClaim, verdict, verdictLabel } from "../../../../../../../studio/data";
+import bench from "../../../../../../../studio/generated/verifier-benchmark.json";
 
 export function generateStaticParams() {
   return claims.map((c) => ({ claimId: c.id }));
@@ -109,6 +110,7 @@ export default async function EvidencePage({ params }: { params: Promise<{ claim
           </section>
           <NextStep eyebrow="Next step" title="Resolve the blocking claims in the composer" href="/producer/compose/D-031" action="Open D-031 in composer" />
           <p className="md-muted md-small"><Icon name="info" size={14} /> Verdicts here are deterministic checks, not AI confidence scores.</p>
+          <p className="md-small"><Link className="md-link" href="/match/nbr-riv/evidence/benchmark">How the verifier did against {bench.false.total.toLocaleString("en-GB")} false claims</Link></p>
         </aside>
       </div>
     </div>

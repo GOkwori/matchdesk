@@ -906,3 +906,4 @@ html[data-md-motion="reduce"] .md-lt { animation: none; }
 .md-ae-cards { list-style: none; margin: 0 0 12px; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
 .md-ae-cards li { display: flex; flex-direction: column; gap: 4px; padding: 12px; border-radius: 12px; border: 1px solid var(--md-line); background: var(--md-raised); }
 .md-ae-cards strong { font-size: 20px; }
+.md-bench-n { white-space: nowrap; }

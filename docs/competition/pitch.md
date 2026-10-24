@@ -59,7 +59,8 @@ United, 1,421 events):
   58th-minute goal and watch code send a claim back. Or replay the recorded run, and a
   rehearsal in which the composer claims 60% possession and the verifier recomputes 57.96%.
 - **Try to fool the verifier.** Claim 59% yourself and watch it rejected, in the browser,
-  from the raw events.
+  from the raw events. Then see 810 false claims, made from the demo's own claims one
+  error at a time, all caught, with none of 295 true ones rejected.
 - **Live overlays.** Stream the match from the API on Azure at up to 60×, each event
   ingested and reduced as it arrives.
   - Timed overlays cover goals, shot speeds, stats cards, a spell of control, a tackles
@@ -67,6 +68,7 @@ United, 1,421 events):
   - Each comes in fan, analyst or caption style, in English, Spanish or French.
   - Every number on screen is verified on the server, using only the events received
     so far, and again in your browser.
+  - The same graphics load into OBS or vMix as a transparent broadcast overlay.
 - **Automated recaps.** A half-time recap and a recap at the replay point, with milestones,
   every figure verified, in three styles and three languages. The live stream sends each
   one once its part of the match has arrived.

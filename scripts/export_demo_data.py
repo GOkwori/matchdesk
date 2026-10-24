@@ -16,6 +16,9 @@ Files:
   because a model does not answer twice the same way. Tests re-verify its verdicts.
 - apps/web/src/studio/generated/agent-trace-rehearsal.json: the rehearsal, always
   regenerated, so AI insights can show it beside a live recording.
+- apps/web/src/studio/generated/verifier-benchmark.json: the "try to fool the verifier"
+  results; apps/web/tests/verifier-benchmark-cases.json: every case and the server's
+  verdict, which the browser port must reproduce.
 """
 
 from __future__ import annotations
@@ -30,6 +33,7 @@ from matchdesk.domain.demo_export import build_demo_export
 from matchdesk.domain.overlay_feed import build_overlay_feed
 from matchdesk.domain.recap_feed import build_recap_feed
 from matchdesk.domain.story_feed import build_story_feed
+from matchdesk.domain.verifier_benchmark import parity_cases, run_benchmark
 from matchdesk.domain.verifier_parity import compact_events, parity_fixture
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -41,6 +45,8 @@ REHEARSAL = ROOT / "apps/web/src/studio/generated/agent-trace-rehearsal.json"
 OVERLAYS = ROOT / "apps/web/src/studio/generated/nbr-riv-overlays.json"
 STORIES = ROOT / "apps/web/src/studio/generated/nbr-riv-stories.json"
 RECAPS = ROOT / "apps/web/src/studio/generated/nbr-riv-recaps.json"
+BENCHMARK = ROOT / "apps/web/src/studio/generated/verifier-benchmark.json"
+BENCHMARK_CASES = ROOT / "apps/web/tests/verifier-benchmark-cases.json"
 VIEWS = {
     TRACE: ROOT / "apps/web/src/studio/generated/agent-trace.view.json",
     REHEARSAL: ROOT / "apps/web/src/studio/generated/agent-trace-rehearsal.view.json",
@@ -78,6 +84,20 @@ def render_overlays() -> str:
     return json.dumps(build_overlay_feed(), indent=1, sort_keys=True, ensure_ascii=False) + "\n"
 
 
+def render_benchmark() -> str:
+    """The verifier benchmark's results, as the studio shows them."""
+    return json.dumps(run_benchmark(), indent=1, sort_keys=True, ensure_ascii=False) + "\n"
+
+
+def render_benchmark_cases() -> str:
+    """Every benchmark case with the server's verdict, one per line."""
+    lines = [
+        json.dumps(c, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
+        for c in parity_cases()
+    ]
+    return "[\n" + ",\n".join(lines) + "\n]\n"
+
+
 def render_trace() -> str:
     """Return the deterministic rehearsal trace."""
     return json.dumps(rehearsal_trace(), indent=1, sort_keys=True, ensure_ascii=False) + "\n"
@@ -100,6 +120,8 @@ def outputs() -> dict[Path, str]:
         OVERLAYS: render_overlays(),
         STORIES: render_stories(),
         RECAPS: render_recaps(),
+        BENCHMARK: render_benchmark(),
+        BENCHMARK_CASES: render_benchmark_cases(),
     }
     # agent-trace.json holds the recorded live run once there is one; until then it is
     # the rehearsal too. AI insights shows both when they differ.

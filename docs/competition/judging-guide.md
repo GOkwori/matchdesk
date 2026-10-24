@@ -83,6 +83,18 @@ season, "after the equaliser") are declined rather than answered with a nearby f
   (schema `matchdesk-overlay-feed/1`): time, kind, team, players, event ids, every persona
   and language, and each claim in full, so a graphics engine or a judge can re-run the
   verifier on it.
+- **Broadcast overlay for OBS or vMix** (Live Intelligence › *Open the broadcast overlay*).
+  The same cues as lower-thirds with a score bug on a transparent page, at
+  [`/broadcast/nbr-riv`](https://mdesk-web.icybeach-62467e8a.uksouth.azurecontainerapps.io/broadcast/nbr-riv?style=caption&lang=es&speed=10&bg=dark).
+  Add it as a 1920×1080 browser source; `style`, `lang`, `speed`, `from`, `bg` and `bug` set it
+  up. Each graphic is re-verified in that browser before it is drawn, and one that does not
+  verify is never drawn.
+- **Try to fool the verifier, at scale** (Evidence & Verification › *How the verifier did*).
+  The 79 claims the demo shows, made wrong one way at a time (number, player, team, half,
+  statistic, evidence, scorer, card, substitute, gap, time): 810 of 810 caught, and 0 of 295
+  true claims and rewordings rejected, with the same verdicts in the browser. It found one
+  gap, a substitution written the wrong way round, which is now fixed
+  ([record](../evidence/verifier-benchmark-20261024.md)).
 - **My match** (Settings). Favourite club and player, fan / analyst / caption, language and
   one focus statistic (top speed, distance and sprints among them). The overview, the replay overlays, the player page and Ask MatchDesk's
   suggestions follow these choices, kept on the device only.
@@ -146,7 +158,8 @@ back for revision rather than passed.
   metrics) and no other; the team; the time window ("in the second
   half", "since 60′"); for event facts, the clock time, minute and recorded details such as a
   header; that cited events are ones the metric counts; and that nothing reads past the
-  replay point. Negative sentences ("did not score") are sent back, not checked.
+  replay point; for a substitution, who came on and who went off. Negative sentences ("did
+  not score") are sent back, not checked.
 - **It does not check:** tone and judgement ("a critical goal", "dominant"), which are shown
   as interpretation; Spanish and French sentences word by word (they carry the verified
   claims they cite; their wording had a separate, certified language review); anything outside its fixed vocabulary

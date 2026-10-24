@@ -146,6 +146,7 @@ function ForgedCheck() {
           : <p><VerdictChip verdict="verified" /> {claimed}% matches the log at whole-percent precision.</p>}
       </div>
       <button type="button" className="md-btn md-btn-secondary" aria-pressed={forged} onClick={() => setForged((f) => !f)}>{forged ? "Restore 58%" : "Claim 59% instead"}</button>
+      <p className="md-small"><Link className="md-link" href="/match/nbr-riv/evidence/benchmark">See the hundreds of false claims it caught</Link></p>
     </section>
   );
 }
