@@ -45,7 +45,7 @@ the GitHub cron in the workflow is **not running**. The PR can qualify on
 event, but neither implies an unattended recurring schedule.
 
 Owner-input notifications may be supplied by a separately configured,
-condition-based ChatGPT task. The repository must never claim that task
+condition-based scheduled assistant task. The repository must never claim that task
 is active just because this document exists. Notify only on newly required
 or materially changed owner actions, linking exact blockers/PRs; suppress
 routine green or unchanged hold alerts.

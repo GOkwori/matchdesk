@@ -218,19 +218,19 @@ If time is short, **P0 plus the Evidence and Composer items from P1** are the mi
 
 ---
 
-## 9. Coding-agent prompt for the overhaul
+## 9. Implementation brief for the overhaul
 
-Paste everything below into your coding agent at the repo root.
+The brief that followed from this assessment:
 
 ```text
 ROLE
-You are a principal product designer-engineer. Overhaul the MatchDesk /sunset-v3 frontend so it
+Principal product designer-engineer brief. Overhaul the MatchDesk /sunset-v3 frontend so it
 matches the Sunset Studio mock-ups in quality and feels intuitive and interactive for first-time and
 returning users. Keep every existing accessibility and regression test passing, or replace it with an
 equal-or-stronger test. Never fake capability: everything shown as "Verified" must be computed.
 
 READ FIRST
-docs/design-brief.md (canonical script + tokens), docs/matchdesk-ui-overhaul-assessment.md (this
+docs/design/briefs/sunset-studio-design-brief.md (canonical script + tokens), docs/design/briefs/ui-overhaul-assessment-20261016.md (this
 report), apps/web/src/app/sunset-v3/*, backend/src/matchdesk/domain/{simulator,metrics,moments,
 verification,judge_golden_path,audience_variants}.py, e2e/specs/*.
 
@@ -315,5 +315,4 @@ returning user lands back where they left off in one click. Back never leaves th
 
 ## 10. Evidence captured
 
-Screenshots and the scan report are in the session workspace:
-`/tmp/claude-0/-home-claude/ee53c09d-0715-58ac-af6d-1eb1f8d99366/scratchpad/current/` (12 desktop screens, defensive states, root page, 7 mobile screens, `report.json` with per-screen axe results, word counts, caveat counts and overflow checks).
+Screenshots and the scan report were captured locally during the assessment and are not committed (12 desktop screens, defensive states, root page, 7 mobile screens, `report.json` with per-screen axe results, word counts, caveat counts and overflow checks).

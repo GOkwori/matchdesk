@@ -83,6 +83,11 @@ season, "after the equaliser") are declined rather than answered with a nearby f
   (schema `matchdesk-overlay-feed/1`): time, kind, team, players, event ids, every persona
   and language, and each claim in full, so a graphics engine or a judge can re-run the
   verifier on it.
+- **Voice-over** (Listen on every story and recap, *Read overlays aloud* in Live Intelligence,
+  Listen on Ask MatchDesk answers, `voice=1` on the broadcast overlay). On Azure, Azure AI Speech
+  neural voices read the verified text in English, Spanish or French; the API voices only items
+  from the verified feeds, by name, never free text, caches each clip and caps new ones. Elsewhere,
+  and for Ask answers, the device's own voice reads the same verified sentences.
 - **Broadcast overlay for OBS or vMix** (Live Intelligence › *Open the broadcast overlay*).
   The same cues as lower-thirds with a score bug on a transparent page, at
   [`/broadcast/nbr-riv`](https://mdesk-web.icybeach-62467e8a.uksouth.azurecontainerapps.io/broadcast/nbr-riv?style=caption&lang=es&speed=10&bg=dark).
@@ -140,6 +145,7 @@ season, "after the equaliser") are declined rather than answered with a nearby f
 | Four-specialist workflow | Real orchestration, role-scoped tools and verification loop on Microsoft Foundry. AI insights opens on a run recorded on 21 October 2026 beside the deterministic rehearsal, and on Azure you can start a fresh live run (rate-limited). Every verdict is the real verifier's |
 | Live replay and overlay feed | Real: the recorded synthetic log played back (not a real match); on Azure it streams from the API through the ingestor, reducer and verifier; overlay numbers come from verified claims, re-verified in the browser before display. Cards and substitutions are verified by registered event facts (`card.v1`, `substitution.v1`) |
 | Recaps | Real: built from verified claims at half-time and the replay point; on Azure streamed and verified on the events received |
+| Voice-over | Real: Azure AI Speech neural voices on Azure, signed in with the managed identity; the device's own voice elsewhere |
 | Synthetic tracking (shot speed, player speed, distance) | Generated with the match by a seeded model, as a tracking provider would supply it; not measured from video. The metrics over it are real and verified |
 | MCP endpoint | Real, read-only, on Azure only; the same verifier and feeds |
 | Personalisation | Real, on the device only: no account, nothing sent |

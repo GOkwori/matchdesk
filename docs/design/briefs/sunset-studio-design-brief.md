@@ -1,6 +1,6 @@
-# MatchDesk — Design Enhancement Prompt (Sunset Studio, v3)
+# Sunset Studio design brief (v3)
 
-You are a senior product designer for broadcast and sports-data tools (think Premier League match-centre, newsroom CMS and Microsoft Fluent-quality enterprise UI). Refine the existing MatchDesk design mock-ups into a polished, internally consistent, judge-ready design set for the Microsoft x Premier League "Inside the Game" Developer Hackathon.
+The owner's design brief for the Sunset Studio look, written for a senior product designer for broadcast and sports-data tools (think Premier League match-centre, newsroom CMS and Microsoft Fluent-quality enterprise UI). It asks to refine the existing MatchDesk design mock-ups into a polished, internally consistent, judge-ready design set for the Microsoft x Premier League "Inside the Game" Developer Hackathon.
 
 Keep the existing Sunset Studio look and the 14-screen structure. Your job is to make it sharper, calmer, more credible and 100% consistent, not to restyle it.
 

@@ -1,6 +1,6 @@
 # Frontend hardening (17 October 2026)
 
-This note records the production hardening of the Sunset Studio frontend and the deliberate deviations from the [frontend implementation brief](../IMPLEMENT-LOCKED-DESIGN.md).
+This note records the production hardening of the Sunset Studio frontend and the deliberate deviations from the [frontend implementation brief](../design/briefs/locked-design-implementation-brief.md).
 
 ## What was removed
 

@@ -4,10 +4,12 @@ The project is owned by George Okwori. Narrative documentation uses first-person
 intent; technical references and evidence use direct factual prose. Actual source
 and test provenance is retained without attributing automated actions to manual review.
 
-Current implementation tools are Python, FastAPI, Pydantic, pytest, HTTPX, JSON Schema
-validation and the TypeScript compiler for syntax inspection. Node/Next.js source is
-authored but its dependency-resolved execution is not yet evidenced. GitHub Copilot
-usage is not claimed. Foundry is a planned runtime integration, not a connected service.
+The tools in use are listed in the [README](../../README.md#9-tools-used): Python, FastAPI,
+Pydantic and pytest for the API; Next.js, React and TypeScript for the studio, with Playwright
+and axe-core in the browser; Microsoft Foundry, Agent Framework and Azure AI Speech at runtime;
+and GitHub Actions, CodeQL, gitleaks and dependency audits in CI. Claude and ChatGPT were used as
+development assistants for documentation, code writing and refactoring, and code review; see
+[authorship and AI assistance](../../README.md#11-authorship-and-ai-assistance).
 
 Changes should stay scoped, with explicit staging and conventional commit messages.
 Only main and development are authorised. Release changes use development-to-main
