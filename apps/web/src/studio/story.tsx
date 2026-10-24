@@ -12,6 +12,7 @@ import { TourStep } from "./shell";
 import { LANGUAGES, PERSONAS, useViewer, type ViewerLanguage } from "./viewer";
 import { storyChrome, type Story, type StoryClaim, type StoryEvent, type StorySummary } from "./story-chrome";
 import { useRecheck } from "./recheck";
+import { ListenButton, spoken } from "./voice";
 
 /** Display position on a full pitch: the scoring side attacks right. */
 function at(x: number, y: number): [number, number] {
@@ -99,6 +100,7 @@ export function StoryBody({ story, claims, others, names, matchId, replayEndMs }
         </div>
         <h1 className={`md-story-h1 md-story-h1-${persona}`}>{text.headline}</h1>
         <p className="md-story-body">{text.body}</p>
+        {allVerified && <ListenButton item={{ kind: "story", id: story.slug, lang, text: spoken(story.text.fan[lang].headline, story.text.fan[lang].body) }} />}
         {ready && (viewer.club || viewer.player === story.scorer) && (
           <p className={`md-story-yours${viewer.club === story.team || viewer.player === story.scorer ? " md-story-yours-mine" : ""}`}>
             {viewer.player === story.scorer ? copy.yourPlayer(names[story.scorer] ?? story.scorer) : copy.yourClub(names[viewer.club!] ?? viewer.club!, team, viewer.club === story.team)}

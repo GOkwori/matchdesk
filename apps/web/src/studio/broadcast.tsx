@@ -2,7 +2,8 @@
  * Broadcast overlay: the timed cues from the overlay feed drawn as lower-thirds, with a score
  * bug, on a transparent page that OBS, vMix or a vision mixer loads as a browser source. Every
  * cue's claims are re-verified in this browser first; a cue that does not verify is never
- * drawn. Settings come from the address: style, lang, speed, from, bg, bug.
+ * drawn. Settings come from the address: style, lang, speed, from, bg, bug, and voice=1 to read
+ * each graphic aloud (OBS can capture the browser source's audio).
  */
 "use client";
 
@@ -10,6 +11,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { clock, matchExport } from "./data";
 import type { Claim, CompactLog, VEvent } from "./verifier";
+import { speak } from "./voice";
 
 type Style = "fan" | "analyst" | "caption";
 type Lang = "en" | "es" | "fr";
@@ -82,6 +84,7 @@ export function BroadcastOverlay() {
   const speed = Number(pick(params.get("speed"), SPEEDS.map(String), "10"));
   const bg = pick(params.get("bg"), ["transparent", "dark", "green"] as const, "transparent");
   const bug = params.get("bug") !== "0";
+  const voiced = params.get("voice") === "1";
   const from = startAt(params.get("from"));
   const loaded = useVerifiedCues();
   const [t, setT] = useState(from);
@@ -105,6 +108,10 @@ export function BroadcastOverlay() {
   }, [loaded, t]);
   const hold = HOLD_SECONDS * 1000 * speed;
   const active = loaded ? [...loaded.cues].reverse().find((c) => c.t_ms <= t && t - c.t_ms < hold && loaded.verified.has(c.cue_id)) ?? null : null;
+  const activeId = active?.cue_id ?? null;
+  useEffect(() => {
+    if (voiced && active) void speak({ kind: "cue", id: active.cue_id, lang, text: active.text.fan[lang] });
+  }, [voiced, activeId]);
 
   return (
     <main className="md-bc" data-style={style}>

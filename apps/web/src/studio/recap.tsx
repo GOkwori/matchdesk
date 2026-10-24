@@ -11,6 +11,7 @@ import { Crest, Logo } from "./ui";
 import { LANGUAGES, PERSONAS, useViewer, type ViewerLanguage } from "./viewer";
 import { recapChrome, type Recap, type RecapClaim } from "./recap-chrome";
 import { useRecheck } from "./recheck";
+import { ListenButton } from "./voice";
 
 const minute = (ms: number) => `${Math.floor(ms / 60_000) + 1}′`;
 
@@ -83,6 +84,7 @@ export function RecapBody({ recaps, claims, names, matchId, replayEndMs }: {
         </div>
         <h1 className={`md-story-h1 md-story-h1-${persona}`}>{text.headline}</h1>
         <p className="md-story-body">{text.body}</p>
+        {allVerified && <ListenButton item={{ kind: "recap", id: recap.id, lang, text: recap.text.fan[lang].body }} />}
         {ready && club && (
           <p className={`md-story-yours${ahead ? " md-story-yours-mine" : ""}`}>{copy.yourClub(names[club] ?? club, ahead)}</p>
         )}

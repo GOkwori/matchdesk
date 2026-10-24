@@ -19,6 +19,7 @@ from matchdesk.api.limits import BodyLimitMiddleware
 from matchdesk.api.live_routes import live_router_from_env
 from matchdesk.api.mcp_routes import mcp_router_from_env
 from matchdesk.api.telemetry import configure_telemetry
+from matchdesk.api.voice_routes import voice_router_from_env
 from matchdesk.domain.hashing import content_digest
 from matchdesk.domain.models import MatchEvent
 from matchdesk.domain.producer_preview import ProducerDeskPreview, build_producer_desk_preview
@@ -164,3 +165,7 @@ if _agent_router is not None:
 _mcp_router = mcp_router_from_env()
 if _mcp_router is not None:
     app.include_router(_mcp_router)
+# Verified stories, recaps and overlays read aloud by Azure AI Speech, switched on by the host.
+_voice_router = voice_router_from_env()
+if _voice_router is not None:
+    app.include_router(_voice_router)
