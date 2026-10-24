@@ -261,6 +261,14 @@ jobs:
             if grep -q '"intent":"unknown"' <<<"$plan"; then
               echo "::warning title=Foundry access::The planner answered 'unknown' three times. Run mode diagnose; the identity ${{ steps.base.outputs.identityPrincipalId }} needs Cognitive Services User (or Azure AI User) on the Foundry account."
             fi
+            # The voice-over: one verified recap read by Azure AI Speech. A failure is a warning,
+            # not a failed deploy, because the studio falls back to the device's voice.
+            voice="$(curl -s -o /dev/null -w '%{http_code} %{content_type} %{size_download}' "$WEB_URL/api/voice/recap/half-time?lang=en")"
+            echo "voice-over: $voice"
+            case "$voice" in
+              "200 audio/mpeg"*) echo "::notice title=Voice-over::Azure AI Speech answered ($voice)" ;;
+              *) echo "::warning title=Voice-over::Azure AI Speech did not answer ($voice); the studio uses the device voice" ;;
+            esac
           fi
 
       - name: Summarise the deployment
