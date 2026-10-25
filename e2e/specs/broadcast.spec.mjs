@@ -13,7 +13,7 @@ test("the broadcast overlay shows a verified Spanish goal graphic on a transpare
 
 test("the verifier benchmark page states its results and its limits", async ({ page }) => {
   await page.goto("/match/nbr-riv/evidence/benchmark");
-  await expect(page.getByRole("heading", { level: 1, name: "Try to fool the verifier" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Can you trick the fact checker?" })).toBeVisible();
   await expect(page.getByText(/810 of 810/)).toBeVisible();
   await expect(page.getByText(/Barros replaced Kovac/).first()).toBeVisible();
   await expect(page.getByText(/they cannot prove there is no other way to be wrong/)).toBeVisible();

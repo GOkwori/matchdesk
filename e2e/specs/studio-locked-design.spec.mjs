@@ -136,7 +136,7 @@ test('composer re-verifies live: D-031 becomes eligible only after both blocking
   await expect(page.getByRole('link', { name: /Try demo approval and publishing/ })).toBeVisible();
 
   await open(page, '/producer/queue');
-  await expect(page.getByRole('link', { name: 'Review' })).toBeVisible();
+  await expect(page.locator('.md-queue').getByRole('link', { name: 'Review', exact: true })).toBeVisible();
 });
 
 test('every factual sentence in the draft verifies as written, not only its claim', async ({ page }) => {
@@ -315,9 +315,9 @@ test('publication journey reflects the composer fix and offers the demo approval
   await cards.getByRole('listitem').filter({ hasText: 'CL-0215' }).getByRole('button', { name: 'Mark as opinion' }).click();
   await open(page, '/producer/publish/D-031');
   await expect(page.getByRole('button', { name: 'Approve this version' })).toBeVisible();
-  await expect(page.getByText(/Demo producer\./)).toBeVisible();
+  await expect(page.getByText(/Demo producer — nobody is signed in\./)).toBeVisible();
   await open(page, '/workspace/activity');
-  await expect(page.getByText('Re-verified D-031 v4')).toBeVisible();
+  await expect(page.getByText('Checked D-031 v4')).toBeVisible();
 });
 
 test('display preferences persist and apply to the whole document', async ({ page }) => {
