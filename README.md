@@ -2,7 +2,7 @@
 
 ### AI agents draft the football story, code checks every claim, a producer decides
 
-**Microsoft × Premier League "Inside the Game" hackathon entry · Category: Best Multi-Agent System · Prepared by George Okwori**
+**Microsoft × Premier League "Inside the Game" hackathon entry · Prepared by George Okwori**
 
 | | |
 | --- | --- |
