@@ -49,7 +49,7 @@ No real producer account is signed in, and the public demo does not publish to l
 
 ## 2. Try it in three minutes
 
-1. **Match overview › Can you spot a wrong number?** Claim 59% possession; the log says 57.96% and the
+1. **Match overview › Can you trick the fact checker?** Claim 59% possession; the log says 57.96% and the
    claim is rejected. Then open the [benchmark](docs/evidence/verifier-benchmark-20261024.md):
    810 false claims, all caught.
 2. **Watch the replay.** Stream the match from the API at up to 60×. Each overlay is verified on
@@ -168,7 +168,7 @@ The [solution design](docs/solution-design/02-architecture.md) explains each tru
 | Live agent runs on Foundry | 6 claims passed first time, 2 were sent back, 3 malformed answers were stopped before verification; no unverified claim reached an audience version |
 | Tests | About 1,660 Python tests, 216 studio unit tests and about 250 browser tests on three screen sizes with axe accessibility checks; security and dependency checks on every pull request |
 
-![Try to fool the verifier: false claims caught by kind of error](docs/images/verifier-benchmark.jpg)
+![Can you trick the fact checker? False claims caught by kind of error](docs/images/verifier-benchmark.jpg)
 
 ## 6. What is real and what is synthetic
 

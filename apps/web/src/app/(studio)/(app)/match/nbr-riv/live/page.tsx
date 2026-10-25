@@ -1,4 +1,4 @@
-/** Live Intelligence: the latest logged events, every shot on the pitch and rule-based detections. */
+/** Watch the replay: the latest logged events, every shot on the pitch and rule-based detections. */
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Icon, type IconName } from "../../../../../../studio/icons";
@@ -8,7 +8,7 @@ import { TopActions } from "../../../../../../studio/shell";
 import { PageHead, ScoreStrip, StatBars } from "../../../../../../studio/ui";
 import { clock, eventCountText, fixture, matchExport, playerName, recentEvents, shots } from "../../../../../../studio/data";
 
-export const metadata: Metadata = { title: "Live Intelligence", robots: { index: false } };
+export const metadata: Metadata = { title: "Watch the replay", robots: { index: false } };
 
 const TYPE_ICON: Record<string, IconName> = { shot: "ball", goal: "ball", foul: "flag", card: "card", substitution: "swap" };
 const TYPE_LABEL: Record<string, string> = {
@@ -21,13 +21,13 @@ export default function LivePage() {
   const detected = matchExport.detected_moments;
   return (
     <div className="md-page">
-      <ScoreStrip crumbs={[{ label: "Overview", href: "/match/nbr-riv" }, { label: "Live Intelligence" }]} />
+      <ScoreStrip crumbs={[{ label: "Match overview", href: "/match/nbr-riv" }, { label: "Watch the replay" }]} />
       <PageHead title="Watch the replay" sub={`Watch a made-up match replay, see key events as they happen and explore ${eventCountText} recorded actions.`}><TopActions /></PageHead>
       <ReplayHost />
       <section className="md-panel md-ae-link" aria-labelledby="md-ae-link-title">
         <div className="md-panel-head"><h2 id="md-ae-link-title">Auto-eventing from video</h2><span className="md-chip md-chip-not-yet">Lab</span></div>
         <p className="md-muted">A detector reads passes, carries, shots and speeds from a synthetic top-down video of this match, without the log, and is scored against it: touches, types, teams, lengths and speeds.</p>
-        <Link href="/match/nbr-riv/auto-eventing" className="md-btn md-btn-secondary">Open the auto-eventing lab <Icon name="arrow" size={16} /></Link>
+        <Link href="/match/nbr-riv/auto-eventing" className="md-btn md-btn-secondary">Open the video detection experiment <Icon name="arrow" size={16} /></Link>
       </section>
       <div className="md-three">
         <section className="md-panel md-feed" aria-labelledby="md-feed-title">

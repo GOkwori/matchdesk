@@ -122,7 +122,7 @@ export const HELP: readonly HelpTopic[] = [
     text: "Theme, reduced motion, text size and technical IDs are in Settings.",
     link: { href: "/workspace/settings", label: "Open settings" } },
   { id: "activity", patterns: [/\bactivity\b/, /\baudit\b/, /\bhistory\b/, /\blog\b/],
-    text: "Activity & Audit lists every verification and producer action in order.",
+    text: "Demo activity lists sample verification and review actions in order, with any changes made on this device.",
     link: { href: "/workspace/activity", label: "Open activity" } },
   { id: "metrics", patterns: [/what (is|are|does) (xg|synthetic xg|expected goals|possession|pass accuracy|final[- ]third entr(y|ies))\b/, /how (is|are|do you) .*(calculated|measured|computed|worked out)/, /what (metrics|statistics|stats) (can|do)/, /\bmetrics?\b/],
     text: "I check eighteen metrics, recalculated from the log every time. Attack: goals, shots, synthetic xG, final-third entries. Passing: accuracy, length, progressive passes, a 0\u2013100 difficulty rating, passes under pressure, estimated ball speed. Defending: tackles, interceptions, recoveries. Possession, for teams. Synthetic tracking: shot speed, top speed, distance covered, sprints.",

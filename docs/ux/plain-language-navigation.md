@@ -31,4 +31,4 @@ MatchDesk is a football-storytelling demonstration. All match events, clubs, pla
 
 Ask a first-time football fan to find a goal, follow a player, ask a question and explain why a claim was rejected. Ask a producer to fix the blocked draft, try demo approval and identify where the experience explicitly states that nothing was actually sent. Verify keyboard, mobile and screen-reader clarity at the final exact source SHA.
 
-No actual child or producer observation is claimed by this document.
+No observation of real fans or producers is claimed by this document.

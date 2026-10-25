@@ -92,7 +92,7 @@ export default function WelcomePage() {
           </div>
         </section>
       </main>
-      <footer className="md-welcome-foot"><span>AI-assisted. Verified. Human-led. <Link href="/about" className="md-link">How verification works</Link></span><span>Made-up match · demo only · nothing is published</span></footer>
+      <footer className="md-welcome-foot"><span>AI-assisted. Verified. Human-led. <Link href="/about" className="md-link">How facts are checked</Link></span><span>Made-up match · demo only · nothing is published</span></footer>
     </div>
   );
 }

@@ -7,13 +7,13 @@ import { Icon } from "./icons";
 import { readLastPath } from "./shell";
 
 const NAMES: { prefix: string; label: string }[] = [
-  { prefix: "/producer/compose", label: "Composer · D-031" },
+  { prefix: "/producer/compose", label: "Write a match story · D-031" },
   { prefix: "/producer/queue", label: "Review drafts" },
-  { prefix: "/match/nbr-riv/evidence", label: "Evidence & Verification" },
-  { prefix: "/match/nbr-riv/moments", label: "Moments & Timeline" },
-  { prefix: "/story", label: "Fan story" },
-  { prefix: "/design-system", label: "Design system" },
-  { prefix: "/match/nbr-riv", label: "Overview" },
+  { prefix: "/match/nbr-riv/evidence", label: "Check the facts" },
+  { prefix: "/match/nbr-riv/moments", label: "Key moments" },
+  { prefix: "/story", label: "Match stories" },
+  { prefix: "/design-system", label: "Design guide" },
+  { prefix: "/match/nbr-riv", label: "Match overview" },
 ];
 
 export function ContinueCard() {

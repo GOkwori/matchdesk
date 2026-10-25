@@ -187,7 +187,7 @@ test('tracking thresholds tag the player on the replay, verified', async ({ page
 
 test('the auto-eventing lab shows events read from video, scored against the log', async ({ page }) => {
   await open(page, '/match/nbr-riv/live');
-  await page.getByRole('link', { name: /Open the auto-eventing lab/ }).click();
+  await page.getByRole('link', { name: /Open the video detection experiment/ }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Video detection experiment' })).toBeVisible();
   const sources = page.locator('video source');
   await expect(sources).toHaveCount(2);

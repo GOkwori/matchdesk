@@ -1,4 +1,4 @@
-/** Story & Commentary Composer (locked screen 03) for the synthetic D-031 draft. */
+/** Write a match story (locked screen 03) for the synthetic D-031 draft. */
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";

@@ -92,7 +92,7 @@ export function OverviewBody() {
 
       <section className="md-kpis" aria-label="What needs attention">
         <KpiTile icon="shield" tone="success" value="2" unit="/4" label="Claims verified" />
-        <KpiTile icon="sparkle" tone="warn" value="3" label="AI insights to review" />
+        <KpiTile icon="sparkle" tone="warn" value="3" label="AI suggestions to review" />
         <KpiTile icon="inbox" tone="error" value="1" label="Draft blocked · D-031" />
         <KpiTile icon="pulse" tone="info" value={fixture.eventCount.toLocaleString("en-GB")} label="Events in the replay" />
       </section>
@@ -137,7 +137,7 @@ function ForgedCheck() {
   const observed = ((real.result.observed ?? 0) * 100).toFixed(2);
   return (
     <section className="md-panel" aria-labelledby="md-forge-title">
-      <span className="md-eyebrow">Can you spot a wrong number?</span>
+      <span className="md-eyebrow">Can you trick the fact checker?</span>
       <h2 id="md-forge-title" className="md-sel-title">“Northbridge have had {claimed}% possession”</h2>
       <p className="md-muted">The fact checker uses all {eventCountText} recorded events and finds {observed}%.</p>
       <div aria-live="polite">

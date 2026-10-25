@@ -1,4 +1,4 @@
-/** Story & Commentary Composer for D-031 with live, deterministic re-verification.
+/** Write a match story: the D-031 composer, with live, deterministic re-verification.
  *
  * Each sentence is editable. On every edit the TypeScript port of the backend verifier
  * re-checks that sentence against the full event log in this browser, including the
@@ -98,7 +98,7 @@ export function ComposerBody() {
       </div>
 
       <div className="md-composer-meta">
-        <ScoreStrip crumbs={[{ label: "Producer Tools", href: "/producer/queue" }, { label: "Composer · D-031" }]} />
+        <ScoreStrip crumbs={[{ label: "Review drafts", href: "/producer/queue" }, { label: "Write a match story · D-031" }]} />
         <span className="md-save"><span className="md-dot md-dot-success" aria-hidden="true" />Saved on this device</span>
       </div>
 

@@ -1,11 +1,11 @@
-/** Settings & Help: display preferences, demo controls and links to every screen. */
+/** Settings and help: display preferences, demo controls and links to every screen. */
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { TopActions } from "../../../../../studio/shell";
 import { PageHead } from "../../../../../studio/ui";
 import { SettingsBody } from "../../../../../studio/workspace";
 
-export const metadata: Metadata = { title: "Settings & Help", robots: { index: false } };
+export const metadata: Metadata = { title: "Settings and help", robots: { index: false } };
 
 export default function SettingsPage() {
   return (

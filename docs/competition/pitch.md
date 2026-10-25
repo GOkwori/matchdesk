@@ -59,7 +59,7 @@ United, 1,421 events):
 - **Live agent run.** Start a live run of the four agents on Microsoft Foundry for the
   58th-minute goal and watch code send a claim back. Or replay the recorded run, and a
   rehearsal in which the composer claims 60% possession and the verifier recomputes 57.96%.
-- **Try to fool the verifier.** Claim 59% yourself and watch it rejected, in the browser,
+- **Try to trick the fact checker.** Claim 59% yourself and watch it rejected, in the browser,
   from the raw events. Then see 810 false claims, made from the demo's own claims one
   error at a time, all caught, with none of 295 true ones rejected.
 - **Live overlays.** Stream the match from the API on Azure at up to 60×, each event

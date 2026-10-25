@@ -31,7 +31,7 @@ export default function AboutPage() {
           <h2>What this demo is, and isn’t</h2>
           <ul>
             <li>Northbridge FC v Riverside United is an invented match, replayed from a synthetic event log.</li>
-            <li>The four AI specialists run on Microsoft Foundry. AI insights opens on a recorded live run; on the Azure deployment you can start a fresh one, spaced out and capped to bound cost. Every figure they propose is checked by the verifier, never taken on trust.</li>
+            <li>The four AI specialists run on Microsoft Foundry. How AI helps opens on a recorded live run; on the Azure deployment you can start a fresh one, spaced out and capped to bound cost. Every figure they propose is checked by the verifier, never taken on trust.</li>
             <li>The log carries synthetic tracking for each action (shot speed, the player’s speed, metres run), but no positions of players off the ball, so the app never shows formations or defender positions.</li>
             <li>You can try a simulated approval and delivery to four made-up channels in your browser. No real person is signed in, and no story is actually published.</li>
           </ul>
