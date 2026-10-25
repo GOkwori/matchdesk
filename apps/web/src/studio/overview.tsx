@@ -137,9 +137,9 @@ function ForgedCheck() {
   const observed = ((real.result.observed ?? 0) * 100).toFixed(2);
   return (
     <section className="md-panel" aria-labelledby="md-forge-title">
-      <span className="md-eyebrow">Try to fool the verifier</span>
+      <span className="md-eyebrow">Can you spot a wrong number?</span>
       <h2 id="md-forge-title" className="md-sel-title">“Northbridge have had {claimed}% possession”</h2>
-      <p className="md-muted">Recomputed from all {eventCountText} events: {observed}%.</p>
+      <p className="md-muted">The fact checker uses all {eventCountText} recorded events and finds {observed}%.</p>
       <div aria-live="polite">
         {forged
           ? <p><VerdictChip verdict="failed" label="Rejected" /> {claimed}% is not what the log says, so it can’t reach approval.</p>

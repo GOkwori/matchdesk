@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: "Activity & Audit", robots: { index: 
 export default function ActivityPage() {
   return (
     <div className="md-page">
-      <PageHead title="Activity & Audit" sub="Every verification, edit and decision, newest first."><TopActions /></PageHead>
+      <PageHead title="Demo activity" sub="See sample editing history and changes saved on this device. This is not a real user audit log."><TopActions /></PageHead>
       <Suspense><ActivityBody /></Suspense>
     </div>
   );

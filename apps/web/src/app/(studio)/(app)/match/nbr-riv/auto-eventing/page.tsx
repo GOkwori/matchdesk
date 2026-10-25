@@ -10,7 +10,7 @@ export default function AutoEventingPage() {
   return (
     <div className="md-page">
       <ScoreStrip crumbs={[{ label: "Overview", href: "/match/nbr-riv" }, { label: "Live Intelligence", href: "/match/nbr-riv/live" }, { label: "Auto-eventing lab" }]} />
-      <PageHead title="Auto-eventing lab" sub="A detector reads passes, carries, shots and speeds from video, without the log, and is scored against it."><TopActions /></PageHead>
+      <PageHead title="Video detection experiment" sub="See how a tool spots football actions in a made-up video, then checks its answers against the event log."><TopActions /></PageHead>
       <AutoEventingLab />
     </div>
   );

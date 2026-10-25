@@ -131,7 +131,7 @@ test('jumping elsewhere with the search palette closes the assistant', async ({ 
   await page.keyboard.press('Control+k');
   const palette = page.getByRole('dialog', { name: 'Search MatchDesk' });
   await expect(palette).toBeVisible();
-  await page.keyboard.type('Review queue');
+  await page.keyboard.type('Review drafts');
   await page.keyboard.press('Enter');
   await expect(page).toHaveURL(/\/producer\/queue$/);
   await expect(dialog).toBeHidden();

@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 export default function OverviewPage() {
   return (
     <div className="md-page">
-      <PageHead title="Intelligence Overview" sub="What happened, what’s verified, and what needs you."><TopActions /></PageHead>
+      <PageHead title="Match overview" sub="See the score, the big moments, and what to explore next."><TopActions /></PageHead>
       <Suspense><OverviewBody /></Suspense>
     </div>
   );

@@ -22,7 +22,7 @@ export default function LivePage() {
   return (
     <div className="md-page">
       <ScoreStrip crumbs={[{ label: "Overview", href: "/match/nbr-riv" }, { label: "Live Intelligence" }]} />
-      <PageHead title="Live Intelligence" sub={`Replay the match with timed, verified overlays, then the newest events, every shot, and what the detection rules found across ${eventCountText} events.`}><TopActions /></PageHead>
+      <PageHead title="Watch the replay" sub={`Watch a made-up match replay, see key events as they happen and explore ${eventCountText} recorded actions.`}><TopActions /></PageHead>
       <ReplayHost />
       <section className="md-panel md-ae-link" aria-labelledby="md-ae-link-title">
         <div className="md-panel-head"><h2 id="md-ae-link-title">Auto-eventing from video</h2><span className="md-chip md-chip-not-yet">Lab</span></div>

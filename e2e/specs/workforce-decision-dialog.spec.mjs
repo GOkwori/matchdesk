@@ -50,10 +50,10 @@ test("the approval binds this exact version, sends nothing, and an edit withdraw
   await dialog.getByRole("textbox", { name: /Reason for decision/ }).fill("Both figures verified; interpretation marked as opinion");
   await dialog.getByRole("button", { name: "Confirm reviewed version" }).click();
   await expect(dialog).not.toBeVisible();
-  await expect(page.getByText("✓ Approved")).toBeVisible();
+  await expect(page.getByText("✓ Approved in demo")).toBeVisible();
   await expect(page.getByRole("list").filter({ hasText: "Approved D-031 v4" })).toBeVisible();
 
-  await page.getByRole("button", { name: "Publish to the chosen destinations" }).click();
+  await page.getByRole("button", { name: "Send to demo channels" }).click();
   await expect(page.getByRole("status").filter({ hasText: "One destination timed out" })).toBeVisible();
   await expect(page.locator(".md-dest .md-chip-verified")).toHaveCount(3);
   await page.getByRole("button", { name: "Retry" }).click();

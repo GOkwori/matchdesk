@@ -11,7 +11,7 @@ export default function MomentsPage() {
   return (
     <div className="md-page">
       <ScoreStrip crumbs={[{ label: "Overview", href: "/match/nbr-riv" }, { label: "Moments & Timeline" }]} />
-      <PageHead title="Moments & Timeline" sub="Pick a moment to see why it was detected and which claims it supports."><TopActions /></PageHead>
+      <PageHead title="Key moments" sub="Choose a goal or other big moment to see what happened and which events back it up."><TopActions /></PageHead>
       <Suspense><MomentsBody /></Suspense>
     </div>
   );

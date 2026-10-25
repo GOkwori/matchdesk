@@ -11,24 +11,38 @@ import { claims, drafts, eventCountText, moments, squads, tourSteps } from "./da
 
 type NavItem = { href: string; label: string; icon: IconName; match: (path: string) => boolean; badge?: string };
 
-const NAV: NavItem[] = [
-  { href: "/match/nbr-riv", label: "Overview", icon: "home", match: (p) => p === "/match/nbr-riv" },
-  { href: "/match/nbr-riv/live", label: "Live Intelligence", icon: "globe", match: (p) => p.startsWith("/match/nbr-riv/live") },
-  { href: "/match/nbr-riv/moments", label: "Moments & Timeline", icon: "list", match: (p) => p.startsWith("/match/nbr-riv/moments") },
-  { href: "/match/nbr-riv/tactical", label: "Tactical Analysis", icon: "pitch", match: (p) => p.startsWith("/match/nbr-riv/tactical") },
-  { href: "/match/nbr-riv/players", label: "Players", icon: "user", match: (p) => p.startsWith("/match/nbr-riv/player") },
-  { href: "/match/nbr-riv/insights", label: "AI Insights", icon: "sparkle", match: (p) => p.startsWith("/match/nbr-riv/insights") },
-  { href: "/match/nbr-riv/evidence/CL-0213", label: "Evidence & Verification", icon: "shield", match: (p) => p.startsWith("/match/nbr-riv/evidence") },
-  { href: "/producer/queue", label: "Producer Tools", icon: "monitor", match: (p) => p.startsWith("/producer"), badge: "2" },
-  { href: "/story", label: "Audience Stories", icon: "phone", match: (p) => p.startsWith("/story") },
-  { href: "/workspace/activity", label: "Activity & Audit", icon: "pulse", match: (p) => p.startsWith("/workspace/activity") },
-  { href: "/workspace/settings", label: "Settings & Help", icon: "grid", match: (p) => p.startsWith("/workspace/settings") },
+// Group links by what people want to do, rather than by technical feature names.
+type NavSection = { heading: string; items: readonly NavItem[] };
+const NAV_SECTIONS: readonly NavSection[] = [
+  {
+    heading: "Watch and explore",
+    items: [
+      { href: "/match/nbr-riv", label: "Match overview", icon: "home", match: (p) => p === "/match/nbr-riv" },
+      { href: "/match/nbr-riv/live", label: "Watch the replay", icon: "globe", match: (p) => p.startsWith("/match/nbr-riv/live") },
+      { href: "/match/nbr-riv/moments", label: "Key moments", icon: "list", match: (p) => p.startsWith("/match/nbr-riv/moments") },
+      { href: "/match/nbr-riv/players", label: "Players", icon: "user", match: (p) => p.startsWith("/match/nbr-riv/player") },
+      { href: "/match/nbr-riv/tactical", label: "Match analysis", icon: "pitch", match: (p) => p.startsWith("/match/nbr-riv/tactical") },
+      { href: "/story", label: "Match stories", icon: "phone", match: (p) => p.startsWith("/story") },
+      { href: "/match/nbr-riv/evidence/CL-0213", label: "Check the facts", icon: "shield", match: (p) => p.startsWith("/match/nbr-riv/evidence") },
+    ],
+  },
+  {
+    heading: "Studio demo",
+    items: [
+      { href: "/match/nbr-riv/insights", label: "How AI helps", icon: "sparkle", match: (p) => p.startsWith("/match/nbr-riv/insights") },
+      { href: "/producer/queue", label: "Review drafts", icon: "monitor", match: (p) => p.startsWith("/producer"), badge: "2" },
+      { href: "/workspace/activity", label: "Demo activity", icon: "pulse", match: (p) => p.startsWith("/workspace/activity") },
+    ],
+  },
+  { heading: "Your choices", items: [
+      { href: "/workspace/settings", label: "Settings and help", icon: "grid", match: (p) => p.startsWith("/workspace/settings") },
+  ] },
 ];
 
 const TABS: { href: string; label: string; icon: IconName; match: (p: string) => boolean }[] = [
   { href: "/match/nbr-riv", label: "Match", icon: "pulse", match: (p) => p.startsWith("/match/nbr-riv") && !p.startsWith("/match/nbr-riv/evidence") },
-  { href: "/match/nbr-riv/evidence/CL-0213", label: "Verify", icon: "shield", match: (p) => p.startsWith("/match/nbr-riv/evidence") },
-  { href: "/producer/queue", label: "Produce", icon: "pen", match: (p) => p.startsWith("/producer") },
+  { href: "/match/nbr-riv/evidence/CL-0213", label: "Facts", icon: "shield", match: (p) => p.startsWith("/match/nbr-riv/evidence") },
+  { href: "/producer/queue", label: "Studio", icon: "pen", match: (p) => p.startsWith("/producer") },
   { href: "/story", label: "Stories", icon: "phone", match: (p) => p.startsWith("/story") },
   { href: "/workspace/settings", label: "Settings", icon: "sliders", match: (p) => p.startsWith("/workspace") || p.startsWith("/design-system") },
 ];
@@ -56,20 +70,25 @@ export function Shell({ children }: { children: ReactNode }) {
       <aside className="md-side" aria-label="Main navigation">
         <Logo href="/" />
         <nav aria-label="Workspace">
-          <ul className="md-nav">
-            {NAV.map((item) => {
-              const active = item.match(pathname);
-              return (
-                <li key={item.href}>
-                  <Link href={item.href} className="md-nav-link" aria-current={active ? "page" : undefined}>
-                    <Icon name={item.icon} />
-                    <span className="md-nav-label">{item.label}</span>
-                    {item.badge && <span className="md-badge" aria-label={`${item.badge} drafts`}>{item.badge}</span>}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
+          {NAV_SECTIONS.map((section) => (
+            <div className="md-nav-section" key={section.heading}>
+              <span className="md-nav-heading">{section.heading}</span>
+              <ul className="md-nav" aria-label={section.heading}>
+                {section.items.map((item) => {
+                  const active = item.match(pathname);
+                  return (
+                    <li key={item.href}>
+                      <Link href={item.href} className="md-nav-link" aria-current={active ? "page" : undefined}>
+                        <Icon name={item.icon} />
+                        <span className="md-nav-label">{item.label}</span>
+                        {item.badge && <span className="md-badge" aria-label={`${item.badge} demo drafts`}>{item.badge}</span>}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ))}
         </nav>
         <div className="md-side-foot">
           <div className="md-tagline"><Icon name="wave" size={30} /><span>AI-assisted.<br />Verified.<br />Human-led.</span></div>
@@ -115,7 +134,12 @@ export function TopActions({ compact = false }: { compact?: boolean }) {
       <button type="button" className="md-search-btn" onClick={() => window.dispatchEvent(new Event("md:palette"))} aria-label="Search moments, claims and drafts" aria-keyshortcuts="Control+K Meta+K">
         <Icon name="search" size={16} />{!compact && <><span>Search</span><kbd>Ctrl K</kbd></>}
       </button>
-      {!compact && <span className="md-avatar" role="img" aria-label="Signed in as Dana Price, producer">DP</span>}
+      {!compact && (
+        <span className="md-demo-persona" role="group" aria-label="Fictional demo producer, Dana Price. No one is signed in.">
+          <span className="md-avatar" aria-hidden="true">DP</span>
+          <span className="md-demo-persona-label">Demo only</span>
+        </span>
+      )}
     </div>
   );
 }
@@ -128,21 +152,21 @@ function CommandPalette() {
   const [query, setQuery] = useState("");
   const router = useRouter();
   const items = useMemo<PaletteItem[]>(() => [
-    { label: "Overview", hint: "Screen", href: "/match/nbr-riv" },
-    { label: "Live Intelligence", hint: "Screen", href: "/match/nbr-riv/live" },
-    { label: "Tactical Analysis", hint: "Screen", href: "/match/nbr-riv/tactical" },
-    { label: "AI insights", hint: "Screen", href: "/match/nbr-riv/insights" },
+    { label: "Match overview", hint: "Screen", href: "/match/nbr-riv" },
+    { label: "Watch the replay", hint: "Screen", href: "/match/nbr-riv/live" },
+    { label: "Match analysis", hint: "Screen", href: "/match/nbr-riv/tactical" },
+    { label: "How AI helps", hint: "Screen", href: "/match/nbr-riv/insights" },
     { label: "Players", hint: "Screen", href: "/match/nbr-riv/players" },
     { label: "My match", hint: "Settings", href: "/workspace/settings#my-match" },
     ...[...squads.nbr, ...squads.riv].map((pl) => ({ label: pl.name, hint: `${pl.player_id} · player`, href: `/match/nbr-riv/player/${pl.player_id}` })),
-    { label: "Publication journey", hint: "Screen", href: "/producer/publish/D-031" },
-    { label: "Activity & Audit", hint: "Screen", href: "/workspace/activity" },
-    { label: "Settings & Help", hint: "Screen", href: "/workspace/settings" },
-    { label: "How verification works", hint: "Page", href: "/about" },
-    { label: "Moments & Timeline", hint: "Screen", href: "/match/nbr-riv/moments" },
-    { label: "Review queue", hint: "Screen", href: "/producer/queue" },
-    { label: "Fan stories", hint: "Screen", href: "/story" },
-    { label: "Design system", hint: "Screen", href: "/design-system" },
+    { label: "Try demo publishing", hint: "Screen", href: "/producer/publish/D-031" },
+    { label: "Demo activity", hint: "Screen", href: "/workspace/activity" },
+    { label: "Settings and help", hint: "Screen", href: "/workspace/settings" },
+    { label: "How facts are checked", hint: "Page", href: "/about" },
+    { label: "Key moments", hint: "Screen", href: "/match/nbr-riv/moments" },
+    { label: "Review drafts", hint: "Screen", href: "/producer/queue" },
+    { label: "Match stories", hint: "Screen", href: "/story" },
+    { label: "Design guide (developers)", hint: "Screen", href: "/design-system" },
     ...moments.map((m) => ({ label: `${m.title}`, hint: `${m.id} · moment`, href: `/match/nbr-riv/moments?moment=${m.id}` })),
     ...claims.map((c) => ({ label: c.text, hint: `${c.id} · claim`, href: `/match/nbr-riv/evidence/${c.id}` })),
     ...drafts.map((d) => ({ label: d.title, hint: `${d.id} · draft`, href: d.id === "D-031" ? "/producer/compose/D-031" : "/producer/queue" })),

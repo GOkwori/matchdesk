@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: "Settings & Help", robots: { index: f
 export default function SettingsPage() {
   return (
     <div className="md-page">
-      <PageHead title="Settings & Help" sub="Preferences are saved on this device only."><TopActions /></PageHead>
+      <PageHead title="Settings and help" sub="Choose your team or player, adjust the display and restart this demo. Your choices stay on this device."><TopActions /></PageHead>
       <Suspense><SettingsBody /></Suspense>
     </div>
   );

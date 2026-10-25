@@ -18,7 +18,7 @@ export default async function ComposerPage({ params }: { params: Promise<{ draft
   if (draftId !== "D-031") notFound();
   return (
     <div className="md-page">
-      <PageHead title="Story & Commentary Composer" sub="Every statement is checked against the event log as you edit."><TopActions /></PageHead>
+      <PageHead title="Write a match story" sub="Edit a sample story and see whether the recorded match events support each sentence."><TopActions /></PageHead>
       <Suspense><ComposerBody /></Suspense>
     </div>
   );

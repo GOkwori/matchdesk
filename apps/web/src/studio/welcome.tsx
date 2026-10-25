@@ -8,7 +8,7 @@ import { readLastPath } from "./shell";
 
 const NAMES: { prefix: string; label: string }[] = [
   { prefix: "/producer/compose", label: "Composer · D-031" },
-  { prefix: "/producer/queue", label: "Review queue" },
+  { prefix: "/producer/queue", label: "Review drafts" },
   { prefix: "/match/nbr-riv/evidence", label: "Evidence & Verification" },
   { prefix: "/match/nbr-riv/moments", label: "Moments & Timeline" },
   { prefix: "/story", label: "Fan story" },

@@ -12,7 +12,7 @@ export default function TacticalPage() {
   return (
     <div className="md-page">
       <ScoreStrip crumbs={[{ label: "Overview", href: "/match/nbr-riv" }, { label: "Tactical Analysis" }]} />
-      <PageHead title="Tactical Analysis" sub="Where each team shot from, who controlled each spell, and what the numbers suggest. Interpretations need a producer’s review."><TopActions /></PageHead>
+      <PageHead title="Match analysis" sub="See where shots happened, compare the teams and explore what the numbers suggest. Opinions are labelled."><TopActions /></PageHead>
       <Suspense><TacticalBody /></Suspense>
       <ControlTimeline />
     </div>

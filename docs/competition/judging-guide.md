@@ -10,18 +10,18 @@ Open the studio on Azure, [mdesk-web.icybeach-62467e8a.uksouth.azurecontainerapp
 Choose **Start the 3-minute guided demo**. The tour has
 seven stops:
 
-1. **Overview.** The score, the replay slider, and a "try to fool the verifier" panel.
+1. **Match overview.** The score, the replay slider, and a "try to fool the verifier" panel.
 2. **The 58′ goal.** Why it was detected and which events prove it.
-3. **AI insights.** A recorded live run of the four specialists on Microsoft Foundry,
+3. **How AI helps.** A recorded live run of the four specialists on Microsoft Foundry,
    step by step: tool calls, a malformed answer rejected by the claim contract and
    retried, an unchecked sentence dropped by the reviewer, Okafor's goal verified by
    code, and nine audience versions. Switch to **Rehearsal** to watch the verifier send
    a 60% possession claim back and the revision pass.
-4. **Evidence.** The 58% claim recomputed from all events, in the server and again in
+4. **Check the facts.** The 58% claim recomputed from all events, in the server and again in
    your browser; claim 59% and it is rejected.
-5. **Review queue.** Draft D-031 is blocked by an unchecked interpretation and a
+5. **Review drafts.** Draft D-031 is blocked by an unchecked interpretation and a
    season-history claim the log cannot support.
-6. **Composer.** Remove or mark those sentences and the draft becomes eligible. Edit a
+6. **Write a match story.** Remove or mark those sentences and the draft becomes eligible. Edit a
    sentence (change 58% to 60%) and it fails as you type.
 7. **Fan story.** The verified story in English, Spanish or French, with its checks.
 
@@ -33,7 +33,7 @@ season, "after the equaliser") are declined rather than answered with a nearby f
 
 ## Beyond the tour
 
-- **Live replay with broadcast overlays** (Live Intelligence). Play the log at 1×, 10×, 30×
+- **Live replay with broadcast overlays** (Watch the replay). Play the log at 1×, 10×, 30×
   or 60×, scrub, or jump to a goal. The score bug, possession, shots, pass accuracy and your
   focus statistic are recomputed by the registered metrics as the clock moves. Twenty-one
   timed overlays appear at their moments in fan, analyst or caption style, in English,
@@ -49,7 +49,7 @@ season, "after the equaliser") are declined rather than answered with a nearby f
   ordered ingestor and football-state reducer, and each overlay is verified on the server
   the moment its window closes, using only the events received so far ("Checked on the
   server at 15:00, on the 305 events received").
-- **Automated recaps** (Audience Stories › Match recaps, or the replay once a half is played).
+- **Automated recaps** (Match stories › Match recaps, or the replay once a half is played).
   - A half-time recap and a recap at 67:12: the score, scorers, possession, shots, passing,
     synthetic xG and the tackles leader.
   - Milestones: the opening goal, the equaliser, the lead restored, Okafor's brace, and each
@@ -64,7 +64,7 @@ season, "after the equaliser") are declined rather than answered with a nearby f
   happens: tool calls, claims sent back by the verifier, the revision, the audience versions.
   It takes a few minutes (at most six); runs are five minutes apart and at most twelve a day, to
   bound cost. If one has just run, you will see it and when the next can start.
-- **Auto-eventing from video** (Live Intelligence › *Open the auto-eventing lab*). The synthetic
+- **Auto-eventing from video** (Watch the replay › *Open the auto-eventing lab*). The synthetic
   match is rendered as a top-down video with sensor noise and an occasionally hidden ball. A
   detector that sees only the pixels finds every touch and reads passes, carries, shots,
   pass lengths and ball and shot speeds. The lab scores it against the log over the whole
@@ -72,7 +72,7 @@ season, "after the equaliser") are declined rather than answered with a nearby f
   speeds against the synthetic tracking, and possession from the video against the registered
   metric. It is synthetic video and much easier than broadcast footage, and the page says so
   ([method](../../labs/auto_eventing/README.md)).
-- **Approve and publish, as a demo producer** (Producer Tools › Publication, once D-031 is
+- **Approve and publish, as a demo producer** (Review drafts › Try demo publishing, once D-031 is
   eligible). The approval binds SHA-256 digests of the exact text and of the claims' verdicts;
   edit the draft afterwards and the approval is withdrawn. Publishing sends the approved
   version to four demo destinations, each with a publication id derived from the digest; the

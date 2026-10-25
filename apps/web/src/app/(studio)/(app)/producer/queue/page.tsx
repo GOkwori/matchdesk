@@ -11,7 +11,7 @@ export default function QueuePage() {
   return (
     <div className="md-page">
       <ScoreStrip crumbs={[{ label: "Producer Tools" }, { label: "Review queue" }]} />
-      <PageHead title="Review queue" sub="Only drafts whose every claim is verified, or marked as opinion, can be approved."><TopActions /></PageHead>
+      <PageHead title="Review drafts" sub="Try reviewing sample stories. A draft is ready only when its facts are checked or clearly marked as opinion."><TopActions /></PageHead>
       <Suspense><QueueBody /></Suspense>
     </div>
   );

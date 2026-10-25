@@ -131,16 +131,16 @@ export function PublicationBody() {
   const steps = [
     { label: "Ready", detail: "Draft written", state: "done" },
     { label: "Eligible", detail: eligible ? "All claims checked" : `${draft?.blocking.length ?? 2} claims block it`, state: eligible ? "done" : "current" },
-    { label: "Approve", detail: current ? `Approved by ${approval?.by}` : "Producer sign-off", state: current ? "done" : eligible ? "current" : "todo" },
-    { label: "Destinations", detail: delivered.length && current ? `${delivered.filter((d) => d.status === "sent").length} of ${delivered.length} sent` : "Choose channels", state: published ? "done" : current ? "current" : "todo" },
-    { label: "Published", detail: published ? "Confirmed in the demo channel" : "Live and confirmed", state: published ? "done" : "todo" },
+    { label: "Demo approval", detail: current ? "Approved in this browser" : "Not a real producer sign-off", state: current ? "done" : eligible ? "current" : "todo" },
+    { label: "Demo channels", detail: delivered.length && current ? `${delivered.filter((d) => d.status === "sent").length} of ${delivered.length} simulated` : "Choose pretend channels", state: published ? "done" : current ? "current" : "todo" },
+    { label: "Demo sent", detail: published ? "Confirmed in this browser" : "Nothing sent to real users", state: published ? "done" : "todo" },
   ];
 
   return (
     <>
       <div className="md-banner md-banner-info" role="note">
         <span className="md-banner-icon" aria-hidden="true">i</span>
-        <span><strong>Demo producer.</strong> Approval works here without sign-in, and the destinations are a demo channel in this browser. In production a signed-in producer approves and real channels receive it; nothing here leaves your device.</span>
+        <span><strong>Demo producer — nobody is signed in.</strong> You can try approving a sample story and sending it to pretend channels. Everything stays in this browser. No real approval, message or publication takes place.</span>
       </div>
       <section className="md-panel" aria-labelledby="md-pub-steps">
         <div className="md-panel-head"><h2 id="md-pub-steps">D-031 · where it stands</h2><span className="md-mono md-accent-soft-text">{eligible ? "v4" : "v3"}{draft?.doc.submitted ? " · submitted" : ""}</span></div>
@@ -161,7 +161,7 @@ export function PublicationBody() {
           {!eligible
             ? <Link href="/producer/compose/D-031" className="md-btn md-btn-primary">Make D-031 eligible <Icon name="arrow" size={16} /></Link>
             : current
-              ? <p className="md-ok"><strong>✓ Approved</strong> {approval?.approved_at} · content {short(approval!.content_digest)} · evidence {short(approval!.evidence_digest)}</p>
+              ? <p className="md-ok"><strong>✓ Approved in demo</strong> {approval?.approved_at} · content {short(approval!.content_digest)} · evidence {short(approval!.evidence_digest)}</p>
               : <button type="button" className="md-btn md-btn-primary" disabled={!snapshot} onClick={() => snapshot && setDecision(lockProducerDecision(snapshot, "approve"))}>Approve this version <Icon name="shield" size={16} /></button>}
         </div>
         {digests && (
@@ -173,7 +173,7 @@ export function PublicationBody() {
       </section>
 
       <section className="md-panel" aria-labelledby="md-pub-dest">
-        <div className="md-panel-head"><h2 id="md-pub-dest">Destinations</h2><span className="md-chip md-chip-not-yet">Demo channel</span></div>
+        <div className="md-panel-head"><h2 id="md-pub-dest">Pretend destinations</h2><span className="md-chip md-chip-not-yet">Demo channel</span></div>
         <ul className="md-dest">
           {DESTINATIONS.map((d) => {
             const record = current ? delivered.find((x) => x.id === d.id) : undefined;
@@ -191,7 +191,7 @@ export function PublicationBody() {
         </ul>
         <div className="md-btn-row">
           <button type="button" className="md-btn md-btn-primary" disabled={!current || sending || published || !DESTINATIONS.some((d) => chosen[d.id] && !sent(d.id))} onClick={() => void send()}>
-            {sending ? "Sending…" : published ? "Published" : "Publish to the chosen destinations"}
+            {sending ? "Sending in demo…" : published ? "Sent in demo" : "Send to demo channels"}
           </button>
           {delivered.some((d) => d.status === "failed") && current && <p className="md-muted md-small" role="status">One destination timed out. The others are confirmed; retry sends only that one, with the same publication id.</p>}
         </div>
@@ -208,7 +208,7 @@ export function PublicationBody() {
 
       {stored.audit.length > 0 && (
         <section className="md-panel" aria-labelledby="md-pub-audit">
-          <div className="md-panel-head"><h2 id="md-pub-audit">Audit trail</h2>
+          <div className="md-panel-head"><h2 id="md-pub-audit">Demo activity record</h2>
             <button type="button" className="md-btn md-btn-secondary md-btn-sm" onClick={() => update({ approval: null, audit: [] })}>Clear demo approval</button></div>
           <ol className="md-audit">
             {stored.audit.map((a, i) => <li key={i}><span className="md-mono">{a.at}</span> {a.what}</li>)}

@@ -19,7 +19,7 @@ export default async function PublishPage({ params }: { params: Promise<{ draftI
   return (
     <div className="md-page">
       <ScoreStrip crumbs={[{ label: "Producer Tools", href: "/producer/queue" }, { label: "Composer", href: "/producer/compose/D-031" }, { label: "Publication" }]} />
-      <PageHead title="Publication journey" sub="Approve this exact version as a demo producer and send it to a demo channel. Nothing leaves this browser."><TopActions /></PageHead>
+      <PageHead title="Try demo publishing" sub="Practise approving a sample story and sending it to pretend channels. Nobody is signed in and nothing leaves this browser."><TopActions /></PageHead>
       <Suspense><PublicationBody /></Suspense>
     </div>
   );
