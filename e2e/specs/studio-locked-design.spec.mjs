@@ -54,7 +54,7 @@ test('the guided tour walks all seven stops across real routes', async ({ page }
     ['2 of 7', /moments\?moment=M-05&tour=2/, 'See the agents work'],
     ['3 of 7', /insights\?tour=3/, 'See the proof'],
     ['4 of 7', /evidence\/CL-0214\?tour=4/, 'See the review queue'],
-    ['5 of 7', /producer\/queue\?tour=5/, 'Open the composer'],
+    ['5 of 7', /producer\/queue\?tour=5/, 'Open the story editor'],
     ['6 of 7', /compose\/D-031\?tour=6/, 'See what fans get'],
   ];
   for (const [step, url, next] of expected) {
@@ -85,7 +85,7 @@ test('every tour card opens on screen and clear of the phone tab bar', async ({ 
 
 test('browser Back stays inside the app and restores the previous screen', async ({ page }) => {
   await open(page, '/match/nbr-riv');
-  await page.getByRole('link', { name: /Fix in composer/ }).click();
+  await page.getByRole('link', { name: /Fix this story/ }).click();
   await expect(page).toHaveURL(/\/producer\/compose\/D-031$/);
   await page.goBack();
   await expect(page).toHaveURL(/\/match\/nbr-riv$/);

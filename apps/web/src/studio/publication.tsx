@@ -167,7 +167,7 @@ export function PublicationBody() {
         {digests && (
           <details className="md-small md-pub-binds">
             <summary>What the approval binds</summary>
-            <p className="md-muted">The exact text (headline and every kept sentence) and the verdicts of the claims behind it, as SHA-256 digests: content <code className="md-mono">{short(digests.content)}</code>, evidence <code className="md-mono">{short(digests.evidence)}</code>. Edit a sentence in the composer and the approval is withdrawn.</p>
+            <p className="md-muted">The exact text (headline and every kept sentence) and the verdicts of the claims behind it, as SHA-256 digests: content <code className="md-mono">{short(digests.content)}</code>, evidence <code className="md-mono">{short(digests.evidence)}</code>. Edit a sentence in the story editor and the approval is withdrawn.</p>
           </details>
         )}
       </section>

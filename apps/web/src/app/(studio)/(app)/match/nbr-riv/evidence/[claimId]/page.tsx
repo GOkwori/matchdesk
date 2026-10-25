@@ -56,7 +56,7 @@ scorer(E-0688), scorer(E-1366) = Okafor, Okafor   ·   `}<span className="md-pas
       </ol>
       <div className={`md-banner ${pending ? "md-banner-warn" : "md-banner-error"} md-banner-inline`}>
         <span className="md-banner-icon" aria-hidden="true">!</span>
-        <span>{pending ? "Mark it as opinion in the composer, or remove it, before D-031 can be approved." : "Remove this sentence in the composer. MatchDesk never publishes a claim it can’t check."}</span>
+        <span>{pending ? "Mark it as opinion in the story editor, or remove it, before D-031 can be approved." : "Remove this sentence in the story editor. MatchDesk never publishes a claim it can’t check."}</span>
       </div>
     </>
   );
@@ -108,7 +108,7 @@ export default async function EvidencePage({ params }: { params: Promise<{ claim
               <div><dt>Evidence</dt><dd className="md-mono">{claim.evidence.length ? claim.evidence.join(" · ") : "None"}</dd></div>
             </dl>
           </section>
-          <NextStep eyebrow="Next step" title="Resolve the blocking claims in the composer" href="/producer/compose/D-031" action="Open D-031 in composer" />
+          <NextStep eyebrow="Next step" title="Resolve the blocking claims in the story editor" href="/producer/compose/D-031" action="Fix D-031 in the story editor" />
           <p className="md-muted md-small"><Icon name="info" size={14} /> Verdicts here are deterministic checks, not AI confidence scores.</p>
           <p className="md-small"><Link className="md-link" href="/match/nbr-riv/evidence/benchmark">How the verifier did against {bench.false.total.toLocaleString("en-GB")} false claims</Link></p>
         </aside>

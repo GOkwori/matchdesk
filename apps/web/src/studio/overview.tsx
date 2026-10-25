@@ -116,7 +116,7 @@ export function OverviewBody() {
           </ul>
         </section>
         <div className="md-split-side">
-          <NextStep title="D-031 can’t be approved yet" body="One claim needs a decision and one has no supporting evidence. Fix both and the draft re-verifies instantly." href="/producer/compose/D-031" action="Fix in composer" />
+          <NextStep title="D-031 can’t be approved yet" body="One claim needs a decision and one has no supporting evidence. Fix both and the draft re-verifies instantly." href="/producer/compose/D-031" action="Fix this story" />
           <YourMatch />
           <ForgedCheck />
           <StatBars />

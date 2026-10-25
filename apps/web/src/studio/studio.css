@@ -584,6 +584,10 @@ html[data-md-text="large"] body.md-root { zoom: 1.125; }
   .md-side { display: none; }
   .md-mobile-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 14px 16px 6px; }
   .md-mobile-top .md-logo { font-size: 19px; }
+  /* The welcome page uses the same compact header as the app: one row, never wrapped. */
+  .md-welcome-top { padding: 14px 16px 6px; }
+  .md-welcome-top .md-logo { font-size: 19px; }
+  .md-welcome-top .md-top-actions, .md-mobile-top .md-top-actions { flex-wrap: nowrap; }
   .md-main { padding: 8px 16px calc(96px + env(safe-area-inset-bottom)); }
   .md-pagehead .md-top-actions { display: none; }
   .md-pagehead h1 { font-size: 24px; }
@@ -914,3 +918,10 @@ html[data-md-motion="reduce"] .md-lt { animation: none; }
 .md-ae-cards strong { font-size: 20px; }
 .md-bench-n { white-space: nowrap; }
 .md-listen { display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 4px 0 8px; }
+
+/* Narrow phones (320–379 px): keep the mark, hide the wordmark visually (it stays the link's name). */
+@media (max-width: 379px) {
+  .md-welcome-top .md-logo > span, .md-mobile-top .md-logo > span {
+    position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+  }
+}
