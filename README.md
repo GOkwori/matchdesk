@@ -6,7 +6,7 @@
 
 | | |
 | --- | --- |
-| **Live demo** | https://mdesk-web.icybeach-62467e8a.uksouth.azurecontainerapps.io (Azure Container Apps: the studio, the API, the live stream, live agent runs, MCP and voice-over) |
+| **Live demo (Azure)** | **[mdesk-web.icybeach-62467e8a.uksouth.azurecontainerapps.io](https://mdesk-web.icybeach-62467e8a.uksouth.azurecontainerapps.io)** · Azure Container Apps: the studio, the API, the live stream, live agent runs, MCP and voice-over |
 | **Video** | _Added with the submission_ |
 | **Judges, start here** | [Judging guide](docs/competition/judging-guide.md) · [Pitch](docs/competition/pitch.md) · [Documentation map](docs/README.md) |
 
@@ -37,7 +37,7 @@ every sentence, against the event log before anything is shown. Only a human pro
 approve and publish. The result is personalised for each viewer (club, player, focus statistic;
 fan, analyst or caption style; English, Spanish or French) and can be read aloud.
 
-![Intelligence overview: the score, verified moments and the producer's next step](docs/images/overview.jpg)
+![Match overview: the score, verified moments and the next step](docs/images/overview.jpg)
 
 ### Choose what you want to explore
 
@@ -49,6 +49,8 @@ No real producer account is signed in, and the public demo does not publish to l
 
 ## 2. Try it in three minutes
 
+Open the **[live demo on Azure](https://mdesk-web.icybeach-62467e8a.uksouth.azurecontainerapps.io)** and press **Start the 3-minute guided demo**, or follow these steps.
+
 1. **Match overview › Can you trick the fact checker?** Claim 59% possession; the log says 57.96% and the
    claim is rejected. Then open the [benchmark](docs/evidence/verifier-benchmark-20261024.md):
    810 false claims, all caught.
@@ -57,7 +59,7 @@ No real producer account is signed in, and the public demo does not publish to l
    caption style, turn on **Read overlays aloud**, or open the **broadcast overlay** that OBS or
    vMix can load.
 3. **How AI helps › Run it live now.** Four agents on Microsoft Foundry. Watch the verifier send a
-   claim back and the composer revise it (one live run every five minutes; a recorded run is
+   claim back and the Narrative Composer revise it (one live run every five minutes; a recorded run is
    always available).
 4. **Match stories.** A fan story for every goal and an automated half-time recap, every
    figure verified, with **Listen** in three languages.
@@ -156,6 +158,7 @@ The [solution design](docs/solution-design/02-architecture.md) explains each tru
 | 21–22 Oct | **Competition build.** Guided tour, "try to fool the verifier", composer, Ask MatchDesk, recorded live Foundry runs | [Build record](docs/evidence/competition-build-20261022.md) |
 | 23 Oct | **Azure and live features.** Container Apps deployment, live stream, Application Insights, fan stories, automated recaps, MCP, tracking metrics, cards and substitutions, demo approval, auto-eventing lab, Spanish and French review | [Azure deployment](docs/evidence/azure-deployment-20261023.md), [Live checks](docs/evidence/release-live-checks-20261023.md), [Language review](docs/evidence/language-review-es-fr-20261023.md) |
 | 24 Oct | **Proof and reach.** Verifier benchmark, broadcast overlay, voice-over, documentation overhaul | [Benchmark](docs/evidence/verifier-benchmark-20261024.md) |
+| 25 Oct | **Plain-language navigation.** One set of plain screen names, clearly labelled demo actions, phone header fix; feature freeze | [Navigation note](docs/ux/plain-language-navigation.md) |
 
 ## 5. By the numbers
 
