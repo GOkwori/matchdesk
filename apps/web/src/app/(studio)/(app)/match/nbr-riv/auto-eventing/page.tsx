@@ -4,13 +4,13 @@ import { AutoEventingLab } from "../../../../../../studio/auto-eventing";
 import { TopActions } from "../../../../../../studio/shell";
 import { PageHead, ScoreStrip } from "../../../../../../studio/ui";
 
-export const metadata: Metadata = { title: "Auto-eventing lab", robots: { index: false } };
+export const metadata: Metadata = { title: "Video detection experiment", robots: { index: false } };
 
 export default function AutoEventingPage() {
   return (
     <div className="md-page">
-      <ScoreStrip crumbs={[{ label: "Overview", href: "/match/nbr-riv" }, { label: "Live Intelligence", href: "/match/nbr-riv/live" }, { label: "Auto-eventing lab" }]} />
-      <PageHead title="Auto-eventing lab" sub="A detector reads passes, carries, shots and speeds from video, without the log, and is scored against it."><TopActions /></PageHead>
+      <ScoreStrip crumbs={[{ label: "Match overview", href: "/match/nbr-riv" }, { label: "Watch the replay", href: "/match/nbr-riv/live" }, { label: "Video detection experiment" }]} />
+      <PageHead title="Video detection experiment" sub="See how a tool spots football actions in a made-up video, then checks its answers against the event log."><TopActions /></PageHead>
       <AutoEventingLab />
     </div>
   );

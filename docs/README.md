@@ -88,6 +88,14 @@ The owner's briefs and the assessment the studio was built against, kept as a re
 | [Sunset Studio design brief (v3)](design/briefs/sunset-studio-design-brief.md) |
 | [MatchDesk — UI Overhaul Assessment & Redesign Plan](design/briefs/ui-overhaul-assessment-20261016.md) |
 
+## User experience
+
+How the studio names its screens for fans and judges, and which actions are demonstrations.
+
+| Document |
+| --- |
+| [Clear language and demo safety](ux/plain-language-navigation.md) |
+
 ## Operations
 
 Deploying, running, costing and tearing down the services.

@@ -13,7 +13,7 @@ export default function PlayersPage() {
   const actions = (id: string) => ctx.events.filter((e) => e.player_id === id && e.match_clock_ms < ctx.replayEndMs).length;
   return (
     <div className="md-page">
-      <ScoreStrip crumbs={[{ label: "Overview", href: "/match/nbr-riv" }, { label: "Players" }]} />
+      <ScoreStrip crumbs={[{ label: "Match overview", href: "/match/nbr-riv" }, { label: "Players" }]} />
       <PageHead title="Players" sub="Pick a player for a focus page: every figure stated as a sentence and verified against the log." ><TopActions /></PageHead>
       <div className="md-two">
         {(["nbr", "riv"] as const).map((club) => (

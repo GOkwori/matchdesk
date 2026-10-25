@@ -19,7 +19,7 @@ export function QueueBody() {
   return (
     <div className="md-split">
       <section className="md-panel md-split-main" aria-labelledby="md-q-title">
-        <div className="md-panel-head"><h2 id="md-q-title">Drafts awaiting review</h2><span className="md-muted">2 drafts</span></div>
+        <div className="md-panel-head"><h2 id="md-q-title">Sample stories to review</h2><span className="md-muted">2 drafts</span></div>
         <ul className="md-queue">
           <li className="md-queue-item md-queue-active">
             <span className="md-mono md-accent-soft-text">D-031 {fixed ? "v4" : "v3"}</span>

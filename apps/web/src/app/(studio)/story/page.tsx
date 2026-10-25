@@ -36,7 +36,7 @@ export default function StoriesIndex() {
             ))}
           </ul>
         </nav>
-        <p className="md-muted md-small">Fans only see a story after a producer approves it.</p>
+        <p className="md-muted md-small">These are sample stories from a made-up match. Real publishing would need approval from a signed-in producer.</p>
       </main>
     </div>
   );

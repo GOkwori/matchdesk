@@ -19,7 +19,7 @@ export default function NotFound() {
           <div className="md-btn-row">
             <Link href="/" className="md-btn md-btn-primary">Start page <Icon name="arrow" size={16} /></Link>
             <Link href="/match/nbr-riv" className="md-btn md-btn-secondary">Match overview</Link>
-            <Link href="/about" className="md-btn md-btn-secondary">How verification works</Link>
+            <Link href="/about" className="md-btn md-btn-secondary">How facts are checked</Link>
           </div>
         </section>
       </main>

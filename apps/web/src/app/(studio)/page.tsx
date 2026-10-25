@@ -16,9 +16,9 @@ export const metadata: Metadata = {
 };
 
 const steps = [
-  { n: "01", title: "Detect", body: "Key moments are found in the match event log by clear rules.", icon: "pulse" as const },
-  { n: "02", title: "Verify", body: "Every claim is recalculated from the events, never taken on trust.", icon: "shield" as const },
-  { n: "03", title: "Approve", body: "A human producer decides what reaches fans.", icon: "pen" as const },
+  { n: "01", title: "Spot a moment", body: "The app finds goals and other big moments from the recorded match events.", icon: "pulse" as const },
+  { n: "02", title: "Check the facts", body: "MatchDesk checks scores, names and numbers against those events.", icon: "shield" as const },
+  { n: "03", title: "Review the story", body: "Try a simulated producer review. Nothing is really sent or published.", icon: "pen" as const },
 ];
 
 /** Structured data for the product and site. The synthetic match is deliberately not marked up as a real SportsEvent. */
@@ -50,7 +50,7 @@ export default function WelcomePage() {
           <div className="md-welcome-copy">
             <span className="md-eyebrow">Football intelligence · explained · verified</span>
             <h1>Turn football moments into <span className="md-accent-text">verifiable stories.</span></h1>
-            <p>AI agents draft the story. Code checks every number and every name against the event log. A producer decides what fans see. Watch it on a replayed match in three minutes.</p>
+            <p>AI helps write football stories. MatchDesk checks the facts against recorded match events. Try the review steps in this safe demo: no real messages are sent. See it in three minutes.</p>
             <div className="md-btn-row">
               <Link href="/match/nbr-riv?tour=1" className="md-btn md-btn-primary md-btn-lg">Start the 3-minute guided demo <Icon name="arrow" size={18} /></Link>
               <Link href="/match/nbr-riv" className="md-btn md-btn-secondary md-btn-lg">Explore on my own</Link>
@@ -86,13 +86,13 @@ export default function WelcomePage() {
         <section aria-labelledby="md-lens" className="md-lenses">
           <h2 id="md-lens">Or jump straight to what you care about</h2>
           <div className="md-lens-grid">
-            <Link href="/producer/queue" className="md-lens"><Icon name="monitor" size={22} /><strong>I’m a producer</strong><span>See what’s blocked and fix a draft.</span></Link>
-            <Link href="/match/nbr-riv/evidence/CL-0214" className="md-lens"><Icon name="shield" size={22} /><strong>Show me the proof</strong><span>Watch a statistic get recalculated.</span></Link>
-            <Link href={`/story/${STORY_SLUG}`} className="md-lens"><Icon name="phone" size={22} /><strong>I’m a fan</strong><span>Read the verified story on your phone.</span></Link>
+            <Link href="/producer/queue" className="md-lens"><Icon name="monitor" size={22} /><strong>I review stories</strong><span>Try checking and fixing a sample draft.</span></Link>
+            <Link href="/match/nbr-riv/evidence/CL-0214" className="md-lens"><Icon name="shield" size={22} /><strong>Check the facts</strong><span>See why a football number is right or wrong.</span></Link>
+            <Link href={`/story/${STORY_SLUG}`} className="md-lens"><Icon name="phone" size={22} /><strong>I’m a fan</strong><span>Read a football story with checked facts.</span></Link>
           </div>
         </section>
       </main>
-      <footer className="md-welcome-foot"><span>AI-assisted. Verified. Human-led. <Link href="/about" className="md-link">How verification works</Link></span><span>Synthetic demo match · nothing is published</span></footer>
+      <footer className="md-welcome-foot"><span>AI-assisted. Verified. Human-led. <Link href="/about" className="md-link">How facts are checked</Link></span><span>Made-up match · demo only · nothing is published</span></footer>
     </div>
   );
 }

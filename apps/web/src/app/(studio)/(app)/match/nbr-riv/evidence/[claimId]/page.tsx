@@ -1,4 +1,4 @@
-/** Evidence & Verification (locked screen 02): three panels — claims, proof, impact. */
+/** Check the facts (locked screen 02): three panels — claims, proof, impact. */
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -68,8 +68,8 @@ export default async function EvidencePage({ params }: { params: Promise<{ claim
   if (!claim) notFound();
   return (
     <div className="md-page">
-      <ScoreStrip crumbs={[{ label: "Moments", href: "/match/nbr-riv/moments?moment=M-05" }, { label: "M-05 goal", href: "/match/nbr-riv/moments?moment=M-05" }, { label: "Evidence" }]} />
-      <PageHead title="Evidence & Verification" sub="Every claim is recalculated from the event log. Pick a claim to see its proof."><TopActions /></PageHead>
+      <ScoreStrip crumbs={[{ label: "Key moments", href: "/match/nbr-riv/moments?moment=M-05" }, { label: "M-05 goal", href: "/match/nbr-riv/moments?moment=M-05" }, { label: "Evidence" }]} />
+      <PageHead title="Check the facts" sub="Choose a statement to see the recorded events and calculations behind it."><TopActions /></PageHead>
       <div className="md-three">
         <nav className="md-panel md-claims" aria-labelledby="md-claims-title">
           <div className="md-panel-head"><h2 id="md-claims-title">Claims · D-031</h2><span className="md-muted">4</span></div>

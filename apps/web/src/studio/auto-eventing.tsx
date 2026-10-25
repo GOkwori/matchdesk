@@ -95,7 +95,7 @@ export function AutoEventingLab() {
         <p className="md-muted md-small">
           How it works: the detector finds the ball as the brightest compact blob in each frame, fills gaps of up to three hidden frames, and marks a touch where the ball&apos;s velocity over the next four frames differs most from the last four. Between touches it measures length and speed from the first unbroken run of movement; a fast strike that reaches or heads at a goal is a shot, a ball the ringed player keeps is a carry, the rest are passes. {touches.unlogged_true} true touches are not in the log (saves and rebounds the renderer adds after shots). Source and method: <code className="md-mono">labs/auto_eventing</code>. {playerName("nbr-09")}&apos;s header is in the clip.
         </p>
-        <p className="md-small"><Link className="md-link" href="/match/nbr-riv/live">Back to Live Intelligence</Link></p>
+        <p className="md-small"><Link className="md-link" href="/match/nbr-riv/live">Back to Watch the replay</Link></p>
       </section>
     </>
   );

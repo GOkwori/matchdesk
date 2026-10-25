@@ -89,7 +89,20 @@ test('browser Back stays inside the app and restores the previous screen', async
   await expect(page).toHaveURL(/\/producer\/compose\/D-031$/);
   await page.goBack();
   await expect(page).toHaveURL(/\/match\/nbr-riv$/);
-  await expect(page.getByRole('heading', { name: 'Intelligence Overview' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Match overview' })).toBeVisible();
+});
+
+test('the demo labels fictional people and never implies a real publication', async ({ page }) => {
+  await open(page, '/match/nbr-riv');
+  if (await page.getByRole('group', { name: /Fictional demo producer.*No one is signed in/ }).isVisible().catch(() => false)) {
+    await expect(page.getByText('Demo only')).toBeVisible();
+  }
+  await open(page, '/workspace/activity');
+  await expect(page.getByText(/Names and past actions below are fictional/)).toBeVisible();
+  await open(page, '/producer/publish/D-031');
+  await expect(page.getByText(/No real approval, message or publication takes place/)).toBeVisible();
+  await open(page, '/about');
+  await expect(page.getByText(/No real person is signed in/)).toBeVisible();
 });
 
 test('the replay slider recomputes the score from recorded goals', async ({ page }) => {
@@ -107,7 +120,7 @@ test('composer re-verifies live: D-031 becomes eligible only after both blocking
   await open(page, '/producer/compose/D-031');
   const eligibility = page.getByRole('region', { name: 'Eligibility' });
   await expect(eligibility.getByText('Not eligible')).toBeVisible();
-  const submit = page.getByRole('button', { name: /Submit for review/ });
+  const submit = page.getByRole('button', { name: /Mark ready for demo review/ });
   await expect(submit).toBeDisabled();
 
   const cards = page.getByRole('list', { name: 'Claims in this draft' });
@@ -119,11 +132,11 @@ test('composer re-verifies live: D-031 becomes eligible only after both blocking
   await expect(page.getByText('In our view, Riverside’s best spell').first()).toBeVisible();
   await expect(submit).toBeEnabled();
   await submit.click();
-  await expect(page.getByText('D-031 v4 is with the producer for review.')).toBeVisible();
-  await expect(page.getByRole('link', { name: /Approve and publish \(demo producer\)/ })).toBeVisible();
+  await expect(page.getByText('Marked for review on this device only. No real producer has been notified.')).toBeVisible();
+  await expect(page.getByRole('link', { name: /Try demo approval and publishing/ })).toBeVisible();
 
   await open(page, '/producer/queue');
-  await expect(page.getByRole('link', { name: 'Review' })).toBeVisible();
+  await expect(page.locator('.md-queue').getByRole('link', { name: 'Review', exact: true })).toBeVisible();
 });
 
 test('every factual sentence in the draft verifies as written, not only its claim', async ({ page }) => {
@@ -220,7 +233,7 @@ test('returning users can resume where they left off', async ({ page }) => {
   await open(page, '/producer/queue');
   await open(page, '/');
   const resume = page.getByRole('link', { name: /Continue where you left off/ });
-  await expect(resume).toContainText('Review queue');
+  await expect(resume).toContainText('Review drafts');
   await resume.click();
   await expect(page).toHaveURL(/\/producer\/queue$/);
 });
@@ -236,7 +249,7 @@ test('the shell adapts: sidebar on desktop, icon rail on tablet, tab bar on phon
   } else {
     await expect(tabs).toBeHidden();
     await expect(workspace).toBeVisible();
-    await expect(workspace.getByRole('link', { name: 'Overview' })).toHaveAttribute('aria-current', 'page');
+    await expect(workspace.getByRole('link', { name: 'Match overview' })).toHaveAttribute('aria-current', 'page');
   }
 });
 
@@ -302,9 +315,9 @@ test('publication journey reflects the composer fix and offers the demo approval
   await cards.getByRole('listitem').filter({ hasText: 'CL-0215' }).getByRole('button', { name: 'Mark as opinion' }).click();
   await open(page, '/producer/publish/D-031');
   await expect(page.getByRole('button', { name: 'Approve this version' })).toBeVisible();
-  await expect(page.getByText(/Demo producer\./)).toBeVisible();
+  await expect(page.getByText(/Demo producer — nobody is signed in\./)).toBeVisible();
   await open(page, '/workspace/activity');
-  await expect(page.getByText('Re-verified D-031 v4')).toBeVisible();
+  await expect(page.getByText('Checked D-031 v4')).toBeVisible();
 });
 
 test('display preferences persist and apply to the whole document', async ({ page }) => {

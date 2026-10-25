@@ -54,6 +54,10 @@
 }
 .md-side .md-logo { padding: 0 8px 6px; }
 .md-nav { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+/* Preserve icon-only tablet navigation, while grouping desktop links by audience. */
+.md-nav-section { display: flex; flex-direction: column; gap: 4px; }
+.md-nav-section + .md-nav-section { margin-top: 10px; }
+.md-nav-heading { padding: 6px 12px 2px; color: var(--md-muted); font-size: 11px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; }
 .md-nav-link {
   display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 10px 12px; border-radius: 9px;
   border: 1px solid transparent; color: var(--md-muted); text-decoration: none; transition: background-color 160ms ease, color 160ms ease;
@@ -97,6 +101,8 @@
 }
 .md-search-btn:hover { color: var(--md-text); }
 .md-avatar { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--md-raised); border: 1px solid var(--md-accent); color: var(--md-accent-soft); font-weight: 800; font-size: 13px; }
+.md-demo-persona { display: inline-flex; align-items: center; gap: 6px; }
+.md-demo-persona-label { font-size: 11px; color: var(--md-warn); font-weight: 800; white-space: nowrap; }
 
 /* ---------- Command palette ---------- */
 .md-palette { width: min(560px, calc(100vw - 32px)); padding: 0; border-radius: 14px; border: 1px solid var(--md-control-line); background: var(--md-panel); color: var(--md-text); box-shadow: 0 40px 80px -30px rgba(0, 0, 0, 0.9); }
@@ -565,7 +571,7 @@ html[data-md-text="large"] body.md-root { zoom: 1.125; }
 @media (max-width: 1023px) {
   .md-side { flex-basis: 84px; padding: 18px 10px; align-items: center; }
   .md-tagline, .md-badge { display: none; }
-  .md-side .md-logo > span, .md-nav-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .md-side .md-logo > span, .md-nav-label, .md-nav-heading { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .md-nav-link, .md-side-sys { justify-content: center; padding: 10px; }
   .md-nav-link { position: relative; }
   .md-main { padding: 18px 20px 36px; }

@@ -257,11 +257,11 @@ export const STORY_SLUG = "okafor-header-restores-northbridge-lead";
 
 /** Guided tour: seven stops across the real routes; the step lives in the URL (?tour=n). */
 export const tourSteps: readonly { title: string; body: string; next?: string; nextLabel?: string }[] = [
-  { title: "Start with the 58′ goal", body: "Open it to see exactly which events prove it happened.", next: "/match/nbr-riv/moments?moment=M-05&tour=2", nextLabel: "Open the goal" },
-  { title: "Every moment links to evidence", body: "This goal is matched to recorded events. Next, watch four AI specialists write about it, and code check every word.", next: "/match/nbr-riv/insights?tour=3", nextLabel: "See the agents work" },
-  { title: "Agents draft, code decides", body: "A recorded live run on Microsoft Foundry: code rejected the analyst's malformed first answer, the reviewer dropped an unchecked sentence, and the verifier confirmed Okafor's goal. Switch to the rehearsal to watch a 60% claim get sent back.", next: "/match/nbr-riv/evidence/CL-0214?tour=4", nextLabel: "See the proof" },
-  { title: "Claims are recalculated, not trusted", body: `The verifier recomputes 57.96% from all ${eventCountText} events, rounds it to 58% and rejects a forged 59%.`, next: "/producer/queue?tour=5", nextLabel: "See the review queue" },
-  { title: "One draft is blocked", body: "D-031 has a pending interpretation and an unsupported claim. Fix it in the composer.", next: "/producer/compose/D-031?tour=6", nextLabel: "Open the composer" },
-  { title: "Edit it and it re-verifies as you type", body: "Every sentence is checked in your browser. Change 58% to 60% and watch it fail; remove the unsupported sentence and the draft becomes eligible.", next: `/story/${STORY_SLUG}?tour=7`, nextLabel: "See what fans get" },
-  { title: "What fans see", body: "A verified story with its checks shown. It only goes out after a human producer approves it." },
+  { title: "Start with the 58th-minute goal", body: "Open it to see exactly which events prove it happened.", next: "/match/nbr-riv/moments?moment=M-05&tour=2", nextLabel: "Open the goal" },
+  { title: "See why this moment matters", body: "This goal is matched to recorded events. Next, watch four AI specialists write about it, and code check every word.", next: "/match/nbr-riv/insights?tour=3", nextLabel: "See the agents work" },
+  { title: "AI writes; MatchDesk checks", body: "A recorded live run on Microsoft Foundry: code rejected the analyst's malformed first answer, the reviewer dropped an unchecked sentence, and the verifier confirmed Okafor's goal. Switch to the rehearsal to watch a 60% claim get sent back.", next: "/match/nbr-riv/evidence/CL-0214?tour=4", nextLabel: "See the proof" },
+  { title: "Check a football number", body: `The verifier recomputes 57.96% from all ${eventCountText} events, rounds it to 58% and rejects a forged 59%.`, next: "/producer/queue?tour=5", nextLabel: "See the review queue" },
+  { title: "A story needs fixing", body: "D-031 has a pending interpretation and an unsupported claim. Fix it in the composer.", next: "/producer/compose/D-031?tour=6", nextLabel: "Open the composer" },
+  { title: "Fix a sentence and check it again", body: "Every sentence is checked in your browser. Change 58% to 60% and watch it fail; remove the unsupported sentence and the draft becomes eligible.", next: `/story/${STORY_SLUG}?tour=7`, nextLabel: "See what fans get" },
+  { title: "Read the fan story", body: "This story uses facts checked against our made-up match. In this demo you can also try a pretend approval; nothing is sent to real people." },
 ];

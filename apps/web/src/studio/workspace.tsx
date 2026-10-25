@@ -29,14 +29,15 @@ export function ActivityBody() {
   useEffect(() => {
     const doc = loadD031();
     if (Object.keys(doc.states).length && draftEligibility(doc.states, doc.failedEdits).eligible) {
-      setRows([{ time: "now", actor: "Dana Price", initials: "DP", action: doc.submitted ? "Submitted D-031 v4" : "Re-verified D-031 v4", detail: "Eligible on this device", kind: "editorial" }, ...BASE_ROWS]);
+      setRows([{ time: "now", actor: "Demo visitor", initials: "DV", action: doc.submitted ? "Marked D-031 v4 for demo review" : "Checked D-031 v4", detail: "Only on this device", kind: "editorial" }, ...BASE_ROWS]);
     }
   }, []);
   const shown = rows.filter((r) => filter === "all" || r.kind === filter);
   return (
     <div className="md-split">
       <section className="md-panel md-split-main" aria-labelledby="md-act-title">
-        <div className="md-panel-head"><h2 id="md-act-title">Activity · 11 Oct 2026</h2>
+        <p className="md-muted md-small" role="note"><strong>Demonstration records.</strong> Names and past actions below are fictional. Changes you make here stay in this browser; they do not create a real audit record.</p>
+        <div className="md-panel-head"><h2 id="md-act-title">Sample activity · 11 Oct 2026</h2>
           <div role="group" aria-label="Filter activity" className="md-seg">
             {FILTERS.map((f) => <button key={f.id} type="button" aria-pressed={filter === f.id} onClick={() => setFilter(f.id)}>{f.label}</button>)}
           </div>
@@ -58,9 +59,9 @@ export function ActivityBody() {
       </section>
       <aside className="md-split-side" aria-label="Version history">
         <section className="md-panel" aria-labelledby="md-ver-title">
-          <h2 id="md-ver-title">D-031 versions</h2>
+          <h2 id="md-ver-title">Sample draft versions</h2>
           <ol className="md-versions">
-            {rows[0].actor === "Dana Price" && <li><span className="md-mono">v4</span><span>Re-verified · eligible</span><span className="md-chip md-chip-verified">✓ Eligible</span></li>}
+            {rows[0].actor === "Demo visitor" && <li><span className="md-mono">v4</span><span>Re-verified · eligible</span><span className="md-chip md-chip-verified">✓ Eligible</span></li>}
             <li><span className="md-mono">v3</span><span>Priya Shah · 18:32</span><span className="md-chip md-chip-failed">✕ Not eligible</span></li>
             <li><span className="md-mono">v2</span><span>Priya Shah · 18:10</span><span className="md-chip md-chip-not-yet">Superseded</span></li>
             <li><span className="md-mono">v1</span><span>Priya Shah · 17:52</span><span className="md-chip md-chip-not-yet">Superseded</span></li>
@@ -124,14 +125,14 @@ export function SettingsBody() {
         <p className="md-muted md-small" role="status">{reset ? "Done. D-031 is back to v3, the resume card is cleared and My match is back to its defaults." : "Clears composer changes, your resume point and My match on this device."}</p>
       </section>
       <section className="md-panel md-ds-wide" aria-labelledby="md-set-more">
-        <h2 id="md-set-more">More screens</h2>
+        <h2 id="md-set-more">More places to explore</h2>
         <ul className="md-more-links">
-          <li><Link href="/workspace/activity"><Icon name="pulse" /> Activity & Audit</Link></li>
-          <li><Link href="/producer/publish/D-031"><Icon name="inbox" /> Publication journey</Link></li>
-          <li><Link href="/match/nbr-riv/insights"><Icon name="sparkle" /> AI insights</Link></li>
-          <li><Link href="/match/nbr-riv/tactical"><Icon name="pitch" /> Tactical Analysis</Link></li>
-          <li><Link href="/design-system"><Icon name="grid" /> Design system</Link></li>
-          <li><Link href="/about"><Icon name="info" /> How verification works</Link></li>
+          <li><Link href="/workspace/activity"><Icon name="pulse" /> Demo activity</Link></li>
+          <li><Link href="/producer/publish/D-031"><Icon name="inbox" /> Try demo publishing</Link></li>
+          <li><Link href="/match/nbr-riv/insights"><Icon name="sparkle" /> How AI helps</Link></li>
+          <li><Link href="/match/nbr-riv/tactical"><Icon name="pitch" /> Match analysis</Link></li>
+          <li><Link href="/design-system"><Icon name="grid" /> Design guide (for developers)</Link></li>
+          <li><Link href="/about"><Icon name="info" /> How facts are checked</Link></li>
         </ul>
       </section>
     </div>

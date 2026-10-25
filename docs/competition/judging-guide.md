@@ -10,18 +10,18 @@ Open the studio on Azure, [mdesk-web.icybeach-62467e8a.uksouth.azurecontainerapp
 Choose **Start the 3-minute guided demo**. The tour has
 seven stops:
 
-1. **Overview.** The score, the replay slider, and a "try to fool the verifier" panel.
+1. **Match overview.** The score, the replay slider, and a "Can you trick the fact checker?" panel.
 2. **The 58′ goal.** Why it was detected and which events prove it.
-3. **AI insights.** A recorded live run of the four specialists on Microsoft Foundry,
+3. **How AI helps.** A recorded live run of the four specialists on Microsoft Foundry,
    step by step: tool calls, a malformed answer rejected by the claim contract and
    retried, an unchecked sentence dropped by the reviewer, Okafor's goal verified by
    code, and nine audience versions. Switch to **Rehearsal** to watch the verifier send
    a 60% possession claim back and the revision pass.
-4. **Evidence.** The 58% claim recomputed from all events, in the server and again in
+4. **Check the facts.** The 58% claim recomputed from all events, in the server and again in
    your browser; claim 59% and it is rejected.
-5. **Review queue.** Draft D-031 is blocked by an unchecked interpretation and a
+5. **Review drafts.** Draft D-031 is blocked by an unchecked interpretation and a
    season-history claim the log cannot support.
-6. **Composer.** Remove or mark those sentences and the draft becomes eligible. Edit a
+6. **Write a match story.** Remove or mark those sentences and the draft becomes eligible. Edit a
    sentence (change 58% to 60%) and it fails as you type.
 7. **Fan story.** The verified story in English, Spanish or French, with its checks.
 
@@ -33,7 +33,7 @@ season, "after the equaliser") are declined rather than answered with a nearby f
 
 ## Beyond the tour
 
-- **Live replay with broadcast overlays** (Live Intelligence). Play the log at 1×, 10×, 30×
+- **Live replay with broadcast overlays** (Watch the replay). Play the log at 1×, 10×, 30×
   or 60×, scrub, or jump to a goal. The score bug, possession, shots, pass accuracy and your
   focus statistic are recomputed by the registered metrics as the clock moves. Twenty-one
   timed overlays appear at their moments in fan, analyst or caption style, in English,
@@ -49,7 +49,7 @@ season, "after the equaliser") are declined rather than answered with a nearby f
   ordered ingestor and football-state reducer, and each overlay is verified on the server
   the moment its window closes, using only the events received so far ("Checked on the
   server at 15:00, on the 305 events received").
-- **Automated recaps** (Audience Stories › Match recaps, or the replay once a half is played).
+- **Automated recaps** (Match stories › Match recaps, or the replay once a half is played).
   - A half-time recap and a recap at 67:12: the score, scorers, possession, shots, passing,
     synthetic xG and the tackles leader.
   - Milestones: the opening goal, the equaliser, the lead restored, Okafor's brace, and each
@@ -59,12 +59,12 @@ season, "after the equaliser") are declined rather than answered with a nearby f
   - On Azure the live stream sends each recap, verified on the server, once its part of the
     match has arrived.
   - The same recaps are JSON at [`/recaps/nbr-riv.json`](https://mdesk-web.icybeach-62467e8a.uksouth.azurecontainerapps.io/recaps/nbr-riv.json).
-- **Run the agents live** (AI insights › *Run it live now*, Azure only). Starts a fresh run of
+- **Run the agents live** (How AI helps › *Run it live now*, Azure only). Starts a fresh run of
   the four specialists on Microsoft Foundry for the 58′ goal and shows each step as it
   happens: tool calls, claims sent back by the verifier, the revision, the audience versions.
   It takes a few minutes (at most six); runs are five minutes apart and at most twelve a day, to
   bound cost. If one has just run, you will see it and when the next can start.
-- **Auto-eventing from video** (Live Intelligence › *Open the auto-eventing lab*). The synthetic
+- **Auto-eventing from video** (Watch the replay › *Open the video detection experiment*). The synthetic
   match is rendered as a top-down video with sensor noise and an occasionally hidden ball. A
   detector that sees only the pixels finds every touch and reads passes, carries, shots,
   pass lengths and ball and shot speeds. The lab scores it against the log over the whole
@@ -72,7 +72,7 @@ season, "after the equaliser") are declined rather than answered with a nearby f
   speeds against the synthetic tracking, and possession from the video against the registered
   metric. It is synthetic video and much easier than broadcast footage, and the page says so
   ([method](../../labs/auto_eventing/README.md)).
-- **Approve and publish, as a demo producer** (Producer Tools › Publication, once D-031 is
+- **Approve and publish, as a demo producer** (Review drafts › Try demo publishing, once D-031 is
   eligible). The approval binds SHA-256 digests of the exact text and of the claims' verdicts;
   edit the draft afterwards and the approval is withdrawn. Publishing sends the approved
   version to four demo destinations, each with a publication id derived from the digest; the
@@ -83,18 +83,18 @@ season, "after the equaliser") are declined rather than answered with a nearby f
   (schema `matchdesk-overlay-feed/1`): time, kind, team, players, event ids, every persona
   and language, and each claim in full, so a graphics engine or a judge can re-run the
   verifier on it.
-- **Voice-over** (Listen on every story and recap, *Read overlays aloud* in Live Intelligence,
+- **Voice-over** (Listen on every story and recap, *Read overlays aloud* in Watch the replay,
   Listen on Ask MatchDesk answers, `voice=1` on the broadcast overlay). On Azure, Azure AI Speech
   neural voices read the verified text in English, Spanish or French; the API voices only items
   from the verified feeds, by name, never free text, caches each clip and caps new ones. Elsewhere,
   and for Ask answers, the device's own voice reads the same verified sentences.
-- **Broadcast overlay for OBS or vMix** (Live Intelligence › *Open the broadcast overlay*).
+- **Broadcast overlay for OBS or vMix** (Watch the replay › *Open the broadcast overlay*).
   The same cues as lower-thirds with a score bug on a transparent page, at
   [`/broadcast/nbr-riv`](https://mdesk-web.icybeach-62467e8a.uksouth.azurecontainerapps.io/broadcast/nbr-riv?style=caption&lang=es&speed=10&bg=dark).
   Add it as a 1920×1080 browser source; `style`, `lang`, `speed`, `from`, `bg` and `bug` set it
   up. Each graphic is re-verified in that browser before it is drawn, and one that does not
   verify is never drawn.
-- **Try to fool the verifier, at scale** (Evidence & Verification › *How the verifier did*).
+- **Trick the fact checker, at scale** (Check the facts › *How the verifier did*).
   The 79 claims the demo shows, made wrong one way at a time (number, player, team, half,
   statistic, evidence, scorer, card, substitute, gap, time): 810 of 810 caught, and 0 of 295
   true claims and rewordings rejected, with the same verdicts in the browser. It found one
@@ -110,14 +110,14 @@ season, "after the equaliser") are declined rather than answered with a nearby f
   - pass accuracy, length, progressive passes, difficulty and passes under pressure;
   - tackles, interceptions and recoveries;
   - from synthetic tracking: shot speed, top speed, distance covered and sprints.
-- **Fan stories** (Audience Stories). One story for every goal, generated from the log:
+- **Fan stories** (Match stories). One story for every goal, generated from the log:
   headline, body, score and a diagram of the move. Each fact in the text (scorer, score,
   the scorer's tally, and how the move began: a corner, an interception or the start of the
   move, with the seconds to the goal) is a claim the verifier passed, and the page re-runs
   those checks in your browser. What the log cannot show (who made the final pass, defender
   positions) is listed as not checked. The page follows My match: language, fan / analyst /
   caption style, and a line when your club or player is involved.
-- **Control, chaos and pressure** (Tactical Analysis). Every five minutes is labelled by a
+- **Control, chaos and pressure** (Match analysis). Every five minutes is labelled by a
   published rule, not a model, and each phase lists the verified sentences that justify it,
   with ball speed as the match rhythm:
   - control: a side has 60% of the ball and completes 85% of its passes;
@@ -142,7 +142,7 @@ season, "after the equaliser") are declined rather than answered with a nearby f
 | Event log, metrics, moment detection | Deterministic code over synthetic data |
 | Claim verification (numbers, names, statistic, time window, team, citations, event facts) | Real; the same verifier runs in Python and, ported exactly, in the browser. Limits below |
 | Ask MatchDesk | Real; answers are built from registered metrics and verified before they are shown. When the built-in reader cannot read a question, a planner on Microsoft Foundry may turn it into a query plan, never an answer: it is on for the Azure deployment (bounded to 200 output tokens, 10 seconds, 20 calls a minute) and off on the Vercel copy |
-| Four-specialist workflow | Real orchestration, role-scoped tools and verification loop on Microsoft Foundry. AI insights opens on a run recorded on 21 October 2026 beside the deterministic rehearsal, and on Azure you can start a fresh live run (rate-limited). Every verdict is the real verifier's |
+| Four-specialist workflow | Real orchestration, role-scoped tools and verification loop on Microsoft Foundry. How AI helps opens on a run recorded on 21 October 2026 beside the deterministic rehearsal, and on Azure you can start a fresh live run (rate-limited). Every verdict is the real verifier's |
 | Live replay and overlay feed | Real: the recorded synthetic log played back (not a real match); on Azure it streams from the API through the ingestor, reducer and verifier; overlay numbers come from verified claims, re-verified in the browser before display. Cards and substitutions are verified by registered event facts (`card.v1`, `substitution.v1`) |
 | Recaps | Real: built from verified claims at half-time and the replay point; on Azure streamed and verified on the events received |
 | Voice-over | Real: Azure AI Speech neural voices on Azure, signed in with the managed identity; the device's own voice elsewhere |

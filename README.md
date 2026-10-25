@@ -39,21 +39,29 @@ fan, analyst or caption style; English, Spanish or French) and can be read aloud
 
 ![Intelligence overview: the score, verified moments and the producer's next step](docs/images/overview.jpg)
 
+### Choose what you want to explore
+
+- **Football fans:** Start at **Match overview**, open **Watch the replay**, pick **Key moments** or **Players**, and read **Match stories**.
+- **Producers (demo):** Open **How AI helps**, **Check the facts**, **Review drafts** and **Try demo publishing**. All approvals and sends in this public demo are simulated in the browser.
+- **Judges and developers:** Explore the fact-checking benchmark, read-only MCP tools, broadcast overlay, and optional video-detection experiment.
+
+No real producer account is signed in, and the public demo does not publish to live channels.
+
 ## 2. Try it in three minutes
 
-1. **Overview › Try to fool the verifier.** Claim 59% possession; the log says 57.96% and the
+1. **Match overview › Can you trick the fact checker?** Claim 59% possession; the log says 57.96% and the
    claim is rejected. Then open the [benchmark](docs/evidence/verifier-benchmark-20261024.md):
    810 false claims, all caught.
-2. **Live Intelligence.** Stream the match from the API at up to 60×. Each overlay is verified on
+2. **Watch the replay.** Stream the match from the API at up to 60×. Each overlay is verified on
    the server on the events received so far, and again in your browser. Switch to Español or the
    caption style, turn on **Read overlays aloud**, or open the **broadcast overlay** that OBS or
    vMix can load.
-3. **AI Insights › Run it live now.** Four agents on Microsoft Foundry. Watch the verifier send a
+3. **How AI helps › Run it live now.** Four agents on Microsoft Foundry. Watch the verifier send a
    claim back and the composer revise it (one live run every five minutes; a recorded run is
    always available).
-4. **Audience Stories.** A fan story for every goal and an automated half-time recap, every
+4. **Match stories.** A fan story for every goal and an automated half-time recap, every
    figure verified, with **Listen** in three languages.
-5. **Producer Tools.** Approve D-031's exact version and publish it to a demo channel; retry the
+5. **Studio demo › Review drafts.** Try approving sample draft D-031 and sending it to pretend channels on this device; retry the
    destination that times out; edit the draft and watch the approval be withdrawn.
 6. **Connect an agent.** Point an MCP client, such as GitHub Copilot in VS Code, at `/api/mcp` and
    ask it to check "Okafor scored 3 goals."
@@ -160,7 +168,7 @@ The [solution design](docs/solution-design/02-architecture.md) explains each tru
 | Live agent runs on Foundry | 6 claims passed first time, 2 were sent back, 3 malformed answers were stopped before verification; no unverified claim reached an audience version |
 | Tests | About 1,660 Python tests, 216 studio unit tests and about 250 browser tests on three screen sizes with axe accessibility checks; security and dependency checks on every pull request |
 
-![Try to fool the verifier: false claims caught by kind of error](docs/images/verifier-benchmark.jpg)
+![Can you trick the fact checker? False claims caught by kind of error](docs/images/verifier-benchmark.jpg)
 
 ## 6. What is real and what is synthetic
 

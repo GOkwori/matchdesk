@@ -103,7 +103,7 @@ export default async function PlayerPage({ params }: { params: Promise<{ playerI
   const key = focus.events.filter((e) => ["shot", "goal", "card", "substitution"].includes(e.type) || (e.type === "recovery" && e.tags.length > 0));
   return (
     <div className="md-page">
-      <ScoreStrip crumbs={[{ label: "Overview", href: "/match/nbr-riv" }, { label: "Players", href: "/match/nbr-riv/players" }, { label: player.name }]} />
+      <ScoreStrip crumbs={[{ label: "Match overview", href: "/match/nbr-riv" }, { label: "Players", href: "/match/nbr-riv/players" }, { label: player.name }]} />
       <PageHead title={player.name} sub={`#${player.shirt} · ${POSITION_LABEL[player.position]} · ${team} · ${player.starter ? "Started" : "On the bench at kick-off"} · ${focus.events.length} logged actions to ${clock(ctx.replayEndMs / 1000)}`}><TopActions /></PageHead>
       <FavouritePlayer id={player.player_id} name={player.name} />
       <div className="md-split">

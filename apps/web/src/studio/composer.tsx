@@ -1,4 +1,4 @@
-/** Story & Commentary Composer for D-031 with live, deterministic re-verification.
+/** Write a match story: the D-031 composer, with live, deterministic re-verification.
  *
  * Each sentence is editable. On every edit the TypeScript port of the backend verifier
  * re-checks that sentence against the full event log in this browser, including the
@@ -91,14 +91,14 @@ export function ComposerBody() {
     <>
       <div aria-live="polite" role="status">
         {doc.submitted
-          ? <div className="md-banner md-banner-success"><span className="md-banner-icon" aria-hidden="true">✓</span><strong>Submitted</strong><span>D-031 v4 is with the producer for review. Approval stays with a human.</span></div>
+          ? <div className="md-banner md-banner-success"><span className="md-banner-icon" aria-hidden="true">✓</span><strong>Ready for demo review</strong><span>Marked for review on this device only. No real producer has been notified.</span></div>
           : edited && elig.eligible
             ? <div className="md-banner md-banner-success"><span className="md-banner-icon" aria-hidden="true">✓</span><strong>Re-verified</strong><span>D-031 v4 is now eligible. Every remaining sentence is verified, as written, or marked as opinion.</span></div>
             : <div className="md-banner md-banner-warn"><span className="md-banner-icon" aria-hidden="true">!</span><strong>Re-verification required</strong><span>{elig.blocking.length} claim{elig.blocking.length === 1 ? "" : "s"} block approval. Resolve them below; every sentence is re-checked in your browser as you type.</span></div>}
       </div>
 
       <div className="md-composer-meta">
-        <ScoreStrip crumbs={[{ label: "Producer Tools", href: "/producer/queue" }, { label: "Composer · D-031" }]} />
+        <ScoreStrip crumbs={[{ label: "Review drafts", href: "/producer/queue" }, { label: "Write a match story · D-031" }]} />
         <span className="md-save"><span className="md-dot md-dot-success" aria-hidden="true" />Saved on this device</span>
       </div>
 
@@ -199,11 +199,11 @@ export function ComposerBody() {
           <div className="md-btn-row md-actions-end">
             <button type="button" className="md-btn md-btn-secondary" onClick={reset} disabled={!edited && !doc.submitted}>Reset to v3</button>
             <button type="button" className="md-btn md-btn-primary" disabled={!elig.eligible || doc.submitted} aria-describedby="md-submit-help" onClick={() => setDoc((d) => ({ ...d, submitted: true }))}>
-              {doc.submitted ? "Submitted" : "Submit for review"} <Icon name="arrow" size={16} />
+              {doc.submitted ? "Ready for demo review" : "Mark ready for demo review"} <Icon name="arrow" size={16} />
             </button>
           </div>
-          <p id="md-submit-help" className="md-muted md-small">{elig.eligible ? "A producer approves or rejects it next. Approval and publishing stay with a human." : "Resolve the blocking claims to submit."}</p>
-          <div className="md-btn-row"><Link href="/producer/publish/D-031" className="md-link">{elig.eligible ? "Approve and publish (demo producer)" : "See the publication journey"} <Icon name="arrow" size={14} /></Link></div>
+          <p id="md-submit-help" className="md-muted md-small">{elig.eligible ? "You can try a demo approval next. Real sign-in and publishing are not enabled." : "Fix the highlighted claims before trying the demo review."}</p>
+          <div className="md-btn-row"><Link href="/producer/publish/D-031" className="md-link">{elig.eligible ? "Try demo approval and publishing" : "See how demo publishing works"} <Icon name="arrow" size={14} /></Link></div>
         </div>
       </div>
     </>
