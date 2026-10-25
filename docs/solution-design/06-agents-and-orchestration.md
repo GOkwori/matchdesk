@@ -1,46 +1,47 @@
 # Runtime agents and orchestration
 
-Status: design only. No Microsoft Agent Framework package or Foundry endpoint is connected.
+**As-of 25 October 2026:** Implemented four-specialist Agent Framework
+workflow, with recorded and separately triggered **live Microsoft Foundry**
+executions. The prior "design only; no Foundry endpoint connected" statement
+was superseded by historical live run and Azure deployment records.
 
-| Specialist | Responsibility | Authority |
-|---|---|---|
-| Tactical Analyst | Interpret moment context and identify observations/inferences | Read-only events and registered metrics |
-| Narrative Composer | Produce sentence-to-claim mapped narrative variants | Draft text only |
-| Editorial Reviewer | Review wording and use deterministic verifier outcomes | Request revisions, never override numerical checks |
-| Audience Adapter | Adapt tone and language while preserving facts | New draft versions requiring fresh verification |
+![Agent verification](../diagrams/agent-verification-implemented.svg)
 
-![Agent sequence: detector, analyst, composer, verifier, reviewer and producer](../diagrams/agent-sequence.png)
+[Editable diagram source](../diagrams/agent-verification-implemented.mmd)
 
-<details>
-<summary>Diagram source (Mermaid)</summary>
+| Specialist | Purpose | Enforcement boundary |
+| --- | --- | --- |
+| Tactical Analyst | Read match events and metrics, propose observations | Scoped read-only tools, no evidence mutation |
+| Narrative Composer | Construct evidence-linked sentences and claim objects | Draft only; bounded attempts |
+| Editorial Reviewer | Inspect supported claims and word choices | Cannot override deterministic verifier |
+| Audience Adapter | Prepare personalised EN/ES/FR and fan/analyst/caption variants | Must retain verified source claims; no human sign-off implied |
 
-```mermaid
-sequenceDiagram
-    participant D as Detector
-    participant A as Analyst
-    participant N as Composer
-    participant V as Verifier
-    participant R as Reviewer
-    participant P as Producer
-    D->>A: Immutable moment context
-    A->>N: Observations and typed evidence
-    N->>V: Draft and claims
-    V-->>R: Query-backed results
-    alt Unsupported claim
-        R->>N: Bounded revision request
-    else Supported draft
-        R->>P: Reviewable exact version
-    end
-```
+The workflow controller owns order, timeout, retry budget, provider error
+handling, evidence binding and eligibility to advance. The model is not
+authoritative. The concrete runner is in
+[`backend/src/matchdesk/domain/agent_workflow.py`](../../backend/src/matchdesk/domain/agent_workflow.py)
+and the optional live route is in
+[`backend/src/matchdesk/api/agent_routes.py`](../../backend/src/matchdesk/api/agent_routes.py).
 
-</details>
+## Live/demo evidence
 
-The orchestrator is code. Workflow state, retries, idempotency keys and failure reasons
-must persist outside a process before crash recovery is claimed. Specialist requests
-include a correlation ID, replay identity, model/prompt versions and bounded token budget.
+The [competition build record](../evidence/competition-build-20261022.md)
+documents three live Foundry runs and the actual rejection/revision behavior.
+The [verifier benchmark](../evidence/verifier-benchmark-20261024.md)
+is synthetic and separate from model evaluation. The live run endpoint is
+opt-in, limited to one active run, five-minute spacing, 12 runs/day and
+a six-minute runtime timeout **within one process**. These are not
+durable, multi-replica cost caps.
 
-A provider failure creates a labelled factual template only from verified facts. Cached
-output and recorded model responses remain visibly distinct from live inference.
-Final model and SDK versions require quota/region discovery and a compatibility spike.
+Recorded model traces and deterministic scripted rehearsals are clearly
+distinguished from new live inference in the studio. Live production
+model changes and increased spend require independent operator approval.
 
-Reference checked 8 October 2026: [Microsoft Agent Framework overview](https://learn.microsoft.com/en-us/agent-framework/overview/).
+## Not the coding-delivery orchestrator
+
+The `scripts/delivery_*.py` workstreams / issue #60 are
+**read-only delivery-control rehearsal and scheduling designs**. Passing
+[PR #79](https://github.com/GOkwori/matchdesk/pull/79) and
+[delivery control](https://github.com/GOkwori/matchdesk/actions/runs/40162579945)
+does **not** activate a local always-on coding executor, tool credentials,
+release authority or a persistent service.

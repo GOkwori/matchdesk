@@ -7,7 +7,7 @@
 | | |
 | --- | --- |
 | **Live demo** | https://mdesk-web.icybeach-62467e8a.uksouth.azurecontainerapps.io (Azure Container Apps: the studio, the API, the live stream, live agent runs, MCP and voice-over) |
-| **Video** | _Added with the submission_ |
+| **Video** | Not linked or independently verified in the repository as of 25 October 2026; required for submission |
 | **Judges, start here** | [Judging guide](docs/competition/judging-guide.md) · [Pitch](docs/competition/pitch.md) · [Documentation map](docs/README.md) |
 
 ## Contents
@@ -24,6 +24,27 @@
 10. [From demo to production](#10-from-demo-to-production)
 11. [Authorship and AI assistance](#11-authorship-and-ai-assistance)
 12. [Data and licence](#12-data-and-licence)
+
+## Implementation and release status (25 October 2026)
+
+This README describes the **implemented source on development**, not an independently
+retested live deployment of every feature. Current inspected commit: `f65e07e94e30a9280a720d31863f22fbc1f5a62f`.
+The submission release branch and last verified Azure demo deployment are `6fe0bf54db92b7cce69bfd45fd99da0d793ab971`;
+protected `main` remains `31371b06b23ee61f25d5b9f6ccceb9b3ae7bb222`.
+The latest source includes voice-over and documentation changes **not evidenced as
+deployed on the submission release SHA**.
+
+The source's four core CI/security groups and scheduled delivery control passed;
+Foundation integration passed on **attempt two**, after a real desktop contrast failure
+on attempt one. This is a passing last run, **not proof the original issue was fixed**.
+Manual accessibility approval, independently attributable judge rehearsal, genuine
+producer identity/publication, independent security assurance, and final submission
+approval remain distinct outstanding gates.
+
+Read the [current release/acceptance ledger](docs/operations/release-status.md) before
+promoting a SHA or making live capability claims. The
+[implementation inventory](docs/implementation-inventory.md) separates deployed demo,
+implemented-only and proposed functions.
 
 ## 1. The problem and the idea
 
@@ -132,7 +153,7 @@ flowchart LR
 
 </details>
 
-The [solution design](docs/solution-design/02-architecture.md) explains each trust boundary; the
+The [implemented runtime diagram](docs/diagrams/runtime-implemented.svg), [agent verification diagram](docs/diagrams/agent-verification-implemented.svg) and [release authority diagram](docs/diagrams/release-authority-implemented.svg) provide visual summaries; see the [diagram register](docs/diagrams/README.md). The [solution design](docs/solution-design/02-architecture.md) explains each trust boundary; the
 [agents and orchestration](docs/solution-design/06-agents-and-orchestration.md) and
 [verification](docs/solution-design/07-verification.md) chapters go deeper.
 
@@ -253,17 +274,24 @@ MatchDesk is a working demonstration on one synthetic match. To run it for a rea
 | Accessibility and language | Manual assistive-technology testing, native-speaker review, more languages and a football glossary | Issues [#52](https://github.com/GOkwori/matchdesk/issues/52) and [#62](https://github.com/GOkwori/matchdesk/issues/62) |
 | Operations | Dev, staging and production environments, infrastructure as code for Foundry, on-call runbooks, dependency updates | [Azure deployment plan](docs/operations/azure-deployment-plan.md), [repository controls](docs/operations/repository-controls.md) |
 
-## 11. Authorship and AI assistance
+## 11. Ownership, authorship and AI assistance
 
-MatchDesk was prepared by George Okwori. He conceived the product, set its requirements,
-architecture and design, directed the implementation, and reviewed and approved every change
-merged into this repository.
+**Project owner and architect:** George Okwori. MatchDesk is my own initiative. I set the
+problem, goals, product direction, architectural decisions, priorities and release controls,
+and I remain accountable for the finished entry and its evidence.
 
-Claude (Anthropic) and ChatGPT (OpenAI) were used as development assistants: for documentation,
-for writing and refactoring code, and for code review. ChatGPT's image generation also produced
-the early design concept boards recorded in the [asset register](docs/design/asset-register.md).
-These assistants are development tools only; the running product uses Microsoft Foundry and
-Azure AI Speech, as described above.
+**Development-tool disclosure:** Claude (Anthropic) and ChatGPT (OpenAI) have been used
+as development assistants. Their recorded assistance includes code review and validation
+**and**, in earlier project records, code writing/refactoring and documentation assistance.
+Those recorded contributions are not my product authorship or approval authority. The Git
+history, pull-request descriptions and development records are retained as the evidence
+of specific actions; none is retrospectively represented as exclusively human-written.
+I personally own the initiative and decisions, but a contributor/tool credit is not
+a statement that the tool designed or owns MatchDesk.
+
+For role-by-role attribution, evidence standard and historical provenance, see
+[Ownership, contributions and provenance](docs/engineering/ownership-and-provenance.md).
+For independent release acceptance, see [release and acceptance status](docs/operations/release-status.md).
 
 ## 12. Data and licence
 

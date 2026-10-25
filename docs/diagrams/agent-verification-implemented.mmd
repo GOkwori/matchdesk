@@ -1,0 +1,10 @@
+flowchart LR
+    Events[(Synthetic events)] --> Analyst[Tactical Analyst]
+    Analyst --> Composer[Narrative Composer]
+    Composer --> Verifier{Deterministic verifier}
+    Verifier -->|verified| Reviewer[Editorial Reviewer]
+    Verifier -->|needs revision: bounded| Composer
+    Reviewer --> Adapter[Audience Adapter]
+    Adapter --> Outputs[Verified overlays, recaps and stories]
+    Outputs --> Producer[Browser-only producer demo]
+    NoAuthority[No agent can approve or publish] -.-> Producer

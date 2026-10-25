@@ -1,28 +1,44 @@
-# Threat model and security controls
+# Threat model and assurance boundaries
 
-Status: foundation controls tested locally; product/cloud security not qualified.
+**Status:** source security and runtime/native-image CI checks passed on
+`f65e07e94e30a9280a720d31863f22fbc1f5a62f`, but the synthetic Azure demo is **not a production
+security-certified environment**. The older claim "no cloud/model
+resources connected" is no longer current.
 
-| Threat | Implemented foundation response | Required production extension |
-|---|---|---|
-| Oversized JSON | Actual byte counting before parsing | Platform quotas and load qualification |
-| Type confusion | Strict primitives and explicit bool/integer checks | Contract checks at every untrusted boundary |
-| Input disclosure | Validation errors omit submitted values | Redaction across logs and traces |
-| Event/evidence mutation | Immutable models and canonical digests | Authoritative store revisions and access control |
-| Forged verification | No publishing route; structure explicitly not truth | Server-owned verification plus actor-bound approvals |
-| Session crossing | No sessions exposed yet | Opaque credentials, scoped queries, CSRF and isolation tests |
-| Prompt injection | No model tools connected | Treat source text as data, scoped allowlisted tools, adversarial evals |
-| Dependency compromise | No release is certified | Lockfiles, scans, signed provenance and image review |
-| Cross-realm privilege escalation | Offline workforce JWT and server-owned role contracts | Reject customer and generic issuers at producer boundary; separate tenant, audience and signing-key trust |
-| Social account merging | No account-linking endpoint | Immutable broker subject identity; fresh dual proof and consent before linking; never auto-merge by email |
-| Login CSRF / session substitution | No federated login enabled | Browser code+PKCE, state, exact callback, HttpOnly Secure SameSite BFF session, CSRF and logout |
-| JWT key substitution | Explicit RS256, issuer-bound key resolver | Trusted issuer JWKS refresh/rotation and negative-path token tests |
-| Privileged account abuse | Host-defined role/session grants | MFA/conditional access, permission revocation, step-up and audited approval |
-| Unapproved identity spending | No identity resources provisioned | MAU/add-on cost estimate, budget and explicit owner approval |
+## Trust boundary matrix
 
-[ADR-0011](../decisions/ADR-0011-federated-authentication.md) locks
-customer federation through External ID and separate workforce Entra sign-in.
-Neither set of live providers nor authenticated session endpoints is configured.
+| Boundary | Implemented control | Still not qualified |
+| --- | --- | --- |
+| Browser → demo API | Same-origin Next.js proxy; bounded request bodies; synthetic fixtures | Generic public read-only endpoint abuse/load assessment |
+| MCP client → demo API | Host-enabled read-only tools; no publisher operations | External-user auth/tenant scoped quotas beyond demo |
+| Foundry agent → verifier | Scoped tools, typed claim contracts, bounded revisions | Model output never an authorisation decision |
+| Producer requests → domain store | Synthetic/disposable PostgreSQL CAS, audit, deny paths | Trusted workforce Entra/MFA, exact resource grant in live host |
+| Demo producer → publication | Browser-only simulated approval/retry | Real destination, real signed approval, real audit publication |
+| CI → build/release | Locked dependencies, pinned Actions, CodeQL, gitleaks, native images | Independent penetration test, source provenance/signing policy |
+| Public Azure → billing | Process-local model/voice limits, optional budget alert | Persistent global quotas, verified invoices, hard financial ceilings |
 
-The current process is not an authenticated operator service. Restrict it to local
-development. Browser controls alone can never authorise producer operations. Private
-keys, tokens and deployment identifiers must not appear in source, screenshots or reports.
+## Explicit threat classes
+
+Treat direct MCP/API/tool invocation, caller spoofing, forged JWTs,
+tenant swapping, replay, prompt injection, stale source SHA, poisoned
+evidence, dependency compromise, unauthorized publication, leaked
+secrets and source/security gate bypass as in scope. Model prompts
+and guardrails are **not** security or permission boundaries.
+Each privileged operation requires independent actor/resource/action
+authorisation at execution time and denies by default.
+
+## Known failures, outstanding external evidence
+
+- [Integration run 40129492295](https://github.com/GOkwori/matchdesk/actions/runs/40129492295)
+  failed desktop tactical colour-contrast on attempt one, then passed
+  runtime-browser and native-images on attempt two at the same SHA.
+  This does **not** demonstrate a source-level accessibility fix.
+- [Manual WCAG issue #52](https://github.com/GOkwori/matchdesk/issues/52)
+  remains open and NOT RUN with independent assistive technology.
+- [Security/recovery issue #63](https://github.com/GOkwori/matchdesk/issues/63)
+  tracks negative-path, data-recovery and independent assurance holds.
+- [Owner controls issue #65](https://github.com/GOkwori/matchdesk/issues/65)
+  remains open for exact design originals and human-only decisions.
+
+All passwords, API keys, private content, access tokens and unredacted
+traces must remain outside public evidence. See [SECURITY.md](../../SECURITY.md).

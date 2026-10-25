@@ -4,6 +4,13 @@ The competition demo runs on Azure Container Apps. This is smaller than the prod
 [azure-deployment-plan.md](azure-deployment-plan.md): there is no private network, database, Key Vault or
 sign-in, because the demo has none of them.
 
+> **Release note (25 October 2026):** The latest evidenced successful Azure deploy
+> used `6fe0bf54db92b7cce69bfd45fd99da0d793ab971`, not the later `f65e07e94e30a9280a720d31863f22fbc1f5a62f` development commit.
+> See [release and acceptance status](release-status.md). Financial figures
+> below are historical planning estimates, not invoices or guarantees.
+> Voice-over is implemented in newer source but not evidenced as deployed on
+> this older release SHA.
+
 ## What is created
 
 Everything is in one resource group, in UK South:

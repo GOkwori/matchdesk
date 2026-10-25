@@ -1,0 +1,13 @@
+flowchart LR
+    Viewer[Judge / public browser] --> Studio[Next.js studio]
+    MCP[External MCP client] --> API[FastAPI internal API]
+    Studio --> API
+    Fixtures[(1,421 synthetic events)] --> Engine[Ingest / reducer / metric engine]
+    Engine --> Verify[Deterministic verifier]
+    API --> Verify
+    API --> Foundry[Microsoft Foundry: four specialists]
+    API --> Speech[Optional Azure AI Speech]
+    API --> Telemetry[Application Insights]
+    Verify --> ClientCheck[Browser TypeScript parity verifier]
+    Studio --> ClientCheck
+    Note[No real producer identity or publication authority] -.-> API

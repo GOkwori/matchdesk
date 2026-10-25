@@ -1,5 +1,13 @@
 # Project pitch
 
+> **Submission integrity (25 October 2026):** This is an implementation
+> narrative and pitch, **not** a signed statement that every development
+> feature is already live on the current Azure demo.
+> [Release / deployment truth](../operations/release-status.md) ·
+> [Capability inventory](../implementation-inventory.md).
+
+
+
 **MatchDesk: AI agents draft the football story, code checks every claim, a producer decides.**
 
 **In one paragraph.** MatchDesk turns a stream of synthetic football events into

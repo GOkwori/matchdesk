@@ -8,8 +8,8 @@ The tools in use are listed in the [README](../../README.md#9-tools-used): Pytho
 Pydantic and pytest for the API; Next.js, React and TypeScript for the studio, with Playwright
 and axe-core in the browser; Microsoft Foundry, Agent Framework and Azure AI Speech at runtime;
 and GitHub Actions, CodeQL, gitleaks and dependency audits in CI. Claude and ChatGPT were used as
-development assistants for documentation, code writing and refactoring, and code review; see
-[authorship and AI assistance](../../README.md#11-authorship-and-ai-assistance).
+development assistants, including code review/validation and historically documented code and documentation assistance. No record may be retroactively rewritten to claim review-only involvement. See
+[ownership and provenance](ownership-and-provenance.md) and [authorship and AI assistance](../../README.md#11-ownership-authorship-and-ai-assistance).
 
 Changes should stay scoped, with explicit staging and conventional commit messages.
 Only main and development are authorised. Release changes use development-to-main

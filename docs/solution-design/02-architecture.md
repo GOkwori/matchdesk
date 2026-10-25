@@ -1,88 +1,70 @@
 # Architecture and trust boundaries
 
-Status: proposed whole-system design; Phase 0/1/2 VERIFIED / COMPLETED, Phase 3 P3-01/02/03 domain contracts TESTED and P3-04/05 IN PROGRESS.
+**Status (25 October 2026):** The implemented synthetic-only demo is deployed
+at an older release revision. This chapter distinguishes working source,
+deployed-demo evidence and proposed production architecture.
 
-![Target architecture: producer desk, API, replay worker, engine, agents, verification and publication gate](../diagrams/architecture-target.png)
+![Implemented demo runtime](../diagrams/runtime-implemented.svg)
 
-<details>
-<summary>Diagram source (Mermaid)</summary>
+Source: [editable Mermaid map](../diagrams/runtime-implemented.mmd).
+See [release ledger](../operations/release-status.md) for actual SHAs.
 
-```mermaid
-flowchart TB
-    Producer[Producer or isolated judge session] --> Web[Next.js producer desk]
-    Web --> API[FastAPI boundary]
-    API --> Store[(PostgreSQL events / evidence / approvals / audit)]
-    Replay[Seeded replay worker] --> Engine[Pure reducer and metric engine]
-    Engine --> Store
-    Engine --> Jobs[Durable workflow jobs]
-    Jobs --> Agents[Agent Framework with Foundry]
-    Agents --> Verify[Deterministic verification]
-    Verify --> Store
-    API --> Publish[Version-bound publication gate]
-    Publish --> Outputs[Overlay and audience feeds]
-```
+## Implemented topology
 
-</details>
+The Next.js studio provides a public responsive demonstration and a same-origin
+API path. On Azure Container Apps, `mdesk-web` fronts an internal FastAPI
+`mdesk-api`. Public viewers can use synthetic replay, verified statistics,
+moment detection, overlays, stories, recaps, the optional Ask planner,
+read-only MCP and opt-in live specialist runs.
 
-The modular backend separates simulation, ingestion, state, intelligence, verification,
-agents, API and infrastructure. Phase 1 implements the deterministic simulator, ingestion,
-reducer, registered metrics and moment detection. Phase 2 implements a model-independent
-typed orchestration control plane for four specialist roles, scoped read-only specialist
-tools, deterministic claim verification, a fail-closed Microsoft Agent Framework / Foundry
-runtime, bounded retry/timeout/recovery controls and deterministic model-output evaluation.
-One bounded live Foundry tactical proposal has passed the same evidence-verification path.
-Phase 3 includes tested producer review, pure-domain publication gating and broadcast
-output envelopes. The PostgreSQL producer-case tables, generation/audit CAS and
-rollback/restart semantics have been tested through the actual pinned Psycopg Python
-adapter using a restricted role in disposable integration, including independent
-audit-row reconciliation and DB restart. This is not production persistence.
-The multi-provider sign-in decision is now approved in
-[ADR-0011](../decisions/ADR-0011-federated-authentication.md). The customer
-journey will broker Apple, Google, Facebook, personal Microsoft, organisational
-Entra ID and local email through a **separate Entra External ID tenant**.
-Producers/admins will use a workforce Entra tenant. Both issuers, API audiences,
-tenant IDs, sessions and entitlements remain isolated; all users are mapped by
-trusted issuer+tenant+immutable subject, never by email matching.
+The backend separates `api/` route boundaries from `domain/` football
+ingestion, reducer, registered metrics, claim binding, verification, agent
+workflow, producer-domain policy and output generation.
 
-![Identity: customer and workforce sign-in paths to the review and publication gate](../diagrams/architecture-identity.png)
+The demonstration uses a **single synthetic match** and a bounded event
+log. Tracking numbers are synthetic. The browser has a parity-tested
+TypeScript implementation of the registered metrics and verifier. The
+server retains authority over its evidence revision/digests.
 
-<details>
-<summary>Diagram source (Mermaid)</summary>
+## Agent and verification trust boundary
 
-```mermaid
-flowchart TB
-    Users[Fans and customers] --> BFF[Browser-delegated BFF login]
-    Social[Apple Google Facebook and personal Microsoft] --> Broker[Entra External ID]
-    Local[Email OTP or password] --> Broker
-    Orgs[Approved organisations via OIDC or SAML] --> Broker
-    BFF --> Broker
-    Broker --> CustomerAPI[Customer broker JWT and server-owned viewer grants]
-    Staff[Human producer and administrator] --> Workforce[Workforce Entra ID and MFA]
-    Workforce --> ProducerAPI[Separate workforce JWT and session grants]
-    ProducerAPI --> Review[Version-bound human review]
-    Review --> Publish[Governed publication gate]
-```
+![Agent and verification flow](../diagrams/agent-verification-implemented.svg)
 
-</details>
+Tactical Analyst, Narrative Composer, Editorial Reviewer and Audience
+Adapter run through bounded Microsoft Foundry/Agent Framework workflows.
+Their outputs are **proposals**. The deterministic verifier recomputes
+registered metrics and checks the asserted text, reference and window.
+Invalid or unsupported claims are rejected or receive bounded revision.
+Models do not gain authorisation by producing a favourable status.
 
-The customer broker and protected BFF sessions are **PLANNED, not live**.
-An offline workforce JWT verifier is implemented, but trusted production
-JWKS retrieval, session authorisation, authenticated HTTP producer commands,
-transactional delivery and production workflow persistence remain later work.
+## Producer and identity boundary
 
-Numerical truth belongs to registered deterministic queries. Narrative reasoning is
-an interpretation of that evidence. Publishing authority belongs to an authenticated
-producer action, never an agent's generated status. Model/tool calls use scoped read
-interfaces and cannot modify metric evidence or approval records. The Phase 2 controller,
-not a specialist runtime, owns role order, retry budget, timeout classification, recovery
-budget and eligibility to cross the verification hand-off. Live model output remains a
-non-authoritative proposal and must pass deterministic evaluation before later workflow
-stages can rely on it.
+The database-backed producer command and approval logic has extensive
+disposable PostgreSQL tests. Public producer approval in the studio is
+a **browser-only demo** with SHA-256 version binding, staged retry and
+approval withdrawal on edits. It is not an authenticated human producer
+action and does not publish to real destinations.
 
-Replay cursors, workflow identities and published outputs must include session and
-replay generation. Resetting one judge session cannot invalidate another. A future
-transactional outbox links committed publication to its output stream; a crash between
-commit and delivery must not duplicate publication.
+The shipped Next.js workforce BFF is explicitly disabled. A real
+workforce identity, step-up, limited tenant/session permissions, independently
+validated host trust and real outbox delivery remain separately controlled.
+Customer federation via External ID is planned, not an active public login
+authority. See [ADR-0011](../decisions/ADR-0011-federated-authentication.md).
 
-SSE conveys versioned state changes and resumes from a scoped cursor. An HTTP command
-changes state only after request identity, authorisation and concurrency checks pass.
+## Source, deployment and release authority
+
+![Release authority flow](../diagrams/release-authority-implemented.svg)
+
+Automation checks the exact source head; a separately approved deployment
+identifies the Azure revision. Neither can satisfy genuine human review,
+manual accessibility, competition submission or production publishing.
+Development and release branch SHAs differ: see
+[release ledger](../operations/release-status.md).
+
+## Target (not deployed)
+
+The existing [target architecture](../diagrams/architecture-target.png)
+is **proposed**, including licensed match feeds, full production PostgreSQL,
+isolated identity tenants, private network, durable model budgets, signed images,
+independent assurance, authenticated publication and production-scale recovery.
+It must not be mistaken for the Azure demo.

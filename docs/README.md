@@ -3,6 +3,15 @@
 Every document in the repository, grouped by purpose. The [README](../README.md) is the place to start;
 the [judging guide](competition/judging-guide.md) is the quickest route through the working demo.
 
+## Current implementation and authority
+
+| Document | Purpose |
+| --- | --- |
+| [Implementation inventory](implementation-inventory.md) | Current implemented, deployed, demonstration-only and unqualified capability boundaries |
+| [Release and acceptance status](operations/release-status.md) | Exact source/deployment SHAs, CI outcomes and independent holds |
+| [Architecture diagram register](diagrams/README.md) | Rendered diagrams with inspectable editable sources |
+| [Ownership, contributions and provenance](engineering/ownership-and-provenance.md) | Founder ownership, development tools and non-retroactive Git attribution |
+
 ## Project
 
 | Document |

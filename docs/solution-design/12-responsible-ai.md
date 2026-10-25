@@ -1,20 +1,31 @@
-# Responsible AI and evidence limitations
+# Responsible AI, football-data integrity and evaluation scope
 
-Status: policy/design baseline; no live model execution in this snapshot.
+**Status:** a bounded live four-specialist Microsoft Foundry workflow has
+run against **one entirely fictional match**, with deterministic verified
+outputs. This is no longer a design-only/no-live-model snapshot.
 
-Runtime AI is an explicit part of MatchDesk's intended product. The four specialist
-roles, prompts, tools, traces and evaluations must remain documented when implemented.
-AI does not establish the score, calculate authoritative statistics or approve publication.
+- **What AI does:** draft tactical analysis, commentary, editorial feedback,
+  audience variants and optional question-to-plan interpretation.
+- **What AI does not do:** create authoritative events, decide the score,
+  grant reviewer identity/permissions, approve broadcasts or publish.
+- **How factual claims are accepted:** server-side deterministic metrics
+  and event-fact checks; the browser independently rechecks visible
+  evidence on the generated synthetic log.
+- **What remains interpretation:** tactical explanations, adjectives,
+  unsupported linguistic inference and unverified translation nuance.
+- **What is synthetic:** all teams, players, match history, tracking speed,
+  distance, event stream and demo destinations; no live broadcast footage.
+- **What is not yet externally accepted:** native-speaker EN/ES/FR semantics,
+  independent human WCAG accessibility, genuine publisher authentication,
+  licensed data feeds, a penetration test and real user outcomes.
 
-All supplied event examples are synthetic. A valid contract does not prove plausible
-football, existence in a match, causal influence or empirical predictive quality.
-The synthetic xG field is an illustrative feature until its formula and limits are published.
+The [verifier benchmark](../evidence/verifier-benchmark-20261024.md)
+tests 1,105 generated cases from the project's own rules. **Perfect
+performance on that distribution does not imply an absence of
+hallucinations on natural language, other matches or languages.**
 
-Separate measured facts, event facts and tactical interpretation in every output. Preserve
-that distinction through translation. Report unsupported assertions, stale evidence,
-model failures and language fallbacks visibly. Do not turn a labelled demonstration
-fixture into a claim of spontaneous error detection.
-
-Evaluation must include false claims, natural model outputs, omitted claims, translation
-drift, unsafe text and reset/revision races. A zero error count on a finite test set is
-not a guarantee of universal truth. A producer remains accountable for final release.
+Four-specialist Foundry traces and deterministic rehearsal fixtures
+must remain separately labelled. Model/provider input and output
+should be captured only under approved privacy and telemetry controls.
+Live run and Speech process-local budgets are not subscription-level
+spend guarantees; see [cost governance](../operations/cost-estimate.md).

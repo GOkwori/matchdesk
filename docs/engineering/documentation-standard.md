@@ -60,6 +60,12 @@ Synthetic data, cached demonstration outputs, offline model stubs and controlled
 
 ## Development tools and attribution
 
+The [current contribution and provenance statement](ownership-and-provenance.md) is
+an explicit scope reference. Do not recast earlier documented code-authoring or
+documentation assistance as exclusively code review; keep founder ownership and
+historical tool contributions as different facts.
+
+
 Keep the product story focused on MatchDesk rather than on the tools used to implement it. Document actual engineering tools in `docs/engineering/development-workflow.md` where useful, and make any requested or applicable disclosures accurately.
 
 Do not force a statement such as "AI built this application" into every document. Equally, do not invent statements such as "I wrote every line manually" or "no AI assistance was used". Do not fabricate GitHub Copilot usage to strengthen a submission.

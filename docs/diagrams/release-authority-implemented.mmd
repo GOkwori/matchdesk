@@ -1,0 +1,8 @@
+flowchart TB
+    Development[development: f65e07e] --> CI[Exact-SHA CI, integration, security, delivery control]
+    CI -.-> Release[release/submission-2026-10: 6fe0bf5]
+    Release --> Azure[Azure demo: last evidenced 6fe0bf5]
+    CI --> Human[Human acceptance: NOT ESTABLISHED]
+    Main[main: 31371b0 unchanged] -.-> Production[Real production / publication: NOT AUTHORISED]
+    Human -.-> Production
+    Release -.-> Production

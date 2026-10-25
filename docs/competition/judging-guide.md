@@ -1,5 +1,16 @@
 # Judging guide
 
+> **Evidence boundary, 25 October 2026:** The latest inspected source
+> `f65e07e94e30a9280a720d31863f22fbc1f5a62f` is newer than the submission release and the
+> last evidenced Azure build `6fe0bf54db92b7cce69bfd45fd99da0d793ab971`. Feature claims introduced after
+> that release must be independently checked at the actual deployed SHA.
+> Manual judge acceptance and the public submission video are not
+> verified in this repository. See [release ledger](../operations/release-status.md).
+
+![Implemented runtime](../diagrams/runtime-implemented.svg)
+
+
+
 MatchDesk runs on one invented match, Northbridge FC 2–1 Riverside United, replayed to
 67:12 from a seeded log of 1,421 synthetic events. Nothing is real or published, and the live
 stream plays that recorded log back as if it were happening.
