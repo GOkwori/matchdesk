@@ -219,7 +219,7 @@ export const verdictLabel: Record<Verdict, string> = {
   "not-yet": "Not verifiable yet",
 };
 
-/** Draft D-031 narrative: one sentence per claim, editable in the composer. */
+/** Draft D-031 narrative: one sentence per claim, editable in the story editor. */
 export type Sentence = { readonly claimId: string; readonly text: string; readonly opinion?: string };
 
 export const d031Sentences: readonly Sentence[] = [
@@ -232,7 +232,7 @@ export const d031Sentences: readonly Sentence[] = [
 export type SentenceState = "keep" | "opinion" | "removed";
 
 /** A draft is eligible when every kept sentence is verified or explicitly marked as opinion.
- * `failedEdits` lists claims whose edited sentence failed re-verification in the composer. */
+ * `failedEdits` lists claims whose edited sentence failed re-verification in the story editor. */
 export function draftEligibility(states: Record<string, SentenceState>, failedEdits: readonly string[] = []): { eligible: boolean; blocking: string[]; verified: number; opinions: number } {
   const blocking: string[] = [];
   let verified = 0;
@@ -261,7 +261,7 @@ export const tourSteps: readonly { title: string; body: string; next?: string; n
   { title: "See why this moment matters", body: "This goal is matched to recorded events. Next, watch four AI specialists write about it, and code check every word.", next: "/match/nbr-riv/insights?tour=3", nextLabel: "See the agents work" },
   { title: "AI writes; MatchDesk checks", body: "A recorded live run on Microsoft Foundry: code rejected the analyst's malformed first answer, the reviewer dropped an unchecked sentence, and the verifier confirmed Okafor's goal. Switch to the rehearsal to watch a 60% claim get sent back.", next: "/match/nbr-riv/evidence/CL-0214?tour=4", nextLabel: "See the proof" },
   { title: "Check a football number", body: `The verifier recomputes 57.96% from all ${eventCountText} events, rounds it to 58% and rejects a forged 59%.`, next: "/producer/queue?tour=5", nextLabel: "See the review queue" },
-  { title: "A story needs fixing", body: "D-031 has a pending interpretation and an unsupported claim. Fix it in the composer.", next: "/producer/compose/D-031?tour=6", nextLabel: "Open the composer" },
+  { title: "A story needs fixing", body: "D-031 has a pending interpretation and an unsupported claim. Fix it in the story editor.", next: "/producer/compose/D-031?tour=6", nextLabel: "Open the story editor" },
   { title: "Fix a sentence and check it again", body: "Every sentence is checked in your browser. Change 58% to 60% and watch it fail; remove the unsupported sentence and the draft becomes eligible.", next: `/story/${STORY_SLUG}?tour=7`, nextLabel: "See what fans get" },
   { title: "Read the fan story", body: "This story uses facts checked against our made-up match. In this demo you can also try a pretend approval; nothing is sent to real people." },
 ];

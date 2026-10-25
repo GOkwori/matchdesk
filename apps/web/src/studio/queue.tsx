@@ -25,7 +25,7 @@ export function QueueBody() {
             <span className="md-mono md-accent-soft-text">D-031 {fixed ? "v4" : "v3"}</span>
             <span className="md-queue-title"><strong>{drafts[0].title}</strong><span>Priya Shah · 4 claims</span></span>
             <VerdictChip pill verdict={d031.eligible ? "verified" : "failed"} label={d031.eligible ? "Eligible" : "Not eligible"} />
-            <Link href="/producer/compose/D-031" className="md-btn md-btn-primary md-btn-sm">{d031.eligible ? "Review" : "Fix in composer"}</Link>
+            <Link href="/producer/compose/D-031" className="md-btn md-btn-primary md-btn-sm">{d031.eligible ? "Review" : "Fix this story"}</Link>
           </li>
           <li className="md-queue-item">
             <span className="md-mono md-accent-soft-text">D-029 v2</span>
@@ -53,7 +53,7 @@ export function QueueBody() {
             })}
           </ul>
           {!d031.eligible && <div className="md-banner md-banner-warn md-banner-inline"><span className="md-banner-icon" aria-hidden="true">!</span><span><strong>Approval blocked.</strong> {d031.blocking.join(" and ")} must be resolved first.</span></div>}
-          <Link href="/producer/compose/D-031" className="md-btn md-btn-primary">Open in composer <Icon name="arrow" size={16} /></Link>
+          <Link href="/producer/compose/D-031" className="md-btn md-btn-primary">Fix this story <Icon name="arrow" size={16} /></Link>
         </section>
         <TourStep step={5} />
       </aside>

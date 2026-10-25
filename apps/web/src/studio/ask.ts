@@ -81,7 +81,7 @@ const STORY = "/story/okafor-header-restores-northbridge-lead";
 
 export const HELP: readonly HelpTopic[] = [
   { id: "tour", patterns: [/\btour\b/, /guide me/, /show me around/, /where (do|should) i start/, /\bget started\b/],
-    text: "The guided tour takes about three minutes: a goal, its evidence, the AI agents, a recalculated claim, the review queue, the composer and the fan story.",
+    text: "The guided tour takes about three minutes: a goal, its evidence, the AI agents, a recalculated claim, the review drafts, the story editor and the fan story.",
     link: { href: "/match/nbr-riv?tour=1", label: "Start the tour" } },
   { id: "eligible", patterns: [/\beligible\b/, /\beligibility\b/],
     text: "Eligible means every factual sentence in a draft is verified and nothing is blocked. An eligible draft can go to a human producer for approval; it is not published until they approve it.",
@@ -96,8 +96,8 @@ export const HELP: readonly HelpTopic[] = [
     text: "Only a human producer can approve a draft, and only after it is eligible. In this demo you approve as a demo producer on the publication page: the approval binds the exact version, any edit withdraws it, and publishing goes only to a demo channel in your browser.",
     link: { href: "/producer/publish/D-031", label: "Open publication" } },
   { id: "composer", patterns: [/\bcompos/, /\bedit\b/, /\bdraft\b/, /\bfix\b/, /\brewrite/],
-    text: "The composer re-verifies every sentence as you type. Change 58% to 60% and it fails; remove the unsupported sentence and the draft becomes eligible.",
-    link: { href: "/producer/compose/D-031", label: "Open the composer" } },
+    text: "The story editor re-verifies every sentence as you type. Change 58% to 60% and it fails; remove the unsupported sentence and the draft becomes eligible.",
+    link: { href: "/producer/compose/D-031", label: "Open the story editor" } },
   { id: "queue", patterns: [/\bqueue\b/, /\breview\b/],
     text: "The review queue lists drafts waiting for a producer, with what is blocking each one.",
     link: { href: "/producer/queue", label: "Open the review queue" } },
