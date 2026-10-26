@@ -1,14 +1,13 @@
 # Verification and publication design
 
-Status: claim/evidence/approval contracts implemented; verifier and publisher planned.
+Status (26 October 2026): the deterministic claim verifier and its TypeScript browser port are implemented and exercised against the synthetic event log. Hosted stories, overlays and recaps use verified claims; a public, browser-only producer publishing simulation exists, but authenticated real external publishing does not. See the [verifier benchmark](../evidence/verifier-benchmark-20261024.md), [judging guide](../competition/judging-guide.md) and [requirements traceability](../competition/traceability-matrix.md).
 
 A measured claim is checked by a named query over the authoritative event revision.
 An event fact must match identity, type, team, player and period window. A tactical
 inference is labelled analysis and must use appropriately qualified wording. Counting
 supporting events or detecting the word "may" is not proof of tactical causality.
 
-The current `structurally_valid` response explicitly returns `evidence_verified: false`.
-No API caller can turn the contract workbench into an approval or publishing endpoint.
+The foundation's structural contract endpoint still returns `evidence_verified: false`; it must not be confused with the separate server-owned claim-verification path. No agent or API caller may promote a structural-only response into factual truth or production publishing authority.
 
 ## Stated precision and whole-match windows (17 October 2026)
 
@@ -23,7 +22,7 @@ persona and language. Editing text, adapting language or correcting relevant eve
 invalidates that approval. Verification must be rerun on the complete final text,
 not only on a convenient subset of claims supplied by the writer.
 
-The future state transition and outbox write must occur in one database transaction.
+The production publication state transition and outbox write must be transactional and authorized at execution. The producer domain includes tested PostgreSQL compare-and-swap and outbox behavior in disposable integration, but the public demo's approval/destination actions are browser-local simulations rather than real external publication.
 Use optimistic concurrency and unique idempotency keys. A race between producer edits
 and publication must fail without publishing a stale version. A user-set status
 field cannot replace a server-owned verification and approval record.
