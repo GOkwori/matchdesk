@@ -58,10 +58,11 @@ A proposed owner-authorized absolute evaluation allowance is **up to USD 1.00**
 for this one evaluation batch only. The workflow/script still needs explicit
 preflight and post-call metering: an Azure alert is not a hard spending limit.
 
-Do not use startup credits to imply zero marginal cost. Confirm whether credit
-actually applies to this resource. A price change, increased attempt count,
-additional tool invocation, different billing scope or request for larger allowance
-invalidates this proposal and requires re-approval.
+Do not interpret an available billing allowance or promotional benefit as zero
+marginal cost. Verify the applicable billing arrangement and available budget
+before dispatch. A price change, increased attempt count, additional tool
+invocation, different billing scope or request for larger allowance invalidates
+this proposal and requires re-approval.
 
 ## Lower/no-cost alternatives and rollback
 
