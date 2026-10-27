@@ -121,6 +121,19 @@ jobs:
             | (cd "$RUNNER_TEMP/matchdesk-gitleaks" && sha256sum --check -)
           tar -xzf "$RUNNER_TEMP/matchdesk-gitleaks/scanner.tar.gz" -C "$RUNNER_TEMP/matchdesk-gitleaks" gitleaks
           "$RUNNER_TEMP/matchdesk-gitleaks/gitleaks" version > artifacts/secrets/scanner-version.txt
+      - name: Retrieve the exact reviewed historical test fixture
+        # PR #89 was integrated by squash; its introducing commit is no longer
+        # reachable from branch heads but is still in refs/pull/89/head history.
+        # Fetch only that history to prove the immutable fixture bytes below.
+        # This does not alter scanner rules, exclusions or reviewed fingerprints.
+        run: |
+          set -euo pipefail
+          reviewed=6f96c2cb7e6fb8e1bec378a9e137d7da32cc12c1
+          if ! git cat-file -e "${reviewed}^{commit}" 2>/dev/null; then
+            git fetch --no-tags --no-recurse-submodules origin refs/pull/89/head
+          fi
+          git cat-file -e "${reviewed}^{commit}"
+          git cat-file -e "${reviewed}:apps/web/tests/workforce-bff.test.mjs"
       - name: Recompute the exact historical digest false positives before excluding them
         # Only 13 reviewed historical fingerprints qualify, never whole paths or rules.
         run: |
