@@ -1,0 +1,1221 @@
+{
+ "claims": [
+  {
+   "claim": {
+    "claim_id": "ST-E-0688-LEADIN",
+    "evidence_event_ids": [
+     "E-0678",
+     "E-0688"
+    ],
+    "fact": {
+     "event_id": "E-0688",
+     "from_event_id": "E-0678",
+     "from_tag": "interception",
+     "gap_seconds": 28,
+     "query": "sequence_gap.v1",
+     "schema_version": "1.0"
+    },
+    "kind": "event_fact",
+    "schema_version": "1.0",
+    "text": "The goal came 28 seconds after an interception."
+   },
+   "claim_id": "ST-E-0688-LEADIN",
+   "evidence_event_ids": [
+    "E-0678",
+    "E-0688"
+   ],
+   "observed": null,
+   "query_id": "event-sequence-gap-v1",
+   "reason": "The recorded events and gap match the stated sequence",
+   "status": "verified",
+   "text": "The goal came 28 seconds after an interception."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "metric": "goals.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "nbr"
+     },
+     "unit": "count",
+     "value": 1.0,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 2059000
+     }
+    },
+    "claim_id": "ST-E-0688-NBR",
+    "evidence_event_ids": [
+     "E-0688"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Northbridge scored 1 goal up to 34:19."
+   },
+   "claim_id": "ST-E-0688-NBR",
+   "evidence_event_ids": [
+    "E-0688"
+   ],
+   "observed": 1.0,
+   "query_id": "metric-goals-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Northbridge scored 1 goal up to 34:19."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "metric": "goals.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "riv"
+     },
+     "unit": "count",
+     "value": 0.0,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 2059000
+     }
+    },
+    "claim_id": "ST-E-0688-RIV",
+    "evidence_event_ids": [
+     "E-0001"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Riverside scored 0 goals up to 34:19."
+   },
+   "claim_id": "ST-E-0688-RIV",
+   "evidence_event_ids": [
+    "E-0001"
+   ],
+   "observed": 0.0,
+   "query_id": "metric-goals-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Riverside scored 0 goals up to 34:19."
+  },
+  {
+   "claim": {
+    "claim_id": "ST-E-0688-SCORER",
+    "evidence_event_ids": [
+     "E-0688"
+    ],
+    "fact": {
+     "event_id": "E-0688",
+     "player_id": "nbr-09",
+     "query": "goal_scorer.v1",
+     "schema_version": "1.0"
+    },
+    "kind": "event_fact",
+    "schema_version": "1.0",
+    "text": "Okafor scored for Northbridge at 34:18."
+   },
+   "claim_id": "ST-E-0688-SCORER",
+   "evidence_event_ids": [
+    "E-0688"
+   ],
+   "observed": null,
+   "query_id": "event-goal-scorer-v1",
+   "reason": "The cited goal event records the stated scorer",
+   "status": "verified",
+   "text": "Okafor scored for Northbridge at 34:18."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "metric": "goals.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "player_id": "nbr-09",
+      "schema_version": "1.0"
+     },
+     "unit": "count",
+     "value": 1.0,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 2059000
+     }
+    },
+    "claim_id": "ST-E-0688-TALLY",
+    "evidence_event_ids": [
+     "E-0688"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Okafor scored 1 goal up to 34:19."
+   },
+   "claim_id": "ST-E-0688-TALLY",
+   "evidence_event_ids": [
+    "E-0688"
+   ],
+   "observed": 1.0,
+   "query_id": "metric-goals-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Okafor scored 1 goal up to 34:19."
+  },
+  {
+   "claim": {
+    "claim_id": "ST-E-0790-LEADIN",
+    "evidence_event_ids": [
+     "E-0784",
+     "E-0790"
+    ],
+    "fact": {
+     "event_id": "E-0790",
+     "from_event_id": "E-0784",
+     "gap_seconds": 18,
+     "query": "sequence_gap.v1",
+     "schema_version": "1.0"
+    },
+    "kind": "event_fact",
+    "schema_version": "1.0",
+    "text": "The goal came 18 seconds after the move began."
+   },
+   "claim_id": "ST-E-0790-LEADIN",
+   "evidence_event_ids": [
+    "E-0784",
+    "E-0790"
+   ],
+   "observed": null,
+   "query_id": "event-sequence-gap-v1",
+   "reason": "The recorded events and gap match the stated sequence",
+   "status": "verified",
+   "text": "The goal came 18 seconds after the move began."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "metric": "goals.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "nbr"
+     },
+     "unit": "count",
+     "value": 1.0,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 2464000
+     }
+    },
+    "claim_id": "ST-E-0790-NBR",
+    "evidence_event_ids": [
+     "E-0688"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Northbridge scored 1 goal up to 41:04."
+   },
+   "claim_id": "ST-E-0790-NBR",
+   "evidence_event_ids": [
+    "E-0688"
+   ],
+   "observed": 1.0,
+   "query_id": "metric-goals-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Northbridge scored 1 goal up to 41:04."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "metric": "goals.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "riv"
+     },
+     "unit": "count",
+     "value": 1.0,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 2464000
+     }
+    },
+    "claim_id": "ST-E-0790-RIV",
+    "evidence_event_ids": [
+     "E-0790"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Riverside scored 1 goal up to 41:04."
+   },
+   "claim_id": "ST-E-0790-RIV",
+   "evidence_event_ids": [
+    "E-0790"
+   ],
+   "observed": 1.0,
+   "query_id": "metric-goals-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Riverside scored 1 goal up to 41:04."
+  },
+  {
+   "claim": {
+    "claim_id": "ST-E-0790-SCORER",
+    "evidence_event_ids": [
+     "E-0790"
+    ],
+    "fact": {
+     "event_id": "E-0790",
+     "player_id": "riv-11",
+     "query": "goal_scorer.v1",
+     "schema_version": "1.0"
+    },
+    "kind": "event_fact",
+    "schema_version": "1.0",
+    "text": "Lindqvist scored for Riverside at 41:03."
+   },
+   "claim_id": "ST-E-0790-SCORER",
+   "evidence_event_ids": [
+    "E-0790"
+   ],
+   "observed": null,
+   "query_id": "event-goal-scorer-v1",
+   "reason": "The cited goal event records the stated scorer",
+   "status": "verified",
+   "text": "Lindqvist scored for Riverside at 41:03."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "metric": "goals.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "player_id": "riv-11",
+      "schema_version": "1.0"
+     },
+     "unit": "count",
+     "value": 1.0,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 2464000
+     }
+    },
+    "claim_id": "ST-E-0790-TALLY",
+    "evidence_event_ids": [
+     "E-0790"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Lindqvist scored 1 goal up to 41:04."
+   },
+   "claim_id": "ST-E-0790-TALLY",
+   "evidence_event_ids": [
+    "E-0790"
+   ],
+   "observed": 1.0,
+   "query_id": "metric-goals-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Lindqvist scored 1 goal up to 41:04."
+  },
+  {
+   "claim": {
+    "claim_id": "ST-E-1366-LEADIN",
+    "evidence_event_ids": [
+     "E-1359",
+     "E-1366"
+    ],
+    "fact": {
+     "event_id": "E-1366",
+     "from_event_id": "E-1359",
+     "from_tag": "corner",
+     "gap_seconds": 14,
+     "query": "sequence_gap.v1",
+     "schema_version": "1.0"
+    },
+    "kind": "event_fact",
+    "schema_version": "1.0",
+    "text": "The goal came 14 seconds after a corner."
+   },
+   "claim_id": "ST-E-1366-LEADIN",
+   "evidence_event_ids": [
+    "E-1359",
+    "E-1366"
+   ],
+   "observed": null,
+   "query_id": "event-sequence-gap-v1",
+   "reason": "The recorded events and gap match the stated sequence",
+   "status": "verified",
+   "text": "The goal came 14 seconds after a corner."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "metric": "goals.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "nbr"
+     },
+     "unit": "count",
+     "value": 2.0,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 3498000
+     }
+    },
+    "claim_id": "ST-E-1366-NBR",
+    "evidence_event_ids": [
+     "E-0688",
+     "E-1366"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Northbridge scored 2 goals up to 58:18."
+   },
+   "claim_id": "ST-E-1366-NBR",
+   "evidence_event_ids": [
+    "E-0688",
+    "E-1366"
+   ],
+   "observed": 2.0,
+   "query_id": "metric-goals-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Northbridge scored 2 goals up to 58:18."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "metric": "goals.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "schema_version": "1.0",
+      "team_id": "riv"
+     },
+     "unit": "count",
+     "value": 1.0,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 3498000
+     }
+    },
+    "claim_id": "ST-E-1366-RIV",
+    "evidence_event_ids": [
+     "E-0790"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Riverside scored 1 goal up to 58:18."
+   },
+   "claim_id": "ST-E-1366-RIV",
+   "evidence_event_ids": [
+    "E-0790"
+   ],
+   "observed": 1.0,
+   "query_id": "metric-goals-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Riverside scored 1 goal up to 58:18."
+  },
+  {
+   "claim": {
+    "claim_id": "ST-E-1366-SCORER",
+    "evidence_event_ids": [
+     "E-1366"
+    ],
+    "fact": {
+     "event_id": "E-1366",
+     "player_id": "nbr-09",
+     "query": "goal_scorer.v1",
+     "schema_version": "1.0"
+    },
+    "kind": "event_fact",
+    "schema_version": "1.0",
+    "text": "Okafor headed in for Northbridge at 58:17."
+   },
+   "claim_id": "ST-E-1366-SCORER",
+   "evidence_event_ids": [
+    "E-1366"
+   ],
+   "observed": null,
+   "query_id": "event-goal-scorer-v1",
+   "reason": "The cited goal event records the stated scorer",
+   "status": "verified",
+   "text": "Okafor headed in for Northbridge at 58:17."
+  },
+  {
+   "claim": {
+    "assertion": {
+     "comparator": "eq",
+     "metric": "goals.v1",
+     "schema_version": "1.0",
+     "subject": {
+      "player_id": "nbr-09",
+      "schema_version": "1.0"
+     },
+     "unit": "count",
+     "value": 2.0,
+     "window": {
+      "from_ms": 0,
+      "schema_version": "1.0",
+      "to_ms": 3498000
+     }
+    },
+    "claim_id": "ST-E-1366-TALLY",
+    "evidence_event_ids": [
+     "E-0688",
+     "E-1366"
+    ],
+    "kind": "measured_stat",
+    "schema_version": "1.0",
+    "text": "Okafor scored 2 goals up to 58:18."
+   },
+   "claim_id": "ST-E-1366-TALLY",
+   "evidence_event_ids": [
+    "E-0688",
+    "E-1366"
+   ],
+   "observed": 2.0,
+   "query_id": "metric-goals-v1",
+   "reason": "Registered metric recomputation satisfies the claim comparator",
+   "status": "verified",
+   "text": "Okafor scored 2 goals up to 58:18."
+  }
+ ],
+ "languages": [
+  "en",
+  "es",
+  "fr"
+ ],
+ "match_id": "nbr-riv-canonical",
+ "note": "One story per goal. Every figure and fact in the text comes from a claim the verifier checked against the event log; what the log cannot show is listed as not checked. Spanish and French are AI-assisted templates, reviewed and corrected on 23 October 2026; no native speaker has signed them off. Fans only see a story after a producer approves it.",
+ "personas": [
+  "analyst",
+  "fan",
+  "caption"
+ ],
+ "replay_end_ms": 4032000,
+ "schema": "matchdesk-story-feed/1",
+ "stories": [
+  {
+   "buildup": [
+    {
+     "end_x": null,
+     "end_y": null,
+     "id": "E-0678",
+     "outcome": "complete",
+     "player": "nbr-05",
+     "t_ms": 2029720,
+     "tags": [
+      "interception"
+     ],
+     "type": "recovery",
+     "x": 30.0,
+     "y": 52.6
+    },
+    {
+     "end_x": 39.1,
+     "end_y": 78.8,
+     "id": "E-0679",
+     "outcome": "complete",
+     "player": "nbr-11",
+     "t_ms": 2032880,
+     "tags": [],
+     "type": "pass",
+     "x": 33.6,
+     "y": 58.2
+    },
+    {
+     "end_x": 39.5,
+     "end_y": 26.5,
+     "id": "E-0680",
+     "outcome": "complete",
+     "player": "nbr-05",
+     "t_ms": 2036040,
+     "tags": [],
+     "type": "carry",
+     "x": 33.5,
+     "y": 26.5
+    },
+    {
+     "end_x": 54.2,
+     "end_y": 39.7,
+     "id": "E-0681",
+     "outcome": "complete",
+     "player": "nbr-11",
+     "t_ms": 2039200,
+     "tags": [],
+     "type": "pass",
+     "x": 41.4,
+     "y": 26.0
+    },
+    {
+     "end_x": 57.0,
+     "end_y": 11.6,
+     "id": "E-0682",
+     "outcome": "complete",
+     "player": "nbr-05",
+     "t_ms": 2042360,
+     "tags": [],
+     "type": "pass",
+     "x": 52.3,
+     "y": 22.0
+    },
+    {
+     "end_x": 68.0,
+     "end_y": 82.9,
+     "id": "E-0683",
+     "outcome": "complete",
+     "player": "nbr-06",
+     "t_ms": 2045520,
+     "tags": [],
+     "type": "pass",
+     "x": 60.3,
+     "y": 57.9
+    },
+    {
+     "end_x": 69.8,
+     "end_y": 9.4,
+     "id": "E-0684",
+     "outcome": "complete",
+     "player": "nbr-05",
+     "t_ms": 2048680,
+     "tags": [],
+     "type": "pass",
+     "x": 64.5,
+     "y": 57.4
+    },
+    {
+     "end_x": 90.9,
+     "end_y": 14.1,
+     "id": "E-0685",
+     "outcome": "incomplete",
+     "player": "nbr-04",
+     "t_ms": 2051840,
+     "tags": [],
+     "type": "pass",
+     "x": 77.2,
+     "y": 36.6
+    },
+    {
+     "end_x": 84.0,
+     "end_y": 57.0,
+     "id": "E-0686",
+     "outcome": "complete",
+     "player": "nbr-10",
+     "t_ms": 2055000,
+     "tags": [],
+     "type": "pass",
+     "x": 70.0,
+     "y": 58.0
+    },
+    {
+     "end_x": null,
+     "end_y": null,
+     "id": "E-0687",
+     "outcome": "goal",
+     "player": "nbr-09",
+     "t_ms": 2057600,
+     "tags": [],
+     "type": "shot",
+     "x": 84.0,
+     "y": 57.0
+    },
+    {
+     "end_x": null,
+     "end_y": null,
+     "id": "E-0688",
+     "outcome": "goal",
+     "player": "nbr-09",
+     "t_ms": 2058000,
+     "tags": [],
+     "type": "goal",
+     "x": 84.0,
+     "y": 57.0
+    }
+   ],
+   "checks": [
+    {
+     "claim_ids": [
+      "ST-E-0688-SCORER"
+     ],
+     "label": {
+      "en": "Goal scorer",
+      "es": "Autor del gol",
+      "fr": "Buteur"
+     }
+    },
+    {
+     "claim_ids": [
+      "ST-E-0688-NBR",
+      "ST-E-0688-RIV"
+     ],
+     "label": {
+      "en": "Score after the goal, 1–0",
+      "es": "Marcador tras el gol, 1–0",
+      "fr": "Score après le but, 1–0"
+     }
+    },
+    {
+     "claim_ids": [
+      "ST-E-0688-TALLY"
+     ],
+     "label": {
+      "en": "Okafor's goals so far: 1",
+      "es": "Goles de Okafor hasta ahora: 1",
+      "fr": "Buts d’Okafor à ce stade : 1"
+     }
+    },
+    {
+     "claim_ids": [
+      "ST-E-0688-LEADIN"
+     ],
+     "label": {
+      "en": "Interception, then goal 28 s later",
+      "es": "Intercepción y gol 28 s después",
+      "fr": "Interception, puis but 28 s plus tard"
+     }
+    }
+   ],
+   "clock": "34:18",
+   "context": "opener",
+   "diagram": {
+    "en": "① Interception 33:49 · ② Okafor 34:18",
+    "es": "① Intercepción 33:49 · ② Okafor 34:18",
+    "fr": "① Interception 33:49 · ② Okafor 34:18"
+   },
+   "event_id": "E-0688",
+   "header": false,
+   "lead_in": {
+    "event_id": "E-0678",
+    "kind": "interception",
+    "seconds": 28
+   },
+   "minute": 35,
+   "score": {
+    "after": {
+     "nbr": 1,
+     "riv": 0
+    },
+    "before": {
+     "nbr": 0,
+     "riv": 0
+    }
+   },
+   "scorer": "nbr-09",
+   "scorer_goals": 1,
+   "slug": "okafor-opens-the-scoring",
+   "t_ms": 2058000,
+   "team": "nbr",
+   "text": {
+    "analyst": {
+     "en": {
+      "body": "GOAL E-0688 · 34:18 · Okafor · Interception, then goal 28 s later (E-0678) · Okafor goals: 1 · Northbridge 1–0 Riverside",
+      "headline": "GOAL 34:18 · Okafor (Northbridge) · 1–0"
+     },
+     "es": {
+      "body": "GOL E-0688 · 34:18 · Okafor · Intercepción y gol 28 s después (E-0678) · Goles de Okafor: 1 · Northbridge 1–0 Riverside",
+      "headline": "GOL 34:18 · Okafor (Northbridge) · 1–0"
+     },
+     "fr": {
+      "body": "BUT E-0688 · 34:18 · Okafor · Interception, puis but 28 s plus tard (E-0678) · Buts d’Okafor : 1 · Northbridge 1–0 Riverside",
+      "headline": "BUT 34:18 · Okafor (Northbridge) · 1–0"
+     }
+    },
+    "caption": {
+     "en": {
+      "body": "Interception, then goal 28 s later · Okafor goals: 1",
+      "headline": "35′ GOAL · Okafor · NBR 1–0 RIV"
+     },
+     "es": {
+      "body": "Intercepción y gol 28 s después · Goles de Okafor: 1",
+      "headline": "35′ GOL · Okafor · NBR 1–0 RIV"
+     },
+     "fr": {
+      "body": "Interception, puis but 28 s plus tard · Buts d’Okafor : 1",
+      "headline": "35′ BUT · Okafor · NBR 1–0 RIV"
+     }
+    },
+    "fan": {
+     "en": {
+      "body": "Okafor scores at 34:18, 28 seconds after an interception. It's 1–0.",
+      "headline": "35′ · Okafor puts Northbridge ahead"
+     },
+     "es": {
+      "body": "Okafor marca en el 34:18, 28 segundos después de una intercepción. El marcador es 1–0.",
+      "headline": "35′ · Okafor adelanta al Northbridge"
+     },
+     "fr": {
+      "body": "Okafor marque à 34:18, 28 secondes après une interception. Score : 1–0.",
+      "headline": "35′ · Okafor donne l'avantage à Northbridge"
+     }
+    }
+   },
+   "unchecked": [
+    {
+     "en": "Who made the final pass",
+     "es": "Autor del último pase",
+     "fr": "Auteur de la dernière passe"
+    },
+    {
+     "en": "Defender positions",
+     "es": "Posición de los defensas",
+     "fr": "Position des défenseurs"
+    }
+   ]
+  },
+  {
+   "buildup": [
+    {
+     "end_x": null,
+     "end_y": null,
+     "id": "E-0784",
+     "outcome": "complete",
+     "player": "riv-04",
+     "t_ms": 2444969,
+     "tags": [],
+     "type": "recovery",
+     "x": 35.3,
+     "y": 86.6
+    },
+    {
+     "end_x": 45.9,
+     "end_y": 49.6,
+     "id": "E-0785",
+     "outcome": "complete",
+     "player": "riv-06",
+     "t_ms": 2448727,
+     "tags": [],
+     "type": "pass",
+     "x": 39.8,
+     "y": 68.4
+    },
+    {
+     "end_x": 60.4,
+     "end_y": 50.3,
+     "id": "E-0786",
+     "outcome": "complete",
+     "player": "riv-07",
+     "t_ms": 2452484,
+     "tags": [],
+     "type": "pass",
+     "x": 55.2,
+     "y": 20.3
+    },
+    {
+     "end_x": 76.9,
+     "end_y": 91.7,
+     "id": "E-0787",
+     "outcome": "incomplete",
+     "player": "riv-10",
+     "t_ms": 2456242,
+     "tags": [],
+     "type": "pass",
+     "x": 69.7,
+     "y": 24.8
+    },
+    {
+     "end_x": 88.0,
+     "end_y": 44.0,
+     "id": "E-0788",
+     "outcome": "complete",
+     "player": "riv-07",
+     "t_ms": 2460000,
+     "tags": [],
+     "type": "pass",
+     "x": 95.0,
+     "y": 30.0
+    },
+    {
+     "end_x": null,
+     "end_y": null,
+     "id": "E-0789",
+     "outcome": "goal",
+     "player": "riv-11",
+     "t_ms": 2462600,
+     "tags": [],
+     "type": "shot",
+     "x": 88.0,
+     "y": 44.0
+    },
+    {
+     "end_x": null,
+     "end_y": null,
+     "id": "E-0790",
+     "outcome": "goal",
+     "player": "riv-11",
+     "t_ms": 2463000,
+     "tags": [],
+     "type": "goal",
+     "x": 88.0,
+     "y": 44.0
+    }
+   ],
+   "checks": [
+    {
+     "claim_ids": [
+      "ST-E-0790-SCORER"
+     ],
+     "label": {
+      "en": "Goal scorer",
+      "es": "Autor del gol",
+      "fr": "Buteur"
+     }
+    },
+    {
+     "claim_ids": [
+      "ST-E-0790-NBR",
+      "ST-E-0790-RIV"
+     ],
+     "label": {
+      "en": "Score after the goal, 1–1",
+      "es": "Marcador tras el gol, 1–1",
+      "fr": "Score après le but, 1–1"
+     }
+    },
+    {
+     "claim_ids": [
+      "ST-E-0790-TALLY"
+     ],
+     "label": {
+      "en": "Lindqvist's goals so far: 1",
+      "es": "Goles de Lindqvist hasta ahora: 1",
+      "fr": "Buts de Lindqvist à ce stade : 1"
+     }
+    },
+    {
+     "claim_ids": [
+      "ST-E-0790-LEADIN"
+     ],
+     "label": {
+      "en": "Move began, goal 18 s later",
+      "es": "Inicio de la jugada y gol 18 s después",
+      "fr": "Début de l’action, puis but 18 s plus tard"
+     }
+    }
+   ],
+   "clock": "41:03",
+   "context": "equaliser",
+   "diagram": {
+    "en": "① Move begins 40:44 · ② Lindqvist 41:03",
+    "es": "① Empieza la jugada 40:44 · ② Lindqvist 41:03",
+    "fr": "① Début de l'action 40:44 · ② Lindqvist 41:03"
+   },
+   "event_id": "E-0790",
+   "header": false,
+   "lead_in": {
+    "event_id": "E-0784",
+    "kind": "move",
+    "seconds": 18
+   },
+   "minute": 42,
+   "score": {
+    "after": {
+     "nbr": 1,
+     "riv": 1
+    },
+    "before": {
+     "nbr": 1,
+     "riv": 0
+    }
+   },
+   "scorer": "riv-11",
+   "scorer_goals": 1,
+   "slug": "lindqvist-equalises-for-riverside",
+   "t_ms": 2463000,
+   "team": "riv",
+   "text": {
+    "analyst": {
+     "en": {
+      "body": "GOAL E-0790 · 41:03 · Lindqvist · Move began, goal 18 s later (E-0784) · Lindqvist goals: 1 · Northbridge 1–1 Riverside",
+      "headline": "GOAL 41:03 · Lindqvist (Riverside) · 1–1"
+     },
+     "es": {
+      "body": "GOL E-0790 · 41:03 · Lindqvist · Inicio de la jugada y gol 18 s después (E-0784) · Goles de Lindqvist: 1 · Northbridge 1–1 Riverside",
+      "headline": "GOL 41:03 · Lindqvist (Riverside) · 1–1"
+     },
+     "fr": {
+      "body": "BUT E-0790 · 41:03 · Lindqvist · Début de l’action, puis but 18 s plus tard (E-0784) · Buts de Lindqvist : 1 · Northbridge 1–1 Riverside",
+      "headline": "BUT 41:03 · Lindqvist (Riverside) · 1–1"
+     }
+    },
+    "caption": {
+     "en": {
+      "body": "Move began, goal 18 s later · Lindqvist goals: 1",
+      "headline": "42′ GOAL · Lindqvist · NBR 1–1 RIV"
+     },
+     "es": {
+      "body": "Inicio de la jugada y gol 18 s después · Goles de Lindqvist: 1",
+      "headline": "42′ GOL · Lindqvist · NBR 1–1 RIV"
+     },
+     "fr": {
+      "body": "Début de l’action, puis but 18 s plus tard · Buts de Lindqvist : 1",
+      "headline": "42′ BUT · Lindqvist · NBR 1–1 RIV"
+     }
+    },
+    "fan": {
+     "en": {
+      "body": "Lindqvist scores at 41:03, 18 seconds after the move began. It's 1–1.",
+      "headline": "42′ · Lindqvist equalises for Riverside"
+     },
+     "es": {
+      "body": "Lindqvist marca en el 41:03, 18 segundos después del inicio de la jugada. El marcador es 1–1.",
+      "headline": "42′ · Lindqvist empata para el Riverside"
+     },
+     "fr": {
+      "body": "Lindqvist marque à 41:03, 18 secondes après le début de l'action. Score : 1–1.",
+      "headline": "42′ · Lindqvist égalise pour Riverside"
+     }
+    }
+   },
+   "unchecked": [
+    {
+     "en": "Who made the final pass",
+     "es": "Autor del último pase",
+     "fr": "Auteur de la dernière passe"
+    },
+    {
+     "en": "Defender positions",
+     "es": "Posición de los defensas",
+     "fr": "Position des défenseurs"
+    }
+   ]
+  },
+  {
+   "buildup": [
+    {
+     "end_x": 93.0,
+     "end_y": 47.0,
+     "id": "E-1359",
+     "outcome": "incomplete",
+     "player": "nbr-07",
+     "t_ms": 3483000,
+     "tags": [
+      "corner"
+     ],
+     "type": "pass",
+     "x": 99.5,
+     "y": 0.5
+    },
+    {
+     "end_x": null,
+     "end_y": null,
+     "id": "E-1361",
+     "outcome": "complete",
+     "player": "nbr-08",
+     "t_ms": 3487000,
+     "tags": [],
+     "type": "recovery",
+     "x": 70.0,
+     "y": 22.0
+    },
+    {
+     "end_x": 84.0,
+     "end_y": 9.0,
+     "id": "E-1362",
+     "outcome": "complete",
+     "player": "nbr-08",
+     "t_ms": 3489000,
+     "tags": [],
+     "type": "pass",
+     "x": 70.0,
+     "y": 22.0
+    },
+    {
+     "end_x": 92.0,
+     "end_y": 8.0,
+     "id": "E-1363",
+     "outcome": "complete",
+     "player": "nbr-07",
+     "t_ms": 3492000,
+     "tags": [],
+     "type": "carry",
+     "x": 84.0,
+     "y": 9.0
+    },
+    {
+     "end_x": 95.0,
+     "end_y": 47.0,
+     "id": "E-1364",
+     "outcome": "complete",
+     "player": "nbr-07",
+     "t_ms": 3495000,
+     "tags": [],
+     "type": "pass",
+     "x": 92.0,
+     "y": 8.0
+    },
+    {
+     "end_x": null,
+     "end_y": null,
+     "id": "E-1365",
+     "outcome": "goal",
+     "player": "nbr-09",
+     "t_ms": 3496600,
+     "tags": [
+      "header"
+     ],
+     "type": "shot",
+     "x": 95.0,
+     "y": 47.0
+    },
+    {
+     "end_x": null,
+     "end_y": null,
+     "id": "E-1366",
+     "outcome": "goal",
+     "player": "nbr-09",
+     "t_ms": 3497000,
+     "tags": [],
+     "type": "goal",
+     "x": 95.0,
+     "y": 47.0
+    }
+   ],
+   "checks": [
+    {
+     "claim_ids": [
+      "ST-E-1366-SCORER"
+     ],
+     "label": {
+      "en": "Goal scorer",
+      "es": "Autor del gol",
+      "fr": "Buteur"
+     }
+    },
+    {
+     "claim_ids": [
+      "ST-E-1366-NBR",
+      "ST-E-1366-RIV"
+     ],
+     "label": {
+      "en": "Score after the goal, 2–1",
+      "es": "Marcador tras el gol, 2–1",
+      "fr": "Score après le but, 2–1"
+     }
+    },
+    {
+     "claim_ids": [
+      "ST-E-1366-TALLY"
+     ],
+     "label": {
+      "en": "Okafor's goals so far: 2",
+      "es": "Goles de Okafor hasta ahora: 2",
+      "fr": "Buts d’Okafor à ce stade : 2"
+     }
+    },
+    {
+     "claim_ids": [
+      "ST-E-1366-LEADIN"
+     ],
+     "label": {
+      "en": "Corner, then goal 14 s later",
+      "es": "Córner y gol 14 s después",
+      "fr": "Corner, puis but 14 s plus tard"
+     }
+    }
+   ],
+   "clock": "58:17",
+   "context": "lead_restored",
+   "diagram": {
+    "en": "① Corner 58:03 · ② Okafor 58:17",
+    "es": "① Córner 58:03 · ② Okafor 58:17",
+    "fr": "① Corner 58:03 · ② Okafor 58:17"
+   },
+   "event_id": "E-1366",
+   "header": true,
+   "lead_in": {
+    "event_id": "E-1359",
+    "kind": "corner",
+    "seconds": 14
+   },
+   "minute": 59,
+   "score": {
+    "after": {
+     "nbr": 2,
+     "riv": 1
+    },
+    "before": {
+     "nbr": 1,
+     "riv": 1
+    }
+   },
+   "scorer": "nbr-09",
+   "scorer_goals": 2,
+   "slug": "okafor-header-restores-northbridge-lead",
+   "t_ms": 3497000,
+   "team": "nbr",
+   "text": {
+    "analyst": {
+     "en": {
+      "body": "GOAL E-1366 · 58:17 · Okafor · header · Corner, then goal 14 s later (E-1359) · Okafor goals: 2 · Northbridge 2–1 Riverside",
+      "headline": "GOAL 58:17 · Okafor (Northbridge) · 2–1"
+     },
+     "es": {
+      "body": "GOL E-1366 · 58:17 · Okafor · cabezazo · Córner y gol 14 s después (E-1359) · Goles de Okafor: 2 · Northbridge 2–1 Riverside",
+      "headline": "GOL 58:17 · Okafor (Northbridge) · 2–1"
+     },
+     "fr": {
+      "body": "BUT E-1366 · 58:17 · Okafor · tête · Corner, puis but 14 s plus tard (E-1359) · Buts d’Okafor : 2 · Northbridge 2–1 Riverside",
+      "headline": "BUT 58:17 · Okafor (Northbridge) · 2–1"
+     }
+    },
+    "caption": {
+     "en": {
+      "body": "Corner, then goal 14 s later · Okafor goals: 2",
+      "headline": "59′ GOAL · Okafor · NBR 2–1 RIV"
+     },
+     "es": {
+      "body": "Córner y gol 14 s después · Goles de Okafor: 2",
+      "headline": "59′ GOL · Okafor · NBR 2–1 RIV"
+     },
+     "fr": {
+      "body": "Corner, puis but 14 s plus tard · Buts d’Okafor : 2",
+      "headline": "59′ BUT · Okafor · NBR 2–1 RIV"
+     }
+    },
+    "fan": {
+     "en": {
+      "body": "Okafor heads in at 58:17, 14 seconds after a corner. It is Okafor's second goal of the match. It's 2–1.",
+      "headline": "59′ · Okafor restores the Northbridge lead"
+     },
+     "es": {
+      "body": "Okafor marca de cabeza en el 58:17, 14 segundos después de un córner. Es su segundo gol del partido. El marcador es 2–1.",
+      "headline": "59′ · Okafor devuelve la ventaja al Northbridge"
+     },
+     "fr": {
+      "body": "Okafor marque de la tête à 58:17, 14 secondes après un corner. C'est le deuxième but d’Okafor dans le match. Score : 2–1.",
+      "headline": "59′ · Okafor redonne l'avantage à Northbridge"
+     }
+    }
+   },
+   "unchecked": [
+    {
+     "en": "Who made the final pass",
+     "es": "Autor del último pase",
+     "fr": "Auteur de la dernière passe"
+    },
+    {
+     "en": "Defender positions",
+     "es": "Posición de los defensas",
+     "fr": "Position des défenseurs"
+    }
+   ]
+  }
+ ],
+ "synthetic": true
+}

@@ -1,0 +1,366 @@
+{
+ "clip_events": [
+  {
+   "event_id": "E-1344",
+   "kind": "pass",
+   "kmh": 60.0,
+   "length_m": 25.3,
+   "t": 3460.24,
+   "team": "riv"
+  },
+  {
+   "event_id": "E-1345",
+   "kind": "pass",
+   "kmh": 46.0,
+   "length_m": 13.8,
+   "t": 3461.76,
+   "team": "riv"
+  },
+  {
+   "event_id": "E-1346",
+   "kind": "pass",
+   "kmh": 61.9,
+   "length_m": 11.7,
+   "t": 3463.28,
+   "team": "riv"
+  },
+  {
+   "event_id": "E-1347",
+   "kind": "pass",
+   "kmh": 69.4,
+   "length_m": 29.3,
+   "t": 3464.8,
+   "team": "nbr"
+  },
+  {
+   "event_id": "E-1348",
+   "kind": "carry",
+   "kmh": 15.2,
+   "length_m": 1.9,
+   "t": 3466.32,
+   "team": "nbr"
+  },
+  {
+   "event_id": "E-1349",
+   "kind": "pass",
+   "kmh": 75.4,
+   "length_m": 32.7,
+   "t": 3467.8,
+   "team": "nbr"
+  },
+  {
+   "event_id": "E-1350",
+   "kind": "pass",
+   "kmh": 86.7,
+   "length_m": 36.6,
+   "t": 3469.36,
+   "team": "nbr"
+  },
+  {
+   "event_id": "E-1351",
+   "kind": "pass",
+   "kmh": 60.2,
+   "length_m": 12.7,
+   "t": 3470.88,
+   "team": "nbr"
+  },
+  {
+   "event_id": "E-1352",
+   "kind": "carry",
+   "kmh": 28.2,
+   "length_m": 11.6,
+   "t": 3472.4,
+   "team": "nbr"
+  },
+  {
+   "event_id": "E-1353",
+   "kind": "pass",
+   "kmh": 97.7,
+   "length_m": 41.2,
+   "t": 3473.88,
+   "team": "nbr"
+  },
+  {
+   "event_id": "E-1354",
+   "kind": "pass",
+   "kmh": 120.8,
+   "length_m": 51.0,
+   "t": 3475.4,
+   "team": "nbr"
+  },
+  {
+   "event_id": "E-1355",
+   "kind": "pass",
+   "kmh": 75.1,
+   "length_m": 31.7,
+   "t": 3476.92,
+   "team": "riv"
+  },
+  {
+   "event_id": "E-1356",
+   "kind": "pass",
+   "kmh": 55.4,
+   "length_m": 13.6,
+   "t": 3478.44,
+   "team": "riv"
+  },
+  {
+   "event_id": "E-1357",
+   "kind": "pass",
+   "kmh": 58.6,
+   "length_m": 13.7,
+   "t": 3479.96,
+   "team": "riv"
+  },
+  {
+   "event_id": "E-1358",
+   "kind": "shot",
+   "kmh": 188.3,
+   "length_m": 79.5,
+   "t": 3481.48,
+   "team": "riv"
+  },
+  {
+   "event_id": "E-1359",
+   "kind": "pass",
+   "kmh": 62.2,
+   "length_m": 34.6,
+   "t": 3483.0,
+   "team": "nbr"
+  },
+  {
+   "event_id": "E-1360",
+   "kind": "pass",
+   "kmh": 77.0,
+   "length_m": 30.0,
+   "t": 3485.0,
+   "team": "riv"
+  },
+  {
+   "event_id": "E-1362",
+   "kind": "pass",
+   "kmh": 73.4,
+   "length_m": 17.1,
+   "t": 3489.0,
+   "team": "nbr"
+  },
+  {
+   "event_id": "E-1363",
+   "kind": "carry",
+   "kmh": 19.7,
+   "length_m": 8.5,
+   "t": 3492.0,
+   "team": "nbr"
+  },
+  {
+   "event_id": "E-1364",
+   "kind": "shot",
+   "kmh": 60.0,
+   "length_m": 26.7,
+   "t": 3495.0,
+   "team": "nbr"
+  },
+  {
+   "event_id": "E-1365",
+   "kind": "shot",
+   "kmh": 48.8,
+   "length_m": 6.5,
+   "t": 3496.6,
+   "team": "nbr"
+  }
+ ],
+ "passes": {
+  "compared": 958,
+  "length_mae_m": 0.28,
+  "length_median_m": 0.16,
+  "speed_mae_kmh": 0.91
+ },
+ "possession": {
+  "log": 0.5796,
+  "video": 0.5773
+ },
+ "schema": "matchdesk-auto-eventing/1",
+ "shots": {
+  "detected_as_shot": 21,
+  "logged": 23,
+  "matched": 22,
+  "rows": [
+   {
+    "clock": "02:52",
+    "detected_as": "shot",
+    "event_id": "E-0060",
+    "tracking_kmh": 74.7,
+    "video_kmh": 70.4
+   },
+   {
+    "clock": "04:03",
+    "detected_as": "shot",
+    "event_id": "E-0084",
+    "tracking_kmh": 76.5,
+    "video_kmh": 75.1
+   },
+   {
+    "clock": "11:08",
+    "detected_as": "shot",
+    "event_id": "E-0227",
+    "tracking_kmh": 89.6,
+    "video_kmh": 89.7
+   },
+   {
+    "clock": "12:22",
+    "detected_as": "shot",
+    "event_id": "E-0252",
+    "tracking_kmh": 69.9,
+    "video_kmh": 68.6
+   },
+   {
+    "clock": "16:02",
+    "detected_as": "shot",
+    "event_id": "E-0326",
+    "tracking_kmh": 83.3,
+    "video_kmh": 82.2
+   },
+   {
+    "clock": "17:37",
+    "detected_as": "shot",
+    "event_id": "E-0358",
+    "tracking_kmh": 77.9,
+    "video_kmh": 76.8
+   },
+   {
+    "clock": "29:05",
+    "detected_as": "shot",
+    "event_id": "E-0588",
+    "tracking_kmh": 87.7,
+    "video_kmh": 87.5
+   },
+   {
+    "clock": "34:17",
+    "detected_as": "shot",
+    "event_id": "E-0687",
+    "tracking_kmh": 67.6,
+    "video_kmh": 67.5
+   },
+   {
+    "clock": "41:02",
+    "detected_as": "shot",
+    "event_id": "E-0789",
+    "tracking_kmh": 89.1,
+    "video_kmh": 89.9
+   },
+   {
+    "clock": "43:53",
+    "detected_as": "shot",
+    "event_id": "E-0825",
+    "tracking_kmh": 80.0,
+    "video_kmh": 78.6
+   },
+   {
+    "clock": "47:27",
+    "detected_as": "shot",
+    "event_id": "E-0940",
+    "tracking_kmh": 94.8,
+    "video_kmh": 91.5
+   },
+   {
+    "clock": "47:52",
+    "detected_as": "shot",
+    "event_id": "E-0957",
+    "tracking_kmh": 96.5,
+    "video_kmh": 94.5
+   },
+   {
+    "clock": "51:05",
+    "detected_as": "shot",
+    "event_id": "E-1084",
+    "tracking_kmh": 86.4,
+    "video_kmh": 86.6
+   },
+   {
+    "clock": "51:43",
+    "detected_as": "shot",
+    "event_id": "E-1109",
+    "tracking_kmh": 72.4,
+    "video_kmh": 69.9
+   },
+   {
+    "clock": "53:05",
+    "detected_as": "shot",
+    "event_id": "E-1163",
+    "tracking_kmh": 88.6,
+    "video_kmh": 89.1
+   },
+   {
+    "clock": "53:32",
+    "detected_as": "shot",
+    "event_id": "E-1181",
+    "tracking_kmh": 75.8,
+    "video_kmh": 75.3
+   },
+   {
+    "clock": "53:46",
+    "detected_as": "pass",
+    "event_id": "E-1190",
+    "tracking_kmh": 90.3,
+    "video_kmh": 81.0
+   },
+   {
+    "clock": "54:24",
+    "detected_as": "shot",
+    "event_id": "E-1215",
+    "tracking_kmh": 71.2,
+    "video_kmh": 64.3
+   },
+   {
+    "clock": "55:20",
+    "detected_as": "shot",
+    "event_id": "E-1252",
+    "tracking_kmh": 71.4,
+    "video_kmh": 71.5
+   },
+   {
+    "clock": "57:02",
+    "detected_as": "shot",
+    "event_id": "E-1319",
+    "tracking_kmh": 77.6,
+    "video_kmh": 77.2
+   },
+   {
+    "clock": "58:16",
+    "detected_as": "shot",
+    "event_id": "E-1365",
+    "tracking_kmh": 49.4,
+    "video_kmh": 48.8
+   },
+   {
+    "clock": "61:39",
+    "detected_as": "shot",
+    "event_id": "E-1390",
+    "tracking_kmh": 88.0,
+    "video_kmh": 85.2
+   }
+  ],
+  "speed_mae_kmh": 1.86
+ },
+ "synthetic": true,
+ "team_accuracy": 1.0,
+ "touches": {
+  "found": 1410,
+  "logged": 1408,
+  "precision": 0.9936,
+  "recall": 0.983,
+  "unlogged_true": 20
+ },
+ "type_accuracy": 0.9412,
+ "video": {
+  "clip": {
+   "from_s": 3460,
+   "to_s": 3520
+  },
+  "fps": 25,
+  "frames": 100800,
+  "height": 444,
+  "seconds": 4032,
+  "width": 666
+ }
+}

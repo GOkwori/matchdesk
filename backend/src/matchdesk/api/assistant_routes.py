@@ -1,0 +1,106 @@
+"""POST /api/assistant/plan: an optional Foundry translator for Ask MatchDesk questions.
+
+Mounted only when the host switches the planner on. It returns a query plan, never an
+answer; the browser computes and verifies every figure itself.
+"""
+
+from __future__ import annotations
+
+import json
+import logging
+from typing import Any
+
+from fastapi import APIRouter
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, ConfigDict, Field
+
+from matchdesk.api.telemetry import tracer
+from matchdesk.domain.assistant_planner import (
+    MAX_QUESTION_CHARS,
+    AssistantPlanner,
+    PlannerBusy,
+    QuestionRejected,
+)
+from matchdesk.domain.foundry_runtime import FoundryRuntimeUnavailable
+
+_log = logging.getLogger("matchdesk.assistant")
+
+
+class PlanRequest(BaseModel):
+    """One question, bounded."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    question: str = Field(min_length=1, max_length=MAX_QUESTION_CHARS)
+
+
+def _service_detail(error: BaseException) -> str:
+    """The service's own error body, if any, for the server log only (never the response)."""
+    pending: list[BaseException] = [error]
+    for _ in range(8):
+        if not pending:
+            break
+        current = pending.pop(0)
+        body = getattr(current, "body", None)
+        if body:
+            return str(body)[:600]
+        pending.extend(arg for arg in current.args if isinstance(arg, BaseException))
+        for linked in (current.__cause__, current.__context__):
+            if linked is not None:
+                pending.append(linked)
+    return type(error).__name__
+
+
+def _intent(response: JSONResponse) -> str:
+    """The plan's intent, for telemetry; never the question."""
+    try:
+        body = json.loads(bytes(response.body))
+    except ValueError:
+        return "none"
+    plan = body.get("plan") if isinstance(body, dict) else None
+    return str(plan.get("intent", "none")) if isinstance(plan, dict) else "none"
+
+
+def create_assistant_router(planner: AssistantPlanner) -> APIRouter:
+    """Expose the planner; failures degrade to the unknown plan, never to a guess."""
+    router = APIRouter()
+
+    @router.post("/api/assistant/plan")
+    async def plan(request: PlanRequest) -> JSONResponse:
+        """Read one question into a plan."""
+        with tracer.start_as_current_span("matchdesk.assistant.plan") as span:
+            response = await _plan(request)
+            span.set_attribute("matchdesk.http.status", response.status_code)
+            span.set_attribute("matchdesk.plan.intent", _intent(response))
+            return response
+
+    async def _plan(request: PlanRequest) -> JSONResponse:
+        """The planner call and its failure handling."""
+        try:
+            result: dict[str, Any] = await planner.plan(request.question)
+        except PlannerBusy:
+            return JSONResponse(
+                status_code=429,
+                content={"detail": "The assistant is busy; try one of the suggested questions"},
+            )
+        except FoundryRuntimeUnavailable:
+            return JSONResponse(
+                status_code=503, content={"detail": "The assistant planner is unavailable"}
+            )
+        except QuestionRejected:
+            return JSONResponse(
+                status_code=422,
+                content={"detail": f"Ask a question of 1 to {MAX_QUESTION_CHARS} characters"},
+            )
+        except Exception as error:  # noqa: BLE001 - a fault must never surface as a guess
+            _log.warning("assistant planner call failed: %s", _service_detail(error), exc_info=True)
+            return JSONResponse(status_code=200, content={"plan": {"intent": "unknown"}})
+        return JSONResponse(status_code=200, content={"plan": result})
+
+    return router
+
+
+def assistant_router_from_env() -> APIRouter | None:
+    """The router when the host switched the planner on; otherwise nothing is mounted."""
+    planner = AssistantPlanner()
+    return create_assistant_router(planner) if planner.enabled else None

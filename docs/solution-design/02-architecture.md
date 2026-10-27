@@ -1,6 +1,11 @@
 # Architecture and trust boundaries
 
-Status: proposed whole-system design with Phase 0/1 implemented and Phase 2 P2-01 through P2-05 TESTED; Phase 2 closure review in progress.
+Status: proposed whole-system design; Phase 0/1/2 VERIFIED / COMPLETED, Phase 3 P3-01/02/03 domain contracts TESTED and P3-04/05 IN PROGRESS.
+
+![Target architecture: producer desk, API, replay worker, engine, agents, verification and publication gate](../diagrams/architecture-target.png)
+
+<details>
+<summary>Diagram source (Mermaid)</summary>
 
 ```mermaid
 flowchart TB
@@ -17,6 +22,8 @@ flowchart TB
     Publish --> Outputs[Overlay and audience feeds]
 ```
 
+</details>
+
 The modular backend separates simulation, ingestion, state, intelligence, verification,
 agents, API and infrastructure. Phase 1 implements the deterministic simulator, ingestion,
 reducer, registered metrics and moment detection. Phase 2 implements a model-independent
@@ -24,7 +31,44 @@ typed orchestration control plane for four specialist roles, scoped read-only sp
 tools, deterministic claim verification, a fail-closed Microsoft Agent Framework / Foundry
 runtime, bounded retry/timeout/recovery controls and deterministic model-output evaluation.
 One bounded live Foundry tactical proposal has passed the same evidence-verification path.
-Durable production workflow persistence and producer publication remain later work.
+Phase 3 includes tested producer review, pure-domain publication gating and broadcast
+output envelopes. The PostgreSQL producer-case tables, generation/audit CAS and
+rollback/restart semantics have been tested through the actual pinned Psycopg Python
+adapter using a restricted role in disposable integration, including independent
+audit-row reconciliation and DB restart. This is not production persistence.
+The multi-provider sign-in decision is now approved in
+[ADR-0011](../decisions/ADR-0011-federated-authentication.md). The customer
+journey will broker Apple, Google, Facebook, personal Microsoft, organisational
+Entra ID and local email through a **separate Entra External ID tenant**.
+Producers/admins will use a workforce Entra tenant. Both issuers, API audiences,
+tenant IDs, sessions and entitlements remain isolated; all users are mapped by
+trusted issuer+tenant+immutable subject, never by email matching.
+
+![Identity: customer and workforce sign-in paths to the review and publication gate](../diagrams/architecture-identity.png)
+
+<details>
+<summary>Diagram source (Mermaid)</summary>
+
+```mermaid
+flowchart TB
+    Users[Fans and customers] --> BFF[Browser-delegated BFF login]
+    Social[Apple Google Facebook and personal Microsoft] --> Broker[Entra External ID]
+    Local[Email OTP or password] --> Broker
+    Orgs[Approved organisations via OIDC or SAML] --> Broker
+    BFF --> Broker
+    Broker --> CustomerAPI[Customer broker JWT and server-owned viewer grants]
+    Staff[Human producer and administrator] --> Workforce[Workforce Entra ID and MFA]
+    Workforce --> ProducerAPI[Separate workforce JWT and session grants]
+    ProducerAPI --> Review[Version-bound human review]
+    Review --> Publish[Governed publication gate]
+```
+
+</details>
+
+The customer broker and protected BFF sessions are **PLANNED, not live**.
+An offline workforce JWT verifier is implemented, but trusted production
+JWKS retrieval, session authorisation, authenticated HTTP producer commands,
+transactional delivery and production workflow persistence remain later work.
 
 Numerical truth belongs to registered deterministic queries. Narrative reasoning is
 an interpretation of that evidence. Publishing authority belongs to an authenticated

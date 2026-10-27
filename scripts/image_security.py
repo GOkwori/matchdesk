@@ -321,7 +321,33 @@ def main() -> int:
         json.dumps(verdict, indent=2) + "\n", encoding="utf-8"
     )
     print(json.dumps(verdict, indent=2))
+    if verdict["status"] != "PASS" and os.environ.get("GITHUB_ACTIONS") == "true":
+        print(failure_annotation(verdict))
     return 0 if verdict["status"] == "PASS" else 1
+
+
+def failure_annotation(verdict: dict) -> str:
+    """One GitHub error annotation naming why the gate failed.
+
+    Annotations are readable through the checks API even where artifacts are not, so a
+    failure says which image, package and vulnerability to fix. Nothing here is secret: it is
+    the same content as the retained verdict.
+    """
+    lines: list[str] = []
+    if verdict.get("reason"):
+        lines.append(f"gate error: {verdict['reason']}")
+    for image in verdict.get("images", []):
+        for finding in image.get("findings", [])[:20]:
+            fixed = finding.get("fixed") or "no fix yet"
+            lines.append(
+                f"{image['service']}: {finding['id']} {finding['severity']} in "
+                f"{finding['package']} {finding['installed']} (fixed in {fixed}; {finding['target']})"
+            )
+        extra = image.get("finding_count", 0) - min(20, len(image.get("findings", [])))
+        if extra > 0:
+            lines.append(f"{image['service']}: and {extra} more")
+    body = "%0A".join(line.replace("%", "%25").replace("\n", " ") for line in lines[:60])
+    return f"::error title=Image security gate::{body or 'failed without findings'}"
 
 
 if __name__ == "__main__":

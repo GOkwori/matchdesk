@@ -1,0 +1,1264 @@
+{
+  "claims": [
+    {
+      "claim": {
+        "assertion": {
+          "comparator": "eq",
+          "metric": "goals.v1",
+          "schema_version": "1.0",
+          "subject": {
+            "player_id": "nbr-09",
+            "schema_version": "1.0",
+            "team_id": "nbr"
+          },
+          "unit": "count",
+          "value": 2.0,
+          "window": {
+            "from_ms": 0,
+            "schema_version": "1.0",
+            "to_ms": 4032000
+          }
+        },
+        "claim_id": "CL-0213",
+        "evidence_event_ids": [
+          "E-0688",
+          "E-1366"
+        ],
+        "kind": "measured_stat",
+        "schema_version": "1.0",
+        "text": "Okafor scored both Northbridge goals."
+      },
+      "result": {
+        "expected": 2.0,
+        "observed": 2.0,
+        "query_id": "metric-goals-v1",
+        "reason": "Registered metric recomputation satisfies the claim comparator",
+        "status": "verified"
+      },
+      "timeline": [
+        {
+          "from_ms": 0,
+          "status": "needs_revision"
+        },
+        {
+          "from_ms": 3497000,
+          "status": "verified"
+        }
+      ]
+    },
+    {
+      "claim": {
+        "assertion": {
+          "comparator": "eq",
+          "decimals": 2,
+          "metric": "possession_time.v1",
+          "schema_version": "1.0",
+          "subject": {
+            "schema_version": "1.0",
+            "team_id": "nbr"
+          },
+          "unit": "ratio",
+          "value": 0.58,
+          "window": {
+            "from_ms": 0,
+            "schema_version": "1.0",
+            "to_ms": 4032000
+          }
+        },
+        "claim_id": "CL-0214",
+        "evidence_event_ids": [
+          "E-0001",
+          "E-0841",
+          "E-0842",
+          "E-1421"
+        ],
+        "kind": "measured_stat",
+        "schema_version": "1.0",
+        "text": "Northbridge have had 58% possession."
+      },
+      "result": {
+        "expected": 0.58,
+        "observed": 0.5795628103277061,
+        "query_id": "metric-possession_time-v1",
+        "reason": "Registered metric recomputation satisfies the claim comparator",
+        "status": "verified"
+      },
+      "timeline": []
+    },
+    {
+      "claim": {
+        "claim_id": "CL-0215",
+        "evidence_event_ids": [
+          "E-0788",
+          "E-0789",
+          "E-0790"
+        ],
+        "kind": "tactical_inference",
+        "schema_version": "1.0",
+        "text": "Riverside's best spell came between 30 and 45 minutes."
+      },
+      "result": {
+        "expected": null,
+        "observed": null,
+        "query_id": "evidence-support-v1",
+        "reason": "All cited evidence events exist; tactical meaning remains an inference",
+        "status": "supported_inference"
+      },
+      "timeline": []
+    },
+    {
+      "claim": {
+        "claim_id": "CL-0216",
+        "evidence_event_ids": [
+          "E-0688",
+          "E-1366"
+        ],
+        "kind": "event_fact",
+        "schema_version": "1.0",
+        "text": "It is Okafor's first brace of the season."
+      },
+      "result": {
+        "expected": null,
+        "observed": null,
+        "query_id": "event-fact-semantic-v1",
+        "reason": "Event-fact prose has no registered semantic assertion; evidence existence alone cannot verify the text",
+        "status": "needs_revision"
+      },
+      "timeline": []
+    },
+    {
+      "claim": {
+        "claim_id": "FS-SCORER",
+        "evidence_event_ids": [
+          "E-1366"
+        ],
+        "fact": {
+          "event_id": "E-1366",
+          "player_id": "nbr-09",
+          "query": "goal_scorer.v1",
+          "schema_version": "1.0"
+        },
+        "kind": "event_fact",
+        "schema_version": "1.0",
+        "text": "Okafor scored the goal at 58:17."
+      },
+      "result": {
+        "expected": null,
+        "observed": null,
+        "query_id": "event-goal-scorer-v1",
+        "reason": "The cited goal event records the stated scorer",
+        "status": "verified"
+      },
+      "story_check": true,
+      "timeline": []
+    },
+    {
+      "claim": {
+        "claim_id": "FS-CORNER-GAP",
+        "evidence_event_ids": [
+          "E-1359",
+          "E-1366"
+        ],
+        "fact": {
+          "event_id": "E-1366",
+          "from_event_id": "E-1359",
+          "from_tag": "corner",
+          "gap_seconds": 14,
+          "query": "sequence_gap.v1",
+          "schema_version": "1.0"
+        },
+        "kind": "event_fact",
+        "schema_version": "1.0",
+        "text": "The goal came 14 seconds after a corner."
+      },
+      "result": {
+        "expected": null,
+        "observed": null,
+        "query_id": "event-sequence-gap-v1",
+        "reason": "The recorded events and gap match the stated sequence",
+        "status": "verified"
+      },
+      "story_check": true,
+      "timeline": []
+    },
+    {
+      "claim": {
+        "assertion": {
+          "comparator": "eq",
+          "decimals": 2,
+          "metric": "possession_time.v1",
+          "schema_version": "1.0",
+          "subject": {
+            "schema_version": "1.0",
+            "team_id": "nbr"
+          },
+          "unit": "ratio",
+          "value": 0.59,
+          "window": {
+            "from_ms": 0,
+            "schema_version": "1.0",
+            "to_ms": 4032000
+          }
+        },
+        "claim_id": "CL-0214",
+        "evidence_event_ids": [
+          "E-0001",
+          "E-0841",
+          "E-0842",
+          "E-1421"
+        ],
+        "kind": "measured_stat",
+        "schema_version": "1.0",
+        "text": "Northbridge have had 59% possession."
+      },
+      "forged": true,
+      "result": {
+        "expected": 0.59,
+        "observed": 0.5795628103277061,
+        "query_id": "metric-possession_time-v1",
+        "reason": "Registered metric recomputation does not satisfy the claim comparator",
+        "status": "needs_revision"
+      },
+      "timeline": []
+    }
+  ],
+  "detected_moments": {
+    "by_kind": {
+      "big_chance": 1,
+      "goal": 3
+    },
+    "goals": [
+      [
+        "E-0688"
+      ],
+      [
+        "E-0790"
+      ],
+      [
+        "E-1366"
+      ]
+    ],
+    "total": 4
+  },
+  "display_names": {
+    "nbr": "Northbridge",
+    "nbr-01": "Fairhurst",
+    "nbr-02": "Coulter",
+    "nbr-03": "Varga",
+    "nbr-04": "Mensah",
+    "nbr-05": "Pettersen",
+    "nbr-06": "Ashdown",
+    "nbr-07": "Ferreira",
+    "nbr-08": "Quinlan",
+    "nbr-09": "Okafor",
+    "nbr-10": "Delgado",
+    "nbr-11": "Aldane",
+    "nbr-12": "Rourke",
+    "nbr-13": "Siddiqui",
+    "nbr-14": "Moreau",
+    "nbr-15": "Thackray",
+    "nbr-16": "Osei",
+    "riv": "Riverside",
+    "riv-01": "Kavanagh",
+    "riv-02": "Ruiz",
+    "riv-03": "Sorensen",
+    "riv-04": "Halvorsen",
+    "riv-05": "Tembo",
+    "riv-06": "Haddad",
+    "riv-07": "Barros",
+    "riv-08": "Castell",
+    "riv-09": "Novak",
+    "riv-10": "Ferrante",
+    "riv-11": "Lindqvist",
+    "riv-12": "Dawes",
+    "riv-13": "Ibarra",
+    "riv-14": "Kovac",
+    "riv-15": "Penrose",
+    "riv-16": "Sato"
+  },
+  "event_count": 1421,
+  "evidence_digest": "f49387ecbaaa2b4acfd245137f6cf42b14488fc73845c5f8cb46256bddba868e",
+  "feed": [
+    {
+      "clock_ms": 3848210,
+      "id": "E-1407",
+      "outcome": "complete",
+      "period": 2,
+      "player": "nbr-09",
+      "tags": [],
+      "team": "nbr",
+      "type": "pass",
+      "x": 42.9,
+      "y": 15.1
+    },
+    {
+      "clock_ms": 3861052,
+      "id": "E-1408",
+      "outcome": "complete",
+      "period": 2,
+      "player": "nbr-06",
+      "tags": [],
+      "team": "nbr",
+      "type": "carry",
+      "x": 40.0,
+      "y": 79.4
+    },
+    {
+      "clock_ms": 3873894,
+      "id": "E-1409",
+      "outcome": "complete",
+      "period": 2,
+      "player": "nbr-04",
+      "tags": [],
+      "team": "nbr",
+      "type": "carry",
+      "x": 49.8,
+      "y": 57.4
+    },
+    {
+      "clock_ms": 3886736,
+      "id": "E-1410",
+      "outcome": "complete",
+      "period": 2,
+      "player": "nbr-07",
+      "tags": [],
+      "team": "nbr",
+      "type": "pass",
+      "x": 52.1,
+      "y": 31.6
+    },
+    {
+      "clock_ms": 3899578,
+      "id": "E-1411",
+      "outcome": "complete",
+      "period": 2,
+      "player": "nbr-11",
+      "tags": [],
+      "team": "nbr",
+      "type": "pass",
+      "x": 60.8,
+      "y": 41.6
+    },
+    {
+      "clock_ms": 3912421,
+      "id": "E-1412",
+      "outcome": "complete",
+      "period": 2,
+      "player": "nbr-07",
+      "tags": [],
+      "team": "nbr",
+      "type": "pass",
+      "x": 57.3,
+      "y": 74.6
+    },
+    {
+      "clock_ms": 3925263,
+      "id": "E-1413",
+      "outcome": "complete",
+      "period": 2,
+      "player": "nbr-02",
+      "tags": [],
+      "team": "nbr",
+      "type": "pass",
+      "x": 66.4,
+      "y": 70.8
+    },
+    {
+      "clock_ms": 3938105,
+      "id": "E-1414",
+      "outcome": "complete",
+      "period": 2,
+      "player": "nbr-08",
+      "tags": [],
+      "team": "nbr",
+      "type": "pass",
+      "x": 75.1,
+      "y": 89.5
+    },
+    {
+      "clock_ms": 3950947,
+      "id": "E-1415",
+      "outcome": "incomplete",
+      "period": 2,
+      "player": "nbr-05",
+      "tags": [],
+      "team": "nbr",
+      "type": "pass",
+      "x": 76.7,
+      "y": 72.6
+    },
+    {
+      "clock_ms": 3963789,
+      "id": "E-1416",
+      "outcome": "complete",
+      "period": 2,
+      "player": "riv-02",
+      "tags": [
+        "tackle"
+      ],
+      "team": "riv",
+      "type": "recovery",
+      "x": 29.8,
+      "y": 84.0
+    },
+    {
+      "clock_ms": 3976631,
+      "id": "E-1417",
+      "outcome": "complete",
+      "period": 2,
+      "player": "riv-11",
+      "tags": [],
+      "team": "riv",
+      "type": "pass",
+      "x": 37.2,
+      "y": 13.7
+    },
+    {
+      "clock_ms": 3989473,
+      "id": "E-1418",
+      "outcome": "complete",
+      "period": 2,
+      "player": "riv-10",
+      "tags": [],
+      "team": "riv",
+      "type": "pass",
+      "x": 52.3,
+      "y": 80.2
+    },
+    {
+      "clock_ms": 4002315,
+      "id": "E-1419",
+      "outcome": "incomplete",
+      "period": 2,
+      "player": "riv-03",
+      "tags": [],
+      "team": "riv",
+      "type": "pass",
+      "x": 66.6,
+      "y": 39.9
+    },
+    {
+      "clock_ms": 4015157,
+      "id": "E-1420",
+      "outcome": "complete",
+      "period": 2,
+      "player": "nbr-04",
+      "tags": [
+        "interception"
+      ],
+      "team": "nbr",
+      "type": "recovery",
+      "x": 51.4,
+      "y": 36.5
+    },
+    {
+      "clock_ms": 4028000,
+      "id": "E-1421",
+      "outcome": "complete",
+      "period": 2,
+      "player": "riv-07",
+      "tags": [],
+      "team": "riv",
+      "type": "substitution"
+    }
+  ],
+  "generator": "matchdesk.domain.canonical_match.generate_canonical_match",
+  "key_events": [
+    {
+      "clock_ms": 1660000,
+      "id": "E-0561",
+      "outcome": "yellow",
+      "period": 1,
+      "player": "riv-06",
+      "tags": [],
+      "team": "riv",
+      "type": "card"
+    },
+    {
+      "clock_ms": 2058000,
+      "id": "E-0688",
+      "outcome": "goal",
+      "period": 1,
+      "player": "nbr-09",
+      "tags": [],
+      "team": "nbr",
+      "type": "goal",
+      "x": 84.0,
+      "y": 57.0
+    },
+    {
+      "clock_ms": 2463000,
+      "id": "E-0790",
+      "outcome": "goal",
+      "period": 1,
+      "player": "riv-11",
+      "tags": [],
+      "team": "riv",
+      "type": "goal",
+      "x": 88.0,
+      "y": 44.0
+    },
+    {
+      "clock_ms": 2700000,
+      "id": "E-0841",
+      "outcome": null,
+      "period": 1,
+      "player": null,
+      "tags": [],
+      "team": null,
+      "type": "period_end"
+    },
+    {
+      "clock_ms": 3483000,
+      "id": "E-1359",
+      "outcome": "incomplete",
+      "period": 2,
+      "player": "nbr-07",
+      "tags": [
+        "corner"
+      ],
+      "team": "nbr",
+      "type": "pass",
+      "x": 99.5,
+      "y": 0.5
+    },
+    {
+      "clock_ms": 3497000,
+      "id": "E-1366",
+      "outcome": "goal",
+      "period": 2,
+      "player": "nbr-09",
+      "tags": [],
+      "team": "nbr",
+      "type": "goal",
+      "x": 95.0,
+      "y": 47.0
+    },
+    {
+      "clock_ms": 3784000,
+      "id": "E-1402",
+      "outcome": "yellow",
+      "period": 2,
+      "player": "nbr-04",
+      "tags": [],
+      "team": "nbr",
+      "type": "card"
+    },
+    {
+      "clock_ms": 4028000,
+      "id": "E-1421",
+      "outcome": "complete",
+      "period": 2,
+      "player": "riv-07",
+      "tags": [],
+      "team": "riv",
+      "type": "substitution"
+    }
+  ],
+  "last_event": {
+    "clock_ms": 4028000,
+    "id": "E-1421"
+  },
+  "match_id": "nbr-riv-canonical",
+  "players": {
+    "nbr-01": "Fairhurst",
+    "nbr-02": "Coulter",
+    "nbr-03": "Varga",
+    "nbr-04": "Mensah",
+    "nbr-05": "Pettersen",
+    "nbr-06": "Ashdown",
+    "nbr-07": "Ferreira",
+    "nbr-08": "Quinlan",
+    "nbr-09": "Okafor",
+    "nbr-10": "Delgado",
+    "nbr-11": "Aldane",
+    "nbr-12": "Rourke",
+    "nbr-13": "Siddiqui",
+    "nbr-14": "Moreau",
+    "nbr-15": "Thackray",
+    "nbr-16": "Osei",
+    "riv-01": "Kavanagh",
+    "riv-02": "Ruiz",
+    "riv-03": "Sorensen",
+    "riv-04": "Halvorsen",
+    "riv-05": "Tembo",
+    "riv-06": "Haddad",
+    "riv-07": "Barros",
+    "riv-08": "Castell",
+    "riv-09": "Novak",
+    "riv-10": "Ferrante",
+    "riv-11": "Lindqvist",
+    "riv-12": "Dawes",
+    "riv-13": "Ibarra",
+    "riv-14": "Kovac",
+    "riv-15": "Penrose",
+    "riv-16": "Sato"
+  },
+  "possession": {
+    "away_ms": 1693521,
+    "home_ms": 2334479,
+    "home_share": 0.5796,
+    "total_ms": 4028000
+  },
+  "possession_series": [
+    {
+      "from_minute": 0,
+      "home_share": 0.5546,
+      "to_minute": 5
+    },
+    {
+      "from_minute": 5,
+      "home_share": 0.6233,
+      "to_minute": 10
+    },
+    {
+      "from_minute": 10,
+      "home_share": 0.6742,
+      "to_minute": 15
+    },
+    {
+      "from_minute": 15,
+      "home_share": 0.6325,
+      "to_minute": 20
+    },
+    {
+      "from_minute": 20,
+      "home_share": 0.6137,
+      "to_minute": 25
+    },
+    {
+      "from_minute": 25,
+      "home_share": 0.5443,
+      "to_minute": 30
+    },
+    {
+      "from_minute": 30,
+      "home_share": 0.5387,
+      "to_minute": 35
+    },
+    {
+      "from_minute": 35,
+      "home_share": 0.3636,
+      "to_minute": 40
+    },
+    {
+      "from_minute": 40,
+      "home_share": 0.4599,
+      "to_minute": 45
+    },
+    {
+      "from_minute": 45,
+      "home_share": 0.5802,
+      "to_minute": 50
+    },
+    {
+      "from_minute": 50,
+      "home_share": 0.5903,
+      "to_minute": 55
+    },
+    {
+      "from_minute": 55,
+      "home_share": 0.6508,
+      "to_minute": 60
+    },
+    {
+      "from_minute": 60,
+      "home_share": 0.7,
+      "to_minute": 65
+    },
+    {
+      "from_minute": 65,
+      "home_share": 0.5987,
+      "to_minute": 67
+    }
+  ],
+  "replay_end_ms": 4032000,
+  "schema": "matchdesk-demo-export/1",
+  "seed": 4,
+  "shots": [
+    {
+      "clock_ms": 172336,
+      "id": "E-0060",
+      "outcome": "off_target",
+      "period": 1,
+      "player": "nbr-06",
+      "tags": [],
+      "team": "nbr",
+      "type": "shot",
+      "x": 84.5,
+      "xg": 0.239,
+      "y": 44.7
+    },
+    {
+      "clock_ms": 243648,
+      "id": "E-0084",
+      "outcome": "saved",
+      "period": 1,
+      "player": "riv-09",
+      "tags": [],
+      "team": "riv",
+      "type": "shot",
+      "x": 90.3,
+      "xg": 0.101,
+      "y": 75.5
+    },
+    {
+      "clock_ms": 668548,
+      "id": "E-0227",
+      "outcome": "off_target",
+      "period": 1,
+      "player": "nbr-02",
+      "tags": [],
+      "team": "nbr",
+      "type": "shot",
+      "x": 87.4,
+      "xg": 0.056,
+      "y": 77.4
+    },
+    {
+      "clock_ms": 742831,
+      "id": "E-0252",
+      "outcome": "blocked",
+      "period": 1,
+      "player": "riv-04",
+      "tags": [],
+      "team": "riv",
+      "type": "shot",
+      "x": 83.2,
+      "xg": 0.075,
+      "y": 44.2
+    },
+    {
+      "clock_ms": 962709,
+      "id": "E-0326",
+      "outcome": "off_target",
+      "period": 1,
+      "player": "riv-04",
+      "tags": [],
+      "team": "riv",
+      "type": "shot",
+      "x": 78.5,
+      "xg": 0.093,
+      "y": 67.4
+    },
+    {
+      "clock_ms": 1057792,
+      "id": "E-0358",
+      "outcome": "off_target",
+      "period": 1,
+      "player": "nbr-05",
+      "tags": [],
+      "team": "nbr",
+      "type": "shot",
+      "x": 87.7,
+      "xg": 0.254,
+      "y": 57.4
+    },
+    {
+      "clock_ms": 1247956,
+      "id": "E-0422",
+      "outcome": "blocked",
+      "period": 1,
+      "player": "nbr-08",
+      "tags": [],
+      "team": "nbr",
+      "type": "shot",
+      "x": 93.4,
+      "xg": 0.244,
+      "y": 52.5
+    },
+    {
+      "clock_ms": 1745320,
+      "id": "E-0588",
+      "outcome": "off_target",
+      "period": 1,
+      "player": "riv-09",
+      "tags": [],
+      "team": "riv",
+      "type": "shot",
+      "x": 88.9,
+      "xg": 0.138,
+      "y": 76.3
+    },
+    {
+      "clock_ms": 2057600,
+      "id": "E-0687",
+      "outcome": "goal",
+      "period": 1,
+      "player": "nbr-09",
+      "tags": [],
+      "team": "nbr",
+      "type": "shot",
+      "x": 84.0,
+      "xg": 0.21,
+      "y": 57.0
+    },
+    {
+      "clock_ms": 2462600,
+      "id": "E-0789",
+      "outcome": "goal",
+      "period": 1,
+      "player": "riv-11",
+      "tags": [],
+      "team": "riv",
+      "type": "shot",
+      "x": 88.0,
+      "xg": 0.38,
+      "y": 44.0
+    },
+    {
+      "clock_ms": 2633760,
+      "id": "E-0825",
+      "outcome": "saved",
+      "period": 1,
+      "player": "riv-04",
+      "tags": [],
+      "team": "riv",
+      "type": "shot",
+      "x": 94.6,
+      "xg": 0.062,
+      "y": 68.6
+    },
+    {
+      "clock_ms": 2847191,
+      "id": "E-0940",
+      "outcome": "off_target",
+      "period": 2,
+      "player": "nbr-06",
+      "tags": [],
+      "team": "nbr",
+      "type": "shot",
+      "x": 80.4,
+      "xg": 0.208,
+      "y": 43.4
+    },
+    {
+      "clock_ms": 2872988,
+      "id": "E-0957",
+      "outcome": "saved",
+      "period": 2,
+      "player": "nbr-05",
+      "tags": [],
+      "team": "nbr",
+      "type": "shot",
+      "x": 86.3,
+      "xg": 0.072,
+      "y": 70.7
+    },
+    {
+      "clock_ms": 3065703,
+      "id": "E-1084",
+      "outcome": "off_target",
+      "period": 2,
+      "player": "riv-08",
+      "tags": [],
+      "team": "riv",
+      "type": "shot",
+      "x": 83.3,
+      "xg": 0.215,
+      "y": 60.4
+    },
+    {
+      "clock_ms": 3103639,
+      "id": "E-1109",
+      "outcome": "blocked",
+      "period": 2,
+      "player": "nbr-11",
+      "tags": [],
+      "team": "nbr",
+      "type": "shot",
+      "x": 93.2,
+      "xg": 0.081,
+      "y": 76.8
+    },
+    {
+      "clock_ms": 3185581,
+      "id": "E-1163",
+      "outcome": "saved",
+      "period": 2,
+      "player": "nbr-06",
+      "tags": [],
+      "team": "nbr",
+      "type": "shot",
+      "x": 87.1,
+      "xg": 0.231,
+      "y": 63.5
+    },
+    {
+      "clock_ms": 3212895,
+      "id": "E-1181",
+      "outcome": "off_target",
+      "period": 2,
+      "player": "nbr-05",
+      "tags": [],
+      "team": "nbr",
+      "type": "shot",
+      "x": 84.7,
+      "xg": 0.148,
+      "y": 54.4
+    },
+    {
+      "clock_ms": 3226552,
+      "id": "E-1190",
+      "outcome": "blocked",
+      "period": 2,
+      "player": "riv-07",
+      "tags": [],
+      "team": "riv",
+      "type": "shot",
+      "x": 87.5,
+      "xg": 0.16,
+      "y": 42.6
+    },
+    {
+      "clock_ms": 3264488,
+      "id": "E-1215",
+      "outcome": "blocked",
+      "period": 2,
+      "player": "nbr-07",
+      "tags": [],
+      "team": "nbr",
+      "type": "shot",
+      "x": 88.5,
+      "xg": 0.27,
+      "y": 29.8
+    },
+    {
+      "clock_ms": 3320633,
+      "id": "E-1252",
+      "outcome": "saved",
+      "period": 2,
+      "player": "nbr-08",
+      "tags": [],
+      "team": "nbr",
+      "type": "shot",
+      "x": 80.5,
+      "xg": 0.061,
+      "y": 41.0
+    },
+    {
+      "clock_ms": 3422302,
+      "id": "E-1319",
+      "outcome": "saved",
+      "period": 2,
+      "player": "nbr-11",
+      "tags": [],
+      "team": "nbr",
+      "type": "shot",
+      "x": 88.0,
+      "xg": 0.126,
+      "y": 48.0
+    },
+    {
+      "clock_ms": 3496600,
+      "id": "E-1365",
+      "outcome": "goal",
+      "period": 2,
+      "player": "nbr-09",
+      "tags": [
+        "header"
+      ],
+      "team": "nbr",
+      "type": "shot",
+      "x": 95.0,
+      "xg": 0.34,
+      "y": 47.0
+    },
+    {
+      "clock_ms": 3699500,
+      "id": "E-1390",
+      "outcome": "off_target",
+      "period": 2,
+      "player": "riv-02",
+      "tags": [],
+      "team": "riv",
+      "type": "shot",
+      "x": 84.1,
+      "xg": 0.25,
+      "y": 53.5
+    }
+  ],
+  "squads": {
+    "nbr": [
+      {
+        "name": "Fairhurst",
+        "player_id": "nbr-01",
+        "position": "GK",
+        "shirt": 1,
+        "starter": true
+      },
+      {
+        "name": "Coulter",
+        "player_id": "nbr-02",
+        "position": "DF",
+        "shirt": 2,
+        "starter": true
+      },
+      {
+        "name": "Varga",
+        "player_id": "nbr-03",
+        "position": "DF",
+        "shirt": 3,
+        "starter": true
+      },
+      {
+        "name": "Mensah",
+        "player_id": "nbr-04",
+        "position": "DF",
+        "shirt": 4,
+        "starter": true
+      },
+      {
+        "name": "Pettersen",
+        "player_id": "nbr-05",
+        "position": "DF",
+        "shirt": 5,
+        "starter": true
+      },
+      {
+        "name": "Ashdown",
+        "player_id": "nbr-06",
+        "position": "MF",
+        "shirt": 6,
+        "starter": true
+      },
+      {
+        "name": "Ferreira",
+        "player_id": "nbr-07",
+        "position": "MF",
+        "shirt": 7,
+        "starter": true
+      },
+      {
+        "name": "Quinlan",
+        "player_id": "nbr-08",
+        "position": "MF",
+        "shirt": 8,
+        "starter": true
+      },
+      {
+        "name": "Okafor",
+        "player_id": "nbr-09",
+        "position": "FW",
+        "shirt": 9,
+        "starter": true
+      },
+      {
+        "name": "Delgado",
+        "player_id": "nbr-10",
+        "position": "FW",
+        "shirt": 10,
+        "starter": true
+      },
+      {
+        "name": "Aldane",
+        "player_id": "nbr-11",
+        "position": "FW",
+        "shirt": 11,
+        "starter": true
+      },
+      {
+        "name": "Rourke",
+        "player_id": "nbr-12",
+        "position": "GK",
+        "shirt": 12,
+        "starter": false
+      },
+      {
+        "name": "Siddiqui",
+        "player_id": "nbr-13",
+        "position": "DF",
+        "shirt": 13,
+        "starter": false
+      },
+      {
+        "name": "Moreau",
+        "player_id": "nbr-14",
+        "position": "MF",
+        "shirt": 14,
+        "starter": false
+      },
+      {
+        "name": "Thackray",
+        "player_id": "nbr-15",
+        "position": "MF",
+        "shirt": 15,
+        "starter": false
+      },
+      {
+        "name": "Osei",
+        "player_id": "nbr-16",
+        "position": "FW",
+        "shirt": 16,
+        "starter": false
+      }
+    ],
+    "riv": [
+      {
+        "name": "Kavanagh",
+        "player_id": "riv-01",
+        "position": "GK",
+        "shirt": 1,
+        "starter": true
+      },
+      {
+        "name": "Ruiz",
+        "player_id": "riv-02",
+        "position": "DF",
+        "shirt": 2,
+        "starter": true
+      },
+      {
+        "name": "Sorensen",
+        "player_id": "riv-03",
+        "position": "DF",
+        "shirt": 3,
+        "starter": true
+      },
+      {
+        "name": "Halvorsen",
+        "player_id": "riv-04",
+        "position": "DF",
+        "shirt": 4,
+        "starter": true
+      },
+      {
+        "name": "Tembo",
+        "player_id": "riv-05",
+        "position": "DF",
+        "shirt": 5,
+        "starter": true
+      },
+      {
+        "name": "Haddad",
+        "player_id": "riv-06",
+        "position": "MF",
+        "shirt": 6,
+        "starter": true
+      },
+      {
+        "name": "Barros",
+        "player_id": "riv-07",
+        "position": "MF",
+        "shirt": 7,
+        "starter": true
+      },
+      {
+        "name": "Castell",
+        "player_id": "riv-08",
+        "position": "MF",
+        "shirt": 8,
+        "starter": true
+      },
+      {
+        "name": "Novak",
+        "player_id": "riv-09",
+        "position": "FW",
+        "shirt": 9,
+        "starter": true
+      },
+      {
+        "name": "Ferrante",
+        "player_id": "riv-10",
+        "position": "FW",
+        "shirt": 10,
+        "starter": true
+      },
+      {
+        "name": "Lindqvist",
+        "player_id": "riv-11",
+        "position": "FW",
+        "shirt": 11,
+        "starter": true
+      },
+      {
+        "name": "Dawes",
+        "player_id": "riv-12",
+        "position": "GK",
+        "shirt": 12,
+        "starter": false
+      },
+      {
+        "name": "Ibarra",
+        "player_id": "riv-13",
+        "position": "DF",
+        "shirt": 13,
+        "starter": false
+      },
+      {
+        "name": "Kovac",
+        "player_id": "riv-14",
+        "position": "MF",
+        "shirt": 14,
+        "starter": false
+      },
+      {
+        "name": "Penrose",
+        "player_id": "riv-15",
+        "position": "MF",
+        "shirt": 15,
+        "starter": false
+      },
+      {
+        "name": "Sato",
+        "player_id": "riv-16",
+        "position": "FW",
+        "shirt": 16,
+        "starter": false
+      }
+    ]
+  },
+  "statistics": {
+    "nbr": {
+      "ball_speed": 36.8,
+      "corners": 6,
+      "final_third_entries": 133,
+      "fouls": 8,
+      "goals": 2,
+      "interceptions": 22,
+      "on_target": 6,
+      "pass_accuracy": 0.896,
+      "pass_difficulty": 38.3,
+      "pass_distance": 22.6,
+      "pressured_passes": 113,
+      "progressive_passes": 101,
+      "recoveries": 80,
+      "red_cards": 0,
+      "shots": 14,
+      "tackles": 33,
+      "yellow_cards": 1
+    },
+    "riv": {
+      "ball_speed": 34.8,
+      "corners": 3,
+      "final_third_entries": 88,
+      "fouls": 11,
+      "goals": 1,
+      "interceptions": 21,
+      "on_target": 3,
+      "pass_accuracy": 0.845,
+      "pass_difficulty": 37.9,
+      "pass_distance": 23.0,
+      "pressured_passes": 87,
+      "progressive_passes": 60,
+      "recoveries": 82,
+      "red_cards": 0,
+      "shots": 9,
+      "tackles": 33,
+      "yellow_cards": 1
+    }
+  },
+  "synthetic": true,
+  "teams": {
+    "nbr": {
+      "code": "NBR",
+      "name": "Northbridge FC",
+      "short": "Northbridge"
+    },
+    "riv": {
+      "code": "RIV",
+      "name": "Riverside United",
+      "short": "Riverside"
+    }
+  }
+}

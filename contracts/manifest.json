@@ -1,15 +1,16 @@
 {
   "files": {
     "ApprovalBinding.v1.json": "f606b3daec2041d051e5243c148001f49299d8bae82f5f4b0d126b91cce906eb",
-    "Claim.v1.json": "168279945019819b56eadba19f93a61d113e33476b20712153c56c11448c3bb2",
-    "EvidenceRecord.v1.json": "1d7bf1c5ea9ee9ee9f187408c17b99c60f1acb36d56883f1f000d3b4b61f99aa",
+    "BroadcastEnvelope.v1.json": "44dbc8fea38533df59b831d481be36bf1023948dec364db789b38edaa1b90d74",
+    "Claim.v1.json": "f7fd0275e1eafc5aa30b333ba8ab856bf414aacb36c6913c0ee330366ddee499",
+    "EvidenceRecord.v1.json": "044ef92d4b6e2698160097f45fd24cd149111bdf7987216356167a296892c5ad",
     "Location.v1.json": "b16622287c248d9750ac2492d9f9e1bba7e2da3b7d8c0112982207fd18e314d4",
-    "MatchEvent.v1.json": "79bf85a6c79acd746974f34ec126f043a9fb4f5f1262d4ba8f5b8fa1b71b3c84",
-    "MatchWindow.v1.json": "378083066773d466099046b2f54272ffce2762cc8c06bc0973c498d2abb7fbc5",
-    "MetricAssertion.v1.json": "a936a2f0f65b1249d38c47c2b7d259b8c3fe4732a9b0bda678f8cded15ebd4a2",
+    "MatchEvent.v1.json": "e3559f17a3f7b008e424f5e3eb3320315bec3bcecc979e29338bc4e22c64bb4a",
+    "MatchWindow.v1.json": "b8d2cefccbd587044207a523660647875e9a22eefe8ad61bf8d0252151348b84",
+    "MetricAssertion.v1.json": "4af6a17ee0139c27e13d8833460fd96cd1231d9e59e0a59e8ddbe90cc6e2c8a9",
     "Subject.v1.json": "4b36259afe9e940cce73534df733a4070c46cecad646e6ca74989b0764693122",
     "VerificationResult.v1.json": "22e1512f41f8e213264e88c35fbedc249de0f17b20f107dffb4fbb4c795b4944",
-    "openapi.json": "68d371f389b57f8e5994b7e2f1ea88b65ca6149594e16f3cf01a69f3b2b4a3f4"
+    "openapi.json": "843204b11648b7bd5b1188ac372604e397544d2bb7c21129d5286528b85b2670"
   },
   "schema_version": "1.0"
 }

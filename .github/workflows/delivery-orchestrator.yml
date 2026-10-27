@@ -1,0 +1,143 @@
+# Read-only delivery coordinator. No coding model, PR mutation or deployment runs here.
+# GitHub scheduled workflows only run from the default branch. The schedule
+# remains inactive until this workflow is separately approved for main.
+name: MatchDesk delivery control
+
+on:
+  push:
+    branches: [development]
+    paths:
+      - .github/workflows/delivery-orchestrator.yml
+      - docs/engineering/delivery-workstreams.json
+      - scripts/delivery_orchestrator.py
+      - scripts/test_delivery_orchestrator.py
+      - scripts/delivery_supervisor.py
+      - scripts/test_delivery_supervisor.py
+      - scripts/delivery_alerts.py
+      - scripts/delivery_alert_reconcile.py
+      - scripts/test_delivery_alert_reconcile.py
+      - scripts/delivery_runtime_preflight.py
+      - scripts/test_delivery_runtime_preflight.py
+      - scripts/delivery_agent_loop.py
+      - scripts/test_delivery_agent_loop.py
+      - scripts/delivery_worker_loop.py
+      - scripts/test_delivery_worker_loop.py
+      - scripts/test_delivery_activation_rehearsal.py
+      - scripts/delivery_host_control.py
+      - scripts/test_delivery_host_control.py
+      - scripts/render_delivery_host_service.py
+      - scripts/test_render_delivery_host_service.py
+  pull_request:
+    branches: [development]
+    paths:
+      - .github/workflows/delivery-orchestrator.yml
+      - docs/engineering/delivery-workstreams.json
+      - scripts/delivery_orchestrator.py
+      - scripts/test_delivery_orchestrator.py
+      - scripts/delivery_supervisor.py
+      - scripts/test_delivery_supervisor.py
+      - scripts/delivery_alerts.py
+      - scripts/delivery_alert_reconcile.py
+      - scripts/test_delivery_alert_reconcile.py
+      - scripts/delivery_runtime_preflight.py
+      - scripts/test_delivery_runtime_preflight.py
+      - scripts/delivery_agent_loop.py
+      - scripts/test_delivery_agent_loop.py
+      - scripts/delivery_worker_loop.py
+      - scripts/test_delivery_worker_loop.py
+      - scripts/test_delivery_activation_rehearsal.py
+      - scripts/delivery_host_control.py
+      - scripts/test_delivery_host_control.py
+      - scripts/render_delivery_host_service.py
+      - scripts/test_render_delivery_host_service.py
+  workflow_dispatch:
+  schedule:
+    - cron: '17 */4 * * *'
+
+permissions:
+  contents: read
+  issues: read
+  actions: read
+  checks: read
+
+concurrency:
+  group: matchdesk-delivery-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate-and-plan:
+    name: Validate queue and exact-head gates
+    if: ${{ github.repository == 'GOkwori/matchdesk' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Verify delivery preflight regressions
+        run: python3 -m unittest discover -s scripts -p 'test_delivery_orchestrator.py' -v
+      - name: Verify durable supervisor restart and lease recovery
+        run: python3 -m unittest discover -s scripts -p 'test_delivery_supervisor.py' -v
+      - name: Verify executor remains fail-closed without an approved coding adapter
+        run: python3 -m unittest discover -s scripts -p 'test_delivery_worker_loop.py' -v
+      - name: Validate offline adapter patch and sandbox restrictions
+        run: python3 -m unittest discover -s scripts -p 'test_delivery_agent_loop.py' -v
+      - name: Verify crash-safe notification reconciliation regressions
+        run: python3 -m unittest discover -s scripts -p 'test_delivery_alert_reconcile.py' -v
+      - name: Verify local worker runtime preflight remains fail-closed
+        run: python3 -m unittest discover -s scripts -p 'test_delivery_runtime_preflight.py' -v
+      - name: Verify local control-service readiness remains offline and single-instance
+        run: python3 -m unittest discover -s scripts -p 'test_delivery_host_control.py' -v
+      - name: Verify inert service renderer and injection controls
+        run: python3 -m unittest discover -s scripts -p 'test_render_delivery_host_service.py' -v
+      - name: Rehearse four-lane crash recovery and owner input holds without an executor
+        run: python3 -m unittest discover -s scripts -p 'test_delivery_activation_rehearsal.py' -v
+      - name: Read live delivery state and development checks
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 scripts/delivery_orchestrator.py --github --output-dir artifacts/delivery
+      - name: Publish inspectable GitHub run summary
+        if: always()
+        run: |
+          if test -f artifacts/delivery/summary.md; then
+            cat artifacts/delivery/summary.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Retain delivery evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: delivery-control-plan
+          path: artifacts/delivery/
+          retention-days: 7
+          if-no-files-found: warn
+
+  inspect-independent-lanes:
+    name: Inspect ${{ matrix.lane }} lane
+    needs: validate-and-plan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        lane: [producer, audience, assurance, demo]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Inspect isolated workstream readiness
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          LANE: ${{ matrix.lane }}
+        run: |
+          python3 scripts/delivery_orchestrator.py \
+            --github --lane "$LANE" --output-dir "artifacts/delivery/$LANE"
+      - name: Add lane-specific summary
+        run: cat "artifacts/delivery/${{ matrix.lane }}/summary.md" >> "$GITHUB_STEP_SUMMARY"
+      - name: Retain isolated lane plan
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: delivery-lane-${{ matrix.lane }}
+          path: artifacts/delivery/${{ matrix.lane }}/
+          retention-days: 7
+          if-no-files-found: error

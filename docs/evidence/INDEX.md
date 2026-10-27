@@ -1,7 +1,158 @@
 # Evidence index
 
+## Studio accessibility — 22 October 2026
+
+- [Studio WCAG 2.2 automated audit, 22 Oct 2026](studio-wcag22-audit-20261022.md): focus hidden under the phone tab bar, 20 px text-link targets and unreachable tour cards found and fixed; five regression tests added. Manual assistive-technology testing remains open in the [studio runbook](../testing/studio-accessibility-manual-runbook.md).
+
+## Competition build — 21 October 2026
+
+- [Verifier benchmark and speed, 24 October](verifier-benchmark-20261024.md): 810 of 810 false claims caught and 0 of 295 true claims rejected, on the server and in the browser; the substitution-order gap it found and fixed; how fast the replay is ingested and verified.
+- [Release candidate and live checks, 23 October (night)](release-live-checks-20261023.md): the release branch, Azure and Vercel at `f21fa0d`; MCP, the full live stream (21 cues and both recaps verified), reviewed Spanish and French text, the auto-eventing lab and demo approval checked on the live site.
+- [Spanish and French language review, 23 October](language-review-es-fr-20261023.md): 330 strings reviewed, 77 corrections applied, certified by the owner; the completed workbook is kept alongside.
+- [Azure live checks, 23 October (evening)](azure-live-checks-20261023.md): the redeploy at `88db1b2`, MCP over the public URL, the live stream's verified half-time recap, and a completed live agent run on Foundry (3 verification rounds).
+- [Azure deployment record, 23 October](azure-deployment-20261023.md): the studio and API on Azure Container Apps from `af477a3`, the runs that got there, the Foundry planner checked live, cost and lifetime.
+- [Hosted judge-path walkthrough, 22 October](hosted-walkthrough-20261022.md): the judge path run on the live site in a real browser, with screenshots, and one finding (a draft sentence that said more than its claim) and its fix.
+- [Competition build record, 22 October](competition-build-20261022.md): submission build `76de6c4` (hosted on Vercel from `release/submission-2026-10`), what changed since 21 October, three live Foundry runs on the stricter verifier and how often it sent claims back, and the checks at this build.
+- [Competition build record](competition-build-20261021.md): submission build `ed9ff4d` (hosted on Vercel, preserved as `release/submission-2026-10`), Phases 0–4 by pull request, the eight live Foundry runs and the defect each one exposed, and the checks at submission.
+
+## Sunset Studio v3 — 14-screen development closure — 13 October 2026
+
+- [Exact-source development qualification](sunset-v3-14-screen-development-qualification-20261013.md): all 14 synthetic-only frontend screens merged to `development` at `4039ccb214ff999290a826df4e4a185718e65be4`. Four post-merge workflows passed, with 213 functional and 3 visual Playwright tests and independent native-image checks. The Screen 13 screenshot-capture failure and repair are preserved. Batch 1 originals, independent WCAG 2.2 AA assessment, live permissions and production release remain outstanding.
+
+## Sunset Studio v3 screens 05–07 — 11 October 2026
+
+- [Exact-source qualification and visual review](../design/sunset-v3-screens05-07-qualification-20261011.md): `40c8719` passed all 4 required workflows, 69 Playwright tests and 18 dark/light screenshots at 390/1024/1440px. Visual parity, manual accessibility and original Batch 1 archival remain open; no live execution authority.
+
+## Sunset Studio v3 frontend screens 01–02 — 11 October 2026
+
+- [Exact-source UI qualification and implementation approval](../design/sunset-v3-implementation-acceptance-20261011.md): implementation commit `489b7cf4084ce90f4ddc549dd515fdc6eee5b1c5` passed Foundation CI `38165967495`, Foundation integration `38165967490`, Source security `38165967516`, and Dependency audit `38165967501`. Playwright: 36 passed, including 12 new synthetic-only v3 tests at three viewport projects. No production authority.
+- Batch 1 original PNGs remain **uncommitted** despite exact local SHA-256/byte checks and a tested binary patch. Archive status remains partial until seven PNG blobs and combined 21-entry manifest exist in Git.
+
 Results are tied to source commits and execution environments. A passing build is not
 an approval to deploy, and evidence from one source is not relabelled as another.
+
+## ID3L real-session principal/catalog qualification — 11 October 2026
+
+- [ID3L exact-source qualification](id3l-real-session-principal-qualification-20261011.md)
+  captures two separately signed disposable human/workload JWTs, the
+  same physical restricted PostgreSQL connection, host-supplied
+  entitlement revocation, forged/MFA/audience rejection, real database
+  CREATE-grant escalation denial and post-revocation recovery.
+- Exact `4004a3e54eb91bb080c2a89e7257b09ce860c3d8`:
+  Foundation CI [38166677483](https://github.com/GOkwori/matchdesk/actions/runs/38166677483)
+  (1,123 tests, 95.84% total coverage), Foundation integration
+  [38166677532](https://github.com/GOkwori/matchdesk/actions/runs/38166677532)
+  (36 Chromium tests, real disposable DB and native-image PASS),
+  Source security
+  [38166677468](https://github.com/GOkwori/matchdesk/actions/runs/38166677468)
+  and Dependency audit
+  [38166677556](https://github.com/GOkwori/matchdesk/actions/runs/38166677556)
+  **all passed on exactly this implementation**.
+- Offline keys, MFA claim, synthetic entitlements and single-host
+  connection are NOT live Entra authentication or write-time release
+  authorisation; no customer migration or production promotion is permitted.
+
+## ID3K disposable dual-principal catalog binding — 11 October 2026
+
+- [ID3K exact-source qualification](id3k-principal-catalog-qualification-20261011.md)
+  covers separate synthetic delegated-human and app-only workload JWTs,
+  host-owned inspection entitlements, fail-closed identity/drift checks,
+  receipt non-execution and explicit real-identity/DB integration blockers.
+- Qualified source `8d970252c71920edbb8fe96dd1a699b0cbc7fd60`:
+  Foundation CI [38165623514](https://github.com/GOkwori/matchdesk/actions/runs/38165623514)
+  (1,123 tests, 95.84% global coverage; 85% ID3K module),
+  Foundation integration [38165623452](https://github.com/GOkwori/matchdesk/actions/runs/38165623452)
+  (real **ID3J**, 24 browser tests, image-security verdict), Source security
+  [38165623486](https://github.com/GOkwori/matchdesk/actions/runs/38165623486)
+  and Dependency audit
+  [38165623494](https://github.com/GOkwori/matchdesk/actions/runs/38165623494)
+  **all passed on the same source**.
+- ID3K's database cursor and keys are still synthetic. Neither live Entra
+  MFA nor combined end-to-end identity-bound PostgreSQL nor write-time
+  authorization has been qualified. The earlier Ruff formatting failure
+  remains recorded.
+
+## ID3J real disposable PostgreSQL catalog qualification — 11 October 2026
+
+- [ID3J exact-source qualification](id3j-postgres-catalog-qualification-20261011.md)
+  documents the actual restricted PostgreSQL role, effective privilege checks,
+  real CREATE-grant escalation denial, restoration and prior retained failures.
+- Qualified development source `22e25bd2f19d98357751b0b110ee30d999b54867`: Foundation CI
+  [38164404494](https://github.com/GOkwori/matchdesk/actions/runs/38164404494)
+  (1,099 tests, 96.11% overall coverage, 100% ID3J module), Foundation
+  integration [38164404479](https://github.com/GOkwori/matchdesk/actions/runs/38164404479)
+  (24 browser tests, native image security), Source security
+  [38164404495](https://github.com/GOkwori/matchdesk/actions/runs/38164404495),
+  and Dependency audit
+  [38164404507](https://github.com/GOkwori/matchdesk/actions/runs/38164404507):
+  **all PASS on the same exact source**.
+- A real restricted catalog reader is **not** a verified live host identity
+  or migration executor. Human/workload attestation and release authority
+  remain **NOT QUALIFIED**.
+
+## ID3I disposable read-only host preflight — 11 October 2026
+
+- [ID3I exact-source qualification](id3i-read-only-host-qualification-20261011.md)
+  records dual synthetic identity checks, read-only role and target binding,
+  replay prevention, late-drift denial and the explicit non-execution receipt.
+- Qualified development source cbb384528fe31f0e392359a3fcc48a30cea22821:
+  Foundation CI 38156941471 (1,074 tests, 96.08% coverage; 100% ID3I module),
+  Foundation integration 38156941472, Source security 38156941497 and
+  Dependency audit 38156941475 all **PASS**.
+- The earlier e9f0612 candidate passed tests but failed Ruff formatting;
+  the precise formatting-only repair is retained in Git history.
+  Real tenant identity, database privileges and mutation authority remain
+  **UNVERIFIED / BLOCKED**.
+
+## ID3H offline evidence-bound qualification — 11 October 2026
+
+- [Exact-source ID3H CI qualification](id3h-disposable-qualification-20261011.md)
+  records passing end-to-end non-execution approval and seven-file evidence
+  checks, retained failed candidates, and remaining live trust-boundary blockers.
+- Qualified source `c3a166be953c4c9ae60d0e9fe6d84a10379f255c`:
+  Foundation CI 38138748717 (1,058 tests), Foundation integration
+  38138748713, Source security 38138748691 and Dependency audit 38138748809
+  all **PASS**. An offline receipt authorizes no migration.
+
+## Phase 3F restricted Psycopg and independently reconciled audit
+
+- [Phase 3F exact-source qualification](phase3f-real-psycopg-audit-20261010.md)
+  records passing *actual Python* Psycopg integration with a restricted PostgreSQL role,
+  concurrent CAS, rollback, restart and fail-closed independent audit reconciliation.
+- Qualified development source `9c6cb30b53d5d1fc1186ff2a758db807057c4a99`:
+  Foundation CI 38032825378 (477 tests, 98% storage coverage), Dependency audit
+  38032825394, Source security 38032825398 and Foundation integration
+  38032825383 all PASS on the same exact commit.
+- P3-05 remains IN PROGRESS: trusted OIDC, session entitlements, authenticated
+  producer commands, publishing delivery and production hardening remain unverified.
+
+## Phase 3E producer-case SQL integrity
+
+- [P3-05 real PostgreSQL SQL-boundary qualification](phase3e-producer-postgres-20261010.md)
+  records the exact source `207a2921b4fa634dcf22b598f3a98d83a51043b2`,
+  eight passing disposable database checks and unresolved driver/identity gaps.
+- Foundation CI 38023985097 passed 464 tests with 96.46% package coverage;
+  Dependency audit 38023985161, Source security 38023985199 and Foundation
+  integration 38023985147 passed on the same commit, including independent
+  native-image scanning.
+
+**P3-05 is IN PROGRESS**: tested SQL statements are not yet an authenticated
+producer service or live Python PostgreSQL adapter.
+
+## Phase 3A producer review and Phase 3B publication gate
+
+- [Phase 3A producer-review qualification](phase3a-producer-review-20261009.md)
+  records the exact-version approval state machine and four passing hosted
+  workflow groups on source `bfa883597056c9c934f3e8fdce7cdc24adfeb73a`.
+- [Phase 3B publication-gate qualification](phase3b-publication-gate-20261010.md)
+  records exact current-version publication authorisation on source
+  `1cf95c850b609e7906e25550f1d4d9a53a6f0384`.
+- P3-02 Foundation CI 38015851840 passed 290 Python tests with 96.73% coverage;
+  Dependency audit 38015851831, Source security 38015851810 and Foundation
+  integration 38015851847 also passed on the same exact source.
+
+P3-01 and P3-02 are **TESTED** as pure domain controls, not an authenticated
+publishing service. No content was published, and P3-03 output contracts are next.
 
 ## Phase 2 closure review
 
@@ -14,8 +165,10 @@ an approval to deploy, and evidence from one source is not relabelled as another
   `c722f77896124bcc42ac11ef9aa21fcf3a2c3772`.
 - PR #36 was squash-merged through the protected path as
   `aedc840432ca0a868aa091a81ee60c93bb935db4`.
-- P2-06 is waiting only for one clean post-merge qualification point before it is
-  labelled **VERIFIED / COMPLETED**.
+- Closure-only main commit `31371b06b23ee61f25d5b9f6ccceb9b3ae7bb222` passed
+  Foundation CI 37954560348 (270 tests, 96.85% coverage), Dependency audit
+  37954560125, Source security 37954560323 and Foundation integration 37954560501.
+- P2-06 is **COMPLETE** and Phase 2 is **VERIFIED / COMPLETED**.
 
 ## Phase 2E failure/retry/recovery and model evaluation
 

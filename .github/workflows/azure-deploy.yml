@@ -1,0 +1,82 @@
+name: Azure deployment (plan or deploy)
+
+# PLAN ONLY until the owner approves docs/operations/azure-deployment-plan.md.
+# what-if is read-only and creates nothing. deploy needs BOTH the typed confirmation and the
+# repository variable AZURE_DEPLOY_APPROVED=true, which only the owner can set.
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "what-if (read-only) or deploy"
+        required: true
+        type: choice
+        options: [what-if, deploy]
+        default: what-if
+      confirm:
+        description: "For deploy only: type DEPLOY_MATCHDESK_TO_AZURE"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  azure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      AZURE_CORE_OUTPUT: none
+      RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+    steps:
+      - name: Require explicit owner authorisation to deploy
+        if: ${{ inputs.mode == 'deploy' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${{ inputs.confirm }}" = "DEPLOY_MATCHDESK_TO_AZURE"
+          test "${{ vars.AZURE_DEPLOY_APPROVED }}" = "true"
+
+      - name: Require deployment configuration
+        shell: bash
+        env:
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$AZURE_CLIENT_ID"
+          test -n "$AZURE_TENANT_ID"
+          test -n "$AZURE_SUBSCRIPTION_ID"
+          test -n "$RESOURCE_GROUP"
+
+      - name: Check out exact source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+
+      - name: Authenticate to Azure with GitHub OIDC
+        uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Preview every change (what-if, read-only)
+        shell: bash
+        run: |
+          set -euo pipefail
+          az deployment group what-if --resource-group "$RESOURCE_GROUP" \
+            --template-file infra/azure/main.bicep --parameters infra/azure/main.bicepparam \
+            --parameters budgetContactEmails='${{ vars.AZURE_BUDGET_EMAILS }}' \
+            postgresAdminGroupObjectId='${{ vars.AZURE_PG_ADMIN_GROUP_ID }}'
+
+      - name: Deploy infrastructure
+        if: ${{ inputs.mode == 'deploy' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          az deployment group create --resource-group "$RESOURCE_GROUP" \
+            --template-file infra/azure/main.bicep --parameters infra/azure/main.bicepparam \
+            --parameters budgetContactEmails='${{ vars.AZURE_BUDGET_EMAILS }}' \
+            postgresAdminGroupObjectId='${{ vars.AZURE_PG_ADMIN_GROUP_ID }}'

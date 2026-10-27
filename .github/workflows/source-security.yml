@@ -3,9 +3,9 @@
 name: Source security
 on:
   push:
-    branches: [development, main]
+    branches: [development, main, 'feat/sunset-v3-*']
   pull_request:
-    branches: [main]
+    branches: [development, main]
 permissions:
   contents: read
 concurrency:
@@ -121,6 +121,19 @@ jobs:
             | (cd "$RUNNER_TEMP/matchdesk-gitleaks" && sha256sum --check -)
           tar -xzf "$RUNNER_TEMP/matchdesk-gitleaks/scanner.tar.gz" -C "$RUNNER_TEMP/matchdesk-gitleaks" gitleaks
           "$RUNNER_TEMP/matchdesk-gitleaks/gitleaks" version > artifacts/secrets/scanner-version.txt
+      - name: Retrieve the exact reviewed historical test fixture
+        # PR #89 was integrated by squash; its introducing commit is no longer
+        # reachable from branch heads but is still in refs/pull/89/head history.
+        # Fetch only that history to prove the immutable fixture bytes below.
+        # This does not alter scanner rules, exclusions or reviewed fingerprints.
+        run: |
+          set -euo pipefail
+          reviewed=6f96c2cb7e6fb8e1bec378a9e137d7da32cc12c1
+          if ! git cat-file -e "${reviewed}^{commit}" 2>/dev/null; then
+            git fetch --no-tags --no-recurse-submodules origin refs/pull/89/head
+          fi
+          git cat-file -e "${reviewed}^{commit}"
+          git cat-file -e "${reviewed}:apps/web/tests/workforce-bff.test.mjs"
       - name: Recompute the exact historical digest false positives before excluding them
         # Only 13 reviewed historical fingerprints qualify, never whole paths or rules.
         run: |
@@ -176,19 +189,177 @@ jobs:
               fingerprints.extend([record['fingerprint'], alias])
               squash_aliases.append({'fingerprint': alias, 'derived_from': record['fingerprint'], 'sha256': record['sha256']})
 
-          if len(fingerprints) != 26 or len(set(fingerprints)) != 26:
-              raise SystemExit('Unexpected exact-fingerprint scope after squash alias derivation')
+          # Qualify the one newly surfaced OpenAPI schema digest against its exact
+          # introducing commit. No future digest, nearby line or different rule is ignored.
+          additional = json.loads(Path('docs/evidence/secret-scan-reviewed-digests-20261010.json').read_text())
+          if len(additional) != 1:
+              raise SystemExit('Unexpected new digest-review count')
+          entry = additional[0]
+          reviewed_commit = 'a96f6ffecb65df5b1b4bbb8785563897e83ae2fa'
+          reviewed_path = 'contracts/manifest.json'
+          reviewed_source = 'contracts/openapi.json'
+          reviewed_fingerprint = f'{reviewed_commit}:{reviewed_path}:generic-api-key:13'
+          if (entry.get('fingerprint') != reviewed_fingerprint
+                  or entry.get('digest_of') != reviewed_source):
+              raise SystemExit('New digest review identity changed')
+          line = subprocess.check_output([
+              'git', 'show', f'{reviewed_commit}:{reviewed_path}'
+          ]).decode('utf-8').splitlines()[12]
+          parsed = re.fullmatch(r'\s*"openapi\.json": "([0-9a-f]{64})",?', line)
+          source = subprocess.check_output([
+              'git', 'show', f'{reviewed_commit}:{reviewed_source}'
+          ])
+          actual_digest = hashlib.sha256(source).hexdigest()
+          if (parsed is None or parsed[1] != entry.get('sha256')
+                  or actual_digest != entry.get('sha256')):
+              raise SystemExit('New OpenAPI finding is not the reviewed file digest')
+          fingerprints.append(reviewed_fingerprint)
+
+          # 17 Oct 2026: the contract snapshots gained MetricAssertion.decimals and an
+          # optional MatchWindow.period, so the OpenAPI digest in the manifest changed.
+          # Re-prove the one exact fingerprint the same way: the flagged line must be the
+          # manifest's openapi.json field and equal SHA-256 of openapi.json at that commit.
+          later = json.loads(Path('docs/evidence/secret-scan-reviewed-digests-20261017.json').read_text())
+          if len(later) != 1:
+              raise SystemExit('Unexpected 17 October digest-review count')
+          entry = later[0]
+          commit, path, rule, number = entry['fingerprint'].split(':')
+          if (not re.fullmatch(r'[0-9a-f]{40}', commit) or path != 'contracts/manifest.json'
+                  or rule != 'generic-api-key' or number != '13'
+                  or entry.get('digest_of') != 'contracts/openapi.json'):
+              raise SystemExit('17 October digest review identity changed')
+          line = subprocess.check_output(['git', 'show', f'{commit}:{path}']).decode('utf-8').splitlines()[12]
+          parsed = re.fullmatch(r'\s*"openapi\.json": "([0-9a-f]{64})",?', line)
+          actual_digest = hashlib.sha256(subprocess.check_output(['git', 'show', f'{commit}:contracts/openapi.json'])).hexdigest()
+          if parsed is None or parsed[1] != entry.get('sha256') or actual_digest != entry.get('sha256'):
+              raise SystemExit('17 October OpenAPI finding is not the reviewed file digest')
+          fingerprints.append(entry['fingerprint'])
+
+          # 21 Oct 2026: Claim.v1 gained an optional registered event fact, so the
+          # OpenAPI digest in the manifest changed again. Re-prove the one exact
+          # fingerprint: the flagged line must be the manifest's openapi.json field and
+          # equal SHA-256 of openapi.json at that commit. No rule or path is exempted.
+          newest = json.loads(Path('docs/evidence/secret-scan-reviewed-digests-20261021.json').read_text())
+          if len(newest) != 1:
+              raise SystemExit('Unexpected 21 October digest-review count')
+          entry = newest[0]
+          commit, path, rule, number = entry['fingerprint'].split(':')
+          if (not re.fullmatch(r'[0-9a-f]{40}', commit) or path != 'contracts/manifest.json'
+                  or rule != 'generic-api-key' or number != '13'
+                  or entry.get('digest_of') != 'contracts/openapi.json'):
+              raise SystemExit('21 October digest review identity changed')
+          line = subprocess.check_output(['git', 'show', f'{commit}:{path}']).decode('utf-8').splitlines()[12]
+          parsed = re.fullmatch(r'\s*"openapi\.json": "([0-9a-f]{64})",?', line)
+          actual_digest = hashlib.sha256(subprocess.check_output(['git', 'show', f'{commit}:contracts/openapi.json'])).hexdigest()
+          if parsed is None or parsed[1] != entry.get('sha256') or actual_digest != entry.get('sha256'):
+              raise SystemExit('21 October OpenAPI finding is not the reviewed file digest')
+          fingerprints.append(entry['fingerprint'])
+
+          # 23 Oct 2026 (tracking): MatchEvent gained optional synthetic tracking fields and
+          # MetricAssertion the kilometres unit, so the OpenAPI digest changed again. Re-prove
+          # the one exact fingerprint the same way; no rule or path is exempted.
+          tracking = json.loads(Path('docs/evidence/secret-scan-reviewed-digests-20261023-tracking.json').read_text())
+          if len(tracking) != 1:
+              raise SystemExit('Unexpected tracking digest-review count')
+          entry = tracking[0]
+          commit, path, rule, number = entry['fingerprint'].split(':')
+          if (not re.fullmatch(r'[0-9a-f]{40}', commit) or path != 'contracts/manifest.json'
+                  or rule != 'generic-api-key' or number != '13'
+                  or entry.get('digest_of') != 'contracts/openapi.json'):
+              raise SystemExit('Tracking digest review identity changed')
+          line = subprocess.check_output(['git', 'show', f'{commit}:{path}']).decode('utf-8').splitlines()[12]
+          parsed = re.fullmatch(r'\s*"openapi\.json": "([0-9a-f]{64})",?', line)
+          actual_digest = hashlib.sha256(subprocess.check_output(['git', 'show', f'{commit}:contracts/openapi.json'])).hexdigest()
+          if parsed is None or parsed[1] != entry.get('sha256') or actual_digest != entry.get('sha256'):
+              raise SystemExit('Tracking OpenAPI finding is not the reviewed file digest')
+          fingerprints.append(entry['fingerprint'])
+
+          # 23 Oct 2026 (cards): Claim.v1 gained the card.v1 and substitution.v1 event-fact
+          # queries, so the OpenAPI digest changed again. Re-prove the one exact fingerprint.
+          cards = json.loads(Path('docs/evidence/secret-scan-reviewed-digests-20261023-cards.json').read_text())
+          if len(cards) != 1:
+              raise SystemExit('Unexpected cards digest-review count')
+          entry = cards[0]
+          commit, path, rule, number = entry['fingerprint'].split(':')
+          if (not re.fullmatch(r'[0-9a-f]{40}', commit) or path != 'contracts/manifest.json'
+                  or rule != 'generic-api-key' or number != '13'
+                  or entry.get('digest_of') != 'contracts/openapi.json'):
+              raise SystemExit('Cards digest review identity changed')
+          line = subprocess.check_output(['git', 'show', f'{commit}:{path}']).decode('utf-8').splitlines()[12]
+          parsed = re.fullmatch(r'\s*"openapi\.json": "([0-9a-f]{64})",?', line)
+          actual_digest = hashlib.sha256(subprocess.check_output(['git', 'show', f'{commit}:contracts/openapi.json'])).hexdigest()
+          if parsed is None or parsed[1] != entry.get('sha256') or actual_digest != entry.get('sha256'):
+              raise SystemExit('Cards OpenAPI finding is not the reviewed file digest')
+          fingerprints.append(entry['fingerprint'])
+
+          # 19 Oct 2026: Gitleaks correctly flagged one JWT-shaped string in
+          # offline BFF tests. That literal was deliberately written as a fake
+          # signature with a synthetic subject; review only the exact historical
+          # commit/path/line, never a rule-wide or filename-wide exemption.
+          metric_units = json.loads(Path('docs/evidence/secret-scan-reviewed-digests-20261023.json').read_text())
+          if len(metric_units) != 1:
+              raise SystemExit('Unexpected 23 October digest-review count')
+          entry = metric_units[0]
+          commit, path, rule, number = entry['fingerprint'].split(':')
+          if (not re.fullmatch(r'[0-9a-f]{40}', commit) or path != 'contracts/manifest.json'
+                  or rule != 'generic-api-key' or number != '13'
+                  or entry.get('digest_of') != 'contracts/openapi.json'):
+              raise SystemExit('23 October digest review identity changed')
+          line = subprocess.check_output(['git', 'show', f'{commit}:{path}']).decode('utf-8').splitlines()[12]
+          parsed = re.fullmatch(r'\s*"openapi\.json": "([0-9a-f]{64})",?', line)
+          actual_digest = hashlib.sha256(subprocess.check_output(['git', 'show', f'{commit}:contracts/openapi.json'])).hexdigest()
+          if parsed is None or parsed[1] != entry.get('sha256') or actual_digest != entry.get('sha256'):
+              raise SystemExit('23 October OpenAPI finding is not the reviewed file digest')
+          fingerprints.append(entry['fingerprint'])
+
+          synthetic = json.loads(Path(
+              'docs/evidence/secret-scan-reviewed-synthetic-20261019.json'
+          ).read_text())
+          if len(synthetic) != 1:
+              raise SystemExit('Unexpected synthetic fixture review scope')
+          entry = synthetic[0]
+          expected = (
+              '6f96c2cb7e6fb8e1bec378a9e137d7da32cc12c1:'
+              'apps/web/tests/workforce-bff.test.mjs:generic-api-key:18'
+          )
+          if (entry.get('fingerprint') != expected
+                  or entry.get('classification') != 'SYNTHETIC_NON_WORKING_JWT_TEST_FIXTURE'
+                  or entry.get('sha256_line_utf8') !=
+                  'f572ea66a35b1aaadd7e69cd7d6a02c104860924ffc44c0737120f3c22adae57'):
+              raise SystemExit('Synthetic JWT fixture fingerprint or digest changed')
+          commit, path, rule, number = expected.split(':')
+          line = subprocess.check_output([
+              'git', 'show', f'{commit}:{path}'
+          ]).decode('utf-8').splitlines()[int(number) - 1]
+          if not re.fullmatch(
+              r"const ACCESS = '[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+';", line
+          ) or hashlib.sha256(line.encode('utf-8')).hexdigest() != entry['sha256_line_utf8']:
+              raise SystemExit('Historical JWT fixture source bytes changed')
+          from base64 import urlsafe_b64decode
+          parts = line.split("'")[1].split('.')
+          def jwt_part(part):
+              return json.loads(urlsafe_b64decode(part + '=' * (-len(part) % 4)))
+          if (len(parts) != 3
+                  or jwt_part(parts[0]) != {'alg': 'RS256'}
+                  or jwt_part(parts[1]) != {'sub': '1'}
+                  or not re.fullmatch(r'signaturetest[0-9]{6}', parts[2])):
+              raise SystemExit('Flagged JWT-looking bytes are not the proved test fixture')
+          fingerprints.append(expected)
+
+          if len(fingerprints) != 33 or len(set(fingerprints)) != 33:
+              raise SystemExit('Unexpected exact-fingerprint scope after new digest review')
           output = Path(os.environ['RUNNER_TEMP']) / 'matchdesk-no-ignores' / 'reviewed.ignore'
           output.write_text('\n'.join(fingerprints) + '\n')
           Path('artifacts/secrets/classification.json').write_text(json.dumps({
-              'status': 'VERIFIED_NON_SECRET_DIGESTS',
+              'status': 'VERIFIED_NON_SECRET_DIGESTS_AND_TEST_FIXTURE',
               'reviewed_record_count': len(records),
+              'reviewed_synthetic_fixtures': synthetic,
               'exact_fingerprint_count': len(fingerprints),
               'scope': 'Exact commit/path/rule/line fingerprints only; no path or rule-wide exclusions',
               'squash_commit': squash_commit,
               'records': records,
               'derived_squash_aliases': squash_aliases}, indent=2) + '\n')
-          print('Recomputed 13 reviewed digests and 13 exact squash aliases; no path or rule-wide exclusions.')
+          print('Recomputed 32 reviewed digest fingerprints and one exact fake JWT fixture; no path or rule-wide exclusions.')
           PY
       - name: Confirm the scanner still detects a new synthetic key with the same exceptions
         run: |

@@ -2,9 +2,9 @@
 name: Foundation integration
 on:
   push:
-    branches: [development, main]
+    branches: [development, main, 'feat/sunset-v3-*']
   pull_request:
-    branches: [main]
+    branches: [development, main]
 permissions:
   contents: read
 concurrency:
@@ -52,21 +52,934 @@ jobs:
         id: runtime
         if: ${{ !cancelled() && steps.start.outcome == 'success' }}
         run: node e2e/runtime-checks.mjs 2>&1 | tee artifacts/integration/runtime.log
+      - name: Qualify producer audit and CAS on real isolated PostgreSQL
+        id: producer_storage
+        if: ${{ !cancelled() && steps.start.outcome == 'success' && steps.runtime.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          node e2e/producer-store-postgres.mjs 2>&1 | tee artifacts/integration/producer-store-postgres.log
+          node e2e/producer-grant-postgres.mjs 2>&1 | tee artifacts/integration/producer-grant-postgres.log
+      - name: Qualify atomic single-use producer grant write on disposable PostgreSQL
+        id: grant_atomicity
+        if: ${{ !cancelled() && steps.producer_storage.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          node e2e/producer-grant-atomic-postgres.mjs 2>&1 | tee artifacts/integration/producer-grant-atomic.log
+      - name: Qualify confirmed grant issuance on disposable PostgreSQL
+        id: confirmed_issuer
+        if: ${{ !cancelled() && steps.grant_atomicity.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          node e2e/producer-confirmation-issuer-postgres.mjs 2>&1 | tee artifacts/integration/producer-confirmation-issuer.log
+      - name: Qualify confirmation staging migration in disposable PostgreSQL
+        id: confirmation_staging
+        if: ${{ !cancelled() && steps.confirmed_issuer.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          node e2e/producer-confirmation-staging-postgres.mjs 2>&1 | tee artifacts/integration/producer-confirmation-staging.log
+      - name: Qualify separate physical issuer and revoker PostgreSQL logins
+        id: physical_issuer
+        if: ${{ !cancelled() && steps.confirmation_staging.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          issuer_password="$(openssl rand -hex 32)"
+          revoker_password="$(openssl rand -hex 32)"
+          echo "::add-mask::$issuer_password"
+          echo "::add-mask::$revoker_password"
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$POSTGRES_PASSWORD" \
+            -e "ISSUER_CI_PASSWORD=$issuer_password" \
+            -e "REVOKER_CI_PASSWORD=$revoker_password" api \
+            /app/.venv/bin/python - setup < e2e/producer-confirmation-issuer-psycopg.py \
+            2>&1 | tee artifacts/integration/producer-issuer-physical.log
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$issuer_password" api \
+            /app/.venv/bin/python - issue < e2e/producer-confirmation-issuer-psycopg.py \
+            2>&1 | tee -a artifacts/integration/producer-issuer-physical.log
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$revoker_password" api \
+            /app/.venv/bin/python - revoke < e2e/producer-confirmation-issuer-psycopg.py \
+            2>&1 | tee -a artifacts/integration/producer-issuer-physical.log
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$POSTGRES_PASSWORD" \
+            -e "ISSUER_CI_PASSWORD=$issuer_password" \
+            -e "REVOKER_CI_PASSWORD=$revoker_password" api \
+            /app/.venv/bin/python - initial < e2e/producer-confirmation-races-psycopg.py \
+            2>&1 | tee artifacts/integration/producer-issuer-races.log
+          # Qualify a third physical login with no issuer/revoker or table DML authority.
+          stager_password="$(openssl rand -hex 32)"
+          echo "::add-mask::$stager_password"
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$POSTGRES_PASSWORD" \
+            -e "STAGER_CI_PASSWORD=$stager_password" api \
+            /app/.venv/bin/python - setup < e2e/producer-confirmation-staging-psycopg.py \
+            2>&1 | tee artifacts/integration/producer-confirmation-stager.log
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$stager_password" \
+            -e "STAGER_CI_PASSWORD=$stager_password" \
+            -e "ISSUER_CI_PASSWORD=$issuer_password" \
+            -e "REVOKER_CI_PASSWORD=$revoker_password" api \
+            /app/.venv/bin/python - exercise < e2e/producer-confirmation-staging-psycopg.py \
+            2>&1 | tee -a artifacts/integration/producer-confirmation-stager.log
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" restart postgres
+          for attempt in $(seq 1 40); do
+            if docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+              pg_isready -U matchdesk -d matchdesk > /dev/null 2>&1; then
+              break
+            fi
+            sleep 1
+          done
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$POSTGRES_PASSWORD" api \
+            /app/.venv/bin/python - verify < e2e/producer-confirmation-issuer-psycopg.py \
+            2>&1 | tee -a artifacts/integration/producer-issuer-physical.log
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$POSTGRES_PASSWORD" api \
+            /app/.venv/bin/python - verify < e2e/producer-confirmation-races-psycopg.py \
+            2>&1 | tee -a artifacts/integration/producer-issuer-races.log
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$POSTGRES_PASSWORD" api \
+            /app/.venv/bin/python - verify < e2e/producer-confirmation-staging-psycopg.py \
+            2>&1 | tee -a artifacts/integration/producer-confirmation-stager.log
+      - name: Qualify grant writer through a physical restricted PostgreSQL login
+        id: grant_psycopg
+        if: ${{ !cancelled() && steps.physical_issuer.outcome == 'success' && steps.grant_atomicity.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          role_password="$(openssl rand -hex 32)"
+          echo "::add-mask::$role_password"
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$POSTGRES_PASSWORD" \
+            -e "GRANT_WRITER_CI_PASSWORD=$role_password" api \
+            /app/.venv/bin/python - setup < e2e/producer-grant-restricted-setup.py \
+            2>&1 | tee artifacts/integration/producer-grant-setup.log
+          # The valid one-use grant must NOT be spent if an unrelated table
+          # has accidentally been granted to this restricted workload login.
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$POSTGRES_PASSWORD" api \
+            /app/.venv/bin/python - elevate < e2e/producer-grant-restricted-setup.py \
+            2>&1 | tee artifacts/integration/producer-grant-extra-dml.log
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$role_password" api \
+            /app/.venv/bin/python - elevated < e2e/producer-grant-restricted-psycopg.py \
+            2>&1 | tee -a artifacts/integration/producer-grant-extra-dml.log
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$POSTGRES_PASSWORD" api \
+            /app/.venv/bin/python - restore < e2e/producer-grant-restricted-setup.py \
+            2>&1 | tee -a artifacts/integration/producer-grant-extra-dml.log
+          # A writer gaining an issuer SECURITY DEFINER function can mint
+          # authority outside the intended role separation: reject before use.
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$POSTGRES_PASSWORD" api \
+            /app/.venv/bin/python - issuer-elevate < e2e/producer-grant-restricted-setup.py \
+            2>&1 | tee artifacts/integration/producer-grant-issuer-drift.log
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$role_password" api \
+            /app/.venv/bin/python - issuer-elevated < e2e/producer-grant-restricted-psycopg.py \
+            2>&1 | tee -a artifacts/integration/producer-grant-issuer-drift.log
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$POSTGRES_PASSWORD" api \
+            /app/.venv/bin/python - issuer-restore < e2e/producer-grant-restricted-setup.py \
+            2>&1 | tee -a artifacts/integration/producer-grant-issuer-drift.log
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$role_password" api \
+            /app/.venv/bin/python - initial < e2e/producer-grant-restricted-psycopg.py \
+            2>&1 | tee artifacts/integration/producer-grant-psycopg.log
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" restart postgres
+          for attempt in $(seq 1 40); do
+            if docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+              pg_isready -U matchdesk -d matchdesk > /dev/null 2>&1; then
+              break
+            fi
+            sleep 1
+          done
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$role_password" api \
+            /app/.venv/bin/python - after-restart < e2e/producer-grant-restricted-psycopg.py \
+            2>&1 | tee -a artifacts/integration/producer-grant-psycopg.log
+          # Independent owner-only reconciliation: the restricted writer has
+          # no SELECT privilege on the case, audit or grant tables.
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$POSTGRES_PASSWORD" api \
+            /app/.venv/bin/python - verify < e2e/producer-grant-restricted-setup.py \
+            2>&1 | tee artifacts/integration/producer-grant-restart-reconciliation.log
+      - name: Qualify signed bridge with distinct physical PostgreSQL logins
+        id: producer_bridge_psycopg
+        if: ${{ !cancelled() && steps.grant_psycopg.outcome == 'success' && steps.physical_issuer.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          # Qualify the *actual* host provenance store inside the signed
+          # bridge, not merely a synthetic in-memory confirmation reader.
+          # The schema is disposable and must tolerate an exact replay of
+          # its forward-only migration before the later independent gate.
+          for n in 1 2; do
+            docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+              psql --no-psqlrc --set ON_ERROR_STOP=1 --username matchdesk \
+              --dbname matchdesk \
+              < backend/postgres/migrations/013_producer_host_confirmation_provenance.sql \
+              > "artifacts/integration/producer-bridge-provenance-migration-$n.log"
+          done
+          # Migration 014 is deliberately applied only AFTER legacy 011/012
+          # issuer qualification, and BEFORE all signed real-host bridge writes.
+          # Both passes must succeed; no live database is touched.
+          for n in 1 2; do
+            docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+              psql --no-psqlrc --set ON_ERROR_STOP=1 --username matchdesk \
+              --dbname matchdesk \
+              < backend/postgres/migrations/014_producer_terminal_revocation_serialization.sql \
+              > "artifacts/integration/producer-serialization-migration-$n.log"
+          done
+          # The issuer SECURITY DEFINER owner is a NOLOGIN role with fixed
+          # minimum table ACLs. Reading the authoritative event/terminal
+          # state is required for SQL-serialized issuance; do not grant these
+          # to the physical issuer LOGIN, writer, stager or PUBLIC.
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+            psql --no-psqlrc --set ON_ERROR_STOP=1 --username matchdesk \
+            --dbname matchdesk \
+            -c "GRANT SELECT ON public.matchdesk_producer_host_confirmation_events, public.matchdesk_producer_host_confirmation_terminals TO matchdesk_issuer_definer_ci" \
+            > artifacts/integration/producer-serialization-definer-acl.log
+          bridge_stager_password="$(openssl rand -hex 32)"
+          bridge_issuer_password="$(openssl rand -hex 32)"
+          bridge_writer_password="$(openssl rand -hex 32)"
+          bridge_revoker_password="$(openssl rand -hex 32)"
+          bridge_provenance_password="$(openssl rand -hex 32)"
+          echo "::add-mask::$bridge_stager_password"
+          echo "::add-mask::$bridge_issuer_password"
+          echo "::add-mask::$bridge_writer_password"
+          echo "::add-mask::$bridge_revoker_password"
+          echo "::add-mask::$bridge_provenance_password"
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "COMPOSE_PROJECT_NAME=$COMPOSE_PROJECT_NAME" \
+            -e "PGPASSWORD=$POSTGRES_PASSWORD" \
+            -e "STAGER_CI_PASSWORD=$bridge_stager_password" \
+            -e "ISSUER_CI_PASSWORD=$bridge_issuer_password" \
+            -e "GRANT_WRITER_CI_PASSWORD=$bridge_writer_password" \
+            -e "REVOKER_CI_PASSWORD=$bridge_revoker_password" \
+            -e "BRIDGE_READER_CI_PASSWORD=$bridge_provenance_password" api \
+            /app/.venv/bin/python - < e2e/producer-atomic-bridge-psycopg.py \
+            2>&1 | tee artifacts/integration/producer-atomic-bridge-psycopg.log
+          # Real independent issuer and terminal-writer transactions prove
+          # BOTH serialization orders and authoritative grant readback.
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "COMPOSE_PROJECT_NAME=$COMPOSE_PROJECT_NAME" \
+            -e "PGPASSWORD=$POSTGRES_PASSWORD" \
+            -e "ISSUER_CI_PASSWORD=$bridge_issuer_password" api \
+            /app/.venv/bin/python - < e2e/producer-terminal-issuance-races-psycopg.py \
+            2>&1 | tee artifacts/integration/producer-terminal-issuance-races.log
+          grep -Fx "MATCHDESK_P4_TERMINAL_ISSUANCE_SERIALIZED_PASS: terminal-first denies, issuance-first revokes unspent grant" \
+            artifacts/integration/producer-terminal-issuance-races.log
+          grep -Fx "MATCHDESK_P4_TERMINAL_ISOLATION_GUARD_PASS: unsupported isolation refused without writes, fresh READ COMMITTED revokes" \
+            artifacts/integration/producer-terminal-issuance-races.log
+      - name: Verify restricted real-Psycopg producer transactions and recovery
+        id: psycopg_storage
+        if: ${{ !cancelled() && steps.producer_bridge_psycopg.outcome == 'success' && steps.producer_storage.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          # A fresh, masked password exists only in this disposable workflow step.
+          role_password="$(openssl rand -hex 32)"
+          echo "::add-mask::$role_password"
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+            psql --no-psqlrc -X -v ON_ERROR_STOP=1 -U matchdesk -d matchdesk \
+            -v role_password="$role_password" <<'SQL'
+          REVOKE CREATE ON SCHEMA public FROM PUBLIC;
+          CREATE ROLE matchdesk_producer_ci LOGIN PASSWORD :'role_password';
+          GRANT CONNECT ON DATABASE matchdesk TO matchdesk_producer_ci;
+          GRANT USAGE ON SCHEMA public TO matchdesk_producer_ci;
+          GRANT SELECT, INSERT, UPDATE ON matchdesk_producer_cases TO matchdesk_producer_ci;
+          GRANT SELECT, INSERT ON matchdesk_producer_audit TO matchdesk_producer_ci;
+          -- CI-only failure injection: a valid case update must roll back too.
+          CREATE FUNCTION matchdesk_ci_reject_selected_audit()
+          RETURNS trigger LANGUAGE plpgsql AS $ci$
+          BEGIN
+            IF NEW.tenant_id='ci-tenant'
+               AND NEW.entry_json->>'reason'='ci-rollback-probe' THEN
+              RAISE EXCEPTION 'MatchDesk CI forced audit rollback';
+            END IF;
+            RETURN NEW;
+          END;
+          $ci$;
+          CREATE TRIGGER matchdesk_ci_reject_selected_audit
+          BEFORE INSERT ON matchdesk_producer_audit
+          FOR EACH ROW EXECUTE FUNCTION matchdesk_ci_reject_selected_audit();
+          SQL
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$role_password" api \
+            /app/.venv/bin/python - initial < e2e/producer-store-psycopg.py \
+            2>&1 | tee artifacts/integration/psycopg-producer-store.log
+          # Reconnect from the non-root API container following a real DB restart.
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" restart postgres
+          for attempt in $(seq 1 40); do
+            if docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+              pg_isready -U matchdesk -d matchdesk > /dev/null 2>&1; then
+              break
+            fi
+            sleep 1
+          done
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$role_password" api \
+            /app/.venv/bin/python - after-restart < e2e/producer-store-psycopg.py \
+            2>&1 | tee -a artifacts/integration/psycopg-producer-store.log
+      - name: Qualify real customer sessions under a restricted PostgreSQL role
+        id: customer_sessions_storage
+        if: ${{ !cancelled() && steps.psycopg_storage.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          # Use only the existing disposable database; migration must be idempotent.
+          for attempt in 1 2; do
+            docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+              psql --no-psqlrc -X -v ON_ERROR_STOP=1 -U matchdesk -d matchdesk \
+              < backend/postgres/migrations/002_customer_sessions.sql
+          done
+          role_password="$(openssl rand -hex 32)"
+          echo "::add-mask::$role_password"
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+            psql --no-psqlrc -X -v ON_ERROR_STOP=1 -U matchdesk -d matchdesk \
+            -v role_password="$role_password" <<'SQL'
+          REVOKE CREATE ON SCHEMA public FROM PUBLIC;
+          CREATE ROLE matchdesk_customer_session_ci LOGIN PASSWORD :'role_password';
+          GRANT CONNECT ON DATABASE matchdesk TO matchdesk_customer_session_ci;
+          GRANT USAGE ON SCHEMA public TO matchdesk_customer_session_ci;
+          GRANT SELECT, INSERT, UPDATE ON matchdesk_customer_sessions
+            TO matchdesk_customer_session_ci;
+          -- CI-only fail-insert injection proves rotation revocation rolls back.
+          CREATE FUNCTION matchdesk_ci_reject_session_successor()
+          RETURNS trigger LANGUAGE plpgsql AS $ci$
+          BEGIN
+            IF NEW.account_id = 'ci-rollback' AND EXISTS (
+              SELECT 1 FROM matchdesk_customer_sessions
+               WHERE account_id = NEW.account_id
+            ) THEN
+              RAISE EXCEPTION 'MatchDesk CI forced session insert rollback';
+            END IF;
+            RETURN NEW;
+          END;
+          $ci$;
+          CREATE TRIGGER matchdesk_ci_reject_session_successor
+          BEFORE INSERT ON matchdesk_customer_sessions
+          FOR EACH ROW EXECUTE FUNCTION matchdesk_ci_reject_session_successor();
+          SQL
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$role_password" api \
+            /app/.venv/bin/python - initial < e2e/customer-sessions-psycopg.py \
+            2>&1 | tee artifacts/integration/customer-sessions-psycopg.log
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" restart postgres
+          for attempt in $(seq 1 40); do
+            if docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+              pg_isready -U matchdesk -d matchdesk > /dev/null 2>&1; then
+              break
+            fi
+            sleep 1
+          done
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$role_password" api \
+            /app/.venv/bin/python - after-restart < e2e/customer-sessions-psycopg.py \
+            2>&1 | tee -a artifacts/integration/customer-sessions-psycopg.log
+      - name: Qualify real encrypted single-use OIDC state in PostgreSQL
+        id: oidc_storage
+        if: ${{ !cancelled() && steps.customer_sessions_storage.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          for attempt in 1 2; do
+            docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+              psql --no-psqlrc -X -v ON_ERROR_STOP=1 -U matchdesk -d matchdesk \
+              < backend/postgres/migrations/003_oidc_login_attempts.sql
+          done
+          oidc_password="$(openssl rand -hex 32)"
+          echo "::add-mask::$oidc_password"
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+            psql --no-psqlrc -X -v ON_ERROR_STOP=1 -U matchdesk -d matchdesk \
+            -v role_password="$oidc_password" <<'SQL'
+          CREATE ROLE matchdesk_oidc_ci LOGIN PASSWORD :'role_password';
+          GRANT CONNECT ON DATABASE matchdesk TO matchdesk_oidc_ci;
+          GRANT USAGE ON SCHEMA public TO matchdesk_oidc_ci;
+          GRANT SELECT, INSERT, UPDATE ON matchdesk_oidc_login_attempts TO matchdesk_oidc_ci;
+          SQL
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$oidc_password" api \
+            /app/.venv/bin/python - initial < e2e/oidc-login-psycopg.py \
+            2>&1 | tee artifacts/integration/oidc-login-psycopg.log
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" restart postgres
+          for attempt in $(seq 1 40); do
+            if docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+              pg_isready -U matchdesk -d matchdesk > /dev/null 2>&1; then
+              break
+            fi
+            sleep 1
+          done
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$oidc_password" api \
+            /app/.venv/bin/python - after-restart < e2e/oidc-login-psycopg.py \
+            2>&1 | tee -a artifacts/integration/oidc-login-psycopg.log
+      - name: Qualify encrypted workforce one-time OIDC state in disposable PostgreSQL
+        id: workforce_oidc_storage
+        if: ${{ !cancelled() && steps.oidc_storage.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          node e2e/workforce-oidc-postgres.mjs 2>&1 | tee artifacts/integration/workforce-oidc-postgres.log
+      - name: Qualify sealed pending workforce sessions and revoke in PostgreSQL
+        id: workforce_pending_sessions
+        if: ${{ !cancelled() && steps.workforce_oidc_storage.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          node e2e/workforce-pending-session-postgres.mjs 2>&1 | tee artifacts/integration/workforce-pending-session-postgres.log
+      - name: Qualify pending-bound step-up race and least-privilege PostgreSQL gates
+        id: workforce_stepup_storage
+        if: ${{ !cancelled() && steps.workforce_pending_sessions.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          node e2e/workforce-step-up-postgres.mjs 2>&1 | tee artifacts/integration/workforce-step-up-postgres.log
+      - name: Qualify SELECT-only customer directory with real PostgreSQL
+        id: account_directory
+        if: ${{ !cancelled() && steps.workforce_stepup_storage.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          for attempt in 1 2; do
+            docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+              psql --no-psqlrc -X -v ON_ERROR_STOP=1 -U matchdesk -d matchdesk \
+              < backend/postgres/migrations/004_customer_accounts.sql
+          done
+          role_password="$(openssl rand -hex 32)"
+          echo "::add-mask::$role_password"
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+            psql --no-psqlrc -X -v ON_ERROR_STOP=1 -U matchdesk -d matchdesk \
+            -v role_password="$role_password" <<'SQL'
+          CREATE ROLE matchdesk_customer_registry_ci LOGIN PASSWORD :'role_password';
+          GRANT CONNECT ON DATABASE matchdesk TO matchdesk_customer_registry_ci;
+          GRANT USAGE ON SCHEMA public TO matchdesk_customer_registry_ci;
+          GRANT SELECT ON matchdesk_customer_accounts TO matchdesk_customer_registry_ci;
+          INSERT INTO matchdesk_customer_accounts
+            (issuer, tenant_id, subject, account_id, state)
+          VALUES
+            ('https://ci.ciamlogin.com/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/v2.0',
+             'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', 'ci-registered', 'ci-1', 'active'),
+            ('https://ci.ciamlogin.com/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/v2.0',
+             'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', 'ci-suspended', 'ci-2', 'suspended'),
+            ('https://ci.ciamlogin.com/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/v2.0',
+             'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', 'ci-pending', 'ci-3', 'pending');
+          SQL
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$role_password" api \
+            /app/.venv/bin/python - initial < e2e/customer-accounts-psycopg.py \
+            2>&1 | tee artifacts/integration/customer-accounts-psycopg.log
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" restart postgres
+          for attempt in $(seq 1 40); do
+            if docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+              pg_isready -U matchdesk -d matchdesk > /dev/null 2>&1; then
+              break
+            fi
+            sleep 1
+          done
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$role_password" api \
+            /app/.venv/bin/python - after-restart < e2e/customer-accounts-psycopg.py \
+            2>&1 | tee -a artifacts/integration/customer-accounts-psycopg.log
+      - name: Require successful customer directory PostgreSQL qualification
+        id: directory_gate
+        if: ${{ !cancelled() && steps.oidc_storage.outcome == 'success' }}
+        run: |
+          test "${{ steps.account_directory.outcome }}" = success
+      - name: Prove ID3G definer least privilege with rollback-only PostgreSQL
+        id: id3g_role_probe
+        if: ${{ !cancelled() && steps.directory_gate.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          # This test runs only against the existing disposable GitHub integration DB.
+          # PostgreSQL ROLLBACK must remove the probe role, function, and its grants.
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+            psql --no-psqlrc -X -v ON_ERROR_STOP=1 -U matchdesk -d matchdesk <<'SQL'
+          BEGIN;
+          SET LOCAL lock_timeout = '5s';
+          CREATE ROLE matchdesk_id3g_probe_definer_owner
+            NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE
+            NOINHERIT NOREPLICATION NOBYPASSRLS;
+          GRANT USAGE ON SCHEMA public TO matchdesk_id3g_probe_definer_owner;
+          GRANT SELECT, UPDATE(state) ON public.matchdesk_customer_accounts
+            TO matchdesk_id3g_probe_definer_owner;
+          GRANT SELECT, UPDATE(revoked) ON public.matchdesk_customer_sessions
+            TO matchdesk_id3g_probe_definer_owner;
+          CREATE FUNCTION public.matchdesk_id3g_probe_definer()
+          RETURNS boolean
+          LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog
+          AS $md$
+          DECLARE
+            found_account text;
+          BEGIN
+            SELECT a.account_id INTO found_account
+            FROM public.matchdesk_customer_accounts AS a
+            WHERE a.issuer = 'https://ci.ciamlogin.com/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/v2.0'
+              AND a.tenant_id = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
+              AND a.subject = 'ci-registered'
+              AND a.state = 'active'
+            FOR SHARE;
+            RETURN current_user = 'matchdesk_id3g_probe_definer_owner'
+               AND found_account = 'ci-1';
+          END;
+          $md$;
+          REVOKE ALL ON FUNCTION public.matchdesk_id3g_probe_definer() FROM PUBLIC;
+          ALTER FUNCTION public.matchdesk_id3g_probe_definer()
+            OWNER TO matchdesk_id3g_probe_definer_owner;
+          DO $assert$
+          BEGIN
+            IF NOT public.matchdesk_id3g_probe_definer() THEN
+              RAISE EXCEPTION 'ID3G role cannot read and lock exactly its active account';
+            END IF;
+            IF NOT EXISTS (
+              SELECT 1 FROM pg_catalog.pg_proc p
+              JOIN pg_catalog.pg_roles r ON r.oid = p.proowner
+              JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+              WHERE n.nspname = 'public' AND p.proname = 'matchdesk_id3g_probe_definer'
+                AND p.prosecdef AND r.rolname = 'matchdesk_id3g_probe_definer_owner'
+                AND NOT r.rolsuper AND NOT r.rolcanlogin AND NOT r.rolbypassrls
+            ) THEN
+              RAISE EXCEPTION 'ID3G definer is not the approved non-superuser';
+            END IF;
+            IF EXISTS (
+              SELECT 1 FROM pg_catalog.pg_auth_members m
+              JOIN pg_catalog.pg_roles r ON r.oid = m.roleid
+              WHERE r.rolname = 'matchdesk_id3g_probe_definer_owner'
+            ) THEN
+              RAISE EXCEPTION 'ID3G definer must have no role members';
+            END IF;
+            IF has_table_privilege('matchdesk_id3g_probe_definer_owner',
+                 'public.matchdesk_producer_cases', 'SELECT') THEN
+              RAISE EXCEPTION 'ID3G definer obtained producer-data access';
+            END IF;
+            IF has_table_privilege('matchdesk_id3g_probe_definer_owner',
+                 'public.matchdesk_customer_sessions', 'DELETE') THEN
+              RAISE EXCEPTION 'ID3G definer obtained session-delete access';
+            END IF;
+          END;
+          $assert$;
+          -- All test DDL and grants are rolled back, including this role/function.
+          ROLLBACK;
+          DO $cleanup$
+          BEGIN
+            IF EXISTS (
+              SELECT 1 FROM pg_catalog.pg_roles
+              WHERE rolname = 'matchdesk_id3g_probe_definer_owner'
+            ) OR EXISTS (
+              SELECT 1 FROM pg_catalog.pg_proc WHERE proname = 'matchdesk_id3g_probe_definer'
+            ) THEN
+              RAISE EXCEPTION 'ID3G probe failed to roll back its role/function';
+            END IF;
+          END;
+          $cleanup$;
+          SQL
+      - name: Qualify ID3G revocation on disposable PostgreSQL only
+        id: id3g_revocation_qa
+        if: ${{ !cancelled() && steps.directory_gate.outcome == 'success' && steps.id3g_role_probe.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          # The runtime migration, not a QA-only copy, is the tested SQL.
+          # Reject drift before touching even this disposable PostgreSQL database.
+          test -f backend/postgres/migrations/005_customer_account_revocation.sql
+          cmp -s qualification/id3g/005_customer_account_revocation.sql \
+            backend/postgres/migrations/005_customer_account_revocation.sql
+          sha256sum backend/postgres/migrations/005_customer_account_revocation.sql \
+            qualification/id3g/005_customer_account_revocation.sql \
+            > artifacts/integration/id3g-migration-hashes.txt
+          # Run the reviewed SQL ONLY in this run's disposable PostgreSQL topology.
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+            psql --no-psqlrc -X -v ON_ERROR_STOP=1 -U matchdesk -d matchdesk <<'SQL'
+          INSERT INTO public.matchdesk_customer_sessions
+            (token_hash, issuer, tenant_id, subject, account_id, realm,
+             created_at, expires_at, last_seen_at, revoked)
+          VALUES
+            (repeat('e', 64),
+             'https://ci.ciamlogin.com/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/v2.0',
+             'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+             'ci-registered', 'ci-1', 'customer',
+             now(), now() + interval '1 hour', now(), FALSE)
+          ON CONFLICT DO NOTHING;
+          SQL
+          for attempt in 1 2; do
+            docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+              psql --no-psqlrc -X -v ON_ERROR_STOP=1 -U matchdesk -d matchdesk \
+              < backend/postgres/migrations/005_customer_account_revocation.sql
+          done
+          session_password="$(openssl rand -hex 32)"
+          operator_password="$(openssl rand -hex 32)"
+          echo "::add-mask::$session_password"
+          echo "::add-mask::$operator_password"
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+            psql --no-psqlrc -X -v ON_ERROR_STOP=1 -U matchdesk -d matchdesk \
+            -v session_password="$session_password" \
+            -v operator_password="$operator_password" <<'SQL'
+          REVOKE CREATE ON SCHEMA public FROM PUBLIC;
+          CREATE ROLE matchdesk_session_revocation_ci LOGIN PASSWORD :'session_password';
+          CREATE ROLE matchdesk_account_operator_ci LOGIN PASSWORD :'operator_password';
+          GRANT CONNECT ON DATABASE matchdesk TO
+            matchdesk_session_revocation_ci, matchdesk_account_operator_ci;
+          GRANT USAGE ON SCHEMA public TO
+            matchdesk_session_revocation_ci, matchdesk_account_operator_ci;
+          GRANT SELECT, INSERT, UPDATE ON public.matchdesk_customer_sessions
+            TO matchdesk_session_revocation_ci;
+          GRANT SELECT, UPDATE (state, account_id), DELETE
+            ON public.matchdesk_customer_accounts TO matchdesk_account_operator_ci;
+          -- The operator cannot inspect, create, or modify any customer session.
+          INSERT INTO public.matchdesk_customer_accounts
+            (issuer, tenant_id, subject, account_id, state)
+          VALUES
+            ('https://ci.ciamlogin.com/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/v2.0',
+             'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', 'ci-revive', 'ci-revive-account', 'active'),
+            ('https://ci.ciamlogin.com/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/v2.0',
+             'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', 'ci-reassign', 'ci-reassign-account', 'active'),
+            ('https://ci.ciamlogin.com/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/v2.0',
+             'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', 'ci-pending-new', 'ci-pending-new-account', 'active'),
+            ('https://ci.ciamlogin.com/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/v2.0',
+             'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', 'ci-delete', 'ci-delete-account', 'active'),
+            ('https://ci.ciamlogin.com/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/v2.0',
+             'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', 'ci-insert-first', 'ci-insert-first-account', 'active'),
+            ('https://ci.ciamlogin.com/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/v2.0',
+             'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', 'ci-suspend-first', 'ci-suspend-first-account', 'active'),
+            ('https://ci.ciamlogin.com/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/v2.0',
+             'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', 'ci-rotate-race', 'ci-rotate-race-account', 'active');
+          SQL
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true \
+            -e "CI_REVOCATION_SESSION_PASSWORD=$session_password" \
+            -e "CI_REVOCATION_OPERATOR_PASSWORD=$operator_password" api \
+            /app/.venv/bin/python - < qualification/id3g/customer_account_revocation_psycopg.py \
+            2>&1 | tee artifacts/integration/customer-account-revocation-psycopg.log
+      - name: Require executed ID3G PostgreSQL revocation acceptance
+        id: id3g_revocation_gate
+        if: ${{ !cancelled() && steps.directory_gate.outcome == 'success' && steps.id3g_role_probe.outcome == 'success' }}
+        run: |
+          test "${{ steps.id3g_revocation_qa.outcome }}" = success
+      - name: Verify legacy ID3G catalog before ID3H reconciliation
+        id: id3h_legacy_catalog
+        if: ${{ !cancelled() && steps.id3g_revocation_gate.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          candidate=qualification/id3h/legacy_catalog_preflight_REVIEW_ONLY.sql
+          test "$(git hash-object "$candidate")" = 6240a844c80c662a8303211d41dac4cec585255a
+          # Run strictly read-only, before the separate ID3H receipt candidate.
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+            psql --no-psqlrc -X -v ON_ERROR_STOP=1 -U matchdesk -d matchdesk \
+              < "$candidate" > artifacts/integration/id3h-legacy-catalog.log
+          grep -F 'matchdesk_revoke_sessions_for_customer_change' \
+            artifacts/integration/id3h-legacy-catalog.log >/dev/null
+          # The isolated legacy database must still lack the later receipt.
+          echo "MATCHDESK_ID3H_LEGACY_READ_ONLY_PREFLIGHT_PASS"
+      - name: Prove ID3H legacy preflight denies trigger and privilege tampering
+        id: id3h_legacy_negative
+        if: ${{ !cancelled() && steps.id3h_legacy_catalog.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          candidate=qualification/id3h/legacy_catalog_preflight_REVIEW_ONLY.sql
+          test "$(git hash-object "$candidate")" = 6240a844c80c662a8303211d41dac4cec585255a
+          # The CI topology is disposable. Restore every temporary DDL mutation
+          # on all exit paths, including an unexpected acceptance or DB fault.
+          mutate() {
+            docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+              psql --no-psqlrc -X -v ON_ERROR_STOP=1 -U matchdesk -d matchdesk \
+                -c "$1" >/dev/null
+          }
+          restore() {
+            mutate "ALTER TABLE public.matchdesk_customer_accounts ENABLE TRIGGER matchdesk_revoke_sessions_customer_update;" || :
+            mutate "REVOKE EXECUTE ON FUNCTION public.matchdesk_revoke_sessions_for_customer_change() FROM PUBLIC;" || :
+          }
+          trap restore EXIT
+          expect_refused() {
+            local error_text="$1"
+            local evidence_file="$2"
+            if docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+                 psql --no-psqlrc -X -v ON_ERROR_STOP=1 -U matchdesk -d matchdesk \
+                   < "$candidate" > "$evidence_file" 2>&1; then
+              echo "ID3H ERROR: unsafe catalog was accepted" >&2
+              exit 1
+            fi
+            grep -F "$error_text" "$evidence_file" >/dev/null
+          }
+          mutate "ALTER TABLE public.matchdesk_customer_accounts DISABLE TRIGGER matchdesk_revoke_sessions_customer_update;"
+          expect_refused "ID3H legacy catalog trigger fingerprint failed" \
+            artifacts/integration/id3h-disabled-trigger-rejected.log
+          mutate "ALTER TABLE public.matchdesk_customer_accounts ENABLE TRIGGER matchdesk_revoke_sessions_customer_update;"
+          mutate "GRANT EXECUTE ON FUNCTION public.matchdesk_revoke_sessions_for_customer_change() TO PUBLIC;"
+          expect_refused "ID3H legacy PUBLIC definer execution grant detected" \
+            artifacts/integration/id3h-public-execute-rejected.log
+          mutate "REVOKE EXECUTE ON FUNCTION public.matchdesk_revoke_sessions_for_customer_change() FROM PUBLIC;"
+          # A recovered catalog must pass without creating any receipt.
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+            psql --no-psqlrc -X -v ON_ERROR_STOP=1 -U matchdesk -d matchdesk \
+              < "$candidate" > artifacts/integration/id3h-recovered-catalog.log
+          echo "MATCHDESK_ID3H_LEGACY_NEGATIVE_GATES_PASS"
+      - name: Rehearse legacy ID3H receipt reconciliation before migration backfill
+        id: id3h_legacy_receipt
+        if: ${{ !cancelled() && steps.id3h_legacy_negative.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          candidate=qualification/id3h/disposable_legacy_receipt_reconciliation.sh
+          test "$(git hash-object "$candidate")" = 6c431eecf21d399fc4837682ecf82906b59b1093
+          bash -n "$candidate"
+          bash "$candidate" 2>&1 | tee artifacts/integration/id3h-legacy-reconciliation.log
+          grep -Fx "MATCHDESK_ID3H_LEGACY_RECEIPT_CLONE_PASS" \
+            artifacts/integration/id3h-legacy-reconciliation.log >/dev/null
+      - name: Qualify ID3H one-time migration candidate in disposable PostgreSQL
+        id: id3h_replay_preflight
+        if: ${{ !cancelled() && steps.id3g_revocation_gate.outcome == 'success' && steps.id3h_legacy_catalog.outcome == 'success' && steps.id3h_legacy_negative.outcome == 'success' && steps.id3h_legacy_receipt.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          candidate=qualification/id3h/005_customer_account_revocation_once_REVIEW_ONLY.sql
+          test "$(git hash-object "$candidate")" = 52e2f4c4730fc2ae12f8bae180a895f193d59784
+          # The original migration has already been qualified in this isolated
+          # database. The candidate is evaluated here only, never on a live DB.
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+            psql --no-psqlrc -X -v ON_ERROR_STOP=1 -U matchdesk -d matchdesk \
+              < "$candidate" > artifacts/integration/id3h-first-application.log
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+            psql --no-psqlrc -X -v ON_ERROR_STOP=1 -U matchdesk -d matchdesk <<'SQL'
+          -- This new session exists only AFTER the protected application.
+          INSERT INTO public.matchdesk_customer_sessions
+            (token_hash, issuer, tenant_id, subject, account_id, realm,
+             created_at, expires_at, last_seen_at, revoked)
+          VALUES
+            (repeat('d', 64),
+             'https://ci.ciamlogin.com/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/v2.0',
+             'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+             'ci-registered', 'ci-1', 'customer',
+             now(), now() + interval '1 hour', now(), FALSE);
+          SQL
+          # An expected error must never be suppressed as a false PASS.
+          if docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+               psql --no-psqlrc -X -v ON_ERROR_STOP=1 -U matchdesk -d matchdesk \
+               < "$candidate" > artifacts/integration/id3h-replay.log 2>&1; then
+            echo "ID3H ERROR: replay unexpectedly succeeded" >&2
+            exit 1
+          fi
+          grep -F "Customer revocation migration already applied" \
+            artifacts/integration/id3h-replay.log >/dev/null
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+            psql --no-psqlrc -X -v ON_ERROR_STOP=1 -U matchdesk -d matchdesk <<'SQL'
+          DO $assert$
+          BEGIN
+            IF (SELECT COUNT(*) FROM public.matchdesk_customer_security_migrations
+                WHERE migration_id = 'P3-05-ID3G-005') <> 1
+               OR (SELECT COUNT(*) FROM public.matchdesk_customer_sessions
+                   WHERE token_hash = repeat('d', 64) AND revoked = FALSE) <> 1 THEN
+              RAISE EXCEPTION 'ID3H replay altered receipt or valid session';
+            END IF;
+          END;
+          $assert$;
+          SQL
+          # Once a receipt exists, a legacy-only catalog verification must be
+          # refused rather than silently treating a protected DB as legacy.
+          if docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+               psql --no-psqlrc -X -v ON_ERROR_STOP=1 -U matchdesk -d matchdesk \
+                 < qualification/id3h/legacy_catalog_preflight_REVIEW_ONLY.sql \
+                   > artifacts/integration/id3h-receipt-rejected.log 2>&1; then
+            echo "ID3H ERROR: receipt-bearing DB accepted as legacy" >&2
+            exit 1
+          fi
+          grep -F "ID3H legacy preflight expects no existing receipt ledger" \
+            artifacts/integration/id3h-receipt-rejected.log >/dev/null
+          echo "MATCHDESK_ID3H_REPLAY_PROTECTION_PASS"
+      # A restored snapshot can carry host-confirmation events. Install the
+      # exact runtime migration before pg_dump so the offline recovery test
+      # never silently omits this additional producer authority store.
+      - name: Preflight append-only producer provenance schema before backup
+        id: provenance_schema
+        if: ${{ !cancelled() && steps.id3h_replay_preflight.outcome == 'success' && steps.producer_bridge_psycopg.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          for n in 1 2; do
+            docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+              psql --no-psqlrc -X -v ON_ERROR_STOP=1 -U matchdesk -d matchdesk \
+              < backend/postgres/migrations/013_producer_host_confirmation_provenance.sql \
+              > "artifacts/integration/producer-provenance-prebackup-$n.log"
+          done
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+            psql --no-psqlrc -X -v ON_ERROR_STOP=1 -U matchdesk -d matchdesk <<'SQL'
+          DO $provenance$
+          BEGIN
+              IF to_regclass('public.matchdesk_producer_host_confirmation_events') IS NULL
+                 OR to_regclass('public.matchdesk_producer_host_confirmation_terminals') IS NULL
+                 OR (SELECT count(*) FROM pg_catalog.pg_trigger
+                     WHERE tgname IN ('matchdesk_host_confirmation_events_immutable',
+                                      'matchdesk_host_confirmation_terminals_immutable')
+                       AND tgenabled = 'O') <> 2
+                 OR EXISTS (
+                     SELECT 1 FROM pg_catalog.pg_proc AS p
+                     CROSS JOIN LATERAL pg_catalog.aclexplode(
+                         COALESCE(p.proacl, pg_catalog.acldefault('f', p.proowner))
+                     ) AS acl
+                     WHERE p.oid = 'public.matchdesk_block_host_confirmation_mutation()'::regprocedure
+                       AND acl.grantee = 0 AND acl.privilege_type = 'EXECUTE'
+                 ) THEN
+                  RAISE EXCEPTION 'Pre-backup producer provenance schema or DDL protection missing';
+              END IF;
+          END;
+          $provenance$;
+          SQL
+          echo 'MATCHDESK_P4_PROVENANCE_SCHEMA_PREBACKUP_PASS'
+      - name: Rehearse ID3H isolated backup, restore, and clone revocation
+        id: id3h_restore
+        if: ${{ !cancelled() && steps.id3h_replay_preflight.outcome == 'success' && steps.provenance_schema.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          candidate=qualification/id3h/disposable_backup_restore.sh
+          test "$(git hash-object "$candidate")" = 4741ae76584ca76b46db015587c6a7d879f9b09d
+          bash -n "$candidate"
+          bash "$candidate" 2>&1 | tee artifacts/integration/id3h-backup-restore.log
+          grep -Fx "MATCHDESK_ID3H_DISPOSABLE_RESTORE_PASS" \
+            artifacts/integration/id3h-backup-restore.log >/dev/null
+          grep -Fx "MATCHDESK_ID3H_STALE_RESTORE_QUARANTINE_PASS" \
+            artifacts/integration/id3h-backup-restore.log >/dev/null
+          grep -Fx "MATCHDESK_ID3H_STALE_PRODUCER_AUTHORITY_QUARANTINE_PASS" \
+            artifacts/integration/id3h-backup-restore.log >/dev/null
+          grep -Fx "MATCHDESK_ID3H_STALE_HOST_PROVENANCE_QUARANTINE_PASS" \
+            artifacts/integration/id3h-backup-restore.log >/dev/null
+      - name: Qualify ID3J effective privileges on a real disposable PostgreSQL role
+        id: id3j_catalog
+        if: ${{ !cancelled() && steps.id3h_restore.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          # A separate transient database prevents this probe from mutating any
+          # previously qualified customer sessions or migration ledger.
+          role_password="$(openssl rand -hex 32)"
+          echo "::add-mask::$role_password"
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+            psql --no-psqlrc -X -v ON_ERROR_STOP=1 -U matchdesk -d postgres \
+            -c 'CREATE DATABASE matchdesk_id3j_ci'
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+            psql --no-psqlrc -X -v ON_ERROR_STOP=1 -U matchdesk -d postgres \
+            -v role_password="$role_password" <<'SQL'
+          REVOKE CREATE, TEMP ON DATABASE matchdesk_id3j_ci FROM PUBLIC;
+          CREATE ROLE matchdesk_id3j_reader_ci LOGIN NOINHERIT
+            NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS
+            PASSWORD :'role_password';
+          GRANT CONNECT ON DATABASE matchdesk_id3j_ci TO matchdesk_id3j_reader_ci;
+          SQL
+          # The runtime-tested API image already has the pinned psycopg driver.
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$role_password" api \
+            /app/.venv/bin/python - < e2e/id3j-catalog-psycopg.py \
+            2>&1 | tee artifacts/integration/id3j-catalog.log
+          # ID3L tests BOTH independently signed synthetic identities against
+          # one actual restricted physical PostgreSQL session. No live IdP or
+          # write-time execution claim is made; keys exist only inside CI.
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$role_password" api \
+            /app/.venv/bin/python - < e2e/id3l-principal-postgres-psycopg.py \
+            2>&1 | tee artifacts/integration/id3l-principal-postgres.log
+          grep -Fx 'MATCHDESK_ID3L_REAL_POSTGRESQL_DUAL_PRINCIPAL_PASS' \
+            artifacts/integration/id3l-principal-postgres.log >/dev/null
+          # A real newly added database CREATE capability must be detected.
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+            psql --no-psqlrc -X -v ON_ERROR_STOP=1 -U matchdesk -d postgres \
+            -c 'GRANT CREATE ON DATABASE matchdesk_id3j_ci TO matchdesk_id3j_reader_ci'
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$role_password" \
+            -e ID3L_EXPECT_ELEVATION_DENIAL=true api \
+            /app/.venv/bin/python - < e2e/id3l-principal-postgres-psycopg.py \
+            2>&1 | tee artifacts/integration/id3l-elevated-role-rejected.log
+          grep -Fx 'MATCHDESK_ID3L_ELEVATED_ROLE_REJECTED' \
+            artifacts/integration/id3l-elevated-role-rejected.log >/dev/null
+          if docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+              -e CI=true -e "PGPASSWORD=$role_password" api \
+              /app/.venv/bin/python - < e2e/id3j-catalog-psycopg.py \
+              > artifacts/integration/id3j-elevated-role-rejected.log 2>&1; then
+            echo "ID3J ERROR: elevated role unexpectedly qualified" >&2
+            exit 1
+          fi
+          grep -F 'ID3J disposable catalog preflight denied' \
+            artifacts/integration/id3j-elevated-role-rejected.log >/dev/null
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+            psql --no-psqlrc -X -v ON_ERROR_STOP=1 -U matchdesk -d postgres \
+            -c 'REVOKE CREATE ON DATABASE matchdesk_id3j_ci FROM matchdesk_id3j_reader_ci'
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$role_password" api \
+            /app/.venv/bin/python - < e2e/id3j-catalog-psycopg.py \
+            2>&1 | tee -a artifacts/integration/id3j-catalog.log
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$role_password" api \
+            /app/.venv/bin/python - < e2e/id3l-principal-postgres-psycopg.py \
+            2>&1 | tee -a artifacts/integration/id3l-principal-postgres.log
+          grep -cFx 'MATCHDESK_ID3L_REAL_POSTGRESQL_DUAL_PRINCIPAL_PASS' \
+            artifacts/integration/id3l-principal-postgres.log | grep -Fx '2'
+          echo 'MATCHDESK_ID3J_REAL_POSTGRESQL_NEGATIVE_PASS'
       - name: Install locked browser harness and matching Chromium
         id: browser
-        if: ${{ !cancelled() && steps.start.outcome == 'success' }}
+        # Do not spend runner time after the security-critical pending-vault
+        # real-PostgreSQL prerequisite fails closed.
+        if: ${{ !cancelled() && steps.start.outcome == 'success' && steps.workforce_stepup_storage.outcome == 'success' }}
         working-directory: e2e
         run: |
           set -euo pipefail
           npm ci --ignore-scripts --no-audit --no-fund
           npx --no-install playwright install --with-deps chromium
-      - name: Run browser regressions without retrying failures away
+      # Execute functional and screenshot-heavy reviews in separate browser
+      # processes. Preserve both exit codes, with zero retries and separate
+      # report directories; an evidence capture failure remains a CI failure.
+      - name: Run functional browser regressions without retrying failures away
         if: ${{ !cancelled() && steps.browser.outcome == 'success' }}
         working-directory: e2e
-        run: npm test 2>&1 | tee ../artifacts/integration/browser.log
+        env:
+          MATCHDESK_E2E_SUITE: functional
+        run: |
+          set -euo pipefail
+          npm test -- --grep-invert '@visual-capture' 2>&1 | tee ../artifacts/integration/browser-functional.log
+      - name: Run isolated visual evidence captures without retries
+        if: ${{ !cancelled() && steps.browser.outcome == 'success' }}
+        working-directory: e2e
+        env:
+          MATCHDESK_E2E_SUITE: visual
+        run: |
+          set -euo pipefail
+          npm test -- --grep '@visual-capture' 2>&1 | tee ../artifacts/integration/browser-visual.log
+      - name: Qualify physical SELECT-only human-confirmation provenance
+        id: provenance_storage
+        if: ${{ !cancelled() && steps.producer_bridge_psycopg.outcome == 'success' && steps.browser.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          [[ "$COMPOSE_PROJECT_NAME" =~ ^matchdesk-it-[0-9]+-[0-9]+$ ]]
+          for n in 1 2; do
+            docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+              psql --no-psqlrc --set ON_ERROR_STOP=1 --username matchdesk \
+              --dbname matchdesk \
+              < backend/postgres/migrations/013_producer_host_confirmation_provenance.sql \
+              > "artifacts/integration/producer-provenance-migration-$n.log"
+          done
+          reader_password="$(openssl rand -hex 32)"
+          echo "::add-mask::$reader_password"
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "COMPOSE_PROJECT_NAME=$COMPOSE_PROJECT_NAME" \
+            -e "PGPASSWORD=$POSTGRES_PASSWORD" \
+            -e "READER_CI_PASSWORD=$reader_password" api \
+            /app/.venv/bin/python - < e2e/producer-host-provenance-psycopg.py \
+            2>&1 | tee artifacts/integration/producer-host-provenance-psycopg.log
+          grep -Fx "MATCHDESK_P4_REAL_HOST_PROVENANCE_READER_PASS: SELECT-only SCRAM, tenant scope, terminal revocation, DML drift and immutability" \
+            artifacts/integration/producer-host-provenance-psycopg.log
+      - name: Qualify the publication outbox and language-review gate
+        id: publication_storage
+        if: ${{ !cancelled() && steps.provenance_storage.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          [[ "$COMPOSE_PROJECT_NAME" =~ ^matchdesk-it-[0-9]+-[0-9]+$ ]]
+          # Needs 001 (applied by the producer storage step). Applying twice proves 015 is
+          # idempotent; the second pass also checks the table shape has not drifted.
+          for n in 1 2; do
+            docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T postgres \
+              psql --no-psqlrc --set ON_ERROR_STOP=1 --username matchdesk \
+              --dbname matchdesk \
+              < backend/postgres/migrations/015_publication_outbox.sql \
+              > "artifacts/integration/publication-outbox-migration-$n.log"
+          done
+          docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T \
+            -e CI=true -e "PGPASSWORD=$POSTGRES_PASSWORD" api \
+            /app/.venv/bin/python - < e2e/publication-outbox-psycopg.py \
+            2>&1 | tee artifacts/integration/publication-outbox-psycopg.log
+          for marker in \
+            "MATCHDESK_PUBLICATION_APPROVAL_PASS: only the version the producer audit approves" \
+            "MATCHDESK_PUBLICATION_LANGUAGE_GATE_PASS: es/fr need the latest approving review of the exact content" \
+            "MATCHDESK_PUBLICATION_FOUR_EYES_PASS: publisher differs from producer; one row per version and destination" \
+            "MATCHDESK_PUBLICATION_TRANSITIONS_PASS: re-checked before each attempt, one attempt per result, final rows frozen" \
+            "MATCHDESK_PUBLICATION_HISTORY_PASS: append-only history, separate publisher and reviewer privileges"; do
+            grep -Fx "$marker" artifacts/integration/publication-outbox-psycopg.log
+          done
       - name: Install the verified native-image scanner and current database
         id: scanner
-        if: ${{ !cancelled() && steps.runtime.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.runtime.outcome == 'success' && steps.producer_storage.outcome == 'success' && steps.psycopg_storage.outcome == 'success' && steps.customer_sessions_storage.outcome == 'success' && steps.oidc_storage.outcome == 'success' && steps.account_directory.outcome == 'success' && steps.directory_gate.outcome == 'success' && steps.id3g_role_probe.outcome == 'success' && steps.id3g_revocation_qa.outcome == 'success' && steps.id3g_revocation_gate.outcome == 'success' && steps.provenance_storage.outcome == 'success' && steps.publication_storage.outcome == 'success' }}
         # This is the official 0.75.0 Linux-64bit asset, independently inspected before pinning.
         # No curl-to-shell execution, repository token or downloaded installer is used.
         run: |

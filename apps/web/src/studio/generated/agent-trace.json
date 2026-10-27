@@ -1,0 +1,913 @@
+{
+ "approval": "human producer only",
+ "digest_chars": 2103,
+ "digest_event_count": 1421,
+ "focus": {
+  "event_id": "E-1366",
+  "moment_id": "M-05",
+  "opponent_id": "riv",
+  "player_id": "nbr-09",
+  "team_id": "nbr"
+ },
+ "match_id": "nbr-riv-canonical",
+ "provider": {
+  "kind": "foundry",
+  "label": "Microsoft Foundry via Agent Framework"
+ },
+ "published": false,
+ "recorded_on": "2026-10-21",
+ "schema": "matchdesk-agent-trace/1",
+ "status": "completed",
+ "steps": [
+  {
+   "attempts": 2,
+   "claims": [
+    {
+     "claim_id": "C-E1366GS",
+     "evidence_event_ids": [
+      "E-1366"
+     ],
+     "fact": {
+      "event_id": "E-1366",
+      "player_id": "nbr-09",
+      "query": "goal_scorer.v1",
+      "schema_version": "1.0"
+     },
+     "kind": "event_fact",
+     "schema_version": "1.0",
+     "text": "The goal at 58:17 (Event ID: E-1366) was scored by player number nbr-09 (Okafor)."
+    },
+    {
+     "claim_id": "C-E1366Sequence",
+     "evidence_event_ids": [
+      "E-1359",
+      "E-1365",
+      "E-1366"
+     ],
+     "kind": "tactical_inference",
+     "schema_version": "1.0",
+     "text": "The goal at 58:17 (Event ID: E-1366) by nbr-09 was a header immediately following a corner delivered by nbr-07."
+    }
+   ],
+   "content": "Analysis complete. Findings and claims are listed below.",
+   "duration_ms": 21575,
+   "errors": [
+    "ChatClientException: (\"<class 'agent_framework_foundry._chat_client.FoundryChatClient'> service failed to complete the prompt: 1 validation error for RuntimeProposal\\nproposed_claims.0.fact\\n Value error, sequence_gap.v1 takes two distinct events and gap_seconds [type=value_error, input_value={'sche"
+   ],
+   "failures": [
+    "retryable_failure"
+   ],
+   "handoff_keys": [
+    "focus"
+   ],
+   "outcome": "proposed",
+   "role": "tactical_analyst",
+   "tokens": 12406,
+   "tool_calls": [
+    {
+     "args": {
+      "event_id": "E-1366"
+     },
+     "result": {
+      "clock": "58:17",
+      "event_id": "E-1366",
+      "outcome": "goal",
+      "player_id": "nbr-09",
+      "team_id": "nbr",
+      "type": "goal"
+     },
+     "tool": "event_by_id"
+    },
+    {
+     "args": {
+      "from_minute": 56.0,
+      "to_minute": 59.0
+     },
+     "result": [
+      {
+       "clock": "56:00",
+       "event_id": "E-1278",
+       "outcome": "complete",
+       "player_id": "nbr-10",
+       "team_id": "nbr",
+       "type": "carry"
+      },
+      {
+       "clock": "56:01",
+       "event_id": "E-1279",
+       "outcome": "complete",
+       "player_id": "nbr-11",
+       "team_id": "nbr",
+       "type": "pass"
+      },
+      {
+       "clock": "56:03",
+       "event_id": "E-1280",
+       "outcome": "incomplete",
+       "player_id": "nbr-09",
+       "team_id": "nbr",
+       "type": "pass"
+      },
+      {
+       "clock": "56:04",
+       "event_id": "E-1281",
+       "outcome": "complete",
+       "player_id": "riv-09",
+       "team_id": "riv",
+       "type": "recovery"
+      },
+      {
+       "clock": "56:06",
+       "event_id": "E-1282",
+       "outcome": "complete",
+       "player_id": "riv-11",
+       "team_id": "riv",
+       "type": "carry"
+      },
+      {
+       "clock": "56:07",
+       "event_id": "E-1283",
+       "outcome": "complete",
+       "player_id": "riv-09",
+       "team_id": "riv",
+       "type": "pass"
+      },
+      {
+       "clock": "56:09",
+       "event_id": "E-1284",
+       "outcome": "complete",
+       "player_id": "riv-05",
+       "team_id": "riv",
+       "type": "pass"
+      },
+      {
+       "clock": "56:10",
+       "event_id": "E-1285",
+       "outcome": "incomplete",
+       "player_id": "riv-10",
+       "team_id": "riv",
+       "type": "pass"
+      },
+      {
+       "clock": "56:12",
+       "event_id": "E-1286",
+       "outcome": "complete",
+       "player_id": "nbr-03",
+       "team_id": "nbr",
+       "type": "recovery"
+      },
+      {
+       "clock": "56:13",
+       "event_id": "E-1287",
+       "outcome": "complete",
+       "player_id": "nbr-08",
+       "team_id": "nbr",
+       "type": "pass"
+      },
+      {
+       "clock": "56:15",
+       "event_id": "E-1288",
+       "outcome": "complete",
+       "player_id": "nbr-10",
+       "team_id": "nbr",
+       "type": "carry"
+      },
+      {
+       "clock": "56:16",
+       "event_id": "E-1289",
+       "outcome": "complete",
+       "player_id": "nbr-02",
+       "team_id": "nbr",
+       "type": "pass"
+      },
+      {
+       "clock": "56:18",
+       "event_id": "E-1290",
+       "outcome": "complete",
+       "player_id": "nbr-05",
+       "team_id": "nbr",
+       "type": "pass"
+      },
+      {
+       "clock": "56:19",
+       "event_id": "E-1291",
+       "outcome": "complete",
+       "player_id": "nbr-11",
+       "team_id": "nbr",
+       "type": "pass"
+      },
+      {
+       "clock": "56:21",
+       "event_id": "E-1292",
+       "outcome": "complete",
+       "player_id": "nbr-08",
+       "team_id": "nbr",
+       "type": "pass"
+      },
+      {
+       "clock": "56:22",
+       "event_id": "E-1293",
+       "outcome": "complete",
+       "player_id": "nbr-11",
+       "team_id": "nbr",
+       "type": "carry"
+      },
+      {
+       "clock": "56:24",
+       "event_id": "E-1294",
+       "outcome": "complete",
+       "player_id": "nbr-04",
+       "team_id": "nbr",
+       "type": "pass"
+      },
+      {
+       "clock": "56:25",
+       "event_id": "E-1295",
+       "outcome": "complete",
+       "player_id": "nbr-09",
+       "team_id": "nbr",
+       "type": "pass"
+      },
+      {
+       "clock": "56:27",
+       "event_id": "E-1296",
+       "outcome": "complete",
+       "player_id": "nbr-04",
+       "team_id": "nbr",
+       "type": "pass"
+      },
+      {
+       "clock": "56:28",
+       "event_id": "E-1297",
+       "outcome": "complete",
+       "player_id": "nbr-04",
+       "team_id": "nbr",
+       "type": "pass"
+      },
+      {
+       "clock": "56:30",
+       "event_id": "E-1298",
+       "outcome": "complete",
+       "player_id": "nbr-11",
+       "team_id": "nbr",
+       "type": "carry"
+      },
+      {
+       "clock": "56:31",
+       "event_id": "E-1299",
+       "outcome": "complete",
+       "player_id": "nbr-04",
+       "team_id": "nbr",
+       "type": "carry"
+      },
+      {
+       "clock": "56:33",
+       "event_id": "E-1300",
+       "outcome": "complete",
+       "player_id": "riv-07",
+       "team_id": "riv",
+       "type": "recovery"
+      },
+      {
+       "clock": "56:34",
+       "event_id": "E-1301",
+       "outcome": "complete",
+       "player_id": "riv-06",
+       "team_id": "riv",
+       "type": "carry"
+      },
+      {
+       "clock": "56:36",
+       "event_id": "E-1302",
+       "outcome": "complete",
+       "player_id": "riv-11",
+       "team_id": "riv",
+       "type": "carry"
+      },
+      {
+       "clock": "56:38",
+       "event_id": "E-1303",
+       "outcome": "complete",
+       "player_id": "riv-02",
+       "team_id": "riv",
+       "type": "pass"
+      },
+      {
+       "clock": "56:39",
+       "event_id": "E-1304",
+       "outcome": "complete",
+       "player_id": "riv-05",
+       "team_id": "riv",
+       "type": "pass"
+      },
+      {
+       "clock": "56:41",
+       "event_id": "E-1305",
+       "outcome": "incomplete",
+       "player_id": "riv-08",
+       "team_id": "riv",
+       "type": "pass"
+      },
+      {
+       "clock": "56:42",
+       "event_id": "E-1306",
+       "outcome": "complete",
+       "player_id": "nbr-05",
+       "team_id": "nbr",
+       "type": "recovery"
+      },
+      {
+       "clock": "56:44",
+       "event_id": "E-1307",
+       "outcome": "complete",
+       "player_id": "nbr-08",
+       "team_id": "nbr",
+       "type": "pass"
+      },
+      {
+       "clock": "56:45",
+       "event_id": "E-1308",
+       "outcome": "complete",
+       "player_id": "nbr-02",
+       "team_id": "nbr",
+       "type": "pass"
+      },
+      {
+       "clock": "56:47",
+       "event_id": "E-1309",
+       "outcome": "complete",
+       "player_id": "nbr-05",
+       "team_id": "nbr",
+       "type": "carry"
+      },
+      {
+       "clock": "56:48",
+       "event_id": "E-1310",
+       "outcome": "complete",
+       "player_id": "nbr-07",
+       "team_id": "nbr",
+       "type": "pass"
+      },
+      {
+       "clock": "56:50",
+       "event_id": "E-1311",
+       "outcome": "complete",
+       "player_id": "nbr-10",
+       "team_id": "nbr",
+       "type": "pass"
+      },
+      {
+       "clock": "56:51",
+       "event_id": "E-1312",
+       "outcome": "complete",
+       "player_id": "nbr-06",
+       "team_id": "nbr",
+       "type": "pass"
+      },
+      {
+       "clock": "56:53",
+       "event_id": "E-1313",
+       "outcome": "complete",
+       "player_id": "nbr-07",
+       "team_id": "nbr",
+       "type": "pass"
+      },
+      {
+       "clock": "56:54",
+       "event_id": "E-1314",
+       "outcome": "complete",
+       "player_id": "nbr-02",
+       "team_id": "nbr",
+       "type": "pass"
+      },
+      {
+       "clock": "56:56",
+       "event_id": "E-1315",
+       "outcome": "complete",
+       "player_id": "nbr-10",
+       "team_id": "nbr",
+       "type": "pass"
+      },
+      {
+       "clock": "56:57",
+       "event_id": "E-1316",
+       "outcome": "complete",
+       "player_id": "nbr-11",
+       "team_id": "nbr",
+       "type": "pass"
+      },
+      {
+       "clock": "56:59",
+       "event_id": "E-1317",
+       "outcome": "complete",
+       "player_id": "nbr-02",
+       "team_id": "nbr",
+       "type": "pass"
+      }
+     ],
+     "tool": "events_in_window"
+    },
+    {
+     "args": {
+      "from_minute": 56.0,
+      "metric_id": "shots.v1",
+      "team_id": "nbr",
+      "to_minute": 59.0
+     },
+     "result": 2.0,
+     "tool": "metric"
+    },
+    {
+     "args": {
+      "from_minute": 56.0,
+      "metric_id": "goals.v1",
+      "team_id": "nbr",
+      "to_minute": 59.0
+     },
+     "result": 1.0,
+     "tool": "metric"
+    },
+    {
+     "args": {
+      "from_minute": 56.0,
+      "metric_id": "final_third_entries.v1",
+      "team_id": "nbr",
+      "to_minute": 59.0
+     },
+     "result": 8.0,
+     "tool": "metric"
+    },
+    {
+     "args": {
+      "event_id": "E-1366"
+     },
+     "result": {
+      "clock": "58:17",
+      "event_id": "E-1366",
+      "outcome": "goal",
+      "player_id": "nbr-09",
+      "team_id": "nbr",
+      "type": "goal"
+     },
+     "tool": "event_by_id"
+    },
+    {
+     "args": {
+      "event_id": "E-1365"
+     },
+     "result": {
+      "clock": "58:16",
+      "event_id": "E-1365",
+      "outcome": "goal",
+      "player_id": "nbr-09",
+      "tags": [
+       "header"
+      ],
+      "team_id": "nbr",
+      "type": "shot"
+     },
+     "tool": "event_by_id"
+    },
+    {
+     "args": {
+      "event_id": "E-1359"
+     },
+     "result": {
+      "clock": "58:03",
+      "event_id": "E-1359",
+      "outcome": "incomplete",
+      "player_id": "nbr-07",
+      "tags": [
+       "corner"
+      ],
+      "team_id": "nbr",
+      "type": "pass"
+     },
+     "tool": "event_by_id"
+    },
+    {
+     "args": {
+      "from_minute": 58.0,
+      "to_minute": 59.0,
+      "types": [
+       "goal"
+      ]
+     },
+     "result": [
+      {
+       "clock": "58:17",
+       "event_id": "E-1366",
+       "outcome": "goal",
+       "player_id": "nbr-09",
+       "team_id": "nbr",
+       "type": "goal"
+      }
+     ],
+     "tool": "events_in_window"
+    },
+    {
+     "args": {
+      "from_minute": 58.0,
+      "to_minute": 59.0,
+      "types": [
+       "shot"
+      ]
+     },
+     "result": [
+      {
+       "clock": "58:16",
+       "event_id": "E-1365",
+       "outcome": "goal",
+       "player_id": "nbr-09",
+       "tags": [
+        "header"
+       ],
+       "team_id": "nbr",
+       "type": "shot"
+      }
+     ],
+     "tool": "events_in_window"
+    },
+    {
+     "args": {
+      "from_minute": 58.0,
+      "to_minute": 59.0,
+      "types": [
+       "pass"
+      ]
+     },
+     "result": [
+      {
+       "clock": "58:01",
+       "event_id": "E-1358",
+       "outcome": "incomplete",
+       "player_id": "riv-11",
+       "team_id": "riv",
+       "type": "pass"
+      },
+      {
+       "clock": "58:03",
+       "event_id": "E-1359",
+       "outcome": "incomplete",
+       "player_id": "nbr-07",
+       "tags": [
+        "corner"
+       ],
+       "team_id": "nbr",
+       "type": "pass"
+      },
+      {
+       "clock": "58:09",
+       "event_id": "E-1362",
+       "outcome": "complete",
+       "player_id": "nbr-08",
+       "team_id": "nbr",
+       "type": "pass"
+      },
+      {
+       "clock": "58:15",
+       "event_id": "E-1364",
+       "outcome": "complete",
+       "player_id": "nbr-07",
+       "team_id": "nbr",
+       "type": "pass"
+      }
+     ],
+     "tool": "events_in_window"
+    }
+   ],
+   "type": "specialist"
+  },
+  {
+   "attempts": 1,
+   "claims": [
+    {
+     "claim_id": "C-E1366GS",
+     "evidence_event_ids": [
+      "E-1366"
+     ],
+     "fact": {
+      "event_id": "E-1366",
+      "player_id": "nbr-09",
+      "query": "goal_scorer.v1",
+      "schema_version": "1.0"
+     },
+     "kind": "event_fact",
+     "schema_version": "1.0",
+     "text": "The goal at 58:17 was scored by Okafor (Player ID: nbr-09) for Northbridge."
+    },
+    {
+     "claim_id": "C-E1366Sequence",
+     "evidence_event_ids": [
+      "E-1359",
+      "E-1365",
+      "E-1366"
+     ],
+     "kind": "tactical_inference",
+     "schema_version": "1.0",
+     "text": "Okafor's header goal at 58:17 followed 14 seconds after a corner by Player ID: nbr-07."
+    }
+   ],
+   "content": "Northbridge's player Okafor played a pivotal role in securing their lead.",
+   "duration_ms": 5790,
+   "errors": [],
+   "failures": [],
+   "handoff_keys": [
+    "focus",
+    "tactical_claims"
+   ],
+   "outcome": "proposed",
+   "role": "narrative_composer",
+   "tokens": 5207,
+   "tool_calls": [
+    {
+     "args": {
+      "event_id": "E-1366"
+     },
+     "result": {
+      "clock": "58:17",
+      "event_id": "E-1366",
+      "outcome": "goal",
+      "player_id": "nbr-09",
+      "team_id": "nbr",
+      "type": "goal"
+     },
+     "tool": "event_by_id"
+    },
+    {
+     "args": {
+      "claim_id": "C-E1366GS"
+     },
+     "result": null,
+     "tool": "verification_result"
+    },
+    {
+     "args": {
+      "claim_id": "C-E1366Sequence"
+     },
+     "result": null,
+     "tool": "verification_result"
+    }
+   ],
+   "type": "specialist"
+  },
+  {
+   "attempts": 1,
+   "claims": [
+    {
+     "claim_id": "C-E1366GS",
+     "evidence_event_ids": [
+      "E-1366"
+     ],
+     "fact": {
+      "event_id": "E-1366",
+      "player_id": "nbr-09",
+      "query": "goal_scorer.v1",
+      "schema_version": "1.0"
+     },
+     "kind": "event_fact",
+     "schema_version": "1.0",
+     "text": "The goal at 58:17 was scored by Okafor (Player ID: nbr-09) for Northbridge."
+    }
+   ],
+   "content": "Analyzing the claims based on data availability and clarity.",
+   "duration_ms": 4012,
+   "errors": [],
+   "failures": [],
+   "handoff_keys": [
+    "draft_claims"
+   ],
+   "outcome": "proposed",
+   "role": "editorial_reviewer",
+   "tokens": 5029,
+   "tool_calls": [
+    {
+     "args": {
+      "event_id": "E-1366"
+     },
+     "result": {
+      "clock": "58:17",
+      "event_id": "E-1366",
+      "outcome": "goal",
+      "player_id": "nbr-09",
+      "team_id": "nbr",
+      "type": "goal"
+     },
+     "tool": "event_by_id"
+    },
+    {
+     "args": {
+      "from_minute": 58.0,
+      "to_minute": 59.0,
+      "types": [
+       "pass",
+       "header"
+      ]
+     },
+     "result": [
+      {
+       "clock": "58:01",
+       "event_id": "E-1358",
+       "outcome": "incomplete",
+       "player_id": "riv-11",
+       "team_id": "riv",
+       "type": "pass"
+      },
+      {
+       "clock": "58:03",
+       "event_id": "E-1359",
+       "outcome": "incomplete",
+       "player_id": "nbr-07",
+       "tags": [
+        "corner"
+       ],
+       "team_id": "nbr",
+       "type": "pass"
+      },
+      {
+       "clock": "58:09",
+       "event_id": "E-1362",
+       "outcome": "complete",
+       "player_id": "nbr-08",
+       "team_id": "nbr",
+       "type": "pass"
+      },
+      {
+       "clock": "58:15",
+       "event_id": "E-1364",
+       "outcome": "complete",
+       "player_id": "nbr-07",
+       "team_id": "nbr",
+       "type": "pass"
+      }
+     ],
+     "tool": "events_in_window"
+    }
+   ],
+   "type": "specialist"
+  },
+  {
+   "passed": true,
+   "results": [
+    {
+     "claim_id": "C-E1366GS",
+     "expected": null,
+     "observed": null,
+     "query_id": "event-goal-scorer-v1",
+     "reason": "The cited goal event records the stated scorer",
+     "status": "verified",
+     "text": "The goal at 58:17 was scored by Okafor (Player ID: nbr-09) for Northbridge."
+    }
+   ],
+   "round": 1,
+   "type": "verification"
+  },
+  {
+   "attempts": 1,
+   "claims": [],
+   "content": "[{\"language\": \"en\", \"persona\": \"analyst\", \"text\": \"At 58:17, Okafor scored a critical goal for Northbridge, having a significant impact on the game's outcome.\", \"claim_ids\": [\"C-E1366GS\"]}, {\"language\": \"en\", \"persona\": \"casual_fan\", \"text\": \"Wow! Okafor scored for Northbridge at 58:17! Incredible performance!\", \"claim_ids\": [\"C-E1366GS\"]}, {\"language\": \"en\", \"persona\": \"broadcast_caption\", \"text\": \"58:17: Goal scored by Okafor for Northbridge. A key game moment!\", \"claim_ids\": [\"C-E1366GS\"]}, {\"language\": \"es\", \"persona\": \"analyst\", \"text\": \"A las 58:17, Okafor anotó un gol clave para Northbridge, influyendo mucho en el resultado del juego.\", \"claim_ids\": [\"C-E1366GS\"]}, {\"language\": \"es\", \"persona\": \"casual_fan\", \"text\": \"¡Increíble! Okafor anotó para Northbridge a las 58:17. ¡Qué actuación!\", \"claim_ids\": [\"C-E1366GS\"]}, {\"language\": \"es\", \"persona\": \"broadcast_caption\", \"text\": \"58:17: Gol anotado por Okafor para Northbridge. ¡Momento clave del juego!\", \"claim_ids\": [\"C-E1366GS\"]}, {\"language\": \"fr\", \"persona\": \"analyst\", \"text\": \"À 58:17, Okafor a marqué un but important pour Northbridge, influençant significativement le résultat du jeu.\", \"claim_ids\": [\"C-E1366GS\"]}, {\"language\": \"fr\", \"persona\": \"casual_fan\", \"text\": \"Incroyable ! Okafor a marqué pour Northbridge à 58:17 ! Quelle performance !\", \"claim_ids\": [\"C-E1366GS\"]}, {\"language\": \"fr\", \"persona\": \"broadcast_caption\", \"text\": \"58:17 : But marqué par Okafor pour Northbridge. Un moment clé du match !\", \"claim_ids\": [\"C-E1366GS\"]}]",
+   "duration_ms": 7578,
+   "errors": [],
+   "failures": [],
+   "handoff_keys": [
+    "verified_claims"
+   ],
+   "outcome": "proposed",
+   "role": "audience_adapter",
+   "tokens": 3089,
+   "tool_calls": [
+    {
+     "args": {
+      "claim_id": "C-E1366GS"
+     },
+     "result": {
+      "claim_id": "C-E1366GS",
+      "expected": null,
+      "observed": null,
+      "query_id": "event-goal-scorer-v1",
+      "reason": "The cited goal event records the stated scorer",
+      "status": "verified"
+     },
+     "tool": "verification_result"
+    }
+   ],
+   "type": "specialist"
+  }
+ ],
+ "terminal_reason": "All four specialist stages completed within policy",
+ "totals": {
+  "specialist_turns": 4,
+  "tokens": 25731,
+  "tool_calls": 17,
+  "verification_rounds": 1
+ },
+ "variants": [
+  {
+   "claim_ids": [
+    "C-E1366GS"
+   ],
+   "language": "en",
+   "language_review": "NOT_RUN",
+   "persona": "analyst",
+   "publishable": false,
+   "text": "At 58:17, Okafor scored a critical goal for Northbridge, having a significant impact on the game's outcome."
+  },
+  {
+   "claim_ids": [
+    "C-E1366GS"
+   ],
+   "language": "en",
+   "language_review": "NOT_RUN",
+   "persona": "casual_fan",
+   "publishable": false,
+   "text": "Wow! Okafor scored for Northbridge at 58:17! Incredible performance!"
+  },
+  {
+   "claim_ids": [
+    "C-E1366GS"
+   ],
+   "language": "en",
+   "language_review": "NOT_RUN",
+   "persona": "broadcast_caption",
+   "publishable": false,
+   "text": "58:17: Goal scored by Okafor for Northbridge. A key game moment!"
+  },
+  {
+   "claim_ids": [
+    "C-E1366GS"
+   ],
+   "language": "es",
+   "language_review": "NOT_RUN",
+   "persona": "analyst",
+   "publishable": false,
+   "text": "A las 58:17, Okafor anotó un gol clave para Northbridge, influyendo mucho en el resultado del juego."
+  },
+  {
+   "claim_ids": [
+    "C-E1366GS"
+   ],
+   "language": "es",
+   "language_review": "NOT_RUN",
+   "persona": "casual_fan",
+   "publishable": false,
+   "text": "¡Increíble! Okafor anotó para Northbridge a las 58:17. ¡Qué actuación!"
+  },
+  {
+   "claim_ids": [
+    "C-E1366GS"
+   ],
+   "language": "es",
+   "language_review": "NOT_RUN",
+   "persona": "broadcast_caption",
+   "publishable": false,
+   "text": "58:17: Gol anotado por Okafor para Northbridge. ¡Momento clave del juego!"
+  },
+  {
+   "claim_ids": [
+    "C-E1366GS"
+   ],
+   "language": "fr",
+   "language_review": "NOT_RUN",
+   "persona": "analyst",
+   "publishable": false,
+   "text": "À 58:17, Okafor a marqué un but important pour Northbridge, influençant significativement le résultat du jeu."
+  },
+  {
+   "claim_ids": [
+    "C-E1366GS"
+   ],
+   "language": "fr",
+   "language_review": "NOT_RUN",
+   "persona": "casual_fan",
+   "publishable": false,
+   "text": "Incroyable ! Okafor a marqué pour Northbridge à 58:17 ! Quelle performance !"
+  },
+  {
+   "claim_ids": [
+    "C-E1366GS"
+   ],
+   "language": "fr",
+   "language_review": "NOT_RUN",
+   "persona": "broadcast_caption",
+   "publishable": false,
+   "text": "58:17 : But marqué par Okafor pour Northbridge. Un moment clé du match !"
+  }
+ ],
+ "verified_claims": [
+  {
+   "claim_id": "C-E1366GS",
+   "evidence_event_ids": [
+    "E-1366"
+   ],
+   "fact": {
+    "event_id": "E-1366",
+    "player_id": "nbr-09",
+    "query": "goal_scorer.v1",
+    "schema_version": "1.0"
+   },
+   "kind": "event_fact",
+   "schema_version": "1.0",
+   "text": "The goal at 58:17 was scored by Okafor (Player ID: nbr-09) for Northbridge."
+  }
+ ]
+}

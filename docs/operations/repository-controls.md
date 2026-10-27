@@ -19,6 +19,11 @@ are prohibited. No bypass actor is pre-authorized. An owner-approved foundation
 merge would use squash or rebase under these controls; production release remains a
 separate decision.
 
+> **Update, 22 October 2026:** delivery now happens on `development`, and [ADR-0012](../decisions/ADR-0012-development-as-delivery-branch.md)
+> proposes making it the default branch and protecting it with a pull request and six required checks,
+> prepared for import as [development-delivery.json](rulesets/development-delivery.json). The approved
+> configuration below is unchanged until the owner approves ADR-0012.
+
 [development.json](rulesets/development.json) retains history safeguards only: no
 force push or branch deletion. It allows the approved two-branch development
 workflow to obtain checks on each push, with promotion gated at main. It also allows

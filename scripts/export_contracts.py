@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 
 from matchdesk.api.app import create_app
+from matchdesk.domain.broadcast_outputs import BroadcastEnvelope
 from matchdesk.domain.models import (
     ApprovalBinding,
     Claim,
@@ -31,6 +32,7 @@ MODELS = (
     EvidenceRecord,
     VerificationResult,
     ApprovalBinding,
+    BroadcastEnvelope,
 )
 
 

@@ -1,0 +1,284 @@
+name: Azure demo (studio and API)
+
+# Deploys the competition demo described in infra/azure/demo.bicep: the studio and the API on
+# Azure Container Apps, with the Ask MatchDesk planner on Microsoft Foundry when switched on.
+# what-if is read-only and creates nothing. deploy needs the typed confirmation. diagnose only reads
+# the API's recent console log and reports error lines as annotations.
+# Rollback: delete the resource group; the Vercel copy of the studio is unaffected.
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "what-if (read-only), deploy, or diagnose (read the API's recent errors)"
+        required: true
+        type: choice
+        options: [what-if, deploy, diagnose]
+        default: what-if
+      assistant:
+        description: "Switch on Microsoft Foundry: the Ask MatchDesk planner and live agent runs"
+        required: true
+        type: boolean
+        default: true
+      confirm:
+        description: "For deploy only: type DEPLOY_MATCHDESK_DEMO_TO_AZURE"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: azure-demo
+  cancel-in-progress: false
+
+jobs:
+  demo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      AZURE_CORE_OUTPUT: none
+      RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+      BUDGET_EMAILS: ${{ vars.AZURE_BUDGET_EMAILS }}
+      TEMPLATE: infra/azure/demo.bicep
+    steps:
+      - name: Require explicit owner authorisation to deploy
+        if: ${{ inputs.mode == 'deploy' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${{ inputs.confirm }}" = "DEPLOY_MATCHDESK_DEMO_TO_AZURE"
+
+      - name: Require deployment configuration
+        shell: bash
+        env:
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          FOUNDRY_PROJECT_ENDPOINT: ${{ secrets.FOUNDRY_PROJECT_ENDPOINT }}
+          FOUNDRY_MODEL: ${{ secrets.FOUNDRY_MODEL }}
+        run: |
+          set -euo pipefail
+          missing=()
+          for name in AZURE_CLIENT_ID AZURE_TENANT_ID AZURE_SUBSCRIPTION_ID RESOURCE_GROUP; do
+            [ -n "${!name}" ] || missing+=("$name")
+          done
+          if [ "${{ inputs.assistant }}" = "true" ]; then
+            for name in FOUNDRY_PROJECT_ENDPOINT FOUNDRY_MODEL; do [ -n "${!name}" ] || missing+=("$name"); done
+          fi
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "::error title=Missing configuration::Set these repository secrets or variables: ${missing[*]}"
+            exit 1
+          fi
+
+      - name: Check out exact source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+
+      - name: Read the budget alert addresses
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Accept a JSON array or a comma-separated list; Azure gets a parameters file either way.
+          if jq -e 'type == "array" and all(type == "string")' <<<"${BUDGET_EMAILS:-[]}" >/dev/null 2>&1; then
+            emails="$(jq -c . <<<"${BUDGET_EMAILS:-[]}")"
+          else
+            emails="$(jq -cn --arg s "$BUDGET_EMAILS" '$s | split(",") | map(gsub("^\\s+|\\s+$"; "")) | map(select(length > 0))')"
+          fi
+          jq -n --argjson e "$emails" '{"$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#", contentVersion: "1.0.0.0", parameters: {budgetContactEmails: {value: $e}}}' > "$RUNNER_TEMP/budget.parameters.json"
+          echo "Budget alerts: $(jq 'length' <<<"$emails") address(es)"
+
+      - name: Authenticate to Azure with GitHub OIDC
+        uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Register the resource providers the demo needs
+        shell: bash
+        run: |
+          set -euo pipefail
+          for ns in Microsoft.App Microsoft.ContainerRegistry Microsoft.OperationalInsights Microsoft.ManagedIdentity Microsoft.Insights; do
+            state="$(az provider show --namespace "$ns" --query registrationState -o tsv 2>/dev/null || echo unknown)"
+            if [ "$state" != "Registered" ]; then
+              az provider register --namespace "$ns" --wait || echo "::warning::Could not register $ns ($state). A subscription owner must register it: Subscriptions > Resource providers > $ns > Register"
+            fi
+          done
+
+      - name: Preview the base resources (what-if, read-only)
+        if: ${{ inputs.mode != 'diagnose' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! out="$(az deployment group what-if --resource-group "$RESOURCE_GROUP" \
+            --template-file "$TEMPLATE" --parameters deployApps=false \
+            @"$RUNNER_TEMP/budget.parameters.json" 2>"$RUNNER_TEMP/az.err")"; then
+            # Job logs are not always readable; put Azure's reason where the run summary shows it.
+            echo "::error title=What-if failed::$(grep -iE 'error|code|message' "$RUNNER_TEMP/az.err" | tail -n 6 | tr '\n' ' ' | cut -c1-1500)"
+            exit 1
+          fi
+          printf '%s\n' "$out"
+
+      - name: Report the API's recent errors (diagnose, read-only)
+        if: ${{ inputs.mode == 'diagnose' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          az config set extension.use_dynamic_install=yes_without_prompt >/dev/null
+          az containerapp logs show --resource-group "$RESOURCE_GROUP" --name mdesk-api --type console \
+            --tail 300 --format text -o tsv > "$RUNNER_TEMP/api.log" 2>"$RUNNER_TEMP/az.err" || {
+            echo "::error title=Could not read logs::$(tail -n 4 "$RUNNER_TEMP/az.err" | tr '\n' ' ' | cut -c1-800)"; exit 1; }
+          echo "Read $(wc -l < "$RUNNER_TEMP/api.log") log lines"
+          # Exception names and messages only; GitHub masks any secret values that appear.
+          grep -E "planner call failed|Error|Exception|error:" "$RUNNER_TEMP/api.log" | grep -v '^\s*File ' | tail -n 10 \
+            | while IFS= read -r line; do echo "::warning title=API log::$(printf '%s' "$line" | cut -c1-600)"; done || true
+          az containerapp show --resource-group "$RESOURCE_GROUP" --name mdesk-api \
+            --query "{revision: properties.latestRevisionName, running: properties.runningStatus, identity: identity.type}" -o json
+
+      - name: Report how the Foundry resource admits the demo identity (diagnose, read-only)
+        if: ${{ inputs.mode == 'diagnose' }}
+        shell: bash
+        env:
+          FOUNDRY_PROJECT_ENDPOINT: ${{ secrets.FOUNDRY_PROJECT_ENDPOINT }}
+        run: |
+          set -uo pipefail
+          note() { echo "::notice title=Foundry access::$1"; }
+          host="${FOUNDRY_PROJECT_ENDPOINT#https://}"; account="${host%%.*}"
+          principal="$(az identity show --resource-group "$RESOURCE_GROUP" --name mdesk-demo-id --query principalId -o tsv)"
+          id="$(az resource list --name "$account" --resource-type Microsoft.CognitiveServices/accounts --query '[0].id' -o tsv 2>/dev/null)"
+          if [ -z "$id" ]; then note "The Foundry account is not visible to the deploy identity, so its network and roles cannot be read from here"; exit 0; fi
+          note "Network: $(az resource show --ids "$id" --query '{publicNetworkAccess: properties.publicNetworkAccess, defaultAction: properties.networkAcls.defaultAction, ipRules: length(properties.networkAcls.ipRules || `[]`), vnetRules: length(properties.networkAcls.virtualNetworkRules || `[]`), localAuthDisabled: properties.disableLocalAuth}' -o json | tr -d '\n ')"
+          roles="$(az role assignment list --assignee "$principal" --all --query "[].{role: roleDefinitionName, scope: scope}" -o tsv 2>/dev/null | sed -E 's#/subscriptions/[^/]+#/subscriptions/…#' | tr '\t' ' ' | paste -sd ';' -)"
+          note "Roles held by mdesk-demo-id: ${roles:-none visible}"
+          projects="$(az resource list --resource-type Microsoft.CognitiveServices/accounts/projects --query "[?starts_with(name, '$account/')].name" -o tsv 2>/dev/null | paste -sd ',' -)"
+          note "Projects on the account: ${projects:-none visible}"
+
+      - name: Create or update the base resources
+        if: ${{ inputs.mode == 'deploy' }}
+        id: base
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! out="$(az deployment group create --resource-group "$RESOURCE_GROUP" --name matchdesk-demo-base \
+            --template-file "$TEMPLATE" --parameters deployApps=false \
+            @"$RUNNER_TEMP/budget.parameters.json" \
+            --query properties.outputs -o json 2>"$RUNNER_TEMP/az.err")"; then
+            echo "::error title=Base deployment failed::$(grep -iE 'error|code|message' "$RUNNER_TEMP/az.err" | tail -n 6 | tr '\n' ' ' | cut -c1-1500)"
+            exit 1
+          fi
+          for key in registryLoginServer registryName environmentDefaultDomain webUrl identityPrincipalId; do
+            echo "$key=$(jq -r ".$key.value" <<<"$out")" >> "$GITHUB_OUTPUT"
+          done
+
+      - name: Build and push both images to the registry
+        if: ${{ inputs.mode == 'deploy' }}
+        shell: bash
+        env:
+          REGISTRY: ${{ steps.base.outputs.registryLoginServer }}
+          REGISTRY_NAME: ${{ steps.base.outputs.registryName }}
+          WEB_URL: ${{ steps.base.outputs.webUrl }}
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_SHA}"
+          az acr login --name "$REGISTRY_NAME"
+          # The studio calls the API by its app name inside the environment; the browser only ever
+          # sees same-origin /api paths. The public URL goes into canonical links and social cards.
+          docker build --file apps/web/Dockerfile \
+            --build-arg MATCHDESK_API_ORIGIN=http://mdesk-api \
+            --build-arg MATCHDESK_SITE_URL="$WEB_URL" \
+            --build-arg NEXT_PUBLIC_MATCHDESK_LIVE_STREAM=true \
+            --tag "$REGISTRY/matchdesk-web:$tag" .
+          docker build --file backend/Dockerfile --tag "$REGISTRY/matchdesk-api:$tag" .
+          docker push "$REGISTRY/matchdesk-web:$tag"
+          docker push "$REGISTRY/matchdesk-api:$tag"
+
+      - name: Create or update the studio and API apps
+        if: ${{ inputs.mode == 'deploy' }}
+        shell: bash
+        env:
+          REGISTRY: ${{ steps.base.outputs.registryLoginServer }}
+          FOUNDRY_PROJECT_ENDPOINT: ${{ secrets.FOUNDRY_PROJECT_ENDPOINT }}
+          FOUNDRY_MODEL: ${{ secrets.FOUNDRY_MODEL }}
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_SHA}"
+          # The voice-over uses Azure AI Speech on the Foundry account; its resource ID is looked up
+          # here (read-only). If the deploy identity cannot see the account, the voice stays off.
+          speech=""
+          if [ "${{ inputs.assistant }}" = "true" ]; then
+            host="${FOUNDRY_PROJECT_ENDPOINT#https://}"; account="${host%%.*}"
+            speech="$(az resource list --name "$account" --resource-type Microsoft.CognitiveServices/accounts --query '[0].id' -o tsv 2>/dev/null || true)"
+            [ -n "$speech" ] && echo "::notice title=Voice-over::Azure AI Speech on the Foundry account" || echo "::notice title=Voice-over::Foundry account not visible; the studio uses the device voice"
+          fi
+          for attempt in 1 2 3; do
+            # A new pull identity can take a minute to be honoured by the registry; retry.
+            if az deployment group create --resource-group "$RESOURCE_GROUP" --name matchdesk-demo-apps \
+              --template-file "$TEMPLATE" --parameters deployApps=true \
+              webImage="$REGISTRY/matchdesk-web:$tag" apiImage="$REGISTRY/matchdesk-api:$tag" \
+              assistantEnabled=${{ inputs.assistant }} \
+              foundryProjectEndpoint="$FOUNDRY_PROJECT_ENDPOINT" foundryModel="$FOUNDRY_MODEL" \
+              speechResourceId="$speech" \
+              @"$RUNNER_TEMP/budget.parameters.json"; then
+              exit 0
+            fi
+            echo "::warning::App deployment attempt $attempt failed; retrying in 60 s"
+            sleep 60
+          done
+          exit 1
+
+      - name: Smoke-test the public studio and the API behind it
+        if: ${{ inputs.mode == 'deploy' }}
+        shell: bash
+        env:
+          WEB_URL: ${{ steps.base.outputs.webUrl }}
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 30); do
+            code="$(curl -s -o /dev/null -w '%{http_code}' "$WEB_URL/")" && [ "$code" = "200" ] && break
+            sleep 10
+          done
+          for path in / /match/nbr-riv /match/nbr-riv/live /match/nbr-riv/insights /match/nbr-riv/players /producer/compose/D-031 /story /story/okafor-header-restores-northbridge-lead /overlays/nbr-riv.json /sw.js; do
+            code="$(curl -s -o /dev/null -w '%{http_code}' "$WEB_URL$path")"
+            echo "$path -> $code"
+            [ "$code" = "200" ]
+          done
+          curl -sI "$WEB_URL/" | grep -i '^content-security-policy:'
+          health="$(curl -s "$WEB_URL/api/health")"
+          echo "api health: $health"
+          grep -q '"status"' <<<"$health"
+          if [ "${{ inputs.assistant }}" = "true" ]; then
+            # A question only the planner can read; the first call after a deploy can be cold.
+            for attempt in 1 2 3; do
+              plan="$(curl -s -X POST "$WEB_URL/api/assistant/plan" -H 'content-type: application/json' \
+                -d '{"question":"which player won the ball back most after the break"}')"
+              echo "planner (attempt $attempt): $plan"
+              grep -q '"plan"' <<<"$plan"
+              grep -q '"intent":"unknown"' <<<"$plan" || break
+              sleep 5
+            done
+            if grep -q '"intent":"unknown"' <<<"$plan"; then
+              echo "::warning title=Foundry access::The planner answered 'unknown' three times. Run mode diagnose; the identity ${{ steps.base.outputs.identityPrincipalId }} needs Cognitive Services User (or Azure AI User) on the Foundry account."
+            fi
+            # The voice-over: one verified recap read by Azure AI Speech. A failure is a warning,
+            # not a failed deploy, because the studio falls back to the device's voice.
+            voice="$(curl -s -o /dev/null -w '%{http_code} %{content_type} %{size_download}' "$WEB_URL/api/voice/recap/half-time?lang=en")"
+            echo "voice-over: $voice"
+            case "$voice" in
+              "200 audio/mpeg"*) echo "::notice title=Voice-over::Azure AI Speech answered ($voice)" ;;
+              *) echo "::warning title=Voice-over::Azure AI Speech did not answer ($voice); the studio uses the device voice" ;;
+            esac
+          fi
+
+      - name: Summarise the deployment
+        if: ${{ inputs.mode == 'deploy' && always() }}
+        shell: bash
+        run: |
+          {
+            echo "### MatchDesk demo on Azure"
+            echo "- Studio: ${{ steps.base.outputs.webUrl }}"
+            echo "- Source: \`${GITHUB_SHA}\`"
+            echo "- Planner identity (principal ID): \`${{ steps.base.outputs.identityPrincipalId }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "::notice title=MatchDesk demo on Azure::Studio ${{ steps.base.outputs.webUrl }} from ${GITHUB_SHA}; planner identity principal ${{ steps.base.outputs.identityPrincipalId }}"

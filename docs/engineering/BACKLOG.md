@@ -52,7 +52,7 @@ Final Phase 1 status `main`: `8e110607c6877efca431debe7f8b69b5f53db9d9`.
 
 ## Phase 2 — bounded agent orchestration and verification
 
-Phase 2 technical review passed, the exact closure head was qualified and owner-approved, and PR #36 was promoted through protected main. P2-06 is awaiting one clean post-merge qualification point because the squash merge commit did not emit main push runs.
+Phase 2 is **VERIFIED / COMPLETED**. P2-01 through P2-05 are TESTED and P2-06 is COMPLETE after exact-head qualification, explicit owner approval, protected promotion and clean post-merge qualification on main.
 
 | ID | Work | Status | Acceptance evidence |
 |---|---|---|---|
@@ -61,7 +61,7 @@ Phase 2 technical review passed, the exact closure head was qualified and owner-
 | P2-03 | Implement specialist execution interfaces and scoped read tools | TESTED | Host-owned role scopes, immutable proposal envelopes and read-only deterministic tools |
 | P2-04 | Integrate four specialist runtimes with Agent Framework / Foundry | TESTED | Adapter + locked dependencies qualified; live run 37923842661 passed with bounded token usage, retained evidence and `supported_inference` verification |
 | P2-05 | Qualify end-to-end retries, timeouts, recovery and model evaluation | TESTED | Exact-head CI qualified deterministic resilience/evaluation paths; live run 37941568298 passed with one evidence-bound tactical claim, `supported_inference` and retained non-secret evidence |
-| P2-06 | Review Phase 2 | POST-MERGE QUALIFICATION PENDING | Exact closure head qualified and owner-approved; PR #36 merged as `aedc840432ca0a868aa091a81ee60c93bb935db4`; clean post-merge qualification still required |
+| P2-06 | Review Phase 2 | COMPLETE | Exact closure head qualified and owner-approved; protected promotion completed; main `31371b06b23ee61f25d5b9f6ccceb9b3ae7bb222` passed all four post-merge workflow groups |
 
 P2-01 qualification: [Phase 2A orchestration control-plane evidence](../evidence/phase2a-orchestration-control-plane-20261008.md).
 
@@ -74,3 +74,45 @@ P2-04 adapter qualification/blocker: [Phase 2D Foundry runtime adapter evidence]
 P2-04 dependency-lock qualification: [Phase 2D live dependency lock evidence](../evidence/phase2d-live-dependency-lock-20261009.md).
 
 Phase 2 does not authorize producer publication, Azure deployment or production readiness.
+
+
+## Phase 3 — producer control and audience delivery
+
+Phase 3 is **IN PROGRESS**. It completes the human-governed producer path and the
+audience-facing delivery contracts required by R5-R7. Phase 2 model proposals and
+verification evidence remain non-authoritative until an authenticated producer action
+binds the exact item version, content digest, evidence digest, language and persona.
+
+| ID | Work | Status | Acceptance evidence |
+|---|---|---|---|
+| P3-01 | Implement producer review/version binding and approval state | TESTED | Exact-version approve/reject/edit/reverify state; stale approval invalidation; immutable audit records |
+| P3-02 | Implement version-bound publication gate | TESTED | Pure domain gate authorises only the current approved content/evidence binding; no delivery side effect |
+| P3-03 | Implement broadcast output contracts | TESTED | Five strict immutable output envelopes; claim/evidence binding; registered overlay metrics; explicit recap period scope; frozen JSON Schema |
+| P3-04 | Implement audience adaptation and language variants | IN PROGRESS | Offline generation/verification and nine-pair quality-review contracts qualified (388 tests, 96.01% coverage); real multilingual model output and independent linguistic acceptance outstanding |
+| P3-05 | Implement producer desk interaction flow | IN PROGRESS | Offline producer commands and **real Psycopg adapter** under restricted DB role TESTED, including atomic audit/CAS/restart and independent audit-row reconciliation (477 tests); trusted OIDC, host session grants, authenticated UI/API and controlled publication still outstanding |
+| P3-06 | Review Phase 3 | PLANNED | End-to-end producer/audience evidence, exact-head qualification and owner decision |
+
+P3-01: [producer-review evidence](../evidence/phase3a-producer-review-20261009.md).
+P3-02: [publication-gate evidence](../evidence/phase3b-publication-gate-20261010.md).
+P3-03: [broadcast-output evidence](../evidence/phase3c-broadcast-outputs-20261010.md).
+P3-04: [offline audience qualification and live acceptance gap](../evidence/phase3d-audience-offline-20261010.md).
+P3-05: [producer PostgreSQL SQL-boundary qualification](../evidence/phase3e-producer-postgres-20261010.md), followed by [restricted real Psycopg and audit reconciliation](../evidence/phase3f-real-psycopg-audit-20261010.md).
+
+**Authentication architecture is APPROVED in [ADR-0011](../decisions/ADR-0011-federated-authentication.md)**, but no provider or paid identity resource is activated.
+
+| Slice | Status | Required acceptance |
+|---|---|---|
+| P3-05-ID1: workforce issuer, signature and host entitlements | IN PROGRESS | Offline JWT denial and cross-realm regression tests; exact-head CI |
+| P3-05-ID2: customer broker, provider federation and identity mapping | PLANNED | External ID issuer/audience separation, account-link consent and collision tests |
+| P3-05-ID3: protected browser/BFF sessions | IN PROGRESS | Offline OIDC flow and session boundaries tested; live provider, BFF deployment, workforce MFA and complete sandbox UAT remain blocked |
+| P3-05-ID3H: controlled customer migration | IN PROGRESS | Disposable replay, legacy catalog, negative-path, restore and receipt-clone tests; historical target proof and enforced human release approval outstanding; [operator hold points](../operations/id3h-controlled-release.md) |
+| P3-05-ID3J: disposable PostgreSQL catalog reader | TESTED — disposable scope only | Actual restricted PostgreSQL role, CREATE-grant rejection and revocation qualified on source `22e25bd` (1,099 tests, four hosted gates); real human/workload identities, live target attestation and action enforcement still blocked; [exact-source evidence](../evidence/id3j-postgres-catalog-qualification-20261011.md) |
+| P3-05-ID3K: disposable dual-principal catalog binding | TESTED — offline token/fixture scope only | Distinct synthetic RSA-signed human/workload JWT audiences, claimed MFA, server-owned entitlement and repeated ID3J inspection contract; source `8d97025` 4/4 hosted gates, 1,123 tests; **no** live Entra identity or combined real-DB actor binding; [exact-source evidence](../evidence/id3k-principal-catalog-qualification-20261011.md) |
+| P3-05-ID3L: one-session synthetic principal / real DB binding | TESTED — disposable scope only | In-process separate signed JWTs and host entitlement against the same real restricted PostgreSQL backend session; actual CREATE-grant escalation denied and revocation recovered; source `4004a3e` all four hosted gates and 36 browser tests; no real IdP/MFA, federated workload or migration permission; [exact-source evidence](../evidence/id3l-real-session-principal-qualification-20261011.md) |
+| P3-05-ID4: provider activation | PLANNED | Provider-by-provider real sandbox UAT; cost and secret governance |
+| P3-05-ID5: authenticated producer commands | PLANNED | Workforce MFA, session grants, atomic audit, end-to-end security and human approval |
+
+The tested P3-01/P3-02 components are pure domain controls. Host authentication,
+durable approval storage and actual publication are not implemented by these slices.
+Phase 3 does not authorise automatic publication; an authenticated human decision
+must bind each exact immutable version before a trusted publishing adapter is added.

@@ -7,6 +7,7 @@ are separate responsibilities. A validated Claim is never a verified Claim.
 
 from __future__ import annotations
 
+from decimal import ROUND_HALF_UP, Decimal
 from typing import Annotated, Literal, Self
 
 from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, model_validator
@@ -35,6 +36,16 @@ def immutable_array(value: object) -> object:
     if isinstance(value, list):
         return tuple(value)
     return value
+
+
+def round_half_up(value: float, decimals: int) -> Decimal:
+    """Round a float's shortest decimal form half up, so 0.575 -> 0.58 on every platform.
+
+    Binary floats cannot hold most decimals exactly; rounding the shortest round-trip
+    representation (``repr``) gives the result a reader expects and that a JavaScript
+    port can reproduce digit for digit.
+    """
+    return Decimal(repr(value)).quantize(Decimal(1).scaleb(-decimals), rounding=ROUND_HALF_UP)
 
 
 Identifier = Annotated[str, Field(min_length=1, max_length=96, pattern=r"^[A-Za-z0-9_-]+$")]
@@ -127,6 +138,12 @@ class MatchEvent(Contract):
     linked_event_id: Identifier | None = None
     related_player_id: Identifier | None = None
     tags: EventIds = ()
+    # Synthetic physical detail, as a tracking provider would add it: the ball's speed off a
+    # shot, the acting player's speed at the action, and the metres they ran since their
+    # previous logged action. Optional: logs without tracking omit them.
+    shot_speed_kmh: Annotated[float, Field(gt=0, le=200, allow_inf_nan=False)] | None = None
+    player_speed_kmh: Annotated[float, Field(ge=0, le=45, allow_inf_nan=False)] | None = None
+    distance_m: Annotated[float, Field(ge=0, le=6000, allow_inf_nan=False)] | None = None
     synthetic: Annotated[Literal[True], BeforeValidator(plain_boolean)] = True
 
     @model_validator(mode="after")
@@ -149,6 +166,9 @@ class MatchEvent(Contract):
                     self.xg,
                     self.linked_event_id,
                     self.related_player_id,
+                    self.shot_speed_kmh,
+                    self.player_speed_kmh,
+                    self.distance_m,
                 )
             ):
                 raise ValueError("Period markers cannot carry player or on-ball fields")
@@ -163,6 +183,8 @@ class MatchEvent(Contract):
             raise ValueError("A movement event requires an end_location")
         if (self.type == "shot") != (self.xg is not None):
             raise ValueError("Exactly shot events require a synthetic xG estimate")
+        if self.shot_speed_kmh is not None and self.type != "shot":
+            raise ValueError("Only shot events carry a shot speed")
         if self.type == "goal" and self.linked_event_id is None:
             raise ValueError("A goal must reference its shot event")
         if self.type != "goal" and self.linked_event_id is not None:
@@ -176,9 +198,14 @@ class MatchEvent(Contract):
 
 
 class MatchWindow(Contract):
-    """A nonempty half-open [from_ms, to_ms) window within one match period."""
+    """A nonempty half-open [from_ms, to_ms) window of match clock time.
 
-    period: Period
+    With a period, the window covers that period only. Without one (``None``), it covers
+    both periods: every event whose match clock falls in the window, whichever half it is
+    in. That is how a "whole match so far" claim is expressed as a single assertion.
+    """
+
+    period: Period | None = None
     from_ms: Annotated[int, Field(ge=0)]
     to_ms: Annotated[int, Field(ge=1)]
 
@@ -214,16 +241,78 @@ class MetricAssertion(Contract):
     window: MatchWindow
     comparator: Literal["eq", "gte", "lte"] = "eq"
     value: Annotated[float, Field(ge=0, allow_inf_nan=False)]
-    unit: Literal["count", "ratio", "synthetic_xg", "metres", "per_minute"]
+    unit: Literal[
+        "count",
+        "ratio",
+        "synthetic_xg",
+        "metres",
+        "per_minute",
+        "rating",
+        "km_per_hour",
+        "kilometres",
+    ]
+    # The precision the claim is stated at. "58%" of a ratio is value 0.58 with decimals 2:
+    # it is verified when the recomputed value rounds (half up) to 0.58. Without it, "eq"
+    # stays exact.
+    decimals: Annotated[int, Field(ge=0, le=6)] | None = None
 
     @model_validator(mode="after")
     def validate_units(self) -> Self:
-        """Prevent fractional counts and ratios outside the unit interval."""
+        """Prevent fractional counts, ratios outside the unit interval and false precision."""
         if self.unit == "count" and not self.value.is_integer():
             raise ValueError("Count assertions must be integers")
         if self.unit == "ratio" and self.value > 1:
             raise ValueError("Ratios must lie between zero and one")
+        if self.decimals is not None:
+            if self.comparator != "eq":
+                raise ValueError("A stated precision applies only to the eq comparator")
+            if round_half_up(self.value, self.decimals) != Decimal(repr(self.value)):
+                raise ValueError("The asserted value has more decimal places than its precision")
         return self
+
+
+class EventFact(Contract):
+    """A registered, checkable statement about specific events, not about an aggregate.
+
+    ``goal_scorer.v1``: goal ``event_id`` was scored by ``player_id``.
+    ``card.v1``: card ``event_id`` was shown to ``player_id``; the sentence's colour is checked
+    against the recorded card.
+    ``substitution.v1``: substitution ``event_id`` took ``player_id`` off; the sentence must name
+    the recorded incoming player.
+    ``sequence_gap.v1``: ``event_id`` followed ``from_event_id`` by ``gap_seconds`` whole
+    seconds (rounded half up), and, when ``from_tag`` is given, the earlier event carries
+    that tag (a corner is a tagged pass in schema 1.0).
+    """
+
+    query: Literal["goal_scorer.v1", "sequence_gap.v1", "card.v1", "substitution.v1"]
+    event_id: Identifier
+    player_id: Identifier | None = None
+    from_event_id: Identifier | None = None
+    from_tag: Identifier | None = None
+    gap_seconds: Annotated[int, BeforeValidator(plain_integer), Field(ge=0)] | None = None
+
+    @model_validator(mode="after")
+    def validate_fact(self) -> Self:
+        """Require exactly the parameters each registered query reads."""
+        if self.query in ("goal_scorer.v1", "card.v1", "substitution.v1"):
+            if self.player_id is None or any(
+                value is not None for value in (self.from_event_id, self.from_tag, self.gap_seconds)
+            ):
+                raise ValueError(f"{self.query} takes event_id and player_id only")
+        elif (
+            self.from_event_id is None
+            or self.gap_seconds is None
+            or self.player_id is not None
+            or self.from_event_id == self.event_id
+        ):
+            raise ValueError("sequence_gap.v1 takes two distinct events and gap_seconds")
+        return self
+
+    def referenced_event_ids(self) -> tuple[str, ...]:
+        """The events the query reads; a claim must cite every one of them."""
+        if self.from_event_id is None:
+            return (self.event_id,)
+        return (self.from_event_id, self.event_id)
 
 
 class Claim(Contract):
@@ -233,6 +322,7 @@ class Claim(Contract):
     text: Annotated[str, Field(min_length=1, max_length=2000)]
     kind: Literal["measured_stat", "event_fact", "tactical_inference"]
     assertion: MetricAssertion | None = None
+    fact: EventFact | None = None
     evidence_event_ids: Annotated[
         tuple[Identifier, ...],
         Field(min_length=1, max_length=4096),
@@ -246,6 +336,8 @@ class Claim(Contract):
             raise ValueError("Claim text cannot be blank")
         if (self.kind == "measured_stat") != (self.assertion is not None):
             raise ValueError("Exactly measured claims require a metric assertion")
+        if self.fact is not None and self.kind != "event_fact":
+            raise ValueError("Only event-fact claims carry an event fact")
         if len(set(self.evidence_event_ids)) != len(self.evidence_event_ids):
             raise ValueError("Evidence references must be unique")
         return self

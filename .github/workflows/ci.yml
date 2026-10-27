@@ -2,9 +2,9 @@
 name: Foundation CI
 on:
   push:
-    branches: [development, main]
+    branches: [development, main, 'feat/sunset-v3-*']
   pull_request:
-    branches: [main]
+    branches: [development, main]
 permissions:
   contents: read
 concurrency:
@@ -33,6 +33,18 @@ jobs:
           git rev-parse HEAD > artifacts/python/source-commit.txt
           python --version > artifacts/python/python-version.txt
           sha256sum pyproject.toml uv.lock > artifacts/python/dependency-hashes.txt
+      # Design-reference imports are intentionally offline. Run their stdlib-only
+      # regressions on every commit, not just in an untracked developer checkout.
+      # Keep this before dependency installation so the check stays independent.
+      - name: Validate approved Sunset Studio asset importer
+        run: |
+          set -euo pipefail
+          test -f docs/design/tools/import_approved_assets.py
+          test -f docs/design/tools/test_import_approved_assets.py
+          python -m unittest discover -s docs/design/tools -p 'test_*.py' -v 2>&1 | tee artifacts/python/design-asset-importer.log
+          # An accidentally empty test suite must not result in a green gate.
+          grep -Eq '^Ran [1-9][0-9]* tests? in ' artifacts/python/design-asset-importer.log
+          grep -qx 'OK' artifacts/python/design-asset-importer.log
       - name: Require reviewed dependency locks
         run: test -f uv.lock && test -f apps/web/package-lock.json
       - name: Install the pinned package manager
@@ -42,6 +54,19 @@ jobs:
         id: install
         # --locked validates the manifest; --frozen alone does not detect drift.
         run: uv sync --locked --no-build --python 3.12 --group test --group quality
+      - name: Print generated contract suggestion only when snapshots drift
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: |
+          # Emit generated schema content as a review suggestion, never commit it.
+          # The subsequent gate still fails until reviewed snapshots are committed.
+          uv run --no-sync python - <<'PY'
+          import json
+          from scripts.export_contracts import expected_exports, check_exports
+          if check_exports():
+              exports = expected_exports()
+              for name in ("openapi.json", "manifest.json"):
+                  print("MATCHDESK_CONTRACT_SUGGESTION:" + name + ":" + json.dumps(exports[name], ensure_ascii=True))
+          PY
       - name: Validate contracts, comments and documentation
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: uv run --no-sync make contracts comments docs 2>&1 | tee artifacts/python/repository-checks.log
@@ -71,6 +96,68 @@ jobs:
           uv run --no-sync ruff check --select I --fix backend scripts
           uv run --no-sync ruff format backend scripts
           git diff --binary -- backend scripts > artifacts/python/formatting-suggestion.patch
+      - name: Qualify committed ID3G authorization helper with locked tooling
+        id: id3g_authorization_preflight
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          # Check the exact previously qualified source and tests at runtime paths;
+          # reject divergence from their reviewed qualification copies.
+          source_dir=qualification/id3g/http_preflight
+          target_src=backend/src/matchdesk/domain/customer_session_authorization.py
+          target_test=backend/tests/test_customer_session_authorization.py
+          test -f "$target_src"
+          test -f "$target_test"
+          test "$(git hash-object "$source_dir/customer_session_authorization.py")" = 35e138310b9b4e7bb47f76d406ffdc904589d071
+          test "$(git hash-object "$source_dir/test_customer_session_authorization.py")" = fd18e8caa86c9f16c62000d06bfd6085f33ccd4f
+          test "$(git hash-object "$target_src")" = 35e138310b9b4e7bb47f76d406ffdc904589d071
+          test "$(git hash-object "$target_test")" = fd18e8caa86c9f16c62000d06bfd6085f33ccd4f
+          cmp -s "$source_dir/customer_session_authorization.py" "$target_src"
+          cmp -s "$source_dir/test_customer_session_authorization.py" "$target_test"
+          # The exact locked quality versions come from uv sync above.
+          # Collect the locked diagnostics without rewriting the reviewed blobs.
+          quality_status=0
+          uv run --no-sync ruff check backend scripts || quality_status=1
+          uv run --no-sync ruff format --check backend scripts || quality_status=1
+          uv run --no-sync mypy backend/src/matchdesk || quality_status=1
+          uv run --no-sync python -m pytest -q backend/tests/test_customer_session_authorization.py backend/tests/test_customer_sessions.py || quality_status=1
+          if test "$quality_status" -ne 0; then
+            uv run --no-sync ruff check --diff backend scripts || true
+            uv run --no-sync ruff format --diff backend scripts || true
+            exit 1
+          fi
+          git diff --exit-code
+      - name: Qualify committed ID3G current-account HTTP boundaries with locked tools
+        id: id3g_http_preflight
+        if: ${{ !cancelled() && steps.id3g_authorization_preflight.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          # Fail closed if committed HTTP source diverges from the exact
+          # review-only files qualified with Python 3.12 and pinned tools.
+          qa=qualification/id3g/http_route_review
+          route=backend/src/matchdesk/api/customer_session_routes.py
+          browser=backend/src/matchdesk/domain/browser_session_security.py
+          tests=backend/tests/test_customer_session_routes.py
+          test "$(git hash-object "$route")" = f8ed4f0fc56fb8cdd4c986c477edfd3ea18d0646
+          test "$(git hash-object "$browser")" = bd71b1630ac9731d3ca1df13907a4b7daa35e0d5
+          test "$(git hash-object "$tests")" = f5fc514941621ccc6c0ea82a019b58cbe9bea4dc
+          test "$(git hash-object "$qa/customer_session_routes.py")" = f8ed4f0fc56fb8cdd4c986c477edfd3ea18d0646
+          test "$(git hash-object "$qa/browser_session_security.py")" = bd71b1630ac9731d3ca1df13907a4b7daa35e0d5
+          test "$(git hash-object "$qa/test_customer_session_routes.py")" = f5fc514941621ccc6c0ea82a019b58cbe9bea4dc
+          cmp -s "$qa/customer_session_routes.py" "$route"
+          cmp -s "$qa/browser_session_security.py" "$browser"
+          cmp -s "$qa/test_customer_session_routes.py" "$tests"
+          quality=0
+          uv run --no-sync ruff check backend scripts || quality=1
+          uv run --no-sync ruff format --check backend scripts || quality=1
+          uv run --no-sync mypy backend/src/matchdesk || quality=1
+          uv run --no-sync python -m pytest -q backend/tests/test_customer_session_routes.py backend/tests/test_customer_session_authorization.py backend/tests/test_browser_session_security.py || quality=1
+          if test "$quality" -ne 0; then
+            uv run --no-sync ruff check --diff backend scripts || true
+            uv run --no-sync ruff format --diff backend scripts || true
+            exit 1
+          fi
+          git diff --exit-code
       - name: Preserve Python results including failures
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # inspected v4
@@ -110,10 +197,60 @@ jobs:
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         working-directory: apps/web
         run: npm run typecheck 2>&1 | tee ../../artifacts/web/typecheck.log
+      - name: Prove the browser verifier matches the backend verifier
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: node --experimental-strip-types --test apps/web/tests/verifier.parity.test.mjs 2>&1 | tee artifacts/web/verifier-parity.log
+      - name: Prove every Ask MatchDesk answer is computed and verified
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: node --experimental-strip-types --test apps/web/tests/ask.test.mjs 2>&1 | tee artifacts/web/ask.log
+      - name: Qualify default-disabled workforce BFF contract
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          node --experimental-strip-types --test apps/web/tests/workforce-bff.test.mjs 2>&1 | tee artifacts/web/workforce-bff.log
+      - name: Verify one-time workforce Entra OIDC state and PKCE contract
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          node --experimental-strip-types --test apps/web/tests/workforce-oidc.test.mjs 2>&1 | tee artifacts/web/workforce-oidc.log
+      - name: Verify encrypted workforce one-time PostgreSQL adapter
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          node --experimental-strip-types --test apps/web/tests/workforce-postgres-oidc.test.mjs 2>&1 | tee artifacts/web/workforce-postgres-oidc.log
+      - name: Verify signed Entra confidential code exchange and JWT boundaries
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          node --experimental-strip-types --test apps/web/tests/workforce-entra.test.mjs 2>&1 | tee artifacts/web/workforce-entra.log
+      - name: Verify sealed pending workforce session and revoke boundaries
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          node --experimental-strip-types --test apps/web/tests/workforce-pending-session.test.mjs 2>&1 | tee artifacts/web/workforce-pending-session.log
+      - name: Qualify exact-version human decision binding and no-authority payload
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          node --experimental-strip-types --test apps/web/tests/workforce-decision.test.mjs 2>&1 | tee artifacts/web/workforce-decision.log
+      - name: Qualify signed Entra step-up and enforced Conditional Access boundary
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          node --experimental-strip-types --test apps/web/tests/workforce-step-up.test.mjs 2>&1 | tee artifacts/web/workforce-step-up.log
+      - name: Qualify pending-bound encrypted step-up persistence adapter
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          node --experimental-strip-types --test apps/web/tests/workforce-postgres-step-up.test.mjs 2>&1 | tee artifacts/web/workforce-postgres-step-up.log
       - name: Build the actual web application
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         working-directory: apps/web
         run: npm run build 2>&1 | tee ../../artifacts/web/build.log
+      - name: Enforce the per-page JavaScript and CSS budget
+        id: web_budget
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: node scripts/check_web_budget.mjs apps/web 2>&1 | tee artifacts/web/budget.log
       - name: Confirm frontend manifests did not change
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: git diff --exit-code -- apps/web/package.json apps/web/package-lock.json

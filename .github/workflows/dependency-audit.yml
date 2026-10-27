@@ -2,9 +2,9 @@
 name: Dependency audit
 on:
   push:
-    branches: [development, main]
+    branches: [development, main, 'feat/sunset-v3-*']
   pull_request:
-    branches: [main]
+    branches: [development, main]
 permissions:
   contents: read
 concurrency:

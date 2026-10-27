@@ -15,7 +15,10 @@ This refuses to overwrite an existing .env and never prints secret values.
 
 Run `make dev`. Test the actual web-to-API validation path and database service separately.
 Do not interpret a running PostgreSQL container as an application persistence test.
-Database adapters, migrations and durable jobs are future work.
+Restricted PostgreSQL adapters and customer migrations have been exercised on
+disposable integration databases; these results do not authorize a live migration,
+customer sign-in or recovery operation. See the
+[ID3H controlled release hold points](id3h-controlled-release.md).
 
 ## Repository publication
 
