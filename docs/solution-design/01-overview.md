@@ -1,6 +1,6 @@
 # Product overview
 
-Status (26 October 2026): the synthetic replay, registered metrics, deterministic verifier, Foundry specialist workflow, audience-facing studio, read-only MCP tools and Azure demo are implemented for the competition. Producer sign-in and real external publishing remain outside the public demo. See [current progress](../PROGRESS.md) and the [judging guide](../competition/judging-guide.md).
+Status (26 October 2026): the synthetic replay, registered metrics, deterministic verifier, Foundry specialist workflow, audience-facing studio with Azure AI Speech voice-over, broadcast overlay, read-only MCP tools and Azure demo are implemented for the competition. Producer sign-in and real external publishing remain outside the public demo. See [current progress](../PROGRESS.md) and the [judging guide](../competition/judging-guide.md).
 
 The producer is the primary operator. The desk should reduce the distance between
 raw events, an explanatory narrative and a deliberate publishing decision. Its

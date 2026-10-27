@@ -7,7 +7,7 @@ loopback API/web ports are published. The database has no host port. Local crede
 are generated into an ignored file with exclusive creation and restricted permissions.
 The public demo does not provide production-grade authenticated persistence or external publishing. Disposable PostgreSQL integration tests cover the producer domain, but running local containers alone does not certify production persistence or identity.
 
-Container Apps, Container Registry, a managed identity, Microsoft Foundry access and telemetry are part of the current Azure demo. PostgreSQL Flexible Server, private networking, real producer sign-in, privileged publication and production recovery remain future work. The demo uses GitHub Actions OIDC for deployments, with owner-reviewed cost and rollback controls.
+Container Apps, Container Registry, a managed identity, Microsoft Foundry access, Azure AI Speech (voice-over through the same Foundry account, signed in with the managed identity) and telemetry are part of the current Azure demo. PostgreSQL Flexible Server, private networking, real producer sign-in, privileged publication and production recovery remain future work. The demo deploys through GitHub Actions with OIDC; the [runbook](../operations/azure-demo.md) documents the budget alerts and the rollback steps.
 No account email is treated as a tenant or subscription identifier.
 
 Docker builds require reviewed dependency locks. Base image digest pinning, non-root
